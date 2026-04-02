@@ -42,14 +42,29 @@ class AdvokasiController extends Controller
         }
 
         // Handle file upload securely into the 'private' disk
-        if ($request->hasFile('bukti_pajanan')) {
-            // Delete old file if exists
-            if ($status->bukti_pajanan_path) {
-                Storage::disk('private')->delete($status->bukti_pajanan_path);
-            }
+        if ($request->hasFile('file') && $request->has('step_key')) {
+            $stepKey = $request->input('step_key');
+            
+            $validColumns = [
+                'riwayat_pajanan' => 'bukti_pajanan_path', 
+                'persetujuan_dokter' => 'bukti_persetujuan_dokter_path', 
+                'perusahaan_lapor' => 'bukti_perusahaan_lapor_path',
+                'penetapan_pak' => 'bukti_penetapan_pak_path',
+                'kompensasi_bpjstk' => 'bukti_kompensasi_bpjstk_path',
+                'rehabilitasi_bpjskes' => 'bukti_rehabilitasi_bpjskes_path'
+            ];
 
-            $path = $request->file('bukti_pajanan')->store('bukti_pajanan', 'private');
-            $status->bukti_pajanan_path = $path;
+            if (array_key_exists($stepKey, $validColumns)) {
+                $columnName = $validColumns[$stepKey];
+
+                // Delete old file if exists
+                if ($status->{$columnName}) {
+                    Storage::disk('private')->delete($status->{$columnName});
+                }
+
+                $path = $request->file('file')->store('bukti_advokasi', 'private');
+                $status->{$columnName} = $path;
+            }
         }
 
         // Update fields including new metadata

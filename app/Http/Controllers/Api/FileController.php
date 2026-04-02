@@ -39,7 +39,7 @@ class FileController extends Controller
     /**
      * Download or view advocacy evidence (Status Advokasi)
      */
-    public function downloadBuktiPajanan(Request $request, string $pekerja_id)
+    public function downloadAdvokasiProof(Request $request, string $pekerja_id, string $step_key)
     {
         // Workers can view their own, but others must be admin/petugas
         $isOwner = $request->user()->pekerja && $request->user()->pekerja->id == $pekerja_id;
@@ -48,16 +48,31 @@ class FileController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Unauthorized access to evidence document.'], 403);
         }
 
-        $status = StatusAdvokasi::where('pekerja_id', $pekerja_id)->first();
+        $validColumns = [
+            'riwayat_pajanan' => 'bukti_pajanan_path', 
+            'persetujuan_dokter' => 'bukti_persetujuan_dokter_path', 
+            'perusahaan_lapor' => 'bukti_perusahaan_lapor_path',
+            'penetapan_pak' => 'bukti_penetapan_pak_path',
+            'kompensasi_bpjstk' => 'bukti_kompensasi_bpjstk_path',
+            'rehabilitasi_bpjskes' => 'bukti_rehabilitasi_bpjskes_path'
+        ];
 
-        if (!$status || !$status->bukti_pajanan_path) {
-            return response()->json(['status' => 'error', 'message' => 'Dokumen bukti pajanan tidak ditemukan.'], 404);
+        if (!array_key_exists($step_key, $validColumns)) {
+             return response()->json(['status' => 'error', 'message' => 'Invalid document type.'], 400);
         }
 
-        if (!Storage::disk('private')->exists($status->bukti_pajanan_path)) {
+        $columnName = $validColumns[$step_key];
+
+        $status = StatusAdvokasi::where('pekerja_id', $pekerja_id)->first();
+
+        if (!$status || !$status->{$columnName}) {
+            return response()->json(['status' => 'error', 'message' => 'Dokumen tidak ditemukan.'], 404);
+        }
+
+        if (!Storage::disk('private')->exists($status->{$columnName})) {
             return response()->json(['status' => 'error', 'message' => 'File fisik tidak ditemukan di server.'], 404);
         }
 
-        return Storage::disk('private')->download($status->bukti_pajanan_path);
+        return Storage::disk('private')->download($status->{$columnName});
     }
 }

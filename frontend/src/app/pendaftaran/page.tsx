@@ -166,6 +166,40 @@ export default function PendaftaranPekerjaPage() {
         });
       }
 
+      // Sync status advokasi dan file unggahan
+      const advokasiKeys = [
+        'riwayat_pajanan',
+        'persetujuan_dokter',
+        'perusahaan_lapor',
+        'penetapan_pak',
+        'kompensasi_bpjstk',
+        'rehabilitasi_bpjskes'
+      ];
+      
+      for (let i = 0; i < advokasiData.length; i++) {
+        const item = advokasiData[i];
+        if (item.status === 'Ya' || item.file) {
+          const advFormData = new FormData();
+          
+          if (item.status === 'Ya') {
+             advFormData.append(advokasiKeys[i], '1'); // boolean representation
+          }
+          
+          if (item.file) {
+            advFormData.append('step_key', advokasiKeys[i]);
+            advFormData.append('file', item.file);
+          }
+          
+          try {
+             await api.post(`/pekerja/${newPekerjaId}/advokasi`, advFormData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+             });
+          } catch(e) {
+             console.error('Gagal mengintegrasikan advokasi', advokasiKeys[i]);
+          }
+        }
+      }
+
       toast.success('Pekerja berhasil didaftarkan!');
       router.push('/pekerja');
     } catch (error: any) {

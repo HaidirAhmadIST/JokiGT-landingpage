@@ -37,5 +37,5 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     // Secure File Downloads (RBAC handled in controller)
     Route::get('pekerja/{pekerja_id}/files/medis', [FileController::class, 'downloadMedis']);
-    Route::get('pekerja/{pekerja_id}/files/bukti-pajanan', [FileController::class, 'downloadBuktiPajanan']);
+    Route::get('pekerja/{pekerja_id}/files/advokasi/{step_key}', [FileController::class, 'downloadAdvokasiProof']);
 });

@@ -30,10 +30,15 @@ class StatusAdvokasi extends Model
         'riwayat_pajanan',
         'bukti_pajanan_path',
         'persetujuan_dokter',
+        'bukti_persetujuan_dokter_path',
         'perusahaan_lapor',
+        'bukti_perusahaan_lapor_path',
         'penetapan_pak',
+        'bukti_penetapan_pak_path',
         'kompensasi_bpjstk',
+        'bukti_kompensasi_bpjstk_path',
         'rehabilitasi_bpjskes',
+        'bukti_rehabilitasi_bpjskes_path',
     ];
 
     /**

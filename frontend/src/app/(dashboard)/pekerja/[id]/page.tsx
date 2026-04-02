@@ -18,7 +18,12 @@ export default function PekerjaDetailPage() {
   const router = useRouter();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [uploadLoading, setUploadLoading] = useState(false);
+  const [uploadLoading, setUploadLoading] = useState<string | null>(null);
+  
+  const [isEditingCatatan, setIsEditingCatatan] = useState(false);
+  const [catatanInput, setCatatanInput] = useState('');
+  const [savingCatatan, setSavingCatatan] = useState(false);
+  const isAdmin = true; // TODO: Cek role sebenarnya jika sudah ada state auth
 
   const fetchDetail = async () => {
     try {
@@ -46,13 +51,14 @@ export default function PekerjaDetailPage() {
     }
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (stepKey: string, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setUploadLoading(true);
+    setUploadLoading(stepKey);
     const formData = new FormData();
-    formData.append('bukti_pajanan', file);
+    formData.append('step_key', stepKey);
+    formData.append('file', file);
 
     try {
       await api.post(`/pekerja/${id}/advokasi`, formData, {
@@ -63,7 +69,42 @@ export default function PekerjaDetailPage() {
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Gagal mengunggah file');
     } finally {
-      setUploadLoading(false);
+      setUploadLoading(null);
+    }
+  };
+
+  const downloadFile = async (stepKey: string) => {
+    try {
+      const toastId = toast.loading('Memproses file...');
+      const response = await api.get(`/pekerja/${id}/files/advokasi/${stepKey}`, {
+        responseType: 'blob',
+      });
+      
+      const fileUrl = window.URL.createObjectURL(new Blob([response.data], { type: response.headers['content-type'] }));
+      window.open(fileUrl, '_blank');
+      toast.dismiss(toastId);
+    } catch (error) {
+      toast.dismiss();
+      toast.error('Gagal membuka dokumen yang terunggah.');
+    }
+  };
+
+  const handleEditCatatan = () => {
+    setCatatanInput(data?.catatan_admin || '');
+    setIsEditingCatatan(true);
+  };
+
+  const handleSaveCatatan = async () => {
+    try {
+      setSavingCatatan(true);
+      await api.put(`/pekerja/${id}`, { catatan_admin: catatanInput });
+      toast.success('Catatan berhasil diperbarui');
+      setData({ ...data, catatan_admin: catatanInput });
+      setIsEditingCatatan(false);
+    } catch (e: any) {
+      toast.error('Gagal memperbarui catatan');
+    } finally {
+      setSavingCatatan(false);
     }
   };
 
@@ -93,10 +134,28 @@ export default function PekerjaDetailPage() {
   ];
   
   // Find current step index (first step that is false)
-  const currentStepIdx = advSteps.findIndex(step => !adv?.[step.key]);
+  const isStepCompleted = (stepKey: string) => {
+    if (stepKey === 'riwayat_pajanan' && data?.riwayat_pekerja && data.riwayat_pekerja.length > 0) return true;
+    if (stepKey === 'persetujuan_dokter' && data?.detail_medis && data.detail_medis.length > 0) return true;
+    return !!adv?.[stepKey];
+  };
+
+  const currentStepIdx = advSteps.findIndex(step => !isStepCompleted(step.key));
   const activeStepIndex = currentStepIdx === -1 ? advSteps.length : currentStepIdx;
 
   const terkiniMedis = data.detail_medis?.[0]; // Assuming first is most recent
+
+  const getFilePath = (stepKey: string) => {
+      const map: Record<string, string> = {
+          'riwayat_pajanan': 'bukti_pajanan_path',
+          'persetujuan_dokter': 'bukti_persetujuan_dokter_path',
+          'perusahaan_lapor': 'bukti_perusahaan_lapor_path',
+          'penetapan_pak': 'bukti_penetapan_pak_path',
+          'kompensasi_bpjstk': 'bukti_kompensasi_bpjstk_path',
+          'rehabilitasi_bpjskes': 'bukti_rehabilitasi_bpjskes_path',
+      };
+      return adv?.[map[stepKey]];
+  };
 
   return (
     <div className="bg-[#f8fafc] min-h-screen pb-20 font-sans text-slate-800">
@@ -188,16 +247,40 @@ export default function PekerjaDetailPage() {
                 <h3 className="text-sm font-bold text-orange-800 flex items-center">
                   <Pin className="h-4 w-4 mr-2" /> Catatan Internal Admin
                 </h3>
-                <button className="text-orange-400 hover:text-orange-600 transition-colors">
-                  <Edit3 className="h-4 w-4" />
-                </button>
+                {isAdmin && !isEditingCatatan && (
+                  <button onClick={handleEditCatatan} className="text-orange-400 hover:text-orange-600 transition-colors" title="Edit Catatan">
+                    <Edit3 className="h-4 w-4" />
+                  </button>
+                )}
               </div>
-              <p className="text-orange-900/80 text-[13px] leading-relaxed font-medium">
-                 {data.catatan_admin || 'Tidak ada catatan khusus untuk pekerja ini. Kondisi keseluruhan dalam pemantauan wajar.'}
-              </p>
+              
+              {isEditingCatatan ? (
+                <div className="space-y-3 mt-2">
+                  <textarea
+                    className="w-full text-sm p-3 border border-orange-200 rounded-xl focus:ring-2 focus:ring-orange-300 outline-none resize-y min-h-[100px] text-orange-900 bg-white"
+                    placeholder="Tulis catatan admin di sini..."
+                    value={catatanInput}
+                    onChange={(e) => setCatatanInput(e.target.value)}
+                    disabled={savingCatatan}
+                  />
+                  <div className="flex justify-end gap-2">
+                    <Button variant="ghost" size="sm" onClick={() => setIsEditingCatatan(false)} disabled={savingCatatan} className="text-orange-600 hover:bg-orange-100 h-8 text-xs">
+                      Batal
+                    </Button>
+                    <Button size="sm" onClick={handleSaveCatatan} disabled={savingCatatan} className="bg-orange-500 hover:bg-orange-600 text-white h-8 text-xs">
+                      {savingCatatan ? 'Menyimpan...' : 'Simpan'}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-orange-900/80 text-[13px] leading-relaxed font-medium whitespace-pre-wrap">
+                   {data.catatan_admin || 'Tidak ada catatan khusus untuk pekerja ini. Kondisi keseluruhan dalam pemantauan wajar.'}
+                </p>
+              )}
+              
               <div className="mt-5 flex items-center gap-2">
                 <span className="w-6 h-6 rounded-full bg-orange-200 text-orange-700 flex items-center justify-center text-[9px] font-bold">AS</span>
-                <span className="text-[10px] font-semibold text-orange-600/70">Terakhir diubah oleh Admin Sentinel - Saat mendaftar</span>
+                <span className="text-[10px] font-semibold text-orange-600/70">Terakhir diubah oleh Admin Sentinel</span>
               </div>
             </div>
 
@@ -298,9 +381,10 @@ export default function PekerjaDetailPage() {
                  <div className="absolute top-2 bottom-5 left-[19px] w-[2px] bg-slate-100 rounded-full" />
                  
                  {advSteps.map((step, idx) => {
-                    const isCompleted = adv?.[step.key];
-                    const isCurrent = idx === activeStepIndex;
-                    const isFuture = idx > activeStepIndex;
+                    const isCompleted = isStepCompleted(step.key);
+                    const hasFile = !!getFilePath(step.key);
+                    const isCurrent = idx === activeStepIndex || (!isCompleted && hasFile);
+                    const isFuture = idx > activeStepIndex && !isCurrent;
                     
                     return (
                       <div key={step.key} className="relative z-10 flex items-start group">
@@ -328,32 +412,31 @@ export default function PekerjaDetailPage() {
                           <p className="text-[10px] text-slate-400 mt-1">
                             {isCompleted ? 'Selesai' : isCurrent ? 'Sedang Berjalan' : 'Belum Dimulai'}
                           </p>
-                          
-                          {/* Re-integrated File Upload for Riwayat Pajanan */}
-                          {step.key === 'riwayat_pajanan' && (
-                             <div className="mt-3 p-3 bg-slate-50 border border-slate-100 rounded-lg">
-                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2">Dokumen Pendukung</span>
-                                <div className="flex flex-col sm:flex-row gap-3">
-                                  <div className="relative flex-1">
-                                    <input 
-                                       type="file" 
-                                       className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
-                                       accept=".pdf,.jpg,.jpeg,.png"
-                                       onChange={handleFileUpload}
-                                       disabled={uploadLoading}
-                                    />
-                                    <div className="h-9 w-full bg-white border border-slate-200 border-dashed rounded-md flex items-center justify-center text-[10px] font-semibold text-[#0ea5e9] hover:bg-blue-50 transition-colors">
-                                       {uploadLoading ? 'Mengunggah...' : '+ Pilih File Bukti (Max 5MB)'}
-                                    </div>
-                                  </div>
-                                  {adv?.bukti_pajanan_path && (
-                                     <a href={`${api.defaults.baseURL}/pekerja/${id}/files/bukti-pajanan`} target="_blank" rel="noreferrer" className="h-9 px-3 bg-white border border-slate-200 rounded-md flex items-center justify-center text-[10px] font-semibold text-slate-600 hover:text-[#0ea5e9] hover:border-[#0ea5e9] transition-colors">
-                                        <FileText className="h-3 w-3 mr-1.5" /> Lihat Terunggah
-                                     </a>
-                                  )}
-                                </div>
+
+
+                          {/* File Upload for Each Step */}
+                          <div className="mt-3 p-3 bg-slate-50 border border-slate-100 rounded-lg">
+                             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2">Dokumen / Bukti Pendukung</span>
+                             <div className="flex flex-col sm:flex-row gap-3">
+                               <div className="relative flex-1">
+                                 <input 
+                                    type="file" 
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
+                                    accept=".pdf,.jpg,.jpeg,.png"
+                                    onChange={(e) => handleFileUpload(step.key, e)}
+                                    disabled={uploadLoading === step.key}
+                                 />
+                                 <div className={`h-9 w-full bg-white border ${uploadLoading === step.key ? 'border-[#0ea5e9] bg-blue-50' : 'border-slate-200 border-dashed'} rounded-md flex items-center justify-center text-[10px] font-semibold text-[#0ea5e9] hover:bg-blue-50 transition-colors`}>
+                                    {uploadLoading === step.key ? 'Mengunggah...' : '+ Pilih File Bukti (Max 5MB)'}
+                                 </div>
+                               </div>
+                               {getFilePath(step.key) && (
+                                  <button onClick={() => downloadFile(step.key)} className="h-9 px-3 bg-white border border-slate-200 rounded-md flex items-center justify-center text-[10px] font-semibold text-slate-600 hover:text-[#0ea5e9] hover:border-[#0ea5e9] transition-colors cursor-pointer">
+                                     <FileText className="h-3 w-3 mr-1.5" /> Lihat Terunggah
+                                  </button>
+                               )}
                              </div>
-                          )}
+                          </div>
                         </div>
                       </div>
                     )
