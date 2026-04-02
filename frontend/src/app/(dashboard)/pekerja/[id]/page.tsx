@@ -20,6 +20,8 @@ export default function PekerjaDetailPage() {
   const [loading, setLoading] = useState(true);
   const [uploadLoading, setUploadLoading] = useState(false);
   const [statusLoading, setStatusLoading] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const isAdmin = user?.role === 'admin';
 
   const fetchDetail = async () => {
     try {
@@ -35,6 +37,11 @@ export default function PekerjaDetailPage() {
 
   useEffect(() => {
     fetchDetail();
+    // Fetch user from localStorage
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
   }, [id]);
 
   const toggleAdvokasi = async (field: string, checked: boolean) => {
@@ -159,7 +166,7 @@ export default function PekerjaDetailPage() {
 
           {/* Right: Stats */}
           <div className="flex flex-wrap lg:flex-nowrap gap-4 w-full lg:w-auto h-full">
-              <div className="bg-slate-50/50 border border-slate-100 rounded-xl p-4 flex-1 min-w-[170px] relative group/status">
+              <div className={`bg-slate-50/50 border border-slate-100 rounded-xl p-4 flex-1 min-w-[170px] relative ${isAdmin ? 'group/status' : ''}`}>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Status Kesehatan</p>
                 <div className="flex items-center gap-2">
                   <span className={`text-xl font-bold capitalize ${
@@ -171,22 +178,24 @@ export default function PekerjaDetailPage() {
                      data.status_kesehatan === 'sakit_berat' ? 'Unfit' : data.status_kesehatan}
                   </span>
                   
-                  {/* Status Switcher Popover Logic (Simple native select for now to avoid complexity) */}
-                  <select 
-                    className="absolute inset-0 opacity-0 cursor-pointer"
-                    value={data.status_kesehatan}
-                    onChange={(e) => updateStatusKesehatan(e.target.value)}
-                    disabled={statusLoading}
-                  >
-                    <option value="sehat">Fit</option>
-                    <option value="sakit_ringan">Fit with Note</option>
-                    <option value="sakit_berat">Unfit</option>
-                    <option value="dalam_perawatan">Dalam Perawatan</option>
-                  </select>
+                  {/* Status Switcher Popover Logic (Only for admin) */}
+                  {isAdmin && (
+                    <select 
+                      className="absolute inset-0 opacity-0 cursor-pointer"
+                      value={data.status_kesehatan}
+                      onChange={(e) => updateStatusKesehatan(e.target.value)}
+                      disabled={statusLoading}
+                    >
+                      <option value="sehat">Fit</option>
+                      <option value="sakit_ringan">Fit with Note</option>
+                      <option value="sakit_berat">Unfit</option>
+                      <option value="dalam_perawatan">Dalam Perawatan</option>
+                    </select>
+                  )}
                 </div>
                 
-                {/* Suggestion Indicator */}
-                {data.status_saran && data.status_saran !== data.status_kesehatan && (
+                {/* Suggestion Indicator (Only for admin) */}
+                {isAdmin && data.status_saran && data.status_saran !== data.status_kesehatan && (
                   <div className="mt-2 flex items-center gap-1.5 animate-pulse">
                     <span className="w-1.5 h-1.5 bg-amber-500 rounded-full"></span>
                     <span className="text-[9px] font-extrabold text-amber-600 uppercase tracking-tighter">
@@ -195,10 +204,12 @@ export default function PekerjaDetailPage() {
                   </div>
                 )}
                 
-                {/* Tooltip hint */}
-                <div className="absolute -top-1 px-2 py-0.5 bg-slate-800 text-white text-[8px] font-bold rounded opacity-0 group-hover/status:opacity-100 transition-opacity pointer-events-none">
-                  KLIK UNTUK MENGUBAH
-                </div>
+                {/* Tooltip hint (Only for admin) */}
+                {isAdmin && (
+                  <div className="absolute -top-1 px-2 py-0.5 bg-slate-800 text-white text-[8px] font-bold rounded opacity-0 group-hover/status:opacity-100 transition-opacity pointer-events-none">
+                    KLIK UNTUK MENGUBAH
+                  </div>
+                )}
               </div>
 
              <div className="bg-slate-50/50 border border-slate-100 rounded-xl p-4 flex-1 min-w-[140px]">
