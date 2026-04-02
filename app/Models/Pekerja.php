@@ -86,6 +86,39 @@ class Pekerja extends Model
     // =========================================================================
 
     /**
+     * The accessors to append to the model's array form.
+     *
+     * @var array
+     */
+    protected $appends = ['status_saran'];
+
+    /**
+     * Get suggested health status based on medical records and advocacy progress.
+     */
+    public function getStatusSaranAttribute(): string
+    {
+        $medis = $this->detailMedis()->latest('tgl_pemeriksaan')->first();
+        $adv = $this->statusAdvokasi;
+
+        // Logic check for "Unfit" (Serious)
+        if ($adv && $adv->penetapan_pak) {
+            return 'sakit_berat';
+        }
+        
+        if ($medis) {
+            $diagnosis = strtolower($medis->hasil_diagnosis);
+            if (str_contains($diagnosis, 'berat') || str_contains($diagnosis, 'positif pak')) {
+                return 'sakit_berat';
+            }
+            if (str_contains($diagnosis, 'suspek') || str_contains($diagnosis, 'ringan') || str_contains($diagnosis, 'silikosis')) {
+                return 'sakit_ringan';
+            }
+        }
+
+        return 'sehat';
+    }
+
+    /**
      * Scope to load all common relationships (prevents N+1).
      */
     public function scopeWithFullProfile($query)

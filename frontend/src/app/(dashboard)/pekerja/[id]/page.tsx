@@ -19,6 +19,7 @@ export default function PekerjaDetailPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [uploadLoading, setUploadLoading] = useState(false);
+  const [statusLoading, setStatusLoading] = useState(false);
 
   const fetchDetail = async () => {
     try {
@@ -43,6 +44,19 @@ export default function PekerjaDetailPage() {
       fetchDetail();
     } catch (e: any) {
       toast.error(e.response?.data?.message || 'Gagal memperbarui status');
+    }
+  };
+
+  const updateStatusKesehatan = async (newStatus: string) => {
+    try {
+      setStatusLoading(true);
+      await api.put(`/pekerja/${id}`, { status_kesehatan: newStatus });
+      toast.success('Status kesehatan berhasil diperbarui');
+      fetchDetail();
+    } catch (e: any) {
+      toast.error(e.response?.data?.message || 'Gagal memperbarui status');
+    } finally {
+      setStatusLoading(false);
     }
   };
 
@@ -145,15 +159,47 @@ export default function PekerjaDetailPage() {
 
           {/* Right: Stats */}
           <div className="flex flex-wrap lg:flex-nowrap gap-4 w-full lg:w-auto h-full">
-             <div className="bg-slate-50/50 border border-slate-100 rounded-xl p-4 flex-1 min-w-[140px]">
-               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Status Kesehatan</p>
-               <div className="flex items-center gap-2">
-                 <span className="text-xl font-bold text-slate-800 capitalize">{data.status_kesehatan === 'sehat' ? 'Fit' : data.status_kesehatan}</span>
-                 <span className="px-2 py-0.5 bg-emerald-100 text-emerald-600 text-[9px] font-extrabold tracking-wide rounded-full flex items-center">
-                   <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-1 animate-pulse"></span> ACTIVE
-                 </span>
-               </div>
-             </div>
+              <div className="bg-slate-50/50 border border-slate-100 rounded-xl p-4 flex-1 min-w-[170px] relative group/status">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Status Kesehatan</p>
+                <div className="flex items-center gap-2">
+                  <span className={`text-xl font-bold capitalize ${
+                    data.status_kesehatan === 'sehat' ? 'text-emerald-600' : 
+                    data.status_kesehatan === 'sakit_ringan' ? 'text-amber-600' : 'text-rose-600'
+                  }`}>
+                    {data.status_kesehatan === 'sehat' ? 'Fit' : 
+                     data.status_kesehatan === 'sakit_ringan' ? 'Fit with Note' : 
+                     data.status_kesehatan === 'sakit_berat' ? 'Unfit' : data.status_kesehatan}
+                  </span>
+                  
+                  {/* Status Switcher Popover Logic (Simple native select for now to avoid complexity) */}
+                  <select 
+                    className="absolute inset-0 opacity-0 cursor-pointer"
+                    value={data.status_kesehatan}
+                    onChange={(e) => updateStatusKesehatan(e.target.value)}
+                    disabled={statusLoading}
+                  >
+                    <option value="sehat">Fit</option>
+                    <option value="sakit_ringan">Fit with Note</option>
+                    <option value="sakit_berat">Unfit</option>
+                    <option value="dalam_perawatan">Dalam Perawatan</option>
+                  </select>
+                </div>
+                
+                {/* Suggestion Indicator */}
+                {data.status_saran && data.status_saran !== data.status_kesehatan && (
+                  <div className="mt-2 flex items-center gap-1.5 animate-pulse">
+                    <span className="w-1.5 h-1.5 bg-amber-500 rounded-full"></span>
+                    <span className="text-[9px] font-extrabold text-amber-600 uppercase tracking-tighter">
+                      Saran: {data.status_saran === 'sehat' ? 'Fit' : data.status_saran === 'sakit_ringan' ? 'Note' : 'Unfit'}
+                    </span>
+                  </div>
+                )}
+                
+                {/* Tooltip hint */}
+                <div className="absolute -top-1 px-2 py-0.5 bg-slate-800 text-white text-[8px] font-bold rounded opacity-0 group-hover/status:opacity-100 transition-opacity pointer-events-none">
+                  KLIK UNTUK MENGUBAH
+                </div>
+              </div>
 
              <div className="bg-slate-50/50 border border-slate-100 rounded-xl p-4 flex-1 min-w-[140px]">
                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Masa Kerja</p>
