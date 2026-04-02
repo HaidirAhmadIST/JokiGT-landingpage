@@ -384,11 +384,11 @@ export default function PekerjaDetailPage() {
                      </div>
                      <div>
                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Jenis</p>
-                       <p className="text-[13px] font-semibold text-slate-800 leading-tight">{terkiniMedis.jenis_pemeriksaan || 'MCU Tahunan'}</p>
+                       <p className="text-[13px] font-semibold text-slate-800 leading-tight">{terkiniMedis.jenis_pemeriksa || 'MCU Tahunan'}</p>
                      </div>
                      <div>
                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Dokter</p>
-                       <p className="text-[13px] font-semibold text-slate-800 leading-tight">{terkiniMedis.dokter || '-'}</p>
+                       <p className="text-[13px] font-semibold text-slate-800 leading-tight">{terkiniMedis.dokter_pemeriksa || '-'}</p>
                      </div>
                    </div>
 
