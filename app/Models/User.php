@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -47,5 +48,44 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    // =========================================================================
+    // Relationships
+    // =========================================================================
+
+    /**
+     * Get the pekerja record associated with this user.
+     */
+    public function pekerja(): HasOne
+    {
+        return $this->hasOne(Pekerja::class);
+    }
+
+    // =========================================================================
+    // RBAC Helpers
+    // =========================================================================
+
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
+
+    public function isPetugas(): bool
+    {
+        return $this->role === 'petugas';
+    }
+
+    public function isViewer(): bool
+    {
+        return $this->role === 'viewer';
+    }
+
+    /**
+     * Check if the user has at least the given role level.
+     */
+    public function hasRole(string $role): bool
+    {
+        return $this->role === $role;
     }
 }

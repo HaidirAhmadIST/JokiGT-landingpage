@@ -19,6 +19,7 @@ interface PekerjaWizardProps {
 export default function PekerjaWizard({ onSuccess, onCancel, perusahaanList }: PekerjaWizardProps) {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [pasFoto, setPasFoto] = useState<File | null>(null);
   
   // Step 1: Base Data
   const [baseData, setBaseData] = useState({
@@ -57,7 +58,17 @@ export default function PekerjaWizard({ onSuccess, onCancel, perusahaanList }: P
         medis: filteredMedis
       };
 
-      await api.post('/pekerja', payload);
+      const response = await api.post('/pekerja', payload);
+      const newPekerjaId = response.data.data.id;
+
+      if (pasFoto) {
+        const formData = new FormData();
+        formData.append('pas_foto', pasFoto);
+        await api.post(`/pekerja/${newPekerjaId}/foto`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+      }
+
       toast.success('Pekerja berhasil didaftarkan.');
       onSuccess();
     } catch (error: any) {
@@ -131,6 +142,10 @@ export default function PekerjaWizard({ onSuccess, onCancel, perusahaanList }: P
                     <SelectItem value="dalam_perawatan">Dalam Perawatan</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="space-y-2 col-span-2">
+                <Label>Pas Foto KTP (Opsional, Max 2MB, JPG/PNG)</Label>
+                <Input type="file" accept="image/jpeg, image/png, image/jpg" onChange={(e) => setPasFoto(e.target.files?.[0] || null)} />
               </div>
             </div>
           </div>

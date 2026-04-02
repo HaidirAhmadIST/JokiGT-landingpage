@@ -117,9 +117,17 @@ export default function PekerjaDetailPage() {
           <div className="flex items-center gap-6 w-full lg:w-auto">
             <div className="h-24 w-24 rounded-2xl bg-orange-50 flex items-center justify-center border-4 border-white shadow-sm overflow-hidden relative">
                {/* Placeholder Avatar - replacing with an icon wrapper */}
-               <div className="absolute inset-0 bg-gradient-to-br from-orange-100 to-orange-50 flex items-center justify-center">
-                 <ImageIcon className="h-10 w-10 text-orange-300" />
-               </div>
+               {data.pas_foto ? (
+                 <img 
+                   src={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://127.0.0.1:8000'}/storage/profil/${data.pas_foto}`} 
+                   alt="avatar" 
+                   className="w-full h-full object-cover object-top" 
+                 />
+               ) : (
+                 <div className="absolute inset-0 bg-gradient-to-br from-orange-100 to-orange-50 flex items-center justify-center">
+                   <ImageIcon className="h-10 w-10 text-orange-300" />
+                 </div>
+               )}
                <div className="absolute bottom-[-4px] right-[-4px] bg-[#0ea5e9] rounded-full p-1.5 border-2 border-white text-white">
                  <CheckCircle2 className="h-3 w-3" />
                </div>

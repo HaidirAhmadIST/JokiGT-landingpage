@@ -47,6 +47,25 @@ return [
             'report' => false,
         ],
 
+        /*
+        |----------------------------------------------------------------------
+        | Private Disk — Sensitive Medical & Advocacy Files
+        |----------------------------------------------------------------------
+        |
+        | Used for storing file_hasil_path (medical reports) and
+        | bukti_pajanan_path (advocacy evidence). These files are NOT
+        | publicly accessible and must be served through authenticated
+        | controller routes.
+        |
+        */
+        'private' => [
+            'driver' => 'local',
+            'root' => storage_path('app/private/pak_documents'),
+            'visibility' => 'private',
+            'throw' => false,
+            'report' => false,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),

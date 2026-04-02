@@ -149,12 +149,23 @@ export default function PendaftaranPekerjaPage() {
         hasil_diagnosis: medisData.hasil_diagnosis,
       }] : [];
 
-      await api.post('/pekerja', {
+      const response = await api.post('/pekerja', {
         ...baseData,
         perusahaan_id: finalPerusahaanId,
         riwayat: [...allRiwayat, ...prevRiwayat],
         medis: finalMedis
       });
+      
+      const newPekerjaId = response.data.data.id;
+      
+      if (pasFoto) {
+        const formData = new FormData();
+        formData.append('pas_foto', pasFoto);
+        await api.post(`/pekerja/${newPekerjaId}/foto`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+      }
+
       toast.success('Pekerja berhasil didaftarkan!');
       router.push('/pekerja');
     } catch (error: any) {

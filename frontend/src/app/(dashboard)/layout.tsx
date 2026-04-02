@@ -62,7 +62,7 @@ export default function DashboardLayout({
     } catch (error) {
       console.error('Logout failed on server', error);
     } finally {
-      Cookies.remove('auth_token');
+      Cookies.remove('auth_token', { path: '/' });
       localStorage.removeItem('user');
       router.push('/login');
     }
