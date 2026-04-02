@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class PekerjaController extends Controller
 {
@@ -199,5 +200,45 @@ class PekerjaController extends Controller
             'status' => 'success',
             'message' => 'Data pekerja berhasil dihapus (soft delete).'
         ]);
+    }
+
+    /**
+     * Upload and update Pekerja's photo.
+     */
+    public function uploadFoto(Request $request, string $id): JsonResponse
+    {
+        $request->validate([
+            'pas_foto' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+        ]);
+
+        $pekerja = Pekerja::find($id);
+
+        if (!$pekerja) {
+            return response()->json(['status' => 'error', 'message' => 'Pekerja tidak ditemukan.'], 404);
+        }
+
+        if ($request->hasFile('pas_foto')) {
+            $file = $request->file('pas_foto');
+            $extension = $file->getClientOriginalExtension();
+            $filename = $pekerja->id . '_' . time() . '.' . $extension;
+
+            // Delete old photo if exists
+            if ($pekerja->pas_foto) {
+                Storage::disk('public')->delete('profil/' . $pekerja->pas_foto);
+            }
+
+            // Store new photo
+            $file->storeAs('profil', $filename, 'public');
+
+            $pekerja->update(['pas_foto' => $filename]);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Pas foto berhasil diunggah.',
+                'data' => Pekerja::withSummary()->find($pekerja->id)
+            ]);
+        }
+
+        return response()->json(['status' => 'error', 'message' => 'File tidak ditemukan.'], 400);
     }
 }

@@ -152,7 +152,11 @@ export default function PekerjaPage() {
                     <TableCell>
                       <div className="flex items-center gap-4 py-1">
                         <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-100 border border-slate-200 shrink-0">
-                           <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${p.nama_lengkap}`} alt="avatar" className="w-full h-full object-cover" />
+                           <img 
+                             src={p.pas_foto ? `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://127.0.0.1:8000'}/storage/profil/${p.pas_foto}` : `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.nama_lengkap}`} 
+                             alt="avatar" 
+                             className="w-full h-full object-cover object-top" 
+                           />
                         </div>
                         <div className="flex flex-col">
                           <span className="font-bold text-slate-900 text-[15px]">{p.nama_lengkap}</span>
@@ -243,7 +247,11 @@ export default function PekerjaPage() {
                   {/* Worker Identity */}
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-100 border border-slate-200 shrink-0">
-                      <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${p.nama_lengkap}`} alt="avatar" className="w-full h-full object-cover" />
+                      <img 
+                        src={p.pas_foto ? `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://127.0.0.1:8000'}/storage/profil/${p.pas_foto}` : `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.nama_lengkap}`} 
+                        alt="avatar" 
+                        className="w-full h-full object-cover object-top" 
+                      />
                     </div>
                     <div>
                       <p className="font-bold text-slate-900 text-sm">{p.nama_lengkap}</p>

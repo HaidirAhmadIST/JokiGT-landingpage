@@ -29,6 +29,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // Pekerja CRUD
     Route::apiResource('pekerja', PekerjaController::class);
     Route::post('pekerja-bulk-update', [PekerjaController::class, 'bulkUpdate']);
+    Route::post('pekerja/{pekerja}/foto', [PekerjaController::class, 'uploadFoto']);
 
     // Advokasi
     Route::get('advokasi', [AdvokasiController::class, 'index']);

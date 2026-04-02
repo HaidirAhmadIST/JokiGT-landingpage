@@ -34,6 +34,7 @@ class Pekerja extends Model
         'jenis_kelamin',
         'whatsapp',
         'domisili',
+        'pas_foto',
     ];
 
     // =========================================================================
