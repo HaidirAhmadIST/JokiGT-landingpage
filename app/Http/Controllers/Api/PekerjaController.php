@@ -133,6 +133,10 @@ class PekerjaController extends Controller
      */
     public function update(Request $request, string $id): JsonResponse
     {
+        if (!auth()->user()->isAdmin()) {
+            return response()->json(['status' => 'error', 'message' => 'Hanya admin yang dapat mengubah data pekerja.'], 403);
+        }
+
         $pekerja = Pekerja::find($id);
 
         if (!$pekerja) {
