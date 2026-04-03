@@ -59,9 +59,9 @@ import { cn } from '@/lib/utils';
 
 // Mock data
 const stages = [
-  { id: 'uptd', label: 'Tahap 1: UPTD', color: 'bg-amber-50 text-amber-700 border-amber-200' },
-  { id: 'bpjs', label: 'Tahap 2: BPJS', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  { id: 'court', label: 'Tahap 3: COURT', color: 'bg-blue-50 text-blue-700 border-blue-200' },
+  { id: 'UPTD', label: 'Tahap 1: UPTD', color: 'bg-amber-50 text-amber-700 border-amber-200' },
+  { id: 'BPJS', label: 'Tahap 2: BPJS', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  { id: 'Pengadilan', label: 'Tahap 3: Pengadilan', color: 'bg-blue-50 text-blue-700 border-blue-200' },
 ];
 
 const caseTypeLabels: Record<string, string> = {
@@ -99,7 +99,7 @@ export default function AdvokasiPage() {
   const [loading, setLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [cases, setCases] = useState<any[]>([]);
-  
+
   const [openWorkerSearch, setOpenWorkerSearch] = useState(false);
   const [workers, setWorkers] = useState<any[]>([]);
   const [loadingWorkers, setLoadingWorkers] = useState(false);
@@ -109,8 +109,8 @@ export default function AdvokasiPage() {
     pekerja_name: '',
     jenis_kasus: '',
     perusahaan: '',
-    tahap: 'uptd',
-    status_detail: 'verifikasi_dokumen',
+    tahap: 'UPTD',
+    status_detail: 'Verifikasi Dokumen',
     tanggal_pelaporan: new Date().toISOString().split('T')[0],
     catatan: '',
   });
@@ -150,7 +150,7 @@ export default function AdvokasiPage() {
         // Reset form
         setFormData({
           pekerja_id: '', pekerja_name: '', jenis_kasus: '', perusahaan: '',
-          tahap: 'uptd', status_detail: 'verifikasi_dokumen',
+          tahap: 'UPTD', status_detail: 'Verifikasi Dokumen',
           tanggal_pelaporan: new Date().toISOString().split('T')[0], catatan: ''
         });
       }
@@ -260,8 +260,8 @@ export default function AdvokasiPage() {
                   key={tab}
                   onClick={() => setActiveTab(tab)}
                   className={`px-4 pb-3 text-sm font-semibold whitespace-nowrap transition-colors relative ${activeTab === tab
-                      ? 'text-[#0284c7]'
-                      : 'text-[#94a3b8] hover:text-slate-600'
+                    ? 'text-[#0284c7]'
+                    : 'text-[#94a3b8] hover:text-slate-600'
                     }`}
                 >
                   {tab}
@@ -307,50 +307,51 @@ export default function AdvokasiPage() {
                 const stageData = stages.find(s => s.id === c.tahap) || stages[0];
                 const worker = c.pekerja;
                 const initials = worker?.nama_lengkap.split(' ').map((n: string) => n[0]).join('').substring(0, 2);
-                const progressLevel = c.tahap === 'uptd' ? 1 : (c.tahap === 'bpjs' ? 2 : 3);
-                
+                const progressLevel = c.tahap === 'UPTD' ? 1 : (c.tahap === 'BPJS' ? 2 : 3);
+
                 return (
-                <TableRow key={c.id} className="hover:bg-slate-50/50 transition-colors group">
-                  <TableCell className="py-4 px-6">
-                    <div className="flex items-center gap-3">
-                      <div className="h-9 w-9 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-xs font-bold shrink-0 border border-slate-200">
-                        {initials}
+                  <TableRow key={c.id} className="hover:bg-slate-50/50 transition-colors group">
+                    <TableCell className="py-4 px-6">
+                      <div className="flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-xs font-bold shrink-0 border border-slate-200">
+                          {initials}
+                        </div>
+                        <span className="font-bold text-[#1e293b] text-sm">{worker?.nama_lengkap}</span>
                       </div>
-                      <span className="font-bold text-[#1e293b] text-sm">{worker?.nama_lengkap}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="py-4 px-6 text-sm text-[#475569]">{worker?.perusahaan?.nama_perusahaan}</TableCell>
-                  <TableCell className="py-4 px-6 text-sm text-[#475569]">{caseTypeLabels[c.jenis_kasus]}</TableCell>
-                  <TableCell className="py-4 px-6">
-                    <div className="flex flex-col gap-1">
-                      <ProgressDots level={progressLevel} />
-                      <span className="text-[10px] font-semibold text-[#94a3b8]">{stageData.label}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="py-4 px-6">
-                    <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-bold border ${stageData.color}`}>
-                      {c.status_detail.replace(/_/g, ' ')}
-                    </span>
-                  </TableCell>
-                  <TableCell className="py-4 px-6 text-sm text-[#475569]">{new Date(c.updated_at).toLocaleDateString('id-ID')}</TableCell>
-                  <TableCell className="py-4 px-6">
-                    <DropdownMenu>
-                      {/* @ts-ignore */}
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-700">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      {/* @ts-ignore */}
-                      <DropdownMenuContent align="end" className="w-48">
-                        <DropdownMenuItem className="cursor-pointer" onClick={() => router.push(`/advokasi/${c.id}`)}><Eye className="mr-2 h-4 w-4" /> Lihat Detail</DropdownMenuItem>
-                        <DropdownMenuItem className="cursor-pointer"><RefreshCw className="mr-2 h-4 w-4" /> Update Status</DropdownMenuItem>
-                        <DropdownMenuItem className="cursor-pointer"><Archive className="mr-2 h-4 w-4" /> Tutup/Arsip Kasus</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              )})}
+                    </TableCell>
+                    <TableCell className="py-4 px-6 text-sm text-[#475569]">{worker?.perusahaan?.nama_perusahaan}</TableCell>
+                    <TableCell className="py-4 px-6 text-sm text-[#475569]">{caseTypeLabels[c.jenis_kasus]}</TableCell>
+                    <TableCell className="py-4 px-6">
+                      <div className="flex flex-col gap-1">
+                        <ProgressDots level={progressLevel} />
+                        <span className="text-[10px] font-semibold text-[#94a3b8]">{stageData.label}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="py-4 px-6">
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-bold border ${stageData.color}`}>
+                        {c.status_detail.replace(/_/g, ' ')}
+                      </span>
+                    </TableCell>
+                    <TableCell className="py-4 px-6 text-sm text-[#475569]">{new Date(c.updated_at).toLocaleDateString('id-ID')}</TableCell>
+                    <TableCell className="py-4 px-6">
+                      <DropdownMenu>
+                        {/* @ts-ignore */}
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-700">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        {/* @ts-ignore */}
+                        <DropdownMenuContent align="end" className="w-48">
+                          <DropdownMenuItem className="cursor-pointer" onClick={() => router.push(`/advokasi/${c.id}`)}><Eye className="mr-2 h-4 w-4" /> Lihat Detail</DropdownMenuItem>
+                          <DropdownMenuItem className="cursor-pointer"><RefreshCw className="mr-2 h-4 w-4" /> Update Status</DropdownMenuItem>
+                          <DropdownMenuItem className="cursor-pointer"><Archive className="mr-2 h-4 w-4" /> Tutup/Arsip Kasus</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
             </TableBody>
           </Table>
         </div>
@@ -408,9 +409,9 @@ export default function AdvokasiPage() {
                     </PopoverTrigger>
                     <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
                       <Command shouldFilter={false}>
-                        <CommandInput 
-                          placeholder="Ketik nama atau NIK..." 
-                          className="h-10" 
+                        <CommandInput
+                          placeholder="Ketik nama atau NIK..."
+                          className="h-10"
                           onValueChange={(v) => fetchWorkers(v)}
                         />
                         <CommandList>
@@ -465,8 +466,8 @@ export default function AdvokasiPage() {
                           onClick={() => setFormData({ ...formData, jenis_kasus: type.id })}
                           className={cn(
                             "flex flex-col items-start p-4 rounded-[16px] border-2 text-left transition-all duration-200",
-                            isActive 
-                              ? "border-[#0ea5e9] bg-[#f0f9ff] ring-1 ring-[#0ea5e9]/20 shadow-sm" 
+                            isActive
+                              ? "border-[#0ea5e9] bg-[#f0f9ff] ring-1 ring-[#0ea5e9]/20 shadow-sm"
                               : "border-slate-100 bg-white hover:border-slate-200 hover:bg-slate-50"
                           )}
                         >
@@ -509,9 +510,9 @@ export default function AdvokasiPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="uptd">UPTD</SelectItem>
-                        <SelectItem value="bpjs">BPJS</SelectItem>
-                        <SelectItem value="court">Pengadilan</SelectItem>
+                        <SelectItem value="UPTD">UPTD</SelectItem>
+                        <SelectItem value="BPJS">BPJS</SelectItem>
+                        <SelectItem value="Pengadilan">Pengadilan</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -523,10 +524,10 @@ export default function AdvokasiPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="verifikasi_dokumen">Verifikasi Dokumen</SelectItem>
-                        <SelectItem value="mediasi_1">Mediasi 1</SelectItem>
-                        <SelectItem value="mediasi_2">Mediasi 2</SelectItem>
-                        <SelectItem value="sidang">Sidang</SelectItem>
+                        <SelectItem value="Verifikasi Dokumen">Verifikasi Dokumen</SelectItem>
+                        <SelectItem value="Mediasi 1">Mediasi 1</SelectItem>
+                        <SelectItem value="Mediasi 2">Mediasi 2</SelectItem>
+                        <SelectItem value="Sidang">Sidang</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
