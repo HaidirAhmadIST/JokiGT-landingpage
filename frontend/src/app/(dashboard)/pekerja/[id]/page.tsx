@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { 
   ArrowLeft, Printer, Pin, Mail, Phone, MapPin, 
   Briefcase, ShieldAlert, CheckCircle2, Circle, Edit3, 
-  Download, Image as ImageIcon, Activity, FileText
+  Download, Image as ImageIcon, Activity, FileText, FileCheck
 } from 'lucide-react';
 import { format, differenceInYears, parseISO } from 'date-fns';
 import { id as localeID } from 'date-fns/locale';
@@ -438,7 +438,7 @@ export default function PekerjaDetailPage() {
                  {advSteps.map((step, idx) => {
                     const isCompleted = isStepCompleted(step.key);
                     const hasFile = !!getFilePath(step.key);
-                    const isCurrent = idx === activeStepIndex || (!isCompleted && hasFile);
+                    const isCurrent = idx === activeStepIndex;
                     const isFuture = idx > activeStepIndex && !isCurrent;
                     
                     return (
@@ -451,6 +451,10 @@ export default function PekerjaDetailPage() {
                         >
                           {isCompleted ? (
                              <CheckCircle2 className="h-6 w-6 text-emerald-500 bg-white" />
+                          ) : hasFile ? (
+                             <div className="h-6 w-6 rounded-full border-[3px] border-amber-400 bg-amber-50 flex items-center justify-center">
+                               <FileCheck className="h-3 w-3 text-amber-500" />
+                             </div>
                           ) : isCurrent ? (
                              <div className="h-6 w-6 rounded-full border-[3px] border-[#0ea5e9] bg-white flex items-center justify-center">
                                <div className="h-2 w-2 rounded-full bg-[#0ea5e9]" />
@@ -461,13 +465,12 @@ export default function PekerjaDetailPage() {
                         </button>
 
                         <div className="flex-1 pb-1">
-                          <p className={`text-[13px] font-bold ${isCompleted ? 'text-slate-800' : isCurrent ? 'text-[#0ea5e9]' : 'text-slate-400'}`}>
+                          <p className={`text-[13px] font-bold ${isCompleted ? 'text-slate-800' : hasFile ? 'text-amber-600' : isCurrent ? 'text-[#0ea5e9]' : 'text-slate-400'}`}>
                             {step.label}
                           </p>
-                          <p className="text-[10px] text-slate-400 mt-1">
-                            {isCompleted ? 'Selesai' : isCurrent ? 'Sedang Berjalan' : 'Belum Dimulai'}
+                          <p className={`text-[10px] mt-1 ${hasFile && !isCompleted ? 'text-amber-500 font-semibold' : 'text-slate-400'}`}>
+                            {isCompleted ? 'Selesai' : hasFile ? 'Dokumen Terunggah' : isCurrent ? 'Sedang Berjalan' : 'Belum Dimulai'}
                           </p>
-
 
                           {/* File Upload for Each Step */}
                           <div className="mt-3 p-3 bg-slate-50 border border-slate-100 rounded-lg">

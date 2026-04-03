@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
@@ -15,7 +15,9 @@ import {
   LogOut,
   Bell,
   Search,
-  Settings
+  Settings,
+  Loader2,
+  User as UserIcon
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -48,12 +50,65 @@ export default function DashboardLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
 
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+
   useEffect(() => {
     // Load user data from local storage
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       setUser(JSON.parse(storedUser));
     }
+  }, []);
+
+  // Click outside to close search dropdown
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setSearchOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Close search on route change
+  useEffect(() => {
+    setSearchOpen(false);
+    setSearchQuery('');
+    setSearchResults([]);
+  }, [pathname]);
+
+  const handleSearch = useCallback((value: string) => {
+    setSearchQuery(value);
+    
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+
+    if (value.trim().length < 2) {
+      setSearchResults([]);
+      setSearchOpen(false);
+      return;
+    }
+
+    setSearchLoading(true);
+    setSearchOpen(true);
+
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const res = await api.get('/pekerja', { params: { search: value.trim() } });
+        const items = res.data.data?.data || res.data.data || [];
+        setSearchResults(items.slice(0, 8)); // Max 8 results
+      } catch (e) {
+        setSearchResults([]);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 300);
   }, []);
 
   const handleLogout = async () => {
@@ -127,15 +182,82 @@ export default function DashboardLayout({
         </div>
 
         {/* Center Search Bar */}
-        <div className="flex-1 max-w-xl mx-8 hidden sm:block">
+        <div className="flex-1 max-w-xl mx-8 hidden sm:block relative" ref={searchRef}>
           <div className="relative group">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-[#0ea5e9] transition-colors" />
+            {searchLoading ? (
+              <Loader2 className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#0ea5e9] animate-spin" />
+            ) : (
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-[#0ea5e9] transition-colors" />
+            )}
             <input 
               type="text" 
-              placeholder="Search workers..." 
+              placeholder="Cari pekerja berdasarkan nama atau NIK..." 
+              value={searchQuery}
+              onChange={(e) => handleSearch(e.target.value)}
+              onFocus={() => { if (searchQuery.trim().length >= 2) setSearchOpen(true); }}
+              onKeyDown={(e) => { if (e.key === 'Escape') setSearchOpen(false); }}
               className="w-full h-10 pl-11 pr-4 rounded-lg border-none bg-slate-100 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#0ea5e9]/20 focus:bg-white transition-all text-slate-700 placeholder:text-slate-400"
             />
           </div>
+
+          {/* Search Results Dropdown */}
+          {searchOpen && (
+            <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-slate-200 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+              {searchLoading ? (
+                <div className="p-6 text-center">
+                  <Loader2 className="h-5 w-5 text-[#0ea5e9] animate-spin mx-auto mb-2" />
+                  <p className="text-xs text-slate-400 font-medium">Mencari pekerja...</p>
+                </div>
+              ) : searchResults.length > 0 ? (
+                <div className="max-h-[360px] overflow-y-auto">
+                  <div className="px-4 py-2.5 border-b border-slate-100">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                      {searchResults.length} Hasil ditemukan
+                    </p>
+                  </div>
+                  {searchResults.map((pekerja: any) => (
+                    <button
+                      key={pekerja.id}
+                      onClick={() => {
+                        router.push(`/pekerja/${pekerja.id}`);
+                        setSearchOpen(false);
+                        setSearchQuery('');
+                        setSearchResults([]);
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors text-left border-b border-slate-50 last:border-b-0 group/item"
+                    >
+                      <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-[#0ea5e9] to-[#0284c7] flex items-center justify-center text-white text-xs font-bold shrink-0 shadow-sm">
+                        {pekerja.nama_lengkap?.charAt(0)?.toUpperCase() || <UserIcon className="h-4 w-4" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-slate-800 truncate group-hover/item:text-[#0ea5e9] transition-colors">
+                          {pekerja.nama_lengkap}
+                        </p>
+                        <p className="text-[11px] text-slate-400 truncate">
+                          NIK: {pekerja.nik}
+                          {pekerja.perusahaan?.nama_perusahaan && (
+                            <span className="ml-2 text-slate-300">•</span>
+                          )}
+                          {pekerja.perusahaan?.nama_perusahaan && (
+                            <span className="ml-2">{pekerja.perusahaan.nama_perusahaan}</span>
+                          )}
+                        </p>
+                      </div>
+                      <span className="text-[10px] text-slate-300 font-medium shrink-0 opacity-0 group-hover/item:opacity-100 transition-opacity">
+                        Lihat →
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-6 text-center">
+                  <Search className="h-6 w-6 text-slate-200 mx-auto mb-2" />
+                  <p className="text-sm font-medium text-slate-500">Tidak ada hasil</p>
+                  <p className="text-[11px] text-slate-400 mt-1">Coba kata kunci lain untuk nama atau NIK</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Right Actions */}
