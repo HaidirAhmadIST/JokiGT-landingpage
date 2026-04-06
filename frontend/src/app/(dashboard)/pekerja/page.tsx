@@ -186,10 +186,10 @@ export default function PekerjaPage() {
                            Fit with Note
                          </div>
                        )}
-                       {(p.status_kesehatan === 'sakit_berat' || p.status_kesehatan === 'dalam_perawatan') && (
+                       {p.status_kesehatan === 'sakit_berat' && (
                          <div className="inline-flex items-center justify-center px-4 py-1.5 rounded-full border border-rose-200 bg-rose-100/50 text-rose-700 font-bold text-[11px] tracking-wide shadow-[0_2px_10px_-3px_rgba(244,63,94,0.2)]">
                            <div className="w-1.5 h-1.5 rounded-full bg-rose-500 mr-2 shadow-[0_0_8px_rgba(244,63,94,0.5)]"></div>
-                           {p.status_kesehatan === 'dalam_perawatan' ? 'In Treatment' : 'Unfit'}
+                           Unfit
                          </div>
                        )}
                     </TableCell>

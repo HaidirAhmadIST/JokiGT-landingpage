@@ -1,3 +1,7 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import api from '@/lib/axios';
 import { Card } from "@/components/ui/card";
 import Link from "next/link";
 import {
@@ -12,7 +16,55 @@ import {
 import ActivitySidebar from "@/components/ActivitySidebar";
 import AdvokasiBarChart from "@/components/AdvokasiBarChart";
 
+interface DashboardStats {
+  total_pekerja: number;
+  total_perusahaan: number;
+  kasus_aktif: number;
+  advokasi_selesai: number;
+  klaim_disetujui: number;
+  kesehatan: {
+    fit: number;
+    note: number;
+    unfit: number;
+  };
+}
+
 export default function DashboardIndexPage() {
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchStats = async () => {
+    try {
+      const res = await api.get('/dashboard/stats');
+      if (res.data.status === 'success') {
+        setStats(res.data.data);
+      }
+    } catch (e) {
+      console.error('Failed to fetch dashboard stats', e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStats();
+    // Auto-refresh every 30 seconds
+    const interval = setInterval(fetchStats, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Animated number display
+  const StatValue = ({ value, loading: isLoading }: { value: number; loading: boolean }) => {
+    if (isLoading) {
+      return <div className="h-9 w-20 bg-slate-200 rounded-lg animate-pulse" />;
+    }
+    return (
+      <h3 className="text-3xl font-extrabold text-[#0f172a] tabular-nums transition-all duration-300">
+        {value.toLocaleString('id-ID')}
+      </h3>
+    );
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500 max-w-7xl mx-auto">
 
@@ -35,14 +87,16 @@ export default function DashboardIndexPage() {
             <div className="bg-blue-50 text-blue-500 p-2.5 rounded-xl">
               <Users className="h-5 w-5" />
             </div>
-            <div className="flex items-center text-emerald-500 text-xs font-bold gap-1 bg-emerald-50 px-2 py-1 rounded-full">
-              <TrendingUp className="h-3 w-3" />
-              +12%
-            </div>
+            {stats && stats.total_pekerja > 0 && (
+              <div className="flex items-center text-emerald-500 text-xs font-bold gap-1 bg-emerald-50 px-2 py-1 rounded-full">
+                <TrendingUp className="h-3 w-3" />
+                Live
+              </div>
+            )}
           </div>
           <div>
             <p className="text-[#64748b] text-sm font-semibold mb-1">Total Pekerja</p>
-            <h3 className="text-3xl font-extrabold text-[#0f172a]">1,284</h3>
+            <StatValue value={stats?.total_pekerja ?? 0} loading={loading} />
           </div>
         </Card>
 
@@ -52,14 +106,16 @@ export default function DashboardIndexPage() {
             <div className="bg-orange-50 text-orange-500 p-2.5 rounded-xl">
               <ClipboardList className="h-5 w-5" />
             </div>
-            <div className="flex items-center text-emerald-500 text-xs font-bold gap-1 bg-emerald-50 px-2 py-1 rounded-full">
-              <TrendingUp className="h-3 w-3" />
-              +5%
-            </div>
+            {stats && stats.kasus_aktif > 0 && (
+              <div className="flex items-center text-orange-500 text-xs font-bold gap-1 bg-orange-50 px-2 py-1 rounded-full">
+                <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
+                Proses
+              </div>
+            )}
           </div>
           <div>
             <p className="text-[#64748b] text-sm font-semibold mb-1">Kasus Aktif</p>
-            <h3 className="text-3xl font-extrabold text-[#0f172a]">42</h3>
+            <StatValue value={stats?.kasus_aktif ?? 0} loading={loading} />
           </div>
         </Card>
 
@@ -69,14 +125,16 @@ export default function DashboardIndexPage() {
             <div className="bg-emerald-50 text-emerald-500 p-2.5 rounded-xl">
               <CheckCircle2 className="h-5 w-5" />
             </div>
-            <div className="flex items-center text-red-500 text-xs font-bold gap-1 bg-red-50 px-2 py-1 rounded-full">
-              <TrendingDown className="h-3 w-3" />
-              -2%
-            </div>
+            {stats && stats.advokasi_selesai > 0 && (
+              <div className="flex items-center text-emerald-500 text-xs font-bold gap-1 bg-emerald-50 px-2 py-1 rounded-full">
+                <CheckCircle2 className="h-3 w-3" />
+                Tuntas
+              </div>
+            )}
           </div>
           <div>
             <p className="text-[#64748b] text-sm font-semibold mb-1">Advokasi Selesai</p>
-            <h3 className="text-3xl font-extrabold text-[#0f172a]">156</h3>
+            <StatValue value={stats?.advokasi_selesai ?? 0} loading={loading} />
           </div>
         </Card>
 
@@ -86,14 +144,16 @@ export default function DashboardIndexPage() {
             <div className="bg-indigo-50 text-indigo-500 p-2.5 rounded-xl">
               <BadgeCheck className="h-5 w-5" />
             </div>
-            <div className="flex items-center text-emerald-500 text-xs font-bold gap-1 bg-emerald-50 px-2 py-1 rounded-full">
-              <TrendingUp className="h-3 w-3" />
-              +8%
-            </div>
+            {stats && stats.klaim_disetujui > 0 && (
+              <div className="flex items-center text-emerald-500 text-xs font-bold gap-1 bg-emerald-50 px-2 py-1 rounded-full">
+                <TrendingUp className="h-3 w-3" />
+                Approved
+              </div>
+            )}
           </div>
           <div>
             <p className="text-[#64748b] text-sm font-semibold mb-1">Klaim Disetujui</p>
-            <h3 className="text-3xl font-extrabold text-[#0f172a]">89</h3>
+            <StatValue value={stats?.klaim_disetujui ?? 0} loading={loading} />
           </div>
         </Card>
 

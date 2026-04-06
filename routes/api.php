@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\PekerjaController;
 use App\Http\Controllers\Api\PerusahaanController;
 use App\Http\Controllers\Api\AdvokasiController;
 use App\Http\Controllers\Api\ActivityLogController;
+use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\FileController;
 
 // =========================================================================
@@ -23,6 +24,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // Auth & Profile
     Route::get('/me', [AuthController::class, 'me']);
     Route::post('/logout', [AuthController::class, 'logout']);
+
+    // Dashboard
+    Route::get('dashboard/stats', [DashboardController::class, 'stats']);
 
     // Perusahaan CRUD + Soft Delete/Restore
     Route::apiResource('perusahaan', PerusahaanController::class);

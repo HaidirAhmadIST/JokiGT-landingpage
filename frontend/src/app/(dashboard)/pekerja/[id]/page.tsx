@@ -215,6 +215,29 @@ export default function PekerjaDetailPage() {
             <div>
               <h1 className="text-3xl font-extrabold tracking-tight text-[#1e293b]">{data.nama_lengkap}</h1>
               <p className="text-slate-500 font-medium tracking-wide mt-1 text-sm">NIK: {data.nik}</p>
+              <p className="text-slate-400 text-[13px] mt-1.5 flex items-center gap-1.5 flex-wrap">
+                {data.jenis_kelamin && (
+                  <span className="inline-flex items-center gap-1">
+                    <span>{data.jenis_kelamin === 'L' ? '♂' : '♀'}</span>
+                    <span className="font-semibold text-slate-500">{data.jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan'}</span>
+                  </span>
+                )}
+                {data.jenis_kelamin && data.tanggal_lahir && <span className="text-slate-300">•</span>}
+                {data.tanggal_lahir && (
+                  <span className="font-semibold text-slate-500">
+                    {differenceInYears(new Date(), parseISO(data.tanggal_lahir))} Tahun
+                  </span>
+                )}
+                {data.tanggal_lahir && <span className="text-slate-300">•</span>}
+                {data.tanggal_lahir && (
+                  <span className="text-slate-400">
+                    Lahir {format(parseISO(data.tanggal_lahir), 'dd MMM yyyy', { locale: localeID })}
+                  </span>
+                )}
+                {!data.jenis_kelamin && !data.tanggal_lahir && (
+                  <span className="text-amber-500 font-medium text-xs">Data pribadi belum lengkap</span>
+                )}
+              </p>
               <div className="flex gap-2 mt-3 text-[10px] font-bold">
                 <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-md tracking-wider uppercase">{currentJob?.bagian || 'PRODUKSI'}</span>
                 <span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-md tracking-wider uppercase">{currentJob?.status_pekerjaan || 'TETAP'}</span>
@@ -247,7 +270,6 @@ export default function PekerjaDetailPage() {
                       <option value="sehat">Fit</option>
                       <option value="sakit_ringan">Fit with Note</option>
                       <option value="sakit_berat">Unfit</option>
-                      <option value="dalam_perawatan">Dalam Perawatan</option>
                     </select>
                   )}
                 </div>

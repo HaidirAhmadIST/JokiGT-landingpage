@@ -139,7 +139,6 @@ export default function PekerjaWizard({ onSuccess, onCancel, perusahaanList }: P
                     <SelectItem value="sehat">Sehat</SelectItem>
                     <SelectItem value="sakit_ringan">Sakit Ringan</SelectItem>
                     <SelectItem value="sakit_berat">Sakit Berat</SelectItem>
-                    <SelectItem value="dalam_perawatan">Dalam Perawatan</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
