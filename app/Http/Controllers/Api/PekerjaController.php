@@ -25,11 +25,20 @@ class PekerjaController extends Controller
     {
         $query = Pekerja::withSummary();
 
+        // Filter by company (used by company detail modal)
+        if ($request->has('perusahaan_id')) {
+            $query->where('perusahaan_id', $request->query('perusahaan_id'));
+            // Load extra relations needed for company detail view
+            $query->with(['riwayatPekerja', 'statusAdvokasi']);
+        }
+
         // Optional search filter
         if ($request->has('search')) {
             $search = $request->query('search');
-            $query->where('nama_lengkap', 'like', "%{$search}%")
+            $query->where(function ($q) use ($search) {
+                $q->where('nama_lengkap', 'like', "%{$search}%")
                   ->orWhere('nik', 'like', "%{$search}%");
+            });
         }
 
         // Optional status kesehatan filter
@@ -37,7 +46,8 @@ class PekerjaController extends Controller
             $query->where('status_kesehatan', $request->query('status'));
         }
 
-        $pekerja = $query->latest()->paginate(15);
+        $perPage = $request->has('perusahaan_id') ? 10 : 15;
+        $pekerja = $query->latest()->paginate($perPage);
 
         return response()->json([
             'status' => 'success',

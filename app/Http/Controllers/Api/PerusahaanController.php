@@ -52,7 +52,42 @@ class PerusahaanController extends Controller
      */
     public function show(string $id): JsonResponse
     {
-        $perusahaan = Perusahaan::with('pekerja')->find($id);
+        $perusahaan = Perusahaan::withCount('pekerja')->find($id);
+
+        if ($perusahaan) {
+            // Compute summary metrics without loading all pekerja records
+            $pekerjaQuery = $perusahaan->pekerja();
+            
+            // Count active workers (have riwayat with no tgl_keluar)
+            $aktifCount = \App\Models\Pekerja::where('perusahaan_id', $id)
+                ->whereHas('riwayatPekerja', function ($q) {
+                    $q->whereNull('tgl_keluar');
+                })->count();
+            
+            // Count open advocacy cases
+            $advokasiCount = \App\Models\Pekerja::where('perusahaan_id', $id)
+                ->whereHas('statusAdvokasi', function ($q) {
+                    $q->where(function ($sq) {
+                        $sq->where('riwayat_pajanan', true)
+                           ->orWhere('persetujuan_dokter', true)
+                           ->orWhere('perusahaan_lapor', true)
+                           ->orWhere('penetapan_pak', true)
+                           ->orWhere('kompensasi_bpjstk', true)
+                           ->orWhere('rehabilitasi_bpjskes', true);
+                    })->where(function ($sq) {
+                        $sq->where('riwayat_pajanan', false)
+                           ->orWhere('persetujuan_dokter', false)
+                           ->orWhere('perusahaan_lapor', false)
+                           ->orWhere('penetapan_pak', false)
+                           ->orWhere('kompensasi_bpjstk', false)
+                           ->orWhere('rehabilitasi_bpjskes', false);
+                    });
+                })->count();
+
+            $perusahaan->aktif_count = $aktifCount;
+            $perusahaan->mantan_count = $perusahaan->pekerja_count - $aktifCount;
+            $perusahaan->advokasi_count = $advokasiCount;
+        }
 
         if (!$perusahaan) {
             return response()->json(['status' => 'error', 'message' => 'Perusahaan tidak ditemukan.'], 404);
