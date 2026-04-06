@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\PekerjaController;
 use App\Http\Controllers\Api\PerusahaanController;
 use App\Http\Controllers\Api\AdvokasiController;
+use App\Http\Controllers\Api\ActivityLogController;
 use App\Http\Controllers\Api\FileController;
 
 // =========================================================================
@@ -23,8 +24,12 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
     Route::post('/logout', [AuthController::class, 'logout']);
 
-    // Perusahaan CRUD
+    // Perusahaan CRUD + Soft Delete/Restore
     Route::apiResource('perusahaan', PerusahaanController::class);
+    Route::patch('perusahaan/{id}/restore', [PerusahaanController::class, 'restore']);
+
+    // Activity Logs (for dual-tab panel)
+    Route::get('activity-logs', [ActivityLogController::class, 'index']);
 
     // Pekerja CRUD
     Route::apiResource('pekerja', PekerjaController::class);
@@ -32,6 +37,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('pekerja/{pekerja}/foto', [PekerjaController::class, 'uploadFoto']);
 
     // Advokasi
+    Route::get('advokasi/stats', [AdvokasiController::class, 'stats']);
     Route::get('advokasi', [AdvokasiController::class, 'index']);
     Route::post('pekerja/{pekerja_id}/advokasi', [AdvokasiController::class, 'update']);
 

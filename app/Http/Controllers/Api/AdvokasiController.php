@@ -13,6 +13,92 @@ use Illuminate\Support\Facades\Storage;
 class AdvokasiController extends Controller
 {
     /**
+     * Return counts of workers who have completed each advokasi step.
+     * The 6 steps map directly to boolean columns in status_advokasi.
+     */
+    public function stats(): JsonResponse
+    {
+        $steps = [
+            [
+                'key'    => 'riwayat_pajanan',
+                'label'  => 'Riwayat Pajanan',
+                'column' => 'riwayat_pajanan',
+            ],
+            [
+                'key'    => 'persetujuan_dokter',
+                'label'  => 'Evaluasi Dokter Okupasi',
+                'column' => 'persetujuan_dokter',
+            ],
+            [
+                'key'    => 'perusahaan_lapor',
+                'label'  => 'Laporan Perusahaan',
+                'column' => 'perusahaan_lapor',
+            ],
+            [
+                'key'    => 'penetapan_pak',
+                'label'  => 'Penetapan PAK',
+                'column' => 'penetapan_pak',
+            ],
+            [
+                'key'    => 'kompensasi_bpjstk',
+                'label'  => 'Klaim JKK BPJS',
+                'column' => 'kompensasi_bpjstk',
+            ],
+            [
+                'key'    => 'rehabilitasi_bpjskes',
+                'label'  => 'Rehabilitasi Medik',
+                'column' => 'rehabilitasi_bpjskes',
+            ],
+        ];
+
+        $results = [];
+
+        foreach ($steps as $step) {
+            $col = $step['column'];
+
+            // Workers who have COMPLETED this step (boolean = true)
+            $workers = StatusAdvokasi::with([
+                    'pekerja:id,nama_lengkap,nik',
+                    'pekerja.perusahaan:id,nama_perusahaan',
+                ])
+                ->where($col, true)
+                ->get()
+                ->map(fn ($s) => [
+                    'id'            => $s->pekerja->id ?? null,
+                    'nama'          => $s->pekerja->nama_lengkap ?? '-',
+                    'nik'           => $s->pekerja->nik ?? '-',
+                    'perusahaan'    => $s->pekerja->perusahaan->nama_perusahaan ?? '-',
+                    'jenis_kasus'   => $s->jenis_kasus,
+                    'status_detail' => $s->status_detail,
+                    'progress'      => $s->progress_percentage,
+                ]);
+
+            $results[] = [
+                'key'     => $step['key'],
+                'label'   => $step['label'],
+                'jumlah'  => $workers->count(),
+                'pekerja' => $workers->values(),
+            ];
+        }
+
+        // Total unique workers with at least one step done
+        $totalUnique = StatusAdvokasi::where(function ($q) {
+            $q->where('riwayat_pajanan', true)
+              ->orWhere('persetujuan_dokter', true)
+              ->orWhere('perusahaan_lapor', true)
+              ->orWhere('penetapan_pak', true)
+              ->orWhere('kompensasi_bpjstk', true)
+              ->orWhere('rehabilitasi_bpjskes', true);
+        })->count();
+
+        return response()->json([
+            'status' => 'success',
+            'total'  => $totalUnique,
+            'data'   => $results,
+        ]);
+    }
+
+    /**
      * Display a listing of advocacy cases.
      */
     public function index(): JsonResponse

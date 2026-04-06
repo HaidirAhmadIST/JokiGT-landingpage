@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StorePerusahaanRequest;
+use App\Models\ActivityLog;
 use App\Models\Perusahaan;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -12,16 +13,22 @@ class PerusahaanController extends Controller
 {
     /**
      * Display a listing of the resource.
+     * Pass ?show_deleted=true to fetch only soft-deleted records.
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Perusahaan::query()->withCount('pekerja'); // Automatically count related pekerja
+        // When show_deleted=true, fetch only trashed (soft-deleted) records
+        if ($request->boolean('show_deleted')) {
+            $query = Perusahaan::onlyTrashed()->withCount('pekerja');
+        } else {
+            $query = Perusahaan::query()->withCount('pekerja');
+        }
 
-        if ($request->has('search')) {
+        if ($request->has('search') && $request->search) {
             $query->where('nama_perusahaan', 'like', "%{$request->search}%");
         }
 
-        if ($request->has('status')) {
+        if ($request->has('status') && $request->status) {
             $query->where('status_pendamping', $request->status);
         }
 
@@ -29,7 +36,7 @@ class PerusahaanController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'data' => $perusahaan
+            'data'   => $perusahaan,
         ]);
     }
 
@@ -40,10 +47,18 @@ class PerusahaanController extends Controller
     {
         $perusahaan = Perusahaan::create($request->validated());
 
+        ActivityLog::record(
+            action: 'create',
+            description: (auth()->user()?->nama ?? 'Admin') . " menambahkan perusahaan {$perusahaan->nama_perusahaan}",
+            category: 'admin',
+            loggable: $perusahaan,
+            metadata: ['nama_perusahaan' => $perusahaan->nama_perusahaan]
+        );
+
         return response()->json([
-            'status' => 'success',
+            'status'  => 'success',
             'message' => 'Perusahaan berhasil ditambahkan.',
-            'data' => $perusahaan
+            'data'    => $perusahaan,
         ], 201);
     }
 
@@ -95,7 +110,7 @@ class PerusahaanController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'data' => $perusahaan
+            'data'   => $perusahaan,
         ]);
     }
 
@@ -112,15 +127,23 @@ class PerusahaanController extends Controller
 
         $perusahaan->update($request->validated());
 
+        ActivityLog::record(
+            action: 'update',
+            description: (auth()->user()?->nama ?? 'Admin') . " memperbarui data {$perusahaan->nama_perusahaan}",
+            category: 'admin',
+            loggable: $perusahaan,
+            metadata: ['nama_perusahaan' => $perusahaan->nama_perusahaan]
+        );
+
         return response()->json([
-            'status' => 'success',
+            'status'  => 'success',
             'message' => 'Data perusahaan berhasil diperbarui.',
-            'data' => $perusahaan
+            'data'    => $perusahaan,
         ]);
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Soft Delete: set deleted_at = now(), log the action.
      */
     public function destroy(string $id): JsonResponse
     {
@@ -130,19 +153,58 @@ class PerusahaanController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Perusahaan tidak ditemukan.'], 404);
         }
 
-        // Check if there are related pekerja before deleting
+        // Check if there are related pekerja before soft-deleting
         if ($perusahaan->pekerja()->exists()) {
             return response()->json([
-                'status' => 'error', 
-                'message' => 'Tidak dapat menghapus perusahaan yang masih memiliki pekerja aktif.'
+                'status'  => 'error',
+                'message' => 'Tidak dapat menghapus perusahaan yang masih memiliki pekerja aktif.',
             ], 422);
         }
 
+        $namaPerusahaan = $perusahaan->nama_perusahaan;
+
+        // SoftDeletes trait sets deleted_at = now()
         $perusahaan->delete();
 
+        ActivityLog::record(
+            action: 'soft_delete',
+            description: (auth()->user()?->nama ?? 'Admin') . " menghapus (soft delete) {$namaPerusahaan}",
+            category: 'admin',
+            loggable: $perusahaan,
+            metadata: ['nama_perusahaan' => $namaPerusahaan]
+        );
+
         return response()->json([
-            'status' => 'success',
-            'message' => 'Perusahaan berhasil dihapus.'
+            'status'  => 'success',
+            'message' => "Perusahaan {$namaPerusahaan} berhasil dihapus (dapat dipulihkan).",
+        ]);
+    }
+
+    /**
+     * Restore: clear deleted_at, log the action.
+     */
+    public function restore(string $id): JsonResponse
+    {
+        $perusahaan = Perusahaan::onlyTrashed()->find($id);
+
+        if (!$perusahaan) {
+            return response()->json(['status' => 'error', 'message' => 'Data terhapus tidak ditemukan.'], 404);
+        }
+
+        $perusahaan->restore(); // Sets deleted_at = null
+
+        ActivityLog::record(
+            action: 'restore',
+            description: (auth()->user()?->nama ?? 'Admin') . " memulihkan perusahaan {$perusahaan->nama_perusahaan}",
+            category: 'admin',
+            loggable: $perusahaan,
+            metadata: ['nama_perusahaan' => $perusahaan->nama_perusahaan]
+        );
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => "Perusahaan {$perusahaan->nama_perusahaan} berhasil dipulihkan.",
+            'data'    => $perusahaan,
         ]);
     }
 }
