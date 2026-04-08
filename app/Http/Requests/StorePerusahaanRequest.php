@@ -21,8 +21,12 @@ class StorePerusahaanRequest extends FormRequest
      */
     public function rules(): array
     {
+        // Saat update, ambil ID perusahaan dari route parameter
+        // agar validasi unique mengabaikan record milik sendiri
+        $perusahaanId = $this->route('perusahaan');
+
         return [
-            'nama_perusahaan' => ['required', 'string', 'max:255', 'unique:perusahaan,nama_perusahaan'],
+            'nama_perusahaan' => ['required', 'string', 'max:255', 'unique:perusahaan,nama_perusahaan,' . $perusahaanId],
             'sektor_industri' => ['nullable', 'string', 'max:255'],
             'status_pendamping' => ['required', 'in:aktif,tidak_aktif,pending'],
             'alamat' => ['nullable', 'string'],
