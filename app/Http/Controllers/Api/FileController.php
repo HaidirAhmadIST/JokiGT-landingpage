@@ -33,7 +33,7 @@ class FileController extends Controller
             return response()->json(['status' => 'error', 'message' => 'File fisik tidak ditemukan di server.'], 404);
         }
 
-        return Storage::disk('private')->download($path);
+        return response()->download(Storage::disk('private')->path($path));
     }
 
     /**
@@ -73,6 +73,6 @@ class FileController extends Controller
             return response()->json(['status' => 'error', 'message' => 'File fisik tidak ditemukan di server.'], 404);
         }
 
-        return Storage::disk('private')->download($status->{$columnName});
+        return response()->download(Storage::disk('private')->path($status->{$columnName}));
     }
 }

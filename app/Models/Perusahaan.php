@@ -28,6 +28,8 @@ class Perusahaan extends Model
         'alamat',
         'nama_pic',
         'kontak_pic',
+        'nama_pic_lion',
+        'nara_hubung_lion',
     ];
 
     // =========================================================================

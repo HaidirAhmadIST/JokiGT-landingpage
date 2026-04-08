@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import ActivitySidebar from "@/components/ActivitySidebar";
 import AdvokasiBarChart from "@/components/AdvokasiBarChart";
+import { toast } from 'sonner';
 
 interface DashboardStats {
   total_pekerja: number;
@@ -41,6 +42,7 @@ export default function DashboardIndexPage() {
       }
     } catch (e) {
       console.error('Failed to fetch dashboard stats', e);
+      toast.error('Gagal mengambil statistik dashboard. Periksa koneksi database.');
     } finally {
       setLoading(false);
     }
@@ -163,7 +165,7 @@ export default function DashboardIndexPage() {
       <div className="grid gap-6 lg:grid-cols-3">
 
         {/* Bar Chart — 2/3 width */}
-        <Card className="lg:col-span-2 rounded-[20px] shadow-sm border-slate-100 p-6 flex flex-col">
+        <Card className="lg:col-span-2 rounded-[20px] shadow-sm border-slate-100 p-6 flex flex-col min-h-[400px]">
           <AdvokasiBarChart />
         </Card>
 

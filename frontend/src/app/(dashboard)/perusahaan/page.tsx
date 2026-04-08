@@ -35,6 +35,8 @@ interface Perusahaan {
   alamat?: string;
   nama_pic?: string;
   kontak_pic?: string;
+  nama_pic_lion?: string;
+  nara_hubung_lion?: string;
   pekerja_count: number;
 }
 
@@ -156,6 +158,8 @@ export default function PerusahaanPage() {
     alamat: '',
     nama_pic: '',
     kontak_pic: '',
+    nama_pic_lion: '',
+    nara_hubung_lion: '',
   });
 
   // Detail Sheet State
@@ -220,6 +224,8 @@ export default function PerusahaanPage() {
       alamat: p.alamat || '',
       nama_pic: p.nama_pic || '',
       kontak_pic: p.kontak_pic || '',
+      nama_pic_lion: p.nama_pic_lion || '',
+      nara_hubung_lion: p.nara_hubung_lion || '',
     });
     setSheetOpen(true);
   };
@@ -233,6 +239,8 @@ export default function PerusahaanPage() {
       alamat: '',
       nama_pic: '',
       kontak_pic: '',
+      nama_pic_lion: '',
+      nara_hubung_lion: '',
     });
     setSheetOpen(true);
   };
@@ -507,7 +515,7 @@ export default function PerusahaanPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label className="text-xs font-bold text-slate-600">NAMA PIC (HRD/K3)</Label>
+                    <Label className="text-xs font-bold text-slate-600">NAMA PIC (Perusahaan)</Label>
                     <Input 
                       placeholder="Nama Lengkap Penanggung Jawab" 
                       className="h-11 bg-slate-50/50 border-slate-200 focus-visible:ring-[#0ea5e9]"
@@ -517,7 +525,7 @@ export default function PerusahaanPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label className="text-xs font-bold text-slate-600">NOMOR TELEPON/EMAIL PIC</Label>
+                    <Label className="text-xs font-bold text-slate-600">NO.TELEPON/EMAIL PIC (Perusahaan)</Label>
                     <div className="relative">
                       <AtSign className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                       <Input 
@@ -525,6 +533,29 @@ export default function PerusahaanPage() {
                         className="h-11 pl-10 bg-slate-50/50 border-slate-200 focus-visible:ring-[#0ea5e9]"
                         value={formData.kontak_pic}
                         onChange={(e) => setFormData({...formData, kontak_pic: e.target.value})}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-slate-600">NAMA PIC (Lion Indonesia)</Label>
+                    <Input 
+                      placeholder="Nama Lengkap PIC Lion Indonesia" 
+                      className="h-11 bg-slate-50/50 border-slate-200 focus-visible:ring-[#0ea5e9]"
+                      value={formData.nama_pic_lion}
+                      onChange={(e) => setFormData({...formData, nama_pic_lion: e.target.value})}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-slate-600">NARA HUBUNG (Lion Indonesia)</Label>
+                    <div className="relative">
+                      <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                      <Input 
+                        placeholder="Kontak Lion Indonesia" 
+                        className="h-11 pl-10 bg-slate-50/50 border-slate-200 focus-visible:ring-[#0ea5e9]"
+                        value={formData.nara_hubung_lion}
+                        onChange={(e) => setFormData({...formData, nara_hubung_lion: e.target.value})}
                       />
                     </div>
                   </div>
@@ -685,22 +716,43 @@ export default function PerusahaanPage() {
                     </div>
 
                     {/* PIC Info */}
-                    {(detailData.nama_pic || detailData.kontak_pic) && (
-                      <div className="flex flex-wrap items-center gap-4 mt-3 text-xs text-slate-500">
-                        {detailData.nama_pic && (
-                          <span className="flex items-center gap-1.5 font-medium">
-                            <UserCircle className="h-3.5 w-3.5 text-slate-400" />
-                            PIC: <span className="text-slate-700 font-semibold">{detailData.nama_pic}</span>
-                          </span>
-                        )}
-                        {detailData.kontak_pic && (
-                          <span className="flex items-center gap-1.5 font-medium">
-                            <Phone className="h-3.5 w-3.5 text-slate-400" />
-                            <span className="text-slate-700 font-semibold">{detailData.kontak_pic}</span>
-                          </span>
-                        )}
-                      </div>
-                    )}
+                    <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mt-4 text-[11px] text-slate-500 bg-slate-50/50 p-3 rounded-xl border border-slate-100">
+                      {(detailData.nama_pic || detailData.kontak_pic) && (
+                        <div className="space-y-1.5 min-w-[180px]">
+                          <p className="font-extrabold text-[9px] uppercase tracking-wider text-slate-400 mb-2">PIC PERUSAHAAN</p>
+                          {detailData.nama_pic && (
+                            <span className="flex items-center gap-1.5 font-medium">
+                              <UserCircle className="h-3 w-3 text-slate-400" />
+                              <span className="text-slate-700 font-bold">{detailData.nama_pic}</span>
+                            </span>
+                          )}
+                          {detailData.kontak_pic && (
+                            <span className="flex items-center gap-1.5 font-medium">
+                              <AtSign className="h-3 w-3 text-slate-400" />
+                              <span className="text-slate-700 font-bold">{detailData.kontak_pic}</span>
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {(detailData.nama_pic_lion || detailData.nara_hubung_lion) && (
+                        <div className="space-y-1.5 min-w-[180px]">
+                          <p className="font-extrabold text-[9px] uppercase tracking-wider text-blue-400 mb-2">PIC LION INDONESIA</p>
+                          {detailData.nama_pic_lion && (
+                            <span className="flex items-center gap-1.5 font-medium">
+                              <ShieldAlert className="h-3 w-3 text-blue-400" />
+                              <span className="text-blue-700 font-bold">{detailData.nama_pic_lion}</span>
+                            </span>
+                          )}
+                          {detailData.nara_hubung_lion && (
+                            <span className="flex items-center gap-1.5 font-medium">
+                              <Phone className="h-3 w-3 text-blue-400" />
+                              <span className="text-blue-700 font-bold">{detailData.nara_hubung_lion}</span>
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
