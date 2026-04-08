@@ -92,7 +92,7 @@ export default function PendaftaranPekerjaPage() {
     'Program Rehabilitasi BPJSKes?'
   ];
   const [advokasiData, setAdvokasiData] = useState(
-    advokasiQuestions.map(q => ({ question: q, status: 'Tidak', file: null as File | null }))
+    advokasiQuestions.map(q => ({ question: q, status: 'Tidak', file: null as File | null, tanggal: '' }))
   );
 
   useEffect(() => {
@@ -782,7 +782,7 @@ export default function PendaftaranPekerjaPage() {
                       <div key={idx} className={`flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${idx > 0 ? 'pt-6' : ''}`}>
                         <div>
                           <Label className="text-base text-slate-700">{item.question}</Label>
-                          <div className="mt-2">
+                          <div className="mt-2 flex flex-col sm:flex-row sm:items-center gap-4">
                             <label className="text-sm text-[#0ea5e9] flex items-center cursor-pointer max-w-fit">
                               <input
                                 type="file"
@@ -808,6 +808,20 @@ export default function PendaftaranPekerjaPage() {
                                 </span>
                               )}
                             </label>
+
+                            <div className="flex items-center space-x-2">
+                              <span className="text-xs text-slate-500">Tanggal:</span>
+                              <Input 
+                                type="date"
+                                className="h-8 text-xs text-slate-500 w-[130px]"
+                                value={item.tanggal || ''}
+                                onChange={(e) => {
+                                  const newA = [...advokasiData];
+                                  newA[idx].tanggal = e.target.value;
+                                  setAdvokasiData(newA);
+                                }}
+                              />
+                            </div>
                           </div>
                         </div>
                         <div className="flex gap-4 items-center">
