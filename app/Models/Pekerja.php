@@ -107,9 +107,9 @@ class Pekerja extends Model
     {
         // Use the loaded relationship if available to avoid N+1
         $medis = $this->relationLoaded('detailMedis') 
-            ? $this->detailMedis->sortByDesc('tgl_pemeriksaan')->first() 
-            : $this->detailMedis()->latest('tgl_pemeriksaan')->first();
-            
+            ? $this->detailMedis->sortByDesc('tanggal_pemeriksaan')->first() 
+            : $this->detailMedis()->latest('tanggal_pemeriksaan')->first();
+
         $adv = $this->relationLoaded('statusAdvokasi') ? $this->statusAdvokasi : $this->statusAdvokasi()->first();
 
         // Logic check for "Unfit" (Serious)

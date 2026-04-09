@@ -53,6 +53,7 @@ return new class extends Migration
             $table->string('dokumen_bukti_path')->nullable();
             
             $table->timestamps();
+            $table->softDeletes();
             
             $table->index('tanggal_pemeriksaan');
             $table->index('pekerja_id');
