@@ -150,6 +150,18 @@ class AdvokasiController extends Controller
 
                 $path = $request->file('file')->store('bukti_advokasi', 'private');
                 $status->{$columnName} = $path;
+
+                // Set upload timestamp
+                $timestampColumn = $stepKey . '_at';
+                // Map riwayat_pajanan to bukti_pajanan_at correctly
+                if ($stepKey === 'riwayat_pajanan') $timestampColumn = 'bukti_pajanan_at';
+                else $timestampColumn = str_replace('bukti_', 'bukti_', $columnName) . '_at';
+                
+                // Re-calculating correctly based on the column name logic
+                $timestampColumn = $columnName . '_at'; // column_name is bukti_..._path, so this becomes bukti_..._path_at
+                // Wait, I named my columns bukti_..._at. Let's fix the logic.
+                $timestampColumn = str_replace('_path', '_at', $columnName);
+                $status->{$timestampColumn} = now();
             }
         }
 

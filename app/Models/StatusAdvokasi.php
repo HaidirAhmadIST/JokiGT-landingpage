@@ -39,6 +39,12 @@ class StatusAdvokasi extends Model
         'bukti_kompensasi_bpjstk_path',
         'rehabilitasi_bpjskes',
         'bukti_rehabilitasi_bpjskes_path',
+        'bukti_pajanan_at',
+        'bukti_persetujuan_dokter_at',
+        'bukti_perusahaan_lapor_at',
+        'bukti_penetapan_pak_at',
+        'bukti_kompensasi_bpjstk_at',
+        'bukti_rehabilitasi_bpjskes_at',
     ];
 
     /**
@@ -56,6 +62,12 @@ class StatusAdvokasi extends Model
             'kompensasi_bpjstk' => 'boolean',
             'rehabilitasi_bpjskes' => 'boolean',
             'tanggal_pelaporan' => 'date',
+            'bukti_pajanan_at' => 'datetime',
+            'bukti_persetujuan_dokter_at' => 'datetime',
+            'bukti_perusahaan_lapor_at' => 'datetime',
+            'bukti_penetapan_pak_at' => 'datetime',
+            'bukti_kompensasi_bpjstk_at' => 'datetime',
+            'bukti_rehabilitasi_bpjskes_at' => 'datetime',
         ];
     }
 

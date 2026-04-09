@@ -160,9 +160,6 @@ export default function PekerjaDetailPage() {
     return !!adv?.[stepKey];
   };
 
-  const currentStepIdx = advSteps.findIndex(step => !isStepCompleted(step.key));
-  const activeStepIndex = currentStepIdx === -1 ? advSteps.length : currentStepIdx;
-
   const terkiniMedis = data.detail_medis?.[0]; // Assuming first is most recent
 
   const getFilePath = (stepKey: string) => {
@@ -176,6 +173,38 @@ export default function PekerjaDetailPage() {
       };
       return adv?.[map[stepKey]];
   };
+
+  const currentStepIdx = advSteps.findIndex(step => !isStepCompleted(step.key));
+  const activeStepIndex = currentStepIdx === -1 ? advSteps.length : currentStepIdx;
+
+  const getUploadDate = (stepKey: string) => {
+    if (!data?.status_advokasi) return null;
+    const validColumns: Record<string, string> = {
+      riwayat_pajanan: 'bukti_pajanan_at',
+      persetujuan_dokter: 'bukti_persetujuan_dokter_at',
+      perusahaan_lapor: 'bukti_perusahaan_lapor_at',
+      penetapan_pak: 'bukti_penetapan_pak_at',
+      kompensasi_bpjstk: 'bukti_kompensasi_bpjstk_at',
+      rehabilitasi_bpjskes: 'bukti_rehabilitasi_bpjskes_at'
+    };
+    return data.status_advokasi[validColumns[stepKey]];
+  };
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return '';
+    try {
+      const date = new Date(dateString);
+      return new Intl.DateTimeFormat('id-ID', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
+      }).format(date);
+    } catch (e) {
+      return '';
+    }
+  };
+
+  const completedStepsCount = advSteps.filter(step => !!getFilePath(step.key)).length;
 
   return (
     <div className="bg-[#f8fafc] min-h-screen pb-20 font-sans text-slate-800">
@@ -298,16 +327,18 @@ export default function PekerjaDetailPage() {
              </div>
 
              <div className="bg-slate-50/50 border border-slate-100 rounded-xl p-4 flex-1 min-w-[140px]">
-               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Kasus Advokasi</p>
-               <div className="flex items-center gap-2">
-                 <span className="text-xl font-bold text-slate-800">{isAdvocacyActive ? '1 Kasus' : 'Tidak Ada'}</span>
-                 {isAdvocacyActive && (
-                   <span className="px-2 py-0.5 bg-orange-100 text-orange-600 text-[9px] font-extrabold tracking-wide rounded-full">
-                     PROSES
-                   </span>
-                 )}
-               </div>
-             </div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Kasus Advokasi</p>
+                <div className="flex items-center gap-2">
+                  <span className="text-xl font-bold text-slate-800">
+                    {completedStepsCount > 0 ? `${completedStepsCount} / 6 Langkah` : 'Tidak Ada'}
+                  </span>
+                  {completedStepsCount > 0 && (
+                    <span className={`px-2 py-0.5 ${completedStepsCount === 6 ? 'bg-emerald-100 text-emerald-600' : 'bg-orange-100 text-orange-600'} text-[9px] font-extrabold tracking-wide rounded-full`}>
+                      {completedStepsCount === 6 ? 'SELESAI' : 'PROSES'}
+                    </span>
+                  )}
+                </div>
+              </div>
           </div>
         </div>
 
@@ -469,14 +500,10 @@ export default function PekerjaDetailPage() {
                         <button 
                           onClick={() => toggleAdvokasi(step.key, !isCompleted)}
                           className="mt-0.5 z-20 flex-shrink-0 mr-4 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#0ea5e9] rounded-full transition-transform transform active:scale-90"
-                          title="Klik utuk mengubah status"
+                          title="Klik untuk mengubah status"
                         >
-                          {isCompleted ? (
+                          {hasFile ? (
                              <CheckCircle2 className="h-6 w-6 text-emerald-500 bg-white" />
-                          ) : hasFile ? (
-                             <div className="h-6 w-6 rounded-full border-[3px] border-amber-400 bg-amber-50 flex items-center justify-center">
-                               <FileCheck className="h-3 w-3 text-amber-500" />
-                             </div>
                           ) : isCurrent ? (
                              <div className="h-6 w-6 rounded-full border-[3px] border-[#0ea5e9] bg-white flex items-center justify-center">
                                <div className="h-2 w-2 rounded-full bg-[#0ea5e9]" />
@@ -487,34 +514,49 @@ export default function PekerjaDetailPage() {
                         </button>
 
                         <div className="flex-1 pb-1">
-                          <p className={`text-[13px] font-bold ${isCompleted ? 'text-slate-800' : hasFile ? 'text-amber-600' : isCurrent ? 'text-[#0ea5e9]' : 'text-slate-400'}`}>
+                          <p className={`text-[13px] font-bold ${hasFile ? 'text-slate-800' : isCurrent ? 'text-[#0ea5e9]' : 'text-slate-400'}`}>
                             {step.label}
                           </p>
-                          <p className={`text-[10px] mt-1 ${hasFile && !isCompleted ? 'text-amber-500 font-semibold' : 'text-slate-400'}`}>
-                            {isCompleted ? 'Selesai' : hasFile ? 'Dokumen Terunggah' : isCurrent ? 'Sedang Berjalan' : 'Belum Dimulai'}
+                          <p className={`text-[10px] mt-1 ${hasFile ? 'text-emerald-500 font-bold' : 'text-slate-400'}`}>
+                            {hasFile ? 'Dokumen Terunggah' : isCurrent ? 'Sedang Berjalan' : 'Belum Dimulai'}
                           </p>
 
-                          {/* File Upload for Each Step */}
+                          {/* File Upload / Display for Each Step */}
                           <div className="mt-3 p-3 bg-slate-50 border border-slate-100 rounded-lg">
-                             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2">Dokumen / Bukti Pendukung</span>
-                             <div className="flex flex-col sm:flex-row gap-3">
-                               <div className="relative flex-1">
-                                 <input 
-                                    type="file" 
-                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
-                                    accept=".pdf,.jpg,.jpeg,.png"
-                                    onChange={(e) => handleFileUpload(step.key, e)}
-                                    disabled={uploadLoading === step.key}
-                                 />
-                                 <div className={`h-9 w-full bg-white border ${uploadLoading === step.key ? 'border-[#0ea5e9] bg-blue-50' : 'border-slate-200 border-dashed'} rounded-md flex items-center justify-center text-[10px] font-semibold text-[#0ea5e9] hover:bg-blue-50 transition-colors`}>
-                                    {uploadLoading === step.key ? 'Mengunggah...' : '+ Pilih File Bukti (Max 5MB)'}
-                                 </div>
-                               </div>
-                               {getFilePath(step.key) && (
-                                  <button onClick={() => downloadFile(step.key)} className="h-9 px-3 bg-white border border-slate-200 rounded-md flex items-center justify-center text-[10px] font-semibold text-slate-600 hover:text-[#0ea5e9] hover:border-[#0ea5e9] transition-colors cursor-pointer">
-                                     <FileText className="h-3 w-3 mr-1.5" /> Lihat Terunggah
-                                  </button>
+                             <div className="flex justify-between items-center mb-2">
+                               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Dokumen / Bukti Pendukung</span>
+                               {getFilePath(step.key) && getUploadDate(step.key) && (
+                                 <span className="text-[9px] font-medium text-slate-400 italic">
+                                   Diunggah: {formatDate(getUploadDate(step.key))}
+                                 </span>
                                )}
+                             </div>
+                             
+                             <div className="flex flex-col gap-2">
+                               {!isAdmin && (
+                                 <div className="relative w-full">
+                                   <input 
+                                      type="file" 
+                                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
+                                      accept=".pdf,.jpg,.jpeg,.png"
+                                      onChange={(e) => handleFileUpload(step.key, e)}
+                                      disabled={uploadLoading === step.key}
+                                   />
+                                   <div className={`h-10 w-full bg-white border ${uploadLoading === step.key ? 'border-[#0ea5e9] bg-blue-50' : 'border-slate-200 border-dashed'} rounded-md flex items-center justify-center px-3 text-[10px] font-bold text-[#0ea5e9] hover:bg-blue-50 transition-colors whitespace-nowrap`}>
+                                      {uploadLoading === step.key ? 'Mengunggah...' : '+ Pilih File Bukti (Max 5MB)'}
+                                   </div>
+                                 </div>
+                               )}
+
+                               {getFilePath(step.key) ? (
+                                  <button onClick={() => downloadFile(step.key)} className="h-10 w-full bg-white border border-slate-200 rounded-md flex items-center justify-center text-[10px] font-bold text-slate-600 hover:text-[#0ea5e9] hover:border-[#0ea5e9] transition-colors cursor-pointer">
+                                     <FileText className="h-3.5 w-3.5 mr-1.5" /> Lihat Terunggah
+                                  </button>
+                               ) : isAdmin ? (
+                                  <div className="h-10 w-full border border-slate-200 border-dashed rounded-md flex items-center justify-center px-3 text-[10px] font-medium text-slate-400 italic">
+                                     Belum ada dokumen terunggah
+                                  </div>
+                               ) : null}
                              </div>
                           </div>
                         </div>

@@ -378,24 +378,24 @@ export default function PerusahaanPage() {
     switch (status) {
       case 'aktif':
         return (
-          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-600 border border-rose-100">
-            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 mr-1.5"></span>
-            Berkasus
+          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-600 border border-emerald-100">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5"></span>
+            Aktif
           </span>
         );
       case 'pending':
         return (
           <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-600 border border-amber-100">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mr-1.5"></span>
-            Dalam Pantauan
+            Pending
           </span>
         );
       case 'tidak_aktif':
       default:
         return (
-          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-600 border border-emerald-100">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5"></span>
-            Selesai
+          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-50 text-slate-600 border border-slate-100">
+            <span className="w-1.5 h-1.5 rounded-full bg-slate-500 mr-1.5"></span>
+            Tidak Aktif
           </span>
         );
     }
@@ -506,9 +506,9 @@ export default function PerusahaanPage() {
                             <SelectValue placeholder="Pilih status" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="aktif">Berkasus</SelectItem>
-                            <SelectItem value="pending">Dalam Pantauan</SelectItem>
-                            <SelectItem value="tidak_aktif">Selesai</SelectItem>
+                            <SelectItem value="aktif">Berkasus (Otomatis)</SelectItem>
+                            <SelectItem value="pending">Dalam Pantauan (Manual)</SelectItem>
+                            <SelectItem value="tidak_aktif">Selesai (Otomatis)</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -581,7 +581,7 @@ export default function PerusahaanPage() {
                     <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100 flex items-start gap-3 mt-4">
                       <CheckCircle className="h-5 w-5 text-blue-500 shrink-0 mt-0.5" />
                       <p className="text-xs font-medium text-blue-700 leading-relaxed">
-                        Data yang diinputkan akan diverifikasi oleh sistem Azure Sentinel untuk memastikan validitas NIB dan legalitas operasional mitra.
+                        Data perusahaan akan diverifikasi secara manual oleh tim admin Lion Indonesia.
                       </p>
                     </div>
                   </div>
@@ -633,9 +633,8 @@ export default function PerusahaanPage() {
               </TableRow>
             ) : (
               data.map((p) => {
-                const fit = Math.max(0, p.pekerja_count - Math.floor(p.pekerja_count * 0.2));
-                const note = Math.floor(p.pekerja_count * 0.15);
-                const unfit = p.pekerja_count - fit - note;
+                // Manual mode: stats will be fetched from backend when detail is opened
+                // List view only shows the total worker count
 
                 return (
                   <TableRow key={p.id} className="hover:bg-slate-50/50 transition-colors group">
@@ -655,16 +654,7 @@ export default function PerusahaanPage() {
                     </TableCell>
                     <TableCell className="py-4 px-6">
                       <div className="flex flex-col">
-                        <span className="text-[#0284c7] font-bold text-base">{p.pekerja_count}</span>
-                        {p.pekerja_count > 0 && (
-                          <div className="flex items-center text-[10px] font-semibold text-slate-400 mt-1 gap-1.5">
-                            <span className="flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div> {fit} Fit</span>
-                            <span>&middot;</span>
-                            <span className="flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-amber-500"></div> {note} Note</span>
-                            <span>&middot;</span>
-                            <span className="flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-red-500"></div> {unfit} Unfit</span>
-                          </div>
-                        )}
+                        <span className="text-[#0284c7] font-bold text-base">{p.pekerja_count} Pekerja</span>
                       </div>
                     </TableCell>
                     <TableCell className="py-4 px-6">
