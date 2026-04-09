@@ -66,6 +66,14 @@ class Pekerja extends Model
     }
 
     /**
+     * Get the baseline medical history.
+     */
+    public function riwayatMedis(): HasOne
+    {
+        return $this->hasOne(RiwayatMedis::class);
+    }
+
+    /**
      * Get all medical detail records.
      */
     public function detailMedis(): HasMany

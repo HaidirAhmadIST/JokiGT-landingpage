@@ -55,6 +55,8 @@ export default function PendaftaranPekerjaPage() {
     status_karyawan: '',
     deskripsi_pekerjaan: '',
     status_pekerjaan: '',
+    nama_agen_penyalur: '',
+    tanggal_selesai_kontrak: '',
     jenis_pajanan: '',
     durasi_pajanan: '',
     nama_perusahaan_baru: ''
@@ -80,6 +82,15 @@ export default function PendaftaranPekerjaPage() {
     jenis_pemeriksaan: '',
     dokter: '',
     hasil_diagnosis: ''
+  });
+
+  const [riwayatMedisData, setRiwayatMedisData] = useState({
+    golongan_darah: '',
+    rhesus: '',
+    riwayat_penyakit: '',
+    alergi: '',
+    riwayat_operasi: '',
+    obat_rutin: ''
   });
 
   // Status Advokasi State
@@ -150,7 +161,12 @@ export default function PendaftaranPekerjaPage() {
         allRiwayat.push({
           nama_perusahaan: currentPerusahaanName,
           deskripsi_usaha: pekerjaanSaatIni.deskripsi_usaha,
-          bagian: pekerjaanSaatIni.bagian + (pekerjaanSaatIni.jabatan ? ` / ${pekerjaanSaatIni.jabatan}` : ''),
+          bagian: pekerjaanSaatIni.bagian,
+          jabatan: pekerjaanSaatIni.jabatan,
+          status_pekerjaan: pekerjaanSaatIni.status_pekerjaan,
+          nama_agen_penyalur: pekerjaanSaatIni.nama_agen_penyalur,
+          tanggal_selesai_kontrak: pekerjaanSaatIni.tanggal_selesai_kontrak,
+          deskripsi_pekerjaan: pekerjaanSaatIni.deskripsi_pekerjaan,
           tgl_masuk: pekerjaanSaatIni.tgl_masuk,
           tgl_keluar: null
         });
@@ -158,22 +174,39 @@ export default function PendaftaranPekerjaPage() {
 
       const prevRiwayat = riwayatLalu.filter(r => r.nama_perusahaan.trim() !== '');
 
-      // Mapped Medis Data
+      // Mapped Medis Data (Transactional)
       const hasMedis = medisData.tanggal_pemeriksaan && medisData.tempat_pemeriksaan && medisData.jenis_pemeriksaan && medisData.dokter && medisData.hasil_diagnosis;
       const finalMedis = hasMedis ? [{
-        tgl_pemeriksaan: medisData.tanggal_pemeriksaan,
-        tempat_pemeriksa: medisData.tempat_pemeriksaan,
-        jenis_pemeriksa: medisData.jenis_pemeriksaan,
-        dokter_pemeriksa: medisData.dokter,
+        tanggal_pemeriksaan: medisData.tanggal_pemeriksaan,
+        tempat_pemeriksaan: medisData.tempat_pemeriksaan,
+        jenis_pemeriksaan: medisData.jenis_pemeriksaan,
+        nama_dokter: medisData.dokter,
         hasil_diagnosis: medisData.hasil_diagnosis,
       }] : [];
 
-      const response = await api.post('/pekerja', {
+      // Mapped Riwayat Medis (Baseline)
+      const hasRiwayatMedis = riwayatMedisData.golongan_darah || riwayatMedisData.riwayat_penyakit || riwayatMedisData.alergi || riwayatMedisData.obat_rutin;
+      const finalRiwayatMedis = hasRiwayatMedis ? {
+        golongan_darah: riwayatMedisData.golongan_darah,
+        rhesus: riwayatMedisData.rhesus,
+        riwayat_penyakit: riwayatMedisData.riwayat_penyakit ? riwayatMedisData.riwayat_penyakit.split(',').map(s => s.trim()).filter(Boolean) : [],
+        alergi: riwayatMedisData.alergi ? riwayatMedisData.alergi.split(',').map(s => s.trim()).filter(Boolean) : [],
+        riwayat_operasi: riwayatMedisData.riwayat_operasi ? riwayatMedisData.riwayat_operasi.split(',').map(s => s.trim()).filter(Boolean) : [],
+        obat_rutin: riwayatMedisData.obat_rutin
+      } : null;
+
+      const payload: any = {
         ...baseData,
         perusahaan_id: finalPerusahaanId,
         riwayat: [...allRiwayat, ...prevRiwayat],
         medis: finalMedis
-      });
+      };
+
+      if (finalRiwayatMedis) {
+        payload.riwayat_medis = finalRiwayatMedis;
+      }
+
+      const response = await api.post('/pekerja', payload);
 
       const newPekerjaId = response.data.data.id;
 
@@ -418,32 +451,54 @@ export default function PendaftaranPekerjaPage() {
                       </Select>
 
                       {baseData.perusahaan_id === 'NEW' && (
-                        <div className="mt-3 p-4 bg-blue-50/50 border border-blue-100 rounded-xl space-y-2 animate-in fade-in slide-in-from-top-2">
-                          <Label className="text-[#0ea5e9]">Nama Perusahaan Baru</Label>
-                          <Input
-                            placeholder="Masukkan nama perusahaan lengkap..."
-                            className="h-11 bg-white border-blue-200 focus-visible:ring-blue-400"
-                            value={pekerjaanSaatIni.nama_perusahaan_baru}
-                            onChange={e => setPekerjaanSaatIni({ ...pekerjaanSaatIni, nama_perusahaan_baru: e.target.value })}
-                          />
+                        <div className="mt-3 p-4 bg-blue-50/50 border border-blue-100 rounded-xl space-y-4 animate-in fade-in slide-in-from-top-2">
+                          <div className="space-y-2">
+                            <Label className="text-[#0ea5e9]">Nama Perusahaan Baru</Label>
+                            <Input
+                              placeholder="Masukkan nama perusahaan lengkap..."
+                              className="h-11 bg-white border-blue-200 focus-visible:ring-blue-400"
+                              value={pekerjaanSaatIni.nama_perusahaan_baru}
+                              onChange={e => setPekerjaanSaatIni({ ...pekerjaanSaatIni, nama_perusahaan_baru: e.target.value })}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-[#0ea5e9]">Deskripsi Jenis Usaha</Label>
+                            <Input
+                              placeholder="Contoh: Industri Pengolahan Makanan"
+                              className="h-11 bg-white border-blue-200 focus-visible:ring-blue-400"
+                              value={pekerjaanSaatIni.deskripsi_usaha}
+                              onChange={e => setPekerjaanSaatIni({ ...pekerjaanSaatIni, deskripsi_usaha: e.target.value })}
+                            />
+                          </div>
                         </div>
                       )}
                     </div>
                     <div className="space-y-2">
-                      <Label>Deskripsi Jenis Usaha</Label>
-                      <Input placeholder="Contoh: Industri Pengolahan Makanan" className="h-11" value={pekerjaanSaatIni.deskripsi_usaha} onChange={e => setPekerjaanSaatIni({ ...pekerjaanSaatIni, deskripsi_usaha: e.target.value })} />
-                    </div>
-                    <div className="space-y-2">
                       <Label>Status Pekerjaan</Label>
                       <Select value={pekerjaanSaatIni.status_pekerjaan} onValueChange={(v: any) => setPekerjaanSaatIni({ ...pekerjaanSaatIni, status_pekerjaan: v })}>
-                        <SelectTrigger className="h-11"><SelectValue placeholder="Pilih Status" /></SelectTrigger>
+                        <SelectTrigger className="h-11 w-full"><SelectValue placeholder="Pilih Status" /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="tetap">Karyawan Tetap</SelectItem>
-                          <SelectItem value="kontrak">Kontrak</SelectItem>
-                          <SelectItem value="harian">Lepas Harian</SelectItem>
+                          <SelectItem value="PKWTT">1. PKWTT (Pekerja Tetap)</SelectItem>
+                          <SelectItem value="PKWT">2. PKWT (Pekerja Kontrak)</SelectItem>
+                          <SelectItem value="Borongan">3. Pekerja Borongan</SelectItem>
+                          <SelectItem value="Harian Lepas">4. Pekerja Harian Lepas</SelectItem>
+                          <SelectItem value="Outsourcing">5. Pekerja Outsourcing/Alih Daya</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
+
+                    {pekerjaanSaatIni.status_pekerjaan === 'Outsourcing' && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 bg-orange-50/50 p-4 rounded-lg border border-orange-100">
+                        <div className="space-y-2">
+                          <Label className="text-orange-700">Nama Agen Penyalur</Label>
+                          <Input placeholder="Contoh: PT Sumber Daya Manusia" className="h-11 bg-white border-orange-200 focus-visible:ring-orange-400" value={pekerjaanSaatIni.nama_agen_penyalur} onChange={e => setPekerjaanSaatIni({ ...pekerjaanSaatIni, nama_agen_penyalur: e.target.value })} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-orange-700">Tanggal Selesai Kontrak</Label>
+                          <Input type="date" className="h-11 bg-white text-slate-500 border-orange-200 focus-visible:ring-orange-400" value={pekerjaanSaatIni.tanggal_selesai_kontrak} onChange={e => setPekerjaanSaatIni({ ...pekerjaanSaatIni, tanggal_selesai_kontrak: e.target.value })} />
+                        </div>
+                      </div>
+                    )}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                       <div className="space-y-2">
                         <Label>Bagian</Label>
@@ -495,7 +550,7 @@ export default function PendaftaranPekerjaPage() {
                     <div className="space-y-2">
                       <Label className="text-slate-700">Jenis Pajanan</Label>
                       <Select value={pekerjaanSaatIni.jenis_pajanan} onValueChange={(v: any) => setPekerjaanSaatIni({ ...pekerjaanSaatIni, jenis_pajanan: v })}>
-                        <SelectTrigger className="h-11 bg-white"><SelectValue placeholder="Pilih Jenis Pajanan" /></SelectTrigger>
+                        <SelectTrigger className="h-11 w-full bg-white"><SelectValue placeholder="Pilih Jenis Pajanan" /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="Kimia">Kimia</SelectItem>
                           <SelectItem value="Fisik">Fisik (Bising/Getaran)</SelectItem>
@@ -544,13 +599,13 @@ export default function PendaftaranPekerjaPage() {
                 <div>
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="font-bold text-slate-800">Riwayat Pekerjaan Sebelumnya</h3>
-                    <Button variant="ghost" size="sm" className="text-[#0ea5e9] hover:text-[#0284c7] hover:bg-blue-50" onClick={() => setRiwayatLalu([...riwayatLalu, { nama_perusahaan: '', bagian: '', tgl_masuk: '', tgl_keluar: '', file_bukti: null }])}>
+                    <Button variant="ghost" size="sm" className="text-[#0ea5e9] hover:text-[#0284c7] hover:bg-blue-50" onClick={() => setRiwayatLalu([...riwayatLalu, { nama_perusahaan: '', bagian: '', jabatan: '', status_pekerjaan: '', nama_agen_penyalur: '', tanggal_selesai_kontrak: '', tgl_masuk: '', tgl_keluar: '', file_bukti: null }])}>
                       <Plus className="h-4 w-4 mr-1" /> Tambah Riwayat
                     </Button>
                   </div>
 
                   {riwayatLalu.length === 0 ? (
-                    <div className="border border-dashed border-slate-200 rounded-xl p-8 text-center bg-slate-50 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => setRiwayatLalu([{ nama_perusahaan: '', bagian: '', tgl_masuk: '', tgl_keluar: '', file_bukti: null }])}>
+                    <div className="border border-dashed border-slate-200 rounded-xl p-8 text-center bg-slate-50 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => setRiwayatLalu([{ nama_perusahaan: '', bagian: '', jabatan: '', status_pekerjaan: '', nama_agen_penyalur: '', tanggal_selesai_kontrak: '', tgl_masuk: '', tgl_keluar: '', file_bukti: null }])}>
                       <Plus className="h-8 w-8 text-slate-300 mb-2" />
                       <p className="text-sm text-slate-500 max-w-[250px]">
                         Belum ada Riwayat Pekerjaan Ditambahkan.
@@ -576,9 +631,48 @@ export default function PendaftaranPekerjaPage() {
                               }} />
                             </div>
                             <div className="space-y-2 col-span-2 sm:col-span-1">
-                              <Label>Bagian/Posisi</Label>
-                              <Input placeholder="Operator Las" value={item.bagian} onChange={(e) => {
+                              <Label>Status Pekerjaan</Label>
+                              <Select value={item.status_pekerjaan} onValueChange={(v: any) => {
+                                const newR = [...riwayatLalu]; newR[idx].status_pekerjaan = v; setRiwayatLalu(newR);
+                              }}>
+                                <SelectTrigger className="h-11 w-full"><SelectValue placeholder="Pilih Status" /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="PKWTT">1. PKWTT (Pekerja Tetap)</SelectItem>
+                                  <SelectItem value="PKWT">2. PKWT (Pekerja Kontrak)</SelectItem>
+                                  <SelectItem value="Borongan">3. Pekerja Borongan</SelectItem>
+                                  <SelectItem value="Harian Lepas">4. Pekerja Harian Lepas</SelectItem>
+                                  <SelectItem value="Outsourcing">5. Pekerja Outsourcing/Alih Daya</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            
+                            {item.status_pekerjaan === 'Outsourcing' && (
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 col-span-2 sm:col-span-2 bg-orange-50/50 p-4 rounded-lg border border-orange-100 mt-2">
+                                <div className="space-y-2">
+                                  <Label className="text-orange-700">Nama Agen Penyalur</Label>
+                                  <Input placeholder="Contoh: PT Sumber Daya Manusia" className="h-11 bg-white border-orange-200 focus-visible:ring-orange-400" value={item.nama_agen_penyalur} onChange={(e) => {
+                                    const newR = [...riwayatLalu]; newR[idx].nama_agen_penyalur = e.target.value; setRiwayatLalu(newR);
+                                  }} />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label className="text-orange-700">Tanggal Selesai Kontrak</Label>
+                                  <Input type="date" className="h-11 bg-white text-slate-500 border-orange-200 focus-visible:ring-orange-400" value={item.tanggal_selesai_kontrak} onChange={(e) => {
+                                    const newR = [...riwayatLalu]; newR[idx].tanggal_selesai_kontrak = e.target.value; setRiwayatLalu(newR);
+                                  }} />
+                                </div>
+                              </div>
+                            )}
+
+                            <div className="space-y-2 col-span-2 sm:col-span-1">
+                              <Label>Bagian / Departemen</Label>
+                              <Input placeholder="Contoh: Produksi / Logistik" value={item.bagian} onChange={(e) => {
                                 const newR = [...riwayatLalu]; newR[idx].bagian = e.target.value; setRiwayatLalu(newR);
+                              }} />
+                            </div>
+                            <div className="space-y-2 col-span-2 sm:col-span-1">
+                              <Label>Jabatan / Posisi</Label>
+                              <Input placeholder="Contoh: Operator Produksi" value={item.jabatan} onChange={(e) => {
+                                const newR = [...riwayatLalu]; newR[idx].jabatan = e.target.value; setRiwayatLalu(newR);
                               }} />
                             </div>
                             <div className="space-y-2">
@@ -595,7 +689,7 @@ export default function PendaftaranPekerjaPage() {
                             </div>
 
                             <div className="space-y-2 col-span-1 sm:col-span-2 mt-2">
-                              <Label>Upload Paklaring / Dokumen Verifikasi Pekerjaan</Label>
+                              <Label>Upload Paklaring / Dokumen Verifikasi Pekerjaan <span className="text-slate-400 font-normal italic ml-1">(Opsional)</span></Label>
                               <label className="mt-1 border border-dashed border-slate-200 bg-slate-50 rounded-lg p-3 flex flex-col sm:flex-row items-center justify-center text-slate-500 hover:border-[#0ea5e9] transition-colors cursor-pointer relative block">
                                 <input
                                   type="file"
@@ -655,10 +749,60 @@ export default function PendaftaranPekerjaPage() {
               </div>
 
               <div className="space-y-8">
+                {/* Riwayat Medis (Baseline) */}
+                <div className="p-6 bg-white border border-slate-100 shadow-sm rounded-xl">
+                  <h3 className="flex items-center text-sm font-bold text-[#0ea5e9] mb-6 uppercase tracking-wider">
+                    <ShieldAlert className="h-4 w-4 mr-2" /> Riwayat Medis (Baseline)
+                  </h3>
+
+                  <div className="space-y-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                      <div className="space-y-2">
+                        <Label>Golongan Darah</Label>
+                        <Select value={riwayatMedisData.golongan_darah} onValueChange={(v: any) => setRiwayatMedisData({ ...riwayatMedisData, golongan_darah: v })}>
+                          <SelectTrigger className="h-11 w-full"><SelectValue placeholder="Pilih Golongan Darah" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="A">A</SelectItem>
+                            <SelectItem value="B">B</SelectItem>
+                            <SelectItem value="AB">AB</SelectItem>
+                            <SelectItem value="O">O</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Rhesus</Label>
+                        <Select value={riwayatMedisData.rhesus} onValueChange={(v: any) => setRiwayatMedisData({ ...riwayatMedisData, rhesus: v })}>
+                          <SelectTrigger className="h-11 w-full"><SelectValue placeholder="Pilih Rhesus" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="+">Positif (+)</SelectItem>
+                            <SelectItem value="-">Negatif (-)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Riwayat Penyakit Bawaan / Kronis</Label>
+                      <Input placeholder="Contoh: Asma, Diabetes (pisahkan dengan koma jika lebih dari satu)" className="h-11" value={riwayatMedisData.riwayat_penyakit} onChange={e => setRiwayatMedisData({ ...riwayatMedisData, riwayat_penyakit: e.target.value })} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Alergi Obat / Makanan / Debu</Label>
+                      <Input placeholder="Contoh: Penisilin, Udang, Debu Kayu" className="h-11" value={riwayatMedisData.alergi} onChange={e => setRiwayatMedisData({ ...riwayatMedisData, alergi: e.target.value })} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Riwayat Operasi</Label>
+                      <Input placeholder="Contoh: Operasi Usus Buntu (2020)" className="h-11" value={riwayatMedisData.riwayat_operasi} onChange={e => setRiwayatMedisData({ ...riwayatMedisData, riwayat_operasi: e.target.value })} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Obat Rutin Yang Dikonsumsi</Label>
+                      <Input placeholder="Contoh: Metformin" className="h-11" value={riwayatMedisData.obat_rutin} onChange={e => setRiwayatMedisData({ ...riwayatMedisData, obat_rutin: e.target.value })} />
+                    </div>
+                  </div>
+                </div>
+
                 {/* Detail Medis */}
                 <div className="p-6 bg-white border border-slate-100 shadow-sm rounded-xl">
                   <h3 className="flex items-center text-sm font-bold text-[#0ea5e9] mb-6 uppercase tracking-wider">
-                    <ShieldAlert className="h-4 w-4 mr-2" /> Detail Medis
+                    <ShieldAlert className="h-4 w-4 mr-2" /> Detail Pemeriksaan Medis (Pekerjaan)
                   </h3>
 
                   <div className="space-y-5">
@@ -675,7 +819,16 @@ export default function PendaftaranPekerjaPage() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                       <div className="space-y-2">
                         <Label>Jenis Pemeriksaan</Label>
-                        <Input placeholder="Contoh: MCU Berkala, Spesialis" className="h-11" value={medisData.jenis_pemeriksaan} onChange={e => setMedisData({ ...medisData, jenis_pemeriksaan: e.target.value })} />
+                        <Select value={medisData.jenis_pemeriksaan} onValueChange={(v: any) => setMedisData({ ...medisData, jenis_pemeriksaan: v })}>
+                          <SelectTrigger className="h-11 w-full"><SelectValue placeholder="Pilih Jenis Pemeriksaan" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Rawat Jalan">Rawat Jalan</SelectItem>
+                            <SelectItem value="Rawat Inap">Rawat Inap</SelectItem>
+                            <SelectItem value="MCU">MCU (Medical Check-Up)</SelectItem>
+                            <SelectItem value="IGD">IGD / Gawat Darurat</SelectItem>
+                            <SelectItem value="Lainnya">Lainnya</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                       <div className="space-y-2">
                         <Label>Dokter Yang Memeriksa</Label>
@@ -811,7 +964,7 @@ export default function PendaftaranPekerjaPage() {
 
                             <div className="flex items-center space-x-2">
                               <span className="text-xs text-slate-500">Tanggal:</span>
-                              <Input 
+                              <Input
                                 type="date"
                                 className="h-8 text-xs text-slate-500 w-[130px]"
                                 value={item.tanggal || ''}
