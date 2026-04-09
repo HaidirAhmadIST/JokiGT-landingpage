@@ -430,8 +430,6 @@ export default function PerusahaanPage() {
             Kelola informasi dan status kerjasama perusahaan mitra Anda secara terpusat.
           </p>
         </div>
-<<<<<<< HEAD
-        
         <div className="flex flex-col sm:flex-row items-end sm:items-center gap-3 w-full sm:w-auto">
           <Select value={statusFilter} onValueChange={(v: any) => setStatusFilter(v || 'all')}>
             <SelectTrigger className="w-full sm:w-[180px] bg-white h-11 border-slate-200 focus:ring-[#0ea5e9]">
