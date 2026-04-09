@@ -105,8 +105,12 @@ class Pekerja extends Model
      */
     public function getStatusSaranAttribute(): string
     {
-        $medis = $this->detailMedis()->latest('tgl_pemeriksaan')->first();
-        $adv = $this->statusAdvokasi;
+        // Use the loaded relationship if available to avoid N+1
+        $medis = $this->relationLoaded('detailMedis') 
+            ? $this->detailMedis->sortByDesc('tgl_pemeriksaan')->first() 
+            : $this->detailMedis()->latest('tgl_pemeriksaan')->first();
+            
+        $adv = $this->relationLoaded('statusAdvokasi') ? $this->statusAdvokasi : $this->statusAdvokasi()->first();
 
         // Logic check for "Unfit" (Serious)
         if ($adv && $adv->penetapan_pak) {
@@ -149,6 +153,7 @@ class Pekerja extends Model
             'user',
             'perusahaan',
             'statusAdvokasi',
+            'detailMedis', // Added to prevent N+1 in status_saran accessor
         ]);
     }
 }

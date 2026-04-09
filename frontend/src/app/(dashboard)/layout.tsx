@@ -49,6 +49,7 @@ export default function DashboardLayout({
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [mounted, setMounted] = useState(false);
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
@@ -64,6 +65,7 @@ export default function DashboardLayout({
     if (storedUser) {
       setUser(JSON.parse(storedUser));
     }
+    setMounted(true);
   }, []);
 
   // Click outside to close search dropdown
@@ -269,18 +271,20 @@ export default function DashboardLayout({
 
           <DropdownMenu>
             <DropdownMenuTrigger render={<button className="h-9 w-9 rounded-full bg-orange-100 text-orange-700 flex items-center justify-center font-bold text-sm border-2 border-orange-200 outline-none hover:ring-2 hover:ring-orange-300 hover:ring-offset-1 transition-all" />}>
-              {user?.nama ? user.nama.charAt(0).toUpperCase() : 'A'}
+              {mounted && user?.nama ? user.nama.charAt(0).toUpperCase() : 'A'}
             </DropdownMenuTrigger>
             {/* @ts-ignore */}
             <DropdownMenuContent className="w-56" align="end" forceMount>
               <DropdownMenuLabel className="font-normal">
-                <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">{user?.nama}</p>
-                  <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
-                  <p className="text-xs leading-none text-muted-foreground mt-1 capitalize font-semibold text-[#0ea5e9]">
-                    Role: {user?.role}
-                  </p>
-                </div>
+                {mounted && (
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">{user?.nama}</p>
+                    <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
+                    <p className="text-xs leading-none text-muted-foreground mt-1 capitalize font-semibold text-[#0ea5e9]">
+                      Role: {user?.role}
+                    </p>
+                  </div>
+                )}
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout} className="text-red-600 cursor-pointer">

@@ -7,8 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { 
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow
 } from '@/components/ui/table';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -16,7 +16,7 @@ import {
 import {
   Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger,
 } from '@/components/ui/sheet';
-import { 
+import {
   Plus, X, Building2, Briefcase, Info, CheckCircle2, ShieldAlert, CheckCircle, AtSign,
   Users, UserCheck, UserMinus, AlertTriangle, Search, Eye, ArrowUpDown, ArrowUp, ArrowDown,
   Phone, Mail, UserCircle, Package, Loader2, ChevronDown
@@ -35,6 +35,8 @@ interface Perusahaan {
   alamat?: string;
   nama_pic?: string;
   kontak_pic?: string;
+  nama_pic_lion?: string;
+  nara_hubung_lion?: string;
   pekerja_count: number;
 }
 
@@ -65,9 +67,9 @@ type SortOrder = 'asc' | 'desc';
 
 const iconsList = [Building2, Briefcase, ShieldAlert, CheckCircle2];
 const colorsList = [
-  'text-blue-500 bg-blue-50 border-blue-100', 
-  'text-amber-500 bg-amber-50 border-amber-100', 
-  'text-emerald-500 bg-emerald-50 border-emerald-100', 
+  'text-blue-500 bg-blue-50 border-blue-100',
+  'text-amber-500 bg-amber-50 border-amber-100',
+  'text-emerald-500 bg-emerald-50 border-emerald-100',
   'text-purple-500 bg-purple-50 border-purple-100'
 ];
 
@@ -145,7 +147,8 @@ export default function PerusahaanPage() {
   const [data, setData] = useState<Perusahaan[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  
+  const [statusFilter, setStatusFilter] = useState('all');
+
   // Sheet State (Add/Edit form)
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
@@ -156,6 +159,8 @@ export default function PerusahaanPage() {
     alamat: '',
     nama_pic: '',
     kontak_pic: '',
+    nama_pic_lion: '',
+    nara_hubung_lion: '',
   });
 
   // Detail Sheet State
@@ -179,7 +184,11 @@ export default function PerusahaanPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const response = await api.get('/perusahaan', { params: { search } });
+      const params: any = { search };
+      if (statusFilter && statusFilter !== 'all') {
+        params.status = statusFilter;
+      }
+      const response = await api.get('/perusahaan', { params });
       if (response.data.status === 'success') {
         setData(response.data.data.data);
       }
@@ -192,7 +201,7 @@ export default function PerusahaanPage() {
 
   useEffect(() => {
     fetchData();
-  }, [search]);
+  }, [search, statusFilter]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -220,6 +229,8 @@ export default function PerusahaanPage() {
       alamat: p.alamat || '',
       nama_pic: p.nama_pic || '',
       kontak_pic: p.kontak_pic || '',
+      nama_pic_lion: p.nama_pic_lion || '',
+      nara_hubung_lion: p.nara_hubung_lion || '',
     });
     setSheetOpen(true);
   };
@@ -233,6 +244,8 @@ export default function PerusahaanPage() {
       alamat: '',
       nama_pic: '',
       kontak_pic: '',
+      nama_pic_lion: '',
+      nara_hubung_lion: '',
     });
     setSheetOpen(true);
   };
@@ -356,8 +369,8 @@ export default function PerusahaanPage() {
 
   const SortIcon = ({ field }: { field: SortField }) => {
     if (sortField !== field) return <ArrowUpDown className="h-3 w-3 ml-1 text-slate-300" />;
-    return sortOrder === 'asc' 
-      ? <ArrowUp className="h-3 w-3 ml-1 text-[#0ea5e9]" /> 
+    return sortOrder === 'asc'
+      ? <ArrowUp className="h-3 w-3 ml-1 text-[#0ea5e9]" />
       : <ArrowDown className="h-3 w-3 ml-1 text-[#0ea5e9]" />;
   };
 
@@ -365,23 +378,23 @@ export default function PerusahaanPage() {
     switch (status) {
       case 'aktif':
         return (
-          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-600 border border-emerald-100">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5"></span>
-            Aktif
+          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-600 border border-rose-100">
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 mr-1.5"></span>
+            Berkasus
           </span>
         );
       case 'pending':
         return (
           <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-600 border border-amber-100">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mr-1.5"></span>
-            Pantauan
+            Dalam Pantauan
           </span>
         );
       case 'tidak_aktif':
       default:
         return (
-          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
-            <span className="w-1.5 h-1.5 rounded-full bg-slate-400 mr-1.5"></span>
+          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-600 border border-emerald-100">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5"></span>
             Selesai
           </span>
         );
@@ -417,148 +430,186 @@ export default function PerusahaanPage() {
             Kelola informasi dan status kerjasama perusahaan mitra Anda secara terpusat.
           </p>
         </div>
+<<<<<<< HEAD
         
-        <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-          <SheetTrigger render={<Button onClick={openCreate} className="bg-[#0284c7] hover:bg-[#0369a1] text-white font-semibold h-11 px-6 rounded-lg shadow-sm" />}>
-            <Plus className="mr-2 h-5 w-5" />
-            Tambah Perusahaan
-          </SheetTrigger>
-          <SheetContent className="sm:max-w-xl p-0 overflow-hidden flex flex-col bg-white border-l shadow-2xl">
-            <SheetHeader className="px-8 py-6 border-b border-slate-100 bg-white z-10">
-              <div className="flex justify-between items-start">
-                <div>
-                  <SheetTitle className="text-xl font-bold text-slate-900">{editId ? 'Edit Data Perusahaan' : 'Tambah Perusahaan Baru'}</SheetTitle>
-                  <SheetDescription className="mt-1 text-slate-500">
-                    {editId ? 'Update company profile and compliance status' : 'Masukkan profil perusahaan mitra baru ke dalam sistem advokasi.'}
-                  </SheetDescription>
+        <div className="flex flex-col sm:flex-row items-end sm:items-center gap-3 w-full sm:w-auto">
+          <Select value={statusFilter} onValueChange={(v: any) => setStatusFilter(v || 'all')}>
+            <SelectTrigger className="w-full sm:w-[180px] bg-white h-11 border-slate-200 focus:ring-[#0ea5e9]">
+              <SelectValue placeholder="Semua Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Semua Status</SelectItem>
+              <SelectItem value="aktif">Berkasus</SelectItem>
+              <SelectItem value="pending">Dalam Pantauan</SelectItem>
+              <SelectItem value="tidak_aktif">Selesai</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+            <SheetTrigger render={<Button onClick={openCreate} className="bg-[#0284c7] hover:bg-[#0369a1] text-white font-semibold h-11 px-6 rounded-lg shadow-sm w-full sm:w-auto" />}>
+              <Plus className="mr-2 h-5 w-5" />
+              Tambah Perusahaan
+            </SheetTrigger>
+            <SheetContent className="sm:max-w-xl p-0 overflow-hidden flex flex-col bg-white border-l shadow-2xl">
+              <SheetHeader className="px-8 py-6 border-b border-slate-100 bg-white z-10">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <SheetTitle className="text-xl font-bold text-slate-900">{editId ? 'Edit Data Perusahaan' : 'Tambah Perusahaan Baru'}</SheetTitle>
+                    <SheetDescription className="mt-1 text-slate-500">
+                      {editId ? 'Update company profile and compliance status' : 'Masukkan profil perusahaan mitra baru ke dalam sistem advokasi.'}
+                    </SheetDescription>
+                  </div>
                 </div>
-              </div>
-            </SheetHeader>
-            
-            <div className="flex-1 overflow-y-auto px-8 py-6 custom-scrollbar">
-              <form id="perusahaan-form" onSubmit={handleSubmit} className="space-y-8 pb-4">
-                
-                {/* Section 1 */}
-                <div className="space-y-5">
-                  <div className="flex items-center gap-2">
-                    <div className="w-1 h-4 bg-[#0ea5e9] rounded-full"></div>
-                    <h3 className="text-xs font-bold text-[#94a3b8] uppercase tracking-widest">DATA UTAMA</h3>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label className="text-xs font-bold text-slate-600">NAMA PERUSAHAAN</Label>
-                    <Input 
-                      placeholder="Contoh: PT. Maju Bersama" 
-                      className="h-11 bg-slate-50/50 border-slate-200 focus-visible:ring-[#0ea5e9]"
-                      value={formData.nama_perusahaan}
-                      onChange={(e) => setFormData({...formData, nama_perusahaan: e.target.value})}
-                      required 
-                    />
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
+              </SheetHeader>
+
+              <div className="flex-1 overflow-y-auto px-8 py-6 custom-scrollbar">
+                <form id="perusahaan-form" onSubmit={handleSubmit} className="space-y-8 pb-4">
+
+                  {/* Section 1 */}
+                  <div className="space-y-5">
+                    <div className="flex items-center gap-2">
+                      <div className="w-1 h-4 bg-[#0ea5e9] rounded-full"></div>
+                      <h3 className="text-xs font-bold text-[#94a3b8] uppercase tracking-widest">DATA UTAMA</h3>
+                    </div>
+
                     <div className="space-y-2">
-                      <Label className="text-xs font-bold text-slate-600">SEKTOR INDUSTRI</Label>
-                      <Input 
-                        placeholder="Contoh: Teknologi" 
+                      <Label className="text-xs font-bold text-slate-600">NAMA PERUSAHAAN</Label>
+                      <Input
+                        placeholder="Contoh: PT. Maju Bersama"
                         className="h-11 bg-slate-50/50 border-slate-200 focus-visible:ring-[#0ea5e9]"
-                        value={formData.sektor_industri}
-                        onChange={(e) => setFormData({...formData, sektor_industri: e.target.value})}
+                        value={formData.nama_perusahaan}
+                        onChange={(e) => setFormData({ ...formData, nama_perusahaan: e.target.value })}
+                        required
                       />
                     </div>
-                    
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-xs font-bold text-slate-600">SEKTOR INDUSTRI</Label>
+                        <Input
+                          placeholder="Contoh: Teknologi"
+                          className="h-11 bg-slate-50/50 border-slate-200 focus-visible:ring-[#0ea5e9]"
+                          value={formData.sektor_industri}
+                          onChange={(e) => setFormData({ ...formData, sektor_industri: e.target.value })}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-xs font-bold text-slate-600">STATUS PERUSAHAAN</Label>
+                        <Select
+                          value={formData.status_pendamping}
+                          onValueChange={(v: any) => setFormData({ ...formData, status_pendamping: v })}
+                        >
+                          <SelectTrigger className="h-11 bg-slate-50/50 border-slate-200 focus:ring-[#0ea5e9]">
+                            <SelectValue placeholder="Pilih status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="aktif">Berkasus</SelectItem>
+                            <SelectItem value="pending">Dalam Pantauan</SelectItem>
+                            <SelectItem value="tidak_aktif">Selesai</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section 2 */}
+                  <div className="space-y-5">
+                    <div className="flex items-center gap-2">
+                      <div className="w-1 h-4 bg-[#0ea5e9] rounded-full"></div>
+                      <h3 className="text-xs font-bold text-[#94a3b8] uppercase tracking-widest">KONTAK ADMINISTRATIF</h3>
+                    </div>
+
                     <div className="space-y-2">
-                      <Label className="text-xs font-bold text-slate-600">STATUS PENDAMPINGAN</Label>
-                      <Select 
-                        value={formData.status_pendamping} 
-                        onValueChange={(v: any) => setFormData({...formData, status_pendamping: v})}
-                      >
-                        <SelectTrigger className="h-11 bg-slate-50/50 border-slate-200 focus:ring-[#0ea5e9]">
-                          <SelectValue placeholder="Pilih status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="aktif">Aktif</SelectItem>
-                          <SelectItem value="pending">Pantauan</SelectItem>
-                          <SelectItem value="tidak_aktif">Selesai</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Section 2 */}
-                <div className="space-y-5">
-                  <div className="flex items-center gap-2">
-                    <div className="w-1 h-4 bg-[#0ea5e9] rounded-full"></div>
-                    <h3 className="text-xs font-bold text-[#94a3b8] uppercase tracking-widest">KONTAK ADMINISTRATIF</h3>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label className="text-xs font-bold text-slate-600">ALAMAT PERUSAHAAN</Label>
-                    <Textarea 
-                      placeholder="Masukkan alamat lengkap kantor pusat..." 
-                      className="min-h-[100px] resize-none bg-slate-50/50 border-slate-200 focus-visible:ring-[#0ea5e9]"
-                      value={formData.alamat}
-                      onChange={(e) => setFormData({...formData, alamat: e.target.value})}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label className="text-xs font-bold text-slate-600">NAMA PIC (HRD/K3)</Label>
-                    <Input 
-                      placeholder="Nama Lengkap Penanggung Jawab" 
-                      className="h-11 bg-slate-50/50 border-slate-200 focus-visible:ring-[#0ea5e9]"
-                      value={formData.nama_pic}
-                      onChange={(e) => setFormData({...formData, nama_pic: e.target.value})}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label className="text-xs font-bold text-slate-600">NOMOR TELEPON/EMAIL PIC</Label>
-                    <div className="relative">
-                      <AtSign className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                      <Input 
-                        placeholder="08xx-xxxx / email@perusahaan.com" 
-                        className="h-11 pl-10 bg-slate-50/50 border-slate-200 focus-visible:ring-[#0ea5e9]"
-                        value={formData.kontak_pic}
-                        onChange={(e) => setFormData({...formData, kontak_pic: e.target.value})}
+                      <Label className="text-xs font-bold text-slate-600">ALAMAT PERUSAHAAN</Label>
+                      <Textarea
+                        placeholder="Masukkan alamat lengkap kantor pusat..."
+                        className="min-h-[100px] resize-none bg-slate-50/50 border-slate-200 focus-visible:ring-[#0ea5e9]"
+                        value={formData.alamat}
+                        onChange={(e) => setFormData({ ...formData, alamat: e.target.value })}
                       />
                     </div>
-                  </div>
-                  
-                  <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100 flex items-start gap-3 mt-4">
-                     <CheckCircle className="h-5 w-5 text-blue-500 shrink-0 mt-0.5" />
-                     <p className="text-xs font-medium text-blue-700 leading-relaxed">
-                       Data yang diinputkan akan diverifikasi oleh sistem Azure Sentinel untuk memastikan validitas NIB dan legalitas operasional mitra.
-                     </p>
-                  </div>
-                </div>
 
-              </form>
-            </div>
-            
-            <div className="border-t border-slate-100 p-6 bg-slate-50/50 flex flex-col gap-3">
-              <Button type="submit" form="perusahaan-form" className="w-full h-12 text-sm font-bold bg-[#0284c7] hover:bg-[#0369a1] text-white">
-                {editId ? 'Simpan Perubahan' : 'Simpan Perusahaan'}
-              </Button>
-              <Button type="button" variant="outline" onClick={() => setSheetOpen(false)} className="w-full h-12 text-sm font-bold bg-white text-slate-600 border-slate-200 hover:bg-slate-100">
-                Batal
-              </Button>
-            </div>
-          </SheetContent>
-        </Sheet>
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold text-slate-600">NAMA PIC (Perusahaan)</Label>
+                      <Input
+                        placeholder="Nama Lengkap Penanggung Jawab"
+                        className="h-11 bg-slate-50/50 border-slate-200 focus-visible:ring-[#0ea5e9]"
+                        value={formData.nama_pic}
+                        onChange={(e) => setFormData({ ...formData, nama_pic: e.target.value })}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold text-slate-600">NO.TELEPON/EMAIL PIC (Perusahaan)</Label>
+                      <div className="relative">
+                        <AtSign className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                        <Input
+                          placeholder="08xx-xxxx / email@perusahaan.com"
+                          className="h-11 pl-10 bg-slate-50/50 border-slate-200 focus-visible:ring-[#0ea5e9]"
+                          value={formData.kontak_pic}
+                          onChange={(e) => setFormData({ ...formData, kontak_pic: e.target.value })}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold text-slate-600">NAMA PIC (Lion Indonesia)</Label>
+                      <Input
+                        placeholder="Nama Lengkap PIC Lion Indonesia"
+                        className="h-11 bg-slate-50/50 border-slate-200 focus-visible:ring-[#0ea5e9]"
+                        value={formData.nama_pic_lion}
+                        onChange={(e) => setFormData({ ...formData, nama_pic_lion: e.target.value })}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold text-slate-600">NARA HUBUNG (Lion Indonesia)</Label>
+                      <div className="relative">
+                        <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                        <Input
+                          placeholder="Kontak Lion Indonesia"
+                          className="h-11 pl-10 bg-slate-50/50 border-slate-200 focus-visible:ring-[#0ea5e9]"
+                          value={formData.nara_hubung_lion}
+                          onChange={(e) => setFormData({ ...formData, nara_hubung_lion: e.target.value })}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100 flex items-start gap-3 mt-4">
+                      <CheckCircle className="h-5 w-5 text-blue-500 shrink-0 mt-0.5" />
+                      <p className="text-xs font-medium text-blue-700 leading-relaxed">
+                        Data yang diinputkan akan diverifikasi oleh sistem Azure Sentinel untuk memastikan validitas NIB dan legalitas operasional mitra.
+                      </p>
+                    </div>
+                  </div>
+
+                </form>
+              </div>
+
+              <div className="border-t border-slate-100 p-6 bg-slate-50/50 flex flex-col gap-3">
+                <Button type="submit" form="perusahaan-form" className="w-full h-12 text-sm font-bold bg-[#0284c7] hover:bg-[#0369a1] text-white">
+                  {editId ? 'Simpan Perubahan' : 'Simpan Perusahaan'}
+                </Button>
+                <Button type="button" variant="outline" onClick={() => setSheetOpen(false)} className="w-full h-12 text-sm font-bold bg-white text-slate-600 border-slate-200 hover:bg-slate-100">
+                  Batal
+                </Button>
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
       </div>
 
       {/* Main Table Area */}
       <div className="bg-white rounded-[20px] shadow-sm border border-slate-100 overflow-hidden">
-        
+
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent border-b border-slate-100">
               <TableHead className="py-5 px-6 font-bold text-xs tracking-widest text-[#94a3b8]">NAMA PERUSAHAAN</TableHead>
               <TableHead className="py-5 px-6 font-bold text-xs tracking-widest text-[#94a3b8]">SEKTOR INDUSTRI</TableHead>
               <TableHead className="py-5 px-6 font-bold text-xs tracking-widest text-[#94a3b8]">JUMLAH PEKERJA</TableHead>
-              <TableHead className="py-5 px-6 font-bold text-xs tracking-widest text-[#94a3b8]">STATUS PENDAMPINGAN</TableHead>
+              <TableHead className="py-5 px-6 font-bold text-xs tracking-widest text-[#94a3b8]">STATUS PERUSAHAAN</TableHead>
               <TableHead className="py-5 px-6 font-bold text-xs tracking-widest text-[#94a3b8] text-right">AKSI</TableHead>
             </TableRow>
           </TableHeader>
@@ -583,14 +634,14 @@ export default function PerusahaanPage() {
                 const fit = Math.max(0, p.pekerja_count - Math.floor(p.pekerja_count * 0.2));
                 const note = Math.floor(p.pekerja_count * 0.15);
                 const unfit = p.pekerja_count - fit - note;
-                
+
                 return (
                   <TableRow key={p.id} className="hover:bg-slate-50/50 transition-colors group">
                     <TableCell className="py-4 px-6">
                       <div className="flex items-center gap-4">
                         {getRandomIcon(p.id)}
-                        <button 
-                          onClick={() => openDetail(p)} 
+                        <button
+                          onClick={() => openDetail(p)}
                           className="font-bold text-[#1e293b] hover:text-[#0284c7] transition-colors cursor-pointer hover:underline decoration-[#0ea5e9]/40 underline-offset-2 text-left"
                         >
                           {p.nama_perusahaan}
@@ -598,7 +649,7 @@ export default function PerusahaanPage() {
                       </div>
                     </TableCell>
                     <TableCell className="py-4 px-6 relative">
-                       <span className="font-medium text-[#475569]">{p.sektor_industri || '-'}</span>
+                      <span className="font-medium text-[#475569]">{p.sektor_industri || '-'}</span>
                     </TableCell>
                     <TableCell className="py-4 px-6">
                       <div className="flex flex-col">
@@ -628,7 +679,7 @@ export default function PerusahaanPage() {
             )}
           </TableBody>
         </Table>
-        
+
         {/* Pagination Footer */}
         {!loading && data.length > 0 && (
           <div className="border-t border-slate-100 p-4 px-6 flex items-center justify-between text-sm text-slate-500 font-medium">
@@ -648,7 +699,7 @@ export default function PerusahaanPage() {
       {/* DETAIL SHEET MODAL                                                 */}
       {/* ================================================================== */}
       <Sheet open={detailOpen} onOpenChange={setDetailOpen}>
-        <SheetContent 
+        <SheetContent
           className="sm:max-w-5xl w-full p-0 overflow-hidden flex flex-col bg-[#f8fafc] border-l shadow-2xl"
           style={{ maxWidth: '64rem' }}
         >
@@ -682,22 +733,43 @@ export default function PerusahaanPage() {
                     </div>
 
                     {/* PIC Info */}
-                    {(detailData.nama_pic || detailData.kontak_pic) && (
-                      <div className="flex flex-wrap items-center gap-4 mt-3 text-xs text-slate-500">
-                        {detailData.nama_pic && (
-                          <span className="flex items-center gap-1.5 font-medium">
-                            <UserCircle className="h-3.5 w-3.5 text-slate-400" />
-                            PIC: <span className="text-slate-700 font-semibold">{detailData.nama_pic}</span>
-                          </span>
-                        )}
-                        {detailData.kontak_pic && (
-                          <span className="flex items-center gap-1.5 font-medium">
-                            <Phone className="h-3.5 w-3.5 text-slate-400" />
-                            <span className="text-slate-700 font-semibold">{detailData.kontak_pic}</span>
-                          </span>
-                        )}
-                      </div>
-                    )}
+                    <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mt-4 text-[11px] text-slate-500 bg-slate-50/50 p-3 rounded-xl border border-slate-100">
+                      {(detailData.nama_pic || detailData.kontak_pic) && (
+                        <div className="space-y-1.5 min-w-[180px]">
+                          <p className="font-extrabold text-[9px] uppercase tracking-wider text-slate-400 mb-2">PIC PERUSAHAAN</p>
+                          {detailData.nama_pic && (
+                            <span className="flex items-center gap-1.5 font-medium">
+                              <UserCircle className="h-3 w-3 text-slate-400" />
+                              <span className="text-slate-700 font-bold">{detailData.nama_pic}</span>
+                            </span>
+                          )}
+                          {detailData.kontak_pic && (
+                            <span className="flex items-center gap-1.5 font-medium">
+                              <AtSign className="h-3 w-3 text-slate-400" />
+                              <span className="text-slate-700 font-bold">{detailData.kontak_pic}</span>
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {(detailData.nama_pic_lion || detailData.nara_hubung_lion) && (
+                        <div className="space-y-1.5 min-w-[180px]">
+                          <p className="font-extrabold text-[9px] uppercase tracking-wider text-blue-400 mb-2">PIC LION INDONESIA</p>
+                          {detailData.nama_pic_lion && (
+                            <span className="flex items-center gap-1.5 font-medium">
+                              <ShieldAlert className="h-3 w-3 text-blue-400" />
+                              <span className="text-blue-700 font-bold">{detailData.nama_pic_lion}</span>
+                            </span>
+                          )}
+                          {detailData.nara_hubung_lion && (
+                            <span className="flex items-center gap-1.5 font-medium">
+                              <Phone className="h-3 w-3 text-blue-400" />
+                              <span className="text-blue-700 font-bold">{detailData.nara_hubung_lion}</span>
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -803,7 +875,7 @@ export default function PerusahaanPage() {
                       <p className="text-sm text-slate-400 max-w-md mb-6 leading-relaxed">
                         Perusahaan <span className="font-semibold text-slate-500">{detailData.nama_perusahaan}</span> belum memiliki pekerja terdaftar dalam sistem. Tambahkan pekerja pertama untuk mulai memantau status kesehatan dan advokasi.
                       </p>
-                      <Button 
+                      <Button
                         onClick={() => { setDetailOpen(false); router.push('/pekerja'); }}
                         className="bg-[#0284c7] hover:bg-[#0369a1] text-white font-bold px-6 h-11 shadow-sm"
                       >
@@ -854,8 +926,8 @@ export default function PerusahaanPage() {
                             const jabatan = getJabatan(w);
 
                             return (
-                              <tr 
-                                key={w.id} 
+                              <tr
+                                key={w.id}
                                 className="hover:bg-white transition-colors group/row"
                               >
                                 {/* Avatar + Name + NIK */}
@@ -863,8 +935,8 @@ export default function PerusahaanPage() {
                                   <div className="flex items-center gap-3">
                                     <div className="h-9 w-9 rounded-full bg-slate-100 overflow-hidden shrink-0 border-2 border-white shadow-sm">
                                       {w.pas_foto ? (
-                                        <img 
-                                          src={`${apiBaseUrl}/storage/profil/${w.pas_foto}`} 
+                                        <img
+                                          src={`${apiBaseUrl}/storage/profil/${w.pas_foto}`}
                                           alt={w.nama_lengkap}
                                           className="w-full h-full object-cover object-top"
                                           loading="lazy"

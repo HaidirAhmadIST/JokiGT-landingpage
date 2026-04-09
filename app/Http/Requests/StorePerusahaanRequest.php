@@ -32,6 +32,8 @@ class StorePerusahaanRequest extends FormRequest
             'alamat' => ['nullable', 'string'],
             'nama_pic' => ['nullable', 'string', 'max:255'],
             'kontak_pic' => ['nullable', 'string', 'max:255'],
+            'nama_pic_lion' => ['nullable', 'string', 'max:255'],
+            'nara_hubung_lion' => ['nullable', 'string', 'max:255'],
         ];
     }
 }

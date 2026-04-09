@@ -15,6 +15,7 @@ import {
 } from 'recharts';
 import { Loader2, Users, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
+import { toast } from 'sonner';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -190,8 +191,9 @@ export default function AdvokasiBarChart() {
         setStats(res.data.data);
         setTotal(res.data.total);
       }
-    } catch {
-      // fail silently
+    } catch (error) {
+      console.error('Failed to fetch advocacy stats', error);
+      toast.error('Gagal mengambil data advokasi.');
     } finally {
       setLoading(false);
     }

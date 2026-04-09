@@ -18,6 +18,10 @@ export default function PekerjaPage() {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [total, setTotal] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [perPage] = useState(10);
+  const [lastPage, setLastPage] = useState(1);
   const [bulkOpen, setBulkOpen] = useState(false);
   const [bulkEdits, setBulkEdits] = useState<Record<number, { jenis_kelamin: string; tanggal_lahir: string }>>({});
   const [saving, setSaving] = useState(false);
@@ -25,12 +29,22 @@ export default function PekerjaPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const response = await api.get('/pekerja', { params: { search } });
+      const response = await api.get('/pekerja', { 
+        params: { 
+          search,
+          page: currentPage,
+          per_page: perPage 
+        } 
+      });
       if (response.data.status === 'success') {
-        setData(response.data.data.data);
+        const result = response.data.data;
+        setData(result.data || []);
+        setTotal(result.total || 0);
+        setLastPage(result.last_page || 1);
       }
     } catch (error) {
-      toast.error('Gagal mengambil data pekerja');
+      toast.error('Gagal mengambil data pekerja. Cek koneksi server.');
+      console.error(error);
     } finally {
       setLoading(false);
     }
@@ -38,7 +52,7 @@ export default function PekerjaPage() {
 
   useEffect(() => {
     fetchData();
-  }, [search]);
+  }, [search, currentPage]);
 
   // Find workers with incomplete data
   const incompleteWorkers = useMemo(() => {
@@ -208,18 +222,34 @@ export default function PekerjaPage() {
         {/* Pagination */}
         <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between mt-2">
           <p className="text-sm font-medium text-slate-500">
-            Menampilkan <span className="text-slate-900 font-bold">1-10</span> dari <span className="text-slate-900 font-bold">{data.length > 0 ? data.length : '150'}</span> pekerja
+            Menampilkan <span className="text-slate-900 font-bold">
+              {total > 0 ? (currentPage - 1) * perPage + 1 : 0}-
+              {Math.min(currentPage * perPage, total)}
+            </span> dari <span className="text-slate-900 font-bold">{total}</span> pekerja
           </p>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon" className="h-9 w-9 rounded-lg border-slate-200 text-slate-600">
+            <Button 
+              variant="outline" 
+              size="icon" 
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              className="h-9 w-9 rounded-lg border-slate-200 text-slate-600 disabled:opacity-30"
+            >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <Button variant="default" className="h-9 w-9 bg-[#0ea5e9] hover:bg-[#0284c7] rounded-lg font-bold text-sm">1</Button>
-            <Button variant="ghost" className="h-9 w-9 rounded-lg text-slate-600 font-bold text-sm hover:bg-slate-100">2</Button>
-            <Button variant="ghost" className="h-9 w-9 rounded-lg text-slate-600 font-bold text-sm hover:bg-slate-100">3</Button>
-            <span className="text-slate-400 font-bold px-1">...</span>
-            <Button variant="ghost" className="h-9 w-9 rounded-lg text-slate-600 font-bold text-sm hover:bg-slate-100">15</Button>
-            <Button variant="outline" size="icon" className="h-9 w-9 rounded-lg border-slate-200 text-slate-600">
+            
+            <div className="flex items-center gap-1 px-2">
+              <span className="text-sm font-bold text-slate-900">Halaman {currentPage}</span>
+              <span className="text-sm text-slate-400">dari {lastPage}</span>
+            </div>
+
+            <Button 
+              variant="outline" 
+              size="icon"
+              disabled={currentPage === lastPage || total === 0}
+              onClick={() => setCurrentPage(prev => Math.min(lastPage, prev + 1))}
+              className="h-9 w-9 rounded-lg border-slate-200 text-slate-600 disabled:opacity-30"
+            >
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
