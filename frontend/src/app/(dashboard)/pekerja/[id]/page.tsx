@@ -96,6 +96,22 @@ export default function PekerjaDetailPage() {
     }
   };
 
+  const downloadMedisDoc = async (medisId: number) => {
+    try {
+      const toastId = toast.loading('Memproses berkas medis...');
+      const response = await api.get(`/medis/${medisId}/file`, {
+        responseType: 'blob',
+      });
+      
+      const fileUrl = window.URL.createObjectURL(new Blob([response.data], { type: response.headers['content-type'] }));
+      window.open(fileUrl, '_blank');
+      toast.dismiss(toastId);
+    } catch (error) {
+      toast.dismiss();
+      toast.error('Gagal membuka berkas medis.');
+    }
+  };
+
   const updateStatusKesehatan = async (newStatus: string) => {
     try {
       setStatusLoading(true);
@@ -417,7 +433,7 @@ export default function PekerjaDetailPage() {
               </div>
             </div>
 
-            {/* Match Riwayat Pekerjaan */}
+            {/* Riwayat Pekerjaan Table */}
             <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-sm font-bold text-[#1e293b] flex items-center">
@@ -466,6 +482,69 @@ export default function PekerjaDetailPage() {
                     {(!data.riwayat_pekerja || data.riwayat_pekerja.length === 0) && (
                       <tr>
                         <td colSpan={4} className="py-8 text-center text-slate-400 text-xs">Belum ada riwayat pekerjaan.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Riwayat Kesehatan Table */}
+            <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-sm font-bold text-[#1e293b] flex items-center">
+                  <Activity className="h-4 w-4 text-[#0ea5e9] mr-2" /> Riwayat Kesehatan
+                </h3>
+                <span className="text-[11px] font-bold text-slate-400 tracking-wider uppercase">{data.detail_medis?.length || 0} REKAM MEDIS</span>
+              </div>
+
+              <div className="w-full overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-100 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">
+                      <th className="pb-3 px-2 font-bold">Tanggal & Tempat</th>
+                      <th className="pb-3 px-2 font-bold">Jenis & Dokter</th>
+                      <th className="pb-3 px-2 font-bold">Hasil Diagnosis</th>
+                      <th className="pb-3 px-2 font-bold text-right">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50/80">
+                    {data.detail_medis?.map((m: any, idx: number) => (
+                      <tr key={idx} className="hover:bg-slate-50/50 transition-colors group">
+                        <td className="py-4 px-2">
+                          <p className="text-[13px] font-bold text-slate-800">
+                             {m.tgl_pemeriksaan ? format(parseISO(m.tgl_pemeriksaan), 'dd MMM yyyy', {locale: localeID}) : '-'}
+                          </p>
+                          <p className="text-[11px] text-slate-400 mt-0.5">{m.tempat_pemeriksa || '-'}</p>
+                        </td>
+                        <td className="py-4 px-2">
+                          <p className="text-[13px] font-medium text-slate-700">{m.jenis_pemeriksa || '-'}</p>
+                          <p className="text-[11px] text-slate-400 mt-0.5">dr. {m.dokter_pemeriksa || '-'}</p>
+                        </td>
+                        <td className="py-4 px-2 max-w-[250px]">
+                          <p className="text-[12px] text-slate-600 line-clamp-2" title={m.hasil_diagnosis}>
+                            {m.hasil_diagnosis || '-'}
+                          </p>
+                        </td>
+                        <td className="py-4 px-2 text-right">
+                          {m.file_hasil_path ? (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => downloadMedisDoc(m.id)}
+                              className="h-8 text-[10px] font-bold text-[#0ea5e9] hover:bg-blue-50 border border-blue-100 rounded-lg px-3"
+                            >
+                              <FileCheck className="h-3 w-3 mr-1.5" /> Berkas
+                            </Button>
+                          ) : (
+                            <span className="text-[10px] font-bold text-slate-300 px-3 italic">Tanpa File</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                    {(!data.detail_medis || data.detail_medis.length === 0) && (
+                      <tr>
+                        <td colSpan={4} className="py-8 text-center text-slate-400 text-xs">Belum ada rekam medis terdaftar.</td>
                       </tr>
                     )}
                   </tbody>

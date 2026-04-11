@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Pekerja;
 use App\Models\StatusAdvokasi;
+use App\Models\DetailMedis;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -12,7 +13,32 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class FileController extends Controller
 {
     /**
-     * Download or view medical documentation (Detail Medis)
+     * Download or view medical documentation (Detail Medis) by specific ID
+     */
+    public function downloadMedisById(Request $request, string $id)
+    {
+        // Only admin and petugas can access medical files
+        if (!$request->user()->isAdmin() && !$request->user()->isPetugas()) {
+            return response()->json(['status' => 'error', 'message' => 'Unauthorized. Only Admin or Petugas can access medical records.'], 403);
+        }
+
+        $medis = DetailMedis::find($id);
+
+        if (!$medis || !$medis->file_hasil_path) {
+            return response()->json(['status' => 'error', 'message' => 'Dokumen medis tidak ditemukan.'], 404);
+        }
+
+        $path = $medis->file_hasil_path;
+
+        if (!Storage::disk('private')->exists($path)) {
+            return response()->json(['status' => 'error', 'message' => 'File fisik tidak ditemukan di server.'], 404);
+        }
+
+        return response()->download(Storage::disk('private')->path($path));
+    }
+
+    /**
+     * Legacy: Download or view first medical documentation for a worker
      */
     public function downloadMedis(Request $request, string $pekerja_id)
     {
