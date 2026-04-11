@@ -433,6 +433,50 @@ export default function PekerjaDetailPage() {
               </div>
             </div>
 
+            {/* Baseline Health Info Card */}
+            <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6">
+              <h3 className="text-sm font-bold text-[#1e293b] flex items-center mb-6">
+                <Activity className="h-4 w-4 text-[#0ea5e9] mr-2" /> Riwayat Kesehatan
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-12">
+                <div className="flex items-center gap-8">
+                  <div>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Golongan Darah</p>
+                    <p className="text-sm font-bold text-slate-700 bg-red-50 text-red-600 px-3 py-1 rounded-md inline-block">
+                      {data.detail_medis?.[0]?.golongan_darah || '-'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Rhesus</p>
+                    <p className="text-sm font-bold text-slate-700 bg-blue-50 text-blue-600 px-3 py-1 rounded-md inline-block">
+                      {data.detail_medis?.[0]?.rhesus || '-'}
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Alergi (Obat/Makanan/Debu)</p>
+                  <p className="text-sm font-medium text-slate-600">{data.detail_medis?.[0]?.alergi || 'Tidak ada riwayat alergi'}</p>
+                </div>
+
+                <div className="md:col-span-2">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Riwayat Penyakit Bawaan / Kronis</p>
+                  <p className="text-sm font-medium text-slate-600">{data.detail_medis?.[0]?.riwayat_penyakit || 'Tidak ada riwayat penyakit kronis'}</p>
+                </div>
+
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Riwayat Operasi</p>
+                  <p className="text-sm font-medium text-slate-600">{data.detail_medis?.[0]?.riwayat_operasi || '-'}</p>
+                </div>
+
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Obat Rutin Dikonsumsi</p>
+                  <p className="text-sm font-medium text-slate-600">{data.detail_medis?.[0]?.obat_rutin || '-'}</p>
+                </div>
+              </div>
+            </div>
+
             {/* Riwayat Pekerjaan Table */}
             <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6">
               <div className="flex justify-between items-center mb-6">
@@ -493,7 +537,7 @@ export default function PekerjaDetailPage() {
             <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-sm font-bold text-[#1e293b] flex items-center">
-                  <Activity className="h-4 w-4 text-[#0ea5e9] mr-2" /> Riwayat Kesehatan
+                  <Activity className="h-4 w-4 text-[#0ea5e9] mr-2" /> Hasil Diagnosis Terkini
                 </h3>
                 <span className="text-[11px] font-bold text-slate-400 tracking-wider uppercase">{data.detail_medis?.length || 0} REKAM MEDIS</span>
               </div>
@@ -643,55 +687,6 @@ export default function PekerjaDetailPage() {
                     )
                  })}
                </div>
-            </div>
-
-            {/* Info Medis Terkini */}
-            <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6">
-               <h3 className="text-sm font-bold text-[#1e293b] flex items-center mb-6">
-                 <Activity className="h-4 w-4 text-[#0ea5e9] mr-2" /> Info Medis Terkini
-               </h3>
-
-               {terkiniMedis ? (
-                 <>
-                   <div className="grid grid-cols-2 gap-y-4 gap-x-2 mb-6">
-                     <div>
-                       <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Tempat</p>
-                       <p className="text-[13px] font-semibold text-slate-800 leading-tight">{terkiniMedis.tempat_pemeriksa || 'RS Siloam Karawaci'}</p>
-                     </div>
-                     <div>
-                       <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Tanggal</p>
-                       <p className="text-[13px] font-semibold text-slate-800 leading-tight">
-                        {terkiniMedis.tgl_pemeriksaan 
-                          ? format(parseISO(terkiniMedis.tgl_pemeriksaan), 'dd MMM yyyy', {locale: localeID}) 
-                          : '-'}
-                       </p>
-                     </div>
-                     <div>
-                       <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Jenis</p>
-                       <p className="text-[13px] font-semibold text-slate-800 leading-tight">{terkiniMedis.jenis_pemeriksa || 'MCU Tahunan'}</p>
-                     </div>
-                     <div>
-                       <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Dokter</p>
-                       <p className="text-[13px] font-semibold text-slate-800 leading-tight">{terkiniMedis.dokter_pemeriksa || '-'}</p>
-                     </div>
-                   </div>
-
-                   <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2">Ringkasan Diagnosis</p>
-                   <div className="bg-slate-50 border border-slate-100/50 rounded-xl p-4 mb-6">
-                     <p className="text-slate-600 text-xs leading-relaxed italic">
-                       "{terkiniMedis.hasil_diagnosis || 'Kondisi pekerja dinyatakan cukup sehat namun membutuhkan observasi terkait keluhan pada pendengaran.'}"
-                     </p>
-                   </div>
-                 </>
-               ) : (
-                 <div className="text-center p-6 text-slate-400 bg-slate-50 rounded-xl mb-6 border border-dashed border-slate-200">
-                   <p className="text-xs">Belum ada rekam medis terdaftar.</p>
-                 </div>
-               )}
-
-               <Button variant="outline" className="w-full border-[#0ea5e9] text-[#0ea5e9] hover:bg-blue-50 hover:text-[#0284c7] font-bold text-xs h-11 tracking-wider">
-                 UNDUH LAPORAN LENGKAP
-               </Button>
             </div>
 
           </div>

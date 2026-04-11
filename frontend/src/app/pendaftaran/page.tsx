@@ -79,7 +79,13 @@ export default function PendaftaranPekerjaPage() {
     tempat_pemeriksaan: '',
     jenis_pemeriksaan: '',
     dokter: '',
-    hasil_diagnosis: ''
+    hasil_diagnosis: '',
+    golongan_darah: '',
+    rhesus: '',
+    riwayat_penyakit: '',
+    alergi: '',
+    riwayat_operasi: '',
+    obat_rutin: ''
   });
 
   // Status Advokasi State
@@ -166,6 +172,12 @@ export default function PendaftaranPekerjaPage() {
         jenis_pemeriksa: medisData.jenis_pemeriksaan,
         dokter_pemeriksa: medisData.dokter,
         hasil_diagnosis: medisData.hasil_diagnosis,
+        golongan_darah: medisData.golongan_darah,
+        rhesus: medisData.rhesus,
+        riwayat_penyakit: medisData.riwayat_penyakit,
+        alergi: medisData.alergi,
+        riwayat_operasi: medisData.riwayat_operasi,
+        obat_rutin: medisData.obat_rutin,
       }] : [];
 
       const response = await api.post('/pekerja', {
@@ -265,7 +277,7 @@ export default function PendaftaranPekerjaPage() {
 
             <div className="flex flex-col items-center">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${step >= 3 ? 'bg-[#0ea5e9] text-white' : 'bg-slate-200 text-slate-500'}`}>3</div>
-              <span className={`text-xs font-semibold mt-2 text-center ${step >= 3 ? 'text-[#0ea5e9]' : 'text-slate-400'}`}>RIWAYAT <br />MEDIS</span>
+              <span className={`text-xs font-semibold mt-2 text-center ${step >= 3 ? 'text-[#0ea5e9]' : 'text-slate-400'}`}>RIWAYAT <br />KESEHATAN</span>
             </div>
             <div className={`w-12 h-[2px] mx-2 -mt-6 ${step >= 4 ? 'bg-[#0ea5e9]' : 'bg-slate-200'}`} />
 
@@ -655,10 +667,88 @@ export default function PendaftaranPekerjaPage() {
               </div>
 
               <div className="space-y-8">
+                {/* Riwayat Kesehatan Baseline */}
+                <div className="p-6 bg-white border border-slate-100 shadow-sm rounded-xl">
+                  <h3 className="flex items-center text-sm font-bold text-[#0ea5e9] mb-6 uppercase tracking-wider">
+                    <Activity className="h-4 w-4 mr-2" /> RIWAYAT KESEHATAN
+                  </h3>
+
+                  <div className="space-y-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                      <div className="space-y-2">
+                        <Label>Golongan Darah</Label>
+                        <Select value={medisData.golongan_darah} onValueChange={(v) => setMedisData({ ...medisData, golongan_darah: v })}>
+                          <SelectTrigger className="h-11">
+                            <SelectValue placeholder="Pilih Golongan Darah" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="A">A</SelectItem>
+                            <SelectItem value="B">B</SelectItem>
+                            <SelectItem value="AB">AB</SelectItem>
+                            <SelectItem value="O">O</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Rhesus</Label>
+                        <Select value={medisData.rhesus} onValueChange={(v) => setMedisData({ ...medisData, rhesus: v })}>
+                          <SelectTrigger className="h-11">
+                            <SelectValue placeholder="Pilih Rhesus" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="+">+</SelectItem>
+                            <SelectItem value="-">-</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Riwayat Penyakit Bawaan / Kronis</Label>
+                      <Input 
+                        placeholder="Contoh: Asma, Diabetes (pisahkan dengan koma jika lebih dari satu)" 
+                        className="h-11"
+                        value={medisData.riwayat_penyakit}
+                        onChange={e => setMedisData({ ...medisData, riwayat_penyakit: e.target.value })}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Alergi Obat / Makanan / Debu</Label>
+                      <Input 
+                        placeholder="Contoh: Penisilin, Udang, Debu Kayu" 
+                        className="h-11"
+                        value={medisData.alergi}
+                        onChange={e => setMedisData({ ...medisData, alergi: e.target.value })}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Riwayat Operasi</Label>
+                      <Input 
+                        placeholder="Contoh: Operasi Usus Buntu (2020)" 
+                        className="h-11"
+                        value={medisData.riwayat_operasi}
+                        onChange={e => setMedisData({ ...medisData, riwayat_operasi: e.target.value })}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Obat Rutin Yang Dikonsumsi</Label>
+                      <Input 
+                        placeholder="Contoh: Metformin" 
+                        className="h-11"
+                        value={medisData.obat_rutin}
+                        onChange={e => setMedisData({ ...medisData, obat_rutin: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 {/* Detail Medis */}
                 <div className="p-6 bg-white border border-slate-100 shadow-sm rounded-xl">
                   <h3 className="flex items-center text-sm font-bold text-[#0ea5e9] mb-6 uppercase tracking-wider">
-                    <ShieldAlert className="h-4 w-4 mr-2" /> Detail Medis
+                    <ShieldAlert className="h-4 w-4 mr-2" /> Detail Pemeriksaan Medis
                   </h3>
 
                   <div className="space-y-5">

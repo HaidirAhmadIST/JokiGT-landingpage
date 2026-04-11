@@ -52,6 +52,12 @@ class StorePekerjaRequest extends FormRequest
             'medis.*.jenis_pemeriksa' => ['required', 'string'],
             'medis.*.dokter_pemeriksa' => ['required', 'string'],
             'medis.*.hasil_diagnosis' => ['required', 'string'],
+            'medis.*.golongan_darah' => ['nullable', 'string', 'in:A,B,AB,O'],
+            'medis.*.rhesus' => ['nullable', 'string', 'in:+,-'],
+            'medis.*.riwayat_penyakit' => ['nullable', 'string'],
+            'medis.*.alergi' => ['nullable', 'string'],
+            'medis.*.riwayat_operasi' => ['nullable', 'string'],
+            'medis.*.obat_rutin' => ['nullable', 'string'],
         ];
     }
 }
