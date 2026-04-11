@@ -22,12 +22,16 @@ class RiwayatPekerja extends Model
      */
     protected $fillable = [
         'pekerja_id',
+        'status_pekerjaan',
         'nama_perusahaan',
+        'nama_agen_penyalur',
         'deskripsi_usaha',
         'bagian',
+        'jabatan',
         'deskripsi_pekerjaan',
         'tgl_masuk',
         'tgl_keluar',
+        'tanggal_selesai_kontrak',
     ];
 
     /**
@@ -40,6 +44,7 @@ class RiwayatPekerja extends Model
         return [
             'tgl_masuk' => 'date',
             'tgl_keluar' => 'date',
+            'tanggal_selesai_kontrak' => 'date',
         ];
     }
 

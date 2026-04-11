@@ -39,19 +39,42 @@ class StorePekerjaRequest extends FormRequest
 
             // Riwayat Pekerja Data (Optional)
             'riwayat' => ['nullable', 'array'],
+            'riwayat.*.status_pekerjaan' => ['nullable', 'string'],
             'riwayat.*.nama_perusahaan' => ['required', 'string'],
+            'riwayat.*.nama_agen_penyalur' => ['nullable', 'string'],
             'riwayat.*.deskripsi_usaha' => ['nullable', 'string'],
             'riwayat.*.bagian' => ['nullable', 'string'],
+            'riwayat.*.jabatan' => ['nullable', 'string'],
             'riwayat.*.tgl_masuk' => ['nullable', 'date'],
             'riwayat.*.tgl_keluar' => ['nullable', 'date', 'after_or_equal:riwayat.*.tgl_masuk'],
+            'riwayat.*.tanggal_selesai_kontrak' => ['nullable', 'date', 'after_or_equal:riwayat.*.tgl_masuk'],
 
-            // Detail Medis Data (Optional)
+            // Riwayat Medis (Baseline) Data (Optional)
+            'riwayat_medis' => ['nullable', 'array'],
+            'riwayat_medis.golongan_darah' => ['nullable', 'in:A,B,AB,O'],
+            'riwayat_medis.rhesus' => ['nullable', 'in:+,-'],
+            'riwayat_medis.riwayat_penyakit' => ['nullable', 'array'],
+            'riwayat_medis.alergi' => ['nullable', 'array'],
+            'riwayat_medis.riwayat_operasi' => ['nullable', 'array'],
+            'riwayat_medis.obat_rutin' => ['nullable', 'string'],
+
+            // Detail Medis (Transactional) Data (Optional)
             'medis' => ['nullable', 'array'],
-            'medis.*.tgl_pemeriksaan' => ['required', 'date'],
-            'medis.*.tempat_pemeriksa' => ['required', 'string'],
-            'medis.*.jenis_pemeriksa' => ['required', 'string'],
-            'medis.*.dokter_pemeriksa' => ['required', 'string'],
+            'medis.*.tanggal_pemeriksaan' => ['required', 'date', 'before_or_equal:today'],
+            'medis.*.tempat_pemeriksaan' => ['required', 'string', 'max:255'],
+            'medis.*.jenis_pemeriksaan' => ['required', 'in:Rawat Jalan,Rawat Inap,MCU,IGD,Lainnya'],
+            'medis.*.nama_dokter' => ['required', 'string', 'max:255'],
             'medis.*.hasil_diagnosis' => ['required', 'string'],
+        ];
+    }
+    
+    /**
+     * Get custom messages for validator errors.
+     */
+    public function messages(): array
+    {
+        return [
+            'medis.*.tanggal_pemeriksaan.before_or_equal' => 'Tanggal pemeriksaan tidak boleh mendahului hari ini.',
         ];
     }
 }

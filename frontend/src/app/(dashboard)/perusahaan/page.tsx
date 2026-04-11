@@ -430,7 +430,6 @@ export default function PerusahaanPage() {
             Kelola informasi dan status kerjasama perusahaan mitra Anda secara terpusat.
           </p>
         </div>
-
         <div className="flex flex-col sm:flex-row items-end sm:items-center gap-3 w-full sm:w-auto">
           <Select value={statusFilter} onValueChange={(v: any) => setStatusFilter(v || 'all')}>
             <SelectTrigger className="w-full sm:w-[180px] bg-white h-11 border-slate-200 focus:ring-[#0ea5e9]">
@@ -445,12 +444,9 @@ export default function PerusahaanPage() {
           </Select>
 
           <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-            {/* @ts-ignore */}
-            <SheetTrigger asChild>
-              <Button onClick={openCreate} className="bg-[#0284c7] hover:bg-[#0369a1] text-white font-semibold h-11 px-6 rounded-lg shadow-sm w-full sm:w-auto">
-                <Plus className="mr-2 h-5 w-5" />
-                Tambah Perusahaan
-              </Button>
+            <SheetTrigger render={<Button onClick={openCreate} className="bg-[#0284c7] hover:bg-[#0369a1] text-white font-semibold h-11 px-6 rounded-lg shadow-sm w-full sm:w-auto" />}>
+              <Plus className="mr-2 h-5 w-5" />
+              Tambah Perusahaan
             </SheetTrigger>
             <SheetContent className="sm:max-w-xl p-0 overflow-hidden flex flex-col bg-white border-l shadow-2xl">
               <SheetHeader className="px-8 py-6 border-b border-slate-100 bg-white z-10">
