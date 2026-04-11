@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { 
   ArrowLeft, Printer, Pin, Mail, Phone, MapPin, 
   Briefcase, ShieldAlert, CheckCircle2, Circle, Edit3, 
-  Download, Image as ImageIcon, Activity, FileText, FileCheck
+  Download, Image as ImageIcon, Activity, FileText, FileCheck, ClipboardList
 } from 'lucide-react';
 import { format, differenceInYears, parseISO } from 'date-fns';
 import { id as localeID } from 'date-fns/locale';
@@ -268,7 +268,7 @@ export default function PekerjaDetailPage() {
                 )}
               </p>
               <div className="flex gap-2 mt-3 text-[10px] font-bold">
-                <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-md tracking-wider uppercase">{currentJob?.bagian || 'PRODUKSI'}</span>
+                <span className="px-3 py-1 bg-[#0ea5e9]/10 text-[#0ea5e9] rounded-md tracking-wider uppercase">{currentJob?.bagian || 'PRODUKSI'}</span>
                 <span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-md tracking-wider uppercase">{currentJob?.status_pekerjaan || 'TETAP'}</span>
               </div>
             </div>
@@ -276,29 +276,31 @@ export default function PekerjaDetailPage() {
 
           {/* Right: Stats */}
           <div className="flex flex-wrap lg:flex-nowrap gap-4 w-full lg:w-auto h-full">
-              <div className={`bg-slate-50/50 border border-slate-100 rounded-xl p-4 flex-1 min-w-[170px] relative ${isAdmin ? 'group/status' : ''}`}>
+              <div className={`bg-slate-50/50 border border-slate-100 rounded-xl p-4 flex-1 min-w-[170px] relative transition-all ${isAdmin ? 'hover:bg-blue-50/30 cursor-pointer group/status border-dashed' : ''}`}>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Status Kesehatan</p>
                 <div className="flex items-center gap-2">
                   <span className={`text-xl font-bold capitalize ${
-                    data.status_kesehatan === 'sehat' ? 'text-emerald-600' : 
-                    data.status_kesehatan === 'sakit_ringan' ? 'text-amber-600' : 'text-rose-600'
+                    data.status_kesehatan === 'fit' ? 'text-emerald-600' : 
+                    data.status_kesehatan === 'fit_with_note' ? 'text-amber-600' : 'text-rose-600'
                   }`}>
-                    {data.status_kesehatan === 'sehat' ? 'Fit' : 
-                     data.status_kesehatan === 'sakit_ringan' ? 'Fit with Note' : 
-                     data.status_kesehatan === 'sakit_berat' ? 'Unfit' : data.status_kesehatan}
+                    {data.status_kesehatan === 'fit' ? 'Fit' : 
+                     data.status_kesehatan === 'fit_with_note' ? 'Fit with Note' : 
+                     data.status_kesehatan === 'unfit' ? 'Unfit' : data.status_kesehatan}
                   </span>
+                  
+                  {isAdmin && <Edit3 className="h-3.5 w-3.5 text-slate-400 group-hover/status:text-[#0ea5e9] transition-colors" />}
                   
                   {/* Status Switcher Popover Logic (Only for admin) */}
                   {isAdmin && (
                     <select 
-                      className="absolute inset-0 opacity-0 cursor-pointer"
+                      className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
                       value={data.status_kesehatan}
                       onChange={(e) => updateStatusKesehatan(e.target.value)}
                       disabled={statusLoading}
                     >
-                      <option value="sehat">Fit</option>
-                      <option value="sakit_ringan">Fit with Note</option>
-                      <option value="sakit_berat">Unfit</option>
+                      <option value="fit">Fit</option>
+                      <option value="fit_with_note">Fit with Note</option>
+                      <option value="unfit">Unfit</option>
                     </select>
                   )}
                 </div>
@@ -308,15 +310,8 @@ export default function PekerjaDetailPage() {
                   <div className="mt-2 flex items-center gap-1.5 animate-pulse">
                     <span className="w-1.5 h-1.5 bg-amber-500 rounded-full"></span>
                     <span className="text-[9px] font-extrabold text-amber-600 uppercase tracking-tighter">
-                      Saran: {data.status_saran === 'sehat' ? 'Fit' : data.status_saran === 'sakit_ringan' ? 'Note' : 'Unfit'}
+                      Saran: {data.status_saran === 'fit' ? 'Fit' : data.status_saran === 'fit_with_note' ? 'Note' : 'Unfit'}
                     </span>
-                  </div>
-                )}
-                
-                {/* Tooltip hint (Only for admin) */}
-                {isAdmin && (
-                  <div className="absolute -top-1 px-2 py-0.5 bg-slate-800 text-white text-[8px] font-bold rounded opacity-0 group-hover/status:opacity-100 transition-opacity pointer-events-none">
-                    KLIK UNTUK MENGUBAH
                   </div>
                 )}
               </div>
@@ -348,6 +343,31 @@ export default function PekerjaDetailPage() {
           {/* LEFT COLUMN (Wider) */}
           <div className="lg:col-span-8 space-y-6">
             
+            {/* Contact Info Card */}
+            <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6">
+              <h3 className="text-sm font-bold text-[#1e293b] flex items-center mb-6">
+                <MapPin className="h-4 w-4 text-[#0ea5e9] mr-2" /> Informasi Kontak
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-6">
+                  <div>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Email Address</p>
+                    <p className="text-sm font-semibold text-slate-700 flex items-center hover:text-[#0ea5e9] transition-colors cursor-pointer"><Mail className="h-3 w-3 mr-1.5 text-slate-400" /> {data.user?.email || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Telepon / WhatsApp</p>
+                    <p className="text-sm font-semibold text-slate-700 flex items-center hover:text-[#0ea5e9] transition-colors cursor-pointer"><Phone className="h-3 w-3 mr-1.5 text-slate-400" /> {data.whatsapp || '-'}</p>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Alamat Tinggal</p>
+                  <p className="text-sm font-semibold text-slate-700 leading-relaxed pr-8">
+                    {data.domisili || 'Alamat belum diatur dalam sistem.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
             {/* Admin Note Card */}
             <div className="bg-[#fffdf5] border border-orange-100/60 shadow-sm rounded-2xl p-6 relative overflow-hidden">
               <div className="absolute top-0 left-0 w-1.5 h-full bg-orange-300"></div>
@@ -392,32 +412,7 @@ export default function PekerjaDetailPage() {
               </div>
             </div>
 
-            {/* Contact Info Card */}
-            <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6">
-              <h3 className="text-sm font-bold text-[#1e293b] flex items-center mb-6">
-                <MapPin className="h-4 w-4 text-[#0ea5e9] mr-2" /> Informasi Kontak
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="space-y-6">
-                  <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Email Address</p>
-                    <p className="text-sm font-semibold text-slate-700 flex items-center"><Mail className="h-3 w-3 mr-1.5 text-slate-400" /> {data.user?.email || '-'}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Telepon / WhatsApp</p>
-                    <p className="text-sm font-semibold text-slate-700 flex items-center"><Phone className="h-3 w-3 mr-1.5 text-slate-400" /> {data.whatsapp || '-'}</p>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Alamat Tinggal</p>
-                  <p className="text-sm font-semibold text-slate-700 leading-relaxed pr-8">
-                    {data.domisili || 'Alamat belum diatur dalam sistem.'}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Match Riwayat Pekerjaan */}
+            {/* Riwayat Pekerjaan */}
             <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-sm font-bold text-[#1e293b] flex items-center">
@@ -455,7 +450,7 @@ export default function PekerjaDetailPage() {
                            </td>
                            <td className="py-4 px-2 text-right">
                              {isActive ? (
-                               <span className="px-2 py-1 bg-blue-50 text-blue-600 text-[9px] font-extrabold tracking-wide rounded-md">AKTIF</span>
+                               <span className="px-2 py-1 bg-[#0ea5e9]/10 text-[#0ea5e9] text-[9px] font-extrabold tracking-wide rounded-md">AKTIF</span>
                              ) : (
                                <span className="px-2 py-1 bg-slate-100 text-slate-500 text-[9px] font-extrabold tracking-wide rounded-md">SELESAI</span>
                              )}
@@ -466,6 +461,173 @@ export default function PekerjaDetailPage() {
                     {(!data.riwayat_pekerja || data.riwayat_pekerja.length === 0) && (
                       <tr>
                         <td colSpan={4} className="py-8 text-center text-slate-400 text-xs">Belum ada riwayat pekerjaan.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* BARU: Profil Medis Dasar (Baseline) */}
+            <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6">
+               <h3 className="text-sm font-bold text-[#1e293b] flex items-center mb-6">
+                 <ClipboardList className="h-4 w-4 text-[#0ea5e9] mr-2" /> Profil Medis Dasar
+               </h3>
+               
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
+                 <div className="space-y-6">
+                   <div>
+                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Golongan Darah & Rhesus</p>
+                     <p className="text-[14px] font-bold text-slate-700">
+                        {data.riwayat_medis?.golongan_darah || '-'} {data.riwayat_medis?.rhesus || ''}
+                     </p>
+                   </div>
+                   <div>
+                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Penyakit Bawaan / Kronis</p>
+                     <p className="text-[13px] font-semibold text-slate-600 leading-relaxed">
+                        {Array.isArray(data.riwayat_medis?.riwayat_penyakit) && data.riwayat_medis.riwayat_penyakit.length > 0 
+                          ? data.riwayat_medis.riwayat_penyakit.join(', ') 
+                          : (data.riwayat_medis?.riwayat_penyakit || 'Tidak ada catatan')}
+                     </p>
+                   </div>
+                   <div>
+                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Alergi (Obat/Makanan/Debu)</p>
+                     <p className="text-[13px] font-semibold text-slate-600 leading-relaxed">
+                        {Array.isArray(data.riwayat_medis?.alergi) && data.riwayat_medis.alergi.length > 0 
+                          ? data.riwayat_medis.alergi.join(', ') 
+                          : (data.riwayat_medis?.alergi || 'Tidak ada catatan')}
+                     </p>
+                   </div>
+                 </div>
+
+                 <div className="space-y-6">
+                   <div>
+                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Riwayat Operasi</p>
+                     <p className="text-[13px] font-semibold text-slate-600 leading-relaxed">
+                        {Array.isArray(data.riwayat_medis?.riwayat_operasi) && data.riwayat_medis.riwayat_operasi.length > 0 
+                          ? data.riwayat_medis.riwayat_operasi.join(', ') 
+                          : (data.riwayat_medis?.riwayat_operasi || 'Tidak ada catatan')}
+                     </p>
+                   </div>
+                   <div>
+                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Obat Rutin Yang Dikonsumsi</p>
+                     <p className="text-[13px] font-semibold text-slate-600 leading-relaxed">
+                        {data.riwayat_medis?.obat_rutin || 'Tidak ada catatan'}
+                     </p>
+                   </div>
+                 </div>
+               </div>
+            </div>
+
+            {/* BARU: Info Medis Terkini (Moved from Right Column) */}
+            <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6">
+               <h3 className="text-sm font-bold text-[#1e293b] flex items-center mb-6">
+                 <Activity className="h-4 w-4 text-[#0ea5e9] mr-2" /> Info Medis Terkini
+               </h3>
+
+               {terkiniMedis ? (
+                 <div className="flex flex-col md:flex-row gap-8">
+                   <div className="flex-1">
+                    <div className="grid grid-cols-2 gap-y-4 gap-x-8 mb-6">
+                      <div>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Fasilitas Medis</p>
+                        <p className="text-[14px] font-bold text-slate-800 leading-tight">{terkiniMedis.tempat_pemeriksa || terkiniMedis.tempat_pemeriksaan || '-'}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Tanggal Periksa</p>
+                        <p className="text-[14px] font-bold text-slate-800 leading-tight">
+                        {terkiniMedis.tgl_pemeriksaan || terkiniMedis.tanggal_pemeriksaan
+                          ? format(parseISO(terkiniMedis.tgl_pemeriksaan || terkiniMedis.tanggal_pemeriksaan), 'dd MMMM yyyy', {locale: localeID}) 
+                          : '-'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Jenis Layanan</p>
+                        <p className="text-[14px] font-bold text-slate-800 leading-tight">{terkiniMedis.jenis_pemeriksa || terkiniMedis.jenis_pemeriksaan || '-'}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Dokter / Tenaga Medis</p>
+                        <p className="text-[14px] font-bold text-slate-800 leading-tight">{terkiniMedis.dokter_pemeriksa || terkiniMedis.nama_dokter || '-'}</p>
+                      </div>
+                    </div>
+                   </div>
+
+                   <div className="flex-1 flex flex-col justify-between">
+                    <div>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Ringkasan Diagnosis</p>
+                      <div className="bg-slate-50 border border-slate-100/50 rounded-xl p-4 mb-4">
+                        <p className="text-slate-600 text-[13px] leading-relaxed italic">
+                          "{terkiniMedis.hasil_diagnosis || 'Tidak ada ringkasan diagnosis.'}"
+                        </p>
+                      </div>
+                    </div>
+                    <Button variant="outline" className="w-full border-[#0ea5e9] text-[#0ea5e9] hover:bg-blue-50 hover:text-[#0284c7] font-bold text-xs h-10 tracking-wider">
+                      LIHAT LAPORAN LENGKAP
+                    </Button>
+                   </div>
+                 </div>
+               ) : (
+                 <div className="text-center p-8 text-slate-400 bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
+                   <p className="text-xs font-medium">Belum ada rekam medis terdaftar dalam sistem.</p>
+                 </div>
+               )}
+            </div>
+
+            {/* BARU: Tabel Riwayat Kesehatan (Bottom) */}
+            <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-sm font-bold text-[#1e293b] flex items-center">
+                  <FileCheck className="h-4 w-4 text-[#0ea5e9] mr-2" /> Riwayat Kesehatan
+                </h3>
+              </div>
+
+              <div className="w-full overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-100 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">
+                      <th className="pb-3 px-2 font-bold">TANGGAL & JENIS</th>
+                      <th className="pb-3 px-2 font-bold">HASIL DIAGNOSIS</th>
+                      <th className="pb-3 px-2 font-bold">FASILITAS MEDIS</th>
+                      <th className="pb-3 px-2 font-bold text-right">STATUS KESEHATAN</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50/80">
+                    {data.detail_medis?.map((m: any, idx: number) => {
+                       const statusLabel = m.status_kesehatan === 'fit' ? 'Fit' : 
+                                         m.status_kesehatan === 'fit_with_note' ? 'Fit with Note' : 
+                                         m.status_kesehatan === 'unfit' ? 'Unfit' : (m.status_kesehatan || 'Fit');
+                       
+                       const statusColor = m.status_kesehatan === 'fit' ? 'bg-emerald-50 text-emerald-600' : 
+                                         m.status_kesehatan === 'fit_with_note' ? 'bg-amber-50 text-amber-600' : 
+                                         m.status_kesehatan === 'unfit' ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600';
+
+                       return (
+                         <tr key={idx} className="hover:bg-slate-50/50 transition-colors group">
+                           <td className="py-4 px-2">
+                             <p className="text-[13px] font-bold text-slate-800">
+                                {m.tanggal_pemeriksaan ? format(parseISO(m.tanggal_pemeriksaan), 'dd MMM yyyy', {locale: localeID}) : '-'}
+                             </p>
+                             <p className="text-[11px] text-[#0ea5e9] font-bold mt-0.5">{m.jenis_pemeriksaan || '-'}</p>
+                           </td>
+                           <td className="py-4 px-2">
+                             <p className="text-[13px] text-slate-600 line-clamp-2 max-w-[200px]" title={m.hasil_diagnosis}>
+                                {m.hasil_diagnosis || '-'}
+                             </p>
+                           </td>
+                           <td className="py-4 px-2">
+                             <p className="text-[12px] font-medium text-slate-700">{m.tempat_pemeriksaan || '-'}</p>
+                           </td>
+                           <td className="py-4 px-2 text-right">
+                              <span className={`px-2 py-1 ${statusColor} text-[9px] font-extrabold tracking-wide rounded-md whitespace-nowrap`}>
+                                {statusLabel.toUpperCase()}
+                              </span>
+                           </td>
+                         </tr>
+                       );
+                    })}
+                    {(!data.detail_medis || data.detail_medis.length === 0) && (
+                      <tr>
+                        <td colSpan={4} className="py-8 text-center text-slate-400 text-xs text-slate-400 font-medium bg-slate-50/30">Belum ada riwayat medis terdaftar.</td>
                       </tr>
                     )}
                   </tbody>
@@ -566,54 +728,6 @@ export default function PekerjaDetailPage() {
                </div>
             </div>
 
-            {/* Info Medis Terkini */}
-            <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6">
-               <h3 className="text-sm font-bold text-[#1e293b] flex items-center mb-6">
-                 <Activity className="h-4 w-4 text-[#0ea5e9] mr-2" /> Info Medis Terkini
-               </h3>
-
-               {terkiniMedis ? (
-                 <>
-                   <div className="grid grid-cols-2 gap-y-4 gap-x-2 mb-6">
-                     <div>
-                       <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Tempat</p>
-                       <p className="text-[13px] font-semibold text-slate-800 leading-tight">{terkiniMedis.tempat_pemeriksa || 'RS Siloam Karawaci'}</p>
-                     </div>
-                     <div>
-                       <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Tanggal</p>
-                       <p className="text-[13px] font-semibold text-slate-800 leading-tight">
-                        {terkiniMedis.tgl_pemeriksaan 
-                          ? format(parseISO(terkiniMedis.tgl_pemeriksaan), 'dd MMM yyyy', {locale: localeID}) 
-                          : '-'}
-                       </p>
-                     </div>
-                     <div>
-                       <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Jenis</p>
-                       <p className="text-[13px] font-semibold text-slate-800 leading-tight">{terkiniMedis.jenis_pemeriksa || 'MCU Tahunan'}</p>
-                     </div>
-                     <div>
-                       <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Dokter</p>
-                       <p className="text-[13px] font-semibold text-slate-800 leading-tight">{terkiniMedis.dokter_pemeriksa || '-'}</p>
-                     </div>
-                   </div>
-
-                   <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2">Ringkasan Diagnosis</p>
-                   <div className="bg-slate-50 border border-slate-100/50 rounded-xl p-4 mb-6">
-                     <p className="text-slate-600 text-xs leading-relaxed italic">
-                       "{terkiniMedis.hasil_diagnosis || 'Kondisi pekerja dinyatakan cukup sehat namun membutuhkan observasi terkait keluhan pada pendengaran.'}"
-                     </p>
-                   </div>
-                 </>
-               ) : (
-                 <div className="text-center p-6 text-slate-400 bg-slate-50 rounded-xl mb-6 border border-dashed border-slate-200">
-                   <p className="text-xs">Belum ada rekam medis terdaftar.</p>
-                 </div>
-               )}
-
-               <Button variant="outline" className="w-full border-[#0ea5e9] text-[#0ea5e9] hover:bg-blue-50 hover:text-[#0284c7] font-bold text-xs h-11 tracking-wider">
-                 UNDUH LAPORAN LENGKAP
-               </Button>
-            </div>
 
           </div>
         </div>

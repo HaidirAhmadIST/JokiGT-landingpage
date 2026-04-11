@@ -30,7 +30,7 @@ class StorePekerjaRequest extends FormRequest
             'perusahaan_id' => ['required', 'exists:perusahaan,id'],
             'nik' => ['required', 'string', 'size:16', 'unique:pekerja,nik'],
             'nama_lengkap' => ['required', 'string', 'max:255'],
-            'status_kesehatan' => ['required', 'in:sehat,sakit_ringan,sakit_berat,dalam_perawatan'],
+            'status_kesehatan' => ['required', 'in:fit,fit_with_note,unfit'],
             'catatan_admin' => ['nullable', 'string'],
             'tanggal_lahir' => ['nullable', 'date'],
             'jenis_kelamin' => ['nullable', 'in:L,P'],
@@ -64,6 +64,7 @@ class StorePekerjaRequest extends FormRequest
             'medis.*.tempat_pemeriksaan' => ['required', 'string', 'max:255'],
             'medis.*.jenis_pemeriksaan' => ['required', 'in:Rawat Jalan,Rawat Inap,MCU,IGD,Lainnya'],
             'medis.*.nama_dokter' => ['required', 'string', 'max:255'],
+            'medis.*.status_kesehatan' => ['required', 'in:fit,fit_with_note,unfit'],
             'medis.*.hasil_diagnosis' => ['required', 'string'],
         ];
     }

@@ -140,6 +140,7 @@ class Pekerja extends Model
             'perusahaan',
             'riwayatPekerja',
             'detailMedis',
+            'riwayatMedis',
             'statusAdvokasi',
         ]);
     }

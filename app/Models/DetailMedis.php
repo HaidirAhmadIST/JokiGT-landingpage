@@ -27,6 +27,7 @@ class DetailMedis extends Model
         'tempat_pemeriksaan',
         'jenis_pemeriksaan',
         'nama_dokter',
+        'status_kesehatan',
         'hasil_diagnosis',
         'dokumen_rekomendasi_path',
         'dokumen_bukti_path',

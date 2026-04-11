@@ -68,7 +68,7 @@ export default function PendaftaranPekerjaPage() {
     email: '',
     password: 'password123',
     perusahaan_id: '',
-    status_kesehatan: 'sehat',
+    status_kesehatan: 'fit',
     catatan_admin: '',
     tanggal_lahir: '',
     jenis_kelamin: '',
@@ -81,7 +81,8 @@ export default function PendaftaranPekerjaPage() {
     tempat_pemeriksaan: '',
     jenis_pemeriksaan: '',
     dokter: '',
-    hasil_diagnosis: ''
+    hasil_diagnosis: '',
+    status_kesehatan: 'fit'
   });
 
   const [riwayatMedisData, setRiwayatMedisData] = useState({
@@ -105,6 +106,9 @@ export default function PendaftaranPekerjaPage() {
   const [advokasiData, setAdvokasiData] = useState(
     advokasiQuestions.map(q => ({ question: q, status: 'Tidak', file: null as File | null, tanggal: '' }))
   );
+
+  const [saranPerusahaan, setSaranPerusahaan] = useState<any[]>([]);
+  const [showSaran, setShowSaran] = useState(false);
 
   useEffect(() => {
     const fetchPerusahaan = async () => {
@@ -138,18 +142,29 @@ export default function PendaftaranPekerjaPage() {
           setLoading(false);
           return;
         }
-        try {
-          const res = await api.post('/perusahaan', {
-            nama_perusahaan: pekerjaanSaatIni.nama_perusahaan_baru,
-            status_pendamping: 'aktif',
-            sektor_industri: pekerjaanSaatIni.deskripsi_usaha
-          });
-          finalPerusahaanId = res.data.data.id.toString();
-          currentPerusahaanName = res.data.data.nama_perusahaan;
-        } catch (err: any) {
-          toast.error(err.response?.data?.message || "Gagal menambahkan perusahaan baru.");
-          setLoading(false);
-          return;
+
+        // Auto-detect existing company by name to prevent "already taken" error
+        const existingPerusahaan = perusahaanList.find(p => 
+          p.nama_perusahaan.toLowerCase().trim() === pekerjaanSaatIni.nama_perusahaan_baru.toLowerCase().trim()
+        );
+
+        if (existingPerusahaan) {
+          finalPerusahaanId = existingPerusahaan.id.toString();
+          currentPerusahaanName = existingPerusahaan.nama_perusahaan;
+        } else {
+          try {
+            const res = await api.post('/perusahaan', {
+              nama_perusahaan: pekerjaanSaatIni.nama_perusahaan_baru,
+              status_pendamping: 'aktif',
+              sektor_industri: pekerjaanSaatIni.deskripsi_usaha
+            });
+            finalPerusahaanId = res.data.data.id.toString();
+            currentPerusahaanName = res.data.data.nama_perusahaan;
+          } catch (err: any) {
+            toast.error(err.response?.data?.message || "Gagal menambahkan perusahaan baru.");
+            setLoading(false);
+            return;
+          }
         }
       } else {
         currentPerusahaanName = perusahaanList.find(p => p.id.toString() === finalPerusahaanId)?.nama_perusahaan || '';
@@ -182,6 +197,7 @@ export default function PendaftaranPekerjaPage() {
         jenis_pemeriksaan: medisData.jenis_pemeriksaan,
         nama_dokter: medisData.dokter,
         hasil_diagnosis: medisData.hasil_diagnosis,
+        status_kesehatan: medisData.status_kesehatan,
       }] : [];
 
       // Mapped Riwayat Medis (Baseline)
@@ -197,6 +213,7 @@ export default function PendaftaranPekerjaPage() {
 
       const payload: any = {
         ...baseData,
+        status_kesehatan: hasMedis ? medisData.status_kesehatan : baseData.status_kesehatan,
         perusahaan_id: finalPerusahaanId,
         riwayat: [...allRiwayat, ...prevRiwayat],
         medis: finalMedis
@@ -298,7 +315,7 @@ export default function PendaftaranPekerjaPage() {
 
             <div className="flex flex-col items-center">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${step >= 3 ? 'bg-[#0ea5e9] text-white' : 'bg-slate-200 text-slate-500'}`}>3</div>
-              <span className={`text-xs font-semibold mt-2 text-center ${step >= 3 ? 'text-[#0ea5e9]' : 'text-slate-400'}`}>RIWAYAT <br />MEDIS</span>
+              <span className={`text-xs font-semibold mt-2 text-center ${step >= 3 ? 'text-[#0ea5e9]' : 'text-slate-400'}`}>RIWAYAT <br />KESEHATAN</span>
             </div>
             <div className={`w-12 h-[2px] mx-2 -mt-6 ${step >= 4 ? 'bg-[#0ea5e9]' : 'bg-slate-200'}`} />
 
@@ -454,12 +471,59 @@ export default function PendaftaranPekerjaPage() {
                         <div className="mt-3 p-4 bg-blue-50/50 border border-blue-100 rounded-xl space-y-4 animate-in fade-in slide-in-from-top-2">
                           <div className="space-y-2">
                             <Label className="text-[#0ea5e9]">Nama Perusahaan Baru</Label>
-                            <Input
-                              placeholder="Masukkan nama perusahaan lengkap..."
-                              className="h-11 bg-white border-blue-200 focus-visible:ring-blue-400"
-                              value={pekerjaanSaatIni.nama_perusahaan_baru}
-                              onChange={e => setPekerjaanSaatIni({ ...pekerjaanSaatIni, nama_perusahaan_baru: e.target.value })}
-                            />
+                            <div className="relative">
+                              <Input
+                                placeholder="Masukkan nama perusahaan lengkap..."
+                                className="h-11 bg-white border-blue-200 focus-visible:ring-blue-400"
+                                value={pekerjaanSaatIni.nama_perusahaan_baru}
+                                onChange={e => {
+                                  const val = e.target.value;
+                                  setPekerjaanSaatIni({ ...pekerjaanSaatIni, nama_perusahaan_baru: val });
+                                  
+                                  if (val.trim().length > 1) {
+                                    const filtered = perusahaanList.filter(p => 
+                                      p.nama_perusahaan.toLowerCase().includes(val.toLowerCase())
+                                    ).slice(0, 5);
+                                    setSaranPerusahaan(filtered);
+                                    setShowSaran(filtered.length > 0);
+                                  } else {
+                                    setShowSaran(false);
+                                  }
+                                }}
+                                onBlur={() => setTimeout(() => setShowSaran(false), 200)}
+                              />
+                              
+                              {showSaran && (
+                                <div className="absolute z-50 w-full mt-1 bg-white border border-blue-100 rounded-xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                                  <div className="p-2 border-b border-slate-50">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-2">Perusahaan Ditemukan</p>
+                                  </div>
+                                  <div className="max-h-[200px] overflow-y-auto">
+                                    {saranPerusahaan.map((p) => (
+                                      <button
+                                        key={p.id}
+                                        type="button"
+                                        className="w-full text-left px-4 py-3 hover:bg-blue-50 transition-colors flex items-center justify-between group"
+                                        onClick={() => {
+                                          setBaseData({ ...baseData, perusahaan_id: p.id.toString() });
+                                          setPekerjaanSaatIni({ ...pekerjaanSaatIni, nama_perusahaan_baru: '' });
+                                          setShowSaran(false);
+                                          toast.info(`Menggunakan data perusahaan: ${p.nama_perusahaan}`);
+                                        }}
+                                      >
+                                        <div>
+                                          <p className="text-sm font-bold text-slate-700 group-hover:text-[#0ea5e9]">{p.nama_perusahaan}</p>
+                                          <p className="text-[10px] text-slate-400">{p.sektor_industri || 'Sektor Industri'}</p>
+                                        </div>
+                                        <div className="px-2 py-0.5 bg-blue-100 text-[#0ea5e9] text-[9px] font-extrabold rounded uppercase opacity-0 group-hover:opacity-100 transition-opacity">
+                                          Pilih
+                                        </div>
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           </div>
                           <div className="space-y-2">
                             <Label className="text-[#0ea5e9]">Deskripsi Jenis Usaha</Label>
@@ -738,11 +802,11 @@ export default function PendaftaranPekerjaPage() {
             </div>
           )}
 
-          {/* STEP 3: MEDIS */}
+          {/* STEP 3: KESEHATAN */}
           {step === 3 && (
             <div className="animate-in fade-in slide-in-from-right-8 duration-500">
               <div className="text-center mb-10">
-                <h2 className="text-2xl font-bold text-slate-900">Detail Medis</h2>
+                <h2 className="text-2xl font-bold text-slate-900">Detail Kesehatan</h2>
                 <p className="text-slate-500 mt-2 text-sm max-w-md mx-auto">
                   Lengkapi rekomendasi medis Anda untuk pemrosesan jaminan sosial.
                 </p>
@@ -752,7 +816,7 @@ export default function PendaftaranPekerjaPage() {
                 {/* Riwayat Medis (Baseline) */}
                 <div className="p-6 bg-white border border-slate-100 shadow-sm rounded-xl">
                   <h3 className="flex items-center text-sm font-bold text-[#0ea5e9] mb-6 uppercase tracking-wider">
-                    <ShieldAlert className="h-4 w-4 mr-2" /> Riwayat Medis (Baseline)
+                    <ShieldAlert className="h-4 w-4 mr-2" /> Riwayat Kesehatan (Baseline)
                   </h3>
 
                   <div className="space-y-5">
@@ -802,7 +866,7 @@ export default function PendaftaranPekerjaPage() {
                 {/* Detail Medis */}
                 <div className="p-6 bg-white border border-slate-100 shadow-sm rounded-xl">
                   <h3 className="flex items-center text-sm font-bold text-[#0ea5e9] mb-6 uppercase tracking-wider">
-                    <ShieldAlert className="h-4 w-4 mr-2" /> Detail Pemeriksaan Medis (Pekerjaan)
+                    <ShieldAlert className="h-4 w-4 mr-2" /> Detail Pemeriksaan Kesehatan (Pekerjaan)
                   </h3>
 
                   <div className="space-y-5">
@@ -838,6 +902,18 @@ export default function PendaftaranPekerjaPage() {
                     <div className="space-y-2">
                       <Label>Hasil Diagnosis</Label>
                       <Textarea placeholder="Masukkan detail hasil diagnosis lengkap..." className="resize-none h-24" value={medisData.hasil_diagnosis} onChange={e => setMedisData({ ...medisData, hasil_diagnosis: e.target.value })} />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Status Kesehatan (Hasil Pemeriksaan)</Label>
+                      <Select value={medisData.status_kesehatan} onValueChange={(v: any) => setMedisData({ ...medisData, status_kesehatan: v })}>
+                        <SelectTrigger className="h-11 w-full"><SelectValue placeholder="Pilih Status Kesehatan" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="fit" className="text-emerald-600 font-bold">Fit (Sehat / Laik Kerja)</SelectItem>
+                          <SelectItem value="fit_with_note" className="text-amber-600 font-bold">Fit with Note (Laik dengan Catatan)</SelectItem>
+                          <SelectItem value="unfit" className="text-rose-600 font-bold">Unfit (Tidak Laik Kerja)</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
 
                     <div className="space-y-2">
