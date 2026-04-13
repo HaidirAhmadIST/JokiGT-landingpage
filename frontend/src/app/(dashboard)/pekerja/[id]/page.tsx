@@ -103,10 +103,40 @@ export default function PekerjaDetailPage() {
       toast.success('Status kesehatan berhasil diperbarui');
       setData((prev: any) => ({ ...prev, status_kesehatan: newStatus }));
     } catch (e: any) {
-      toast.error('Gagal memperbarui status kesehatan');
+      const status = e.response?.status;
+      const msg = status === 403
+        ? 'Hanya admin yang dapat mengubah status kesehatan.'
+        : e.response?.data?.message || e.response?.data?.errors?.status_kesehatan?.[0] || 'Gagal memperbarui status kesehatan';
+      toast.error(msg);
     } finally {
       setStatusLoading(false);
     }
+  };
+
+  // Normalize legacy status values to new enum values
+  const normalizeStatus = (s: string) => {
+    const map: Record<string, string> = {
+      'sehat': 'fit',
+      'sakit_ringan': 'fit_with_note',
+      'sakit': 'unfit',
+      'sakit_berat': 'unfit',
+    };
+    return map[s] || s;
+  };
+
+  const getStatusLabel = (s: string) => {
+    const normalized = normalizeStatus(s);
+    if (normalized === 'fit') return 'Fit';
+    if (normalized === 'fit_with_note') return 'Fit with Note';
+    if (normalized === 'unfit') return 'Unfit';
+    return s;
+  };
+
+  const getStatusColor = (s: string) => {
+    const normalized = normalizeStatus(s);
+    if (normalized === 'fit') return 'text-emerald-600';
+    if (normalized === 'fit_with_note') return 'text-amber-600';
+    return 'text-rose-600';
   };
 
   const handleEditCatatan = () => {
@@ -279,13 +309,8 @@ export default function PekerjaDetailPage() {
               <div className={`bg-slate-50/50 border border-slate-100 rounded-xl p-4 flex-1 min-w-[170px] relative transition-all ${isAdmin ? 'hover:bg-blue-50/30 cursor-pointer group/status border-dashed' : ''}`}>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Status Kesehatan</p>
                 <div className="flex items-center gap-2">
-                  <span className={`text-xl font-bold capitalize ${
-                    data.status_kesehatan === 'fit' ? 'text-emerald-600' : 
-                    data.status_kesehatan === 'fit_with_note' ? 'text-amber-600' : 'text-rose-600'
-                  }`}>
-                    {data.status_kesehatan === 'fit' ? 'Fit' : 
-                     data.status_kesehatan === 'fit_with_note' ? 'Fit with Note' : 
-                     data.status_kesehatan === 'unfit' ? 'Unfit' : data.status_kesehatan}
+                  <span className={`text-xl font-bold capitalize ${getStatusColor(data.status_kesehatan)}`}>
+                    {getStatusLabel(data.status_kesehatan)}
                   </span>
                   
                   {isAdmin && <Edit3 className="h-3.5 w-3.5 text-slate-400 group-hover/status:text-[#0ea5e9] transition-colors" />}
@@ -294,7 +319,7 @@ export default function PekerjaDetailPage() {
                   {isAdmin && (
                     <select 
                       className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                      value={data.status_kesehatan}
+                      value={normalizeStatus(data.status_kesehatan)}
                       onChange={(e) => updateStatusKesehatan(e.target.value)}
                       disabled={statusLoading}
                     >
@@ -310,7 +335,7 @@ export default function PekerjaDetailPage() {
                   <div className="mt-2 flex items-center gap-1.5 animate-pulse">
                     <span className="w-1.5 h-1.5 bg-amber-500 rounded-full"></span>
                     <span className="text-[9px] font-extrabold text-amber-600 uppercase tracking-tighter">
-                      Saran: {data.status_saran === 'fit' ? 'Fit' : data.status_saran === 'fit_with_note' ? 'Note' : 'Unfit'}
+                      Saran: {getStatusLabel(data.status_saran)}
                     </span>
                   </div>
                 )}
