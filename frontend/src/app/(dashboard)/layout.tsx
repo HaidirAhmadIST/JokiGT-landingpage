@@ -134,14 +134,11 @@ export default function DashboardLayout({
         {/* Logo Text Area */}
         <div className="flex items-center gap-4 w-60 shrink-0">
           <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-            {/* @ts-ignore */}
-            <SheetTrigger asChild>
-              <button 
-                className="md:hidden -ml-2 text-slate-700 h-9 w-9 flex items-center justify-center rounded-lg hover:bg-slate-100 transition-colors"
-                aria-label="Open Menu"
-              >
-                <Menu className="h-5 w-5" />
-              </button>
+            <SheetTrigger 
+              className="md:hidden -ml-2 text-slate-700 h-9 w-9 flex items-center justify-center rounded-lg hover:bg-slate-100 transition-colors"
+              aria-label="Open Menu"
+            >
+              <Menu className="h-5 w-5" />
             </SheetTrigger>
             <SheetContent side="left" className="w-64 p-0">
                {/* Mobile Sidebar Content */}
@@ -276,12 +273,9 @@ export default function DashboardLayout({
           </button>
 
           <DropdownMenu>
-            {/* @ts-ignore */}
-            <DropdownMenuTrigger asChild>
-              <button className="h-9 w-9 rounded-full bg-orange-100 text-orange-700 flex items-center justify-center font-bold text-sm border-2 border-orange-200 outline-none hover:ring-2 hover:ring-orange-300 hover:ring-offset-1 transition-all">
-                 {/* Mockup uses a small avatar, I will use a simple initials trick */}
-                 {mounted && user?.nama ? user.nama.charAt(0).toUpperCase() : 'A'}
-              </button>
+            <DropdownMenuTrigger className="h-9 w-9 rounded-full bg-orange-100 text-orange-700 flex items-center justify-center font-bold text-sm border-2 border-orange-200 outline-none hover:ring-2 hover:ring-orange-300 hover:ring-offset-1 transition-all">
+               {/* Mockup uses a small avatar, I will use a simple initials trick */}
+               {mounted && user?.nama ? user.nama.charAt(0).toUpperCase() : 'A'}
             </DropdownMenuTrigger>
             {/* @ts-ignore */}
             <DropdownMenuContent className="w-56" align="end" forceMount>

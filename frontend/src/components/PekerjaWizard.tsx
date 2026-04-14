@@ -137,8 +137,8 @@ export default function PekerjaWizard({ onSuccess, onCancel, perusahaanList }: P
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="sehat">Sehat</SelectItem>
-                    <SelectItem value="sakit_ringan">Sakit Ringan</SelectItem>
-                    <SelectItem value="sakit_berat">Sakit Berat</SelectItem>
+                    <SelectItem value="sakit_ringan">Sehat dengan Catatan</SelectItem>
+                    <SelectItem value="sakit_berat">Tidak Sehat</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

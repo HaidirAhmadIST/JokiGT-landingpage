@@ -23,12 +23,12 @@ class StorePekerjaRequest extends FormRequest
     {
         return [
             // User Data
-            'email' => ['required', 'string', 'email', 'unique:users,email'],
+            'email' => ['required', 'string', 'email'],
             'password' => ['required', 'string', 'min:8'],
             
             // Pekerja Data
             'perusahaan_id' => ['required', 'exists:perusahaan,id'],
-            'nik' => ['required', 'string', 'size:16', 'unique:pekerja,nik'],
+            'nik' => ['required', 'string', 'size:16'],
             'nama_lengkap' => ['required', 'string', 'max:255'],
             'status_kesehatan' => ['required', 'in:sehat,sakit_ringan,sakit_berat,dalam_perawatan'],
             'catatan_admin' => ['nullable', 'string'],

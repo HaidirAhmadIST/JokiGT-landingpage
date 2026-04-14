@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/axios';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -119,10 +119,9 @@ const hasOpenAdvokasi = (p: PekerjaDetail) => {
 /** Map health status to display label */
 const getHealthLabel = (status: string) => {
   switch (status) {
-    case 'sehat': return 'Fit';
-    case 'sakit_ringan': return 'Note';
-    case 'sakit_berat': return 'Unfit';
-    case 'dalam_perawatan': return 'Perawatan';
+    case 'sehat': return 'Sehat';
+    case 'sakit_ringan': return 'Sehat dengan Catatan';
+    case 'sakit_berat': return 'Tidak Sehat';
     default: return status || '-';
   }
 };
@@ -404,10 +403,9 @@ export default function PerusahaanPage() {
   // ---- Health indicator component ----
   const HealthIndicator = ({ status }: { status: string }) => {
     const config: Record<string, { dot: string; bg: string; text: string; label: string }> = {
-      sehat: { dot: 'bg-emerald-500', bg: 'bg-emerald-50', text: 'text-emerald-700', label: 'Fit' },
-      sakit_ringan: { dot: 'bg-amber-500', bg: 'bg-amber-50', text: 'text-amber-700', label: 'Note' },
-      sakit_berat: { dot: 'bg-rose-500', bg: 'bg-rose-50', text: 'text-rose-700', label: 'Unfit' },
-      dalam_perawatan: { dot: 'bg-violet-500', bg: 'bg-violet-50', text: 'text-violet-700', label: 'Perawatan' },
+      sehat: { dot: 'bg-emerald-500', bg: 'bg-emerald-50', text: 'text-emerald-700', label: 'Sehat' },
+      sakit_ringan: { dot: 'bg-amber-500', bg: 'bg-amber-50', text: 'text-amber-700', label: 'Sehat dengan Catatan' },
+      sakit_berat: { dot: 'bg-rose-500', bg: 'bg-rose-50', text: 'text-rose-700', label: 'Tidak Sehat' },
     };
     const c = config[status] || { dot: 'bg-slate-400', bg: 'bg-slate-50', text: 'text-slate-600', label: status || '-' };
     return (
@@ -445,12 +443,15 @@ export default function PerusahaanPage() {
           </Select>
 
           <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-            {/* @ts-ignore */}
-            <SheetTrigger asChild>
-              <Button onClick={openCreate} className="bg-[#0284c7] hover:bg-[#0369a1] text-white font-semibold h-11 px-6 rounded-lg shadow-sm w-full sm:w-auto">
-                <Plus className="mr-2 h-5 w-5" />
-                Tambah Perusahaan
-              </Button>
+            <SheetTrigger
+              onClick={openCreate}
+              className={cn(
+                buttonVariants({ variant: 'default' }),
+                "bg-[#0284c7] hover:bg-[#0369a1] text-white font-semibold h-11 px-6 rounded-lg shadow-sm w-full sm:w-auto"
+              )}
+            >
+              <Plus className="mr-2 h-5 w-5" />
+              Tambah Perusahaan
             </SheetTrigger>
             <SheetContent className="sm:max-w-xl p-0 overflow-hidden flex flex-col bg-white border-l shadow-2xl">
               <SheetHeader className="px-8 py-6 border-b border-slate-100 bg-white z-10">

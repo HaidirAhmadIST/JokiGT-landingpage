@@ -10,13 +10,16 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Bell, Globe, User, ShieldAlert, ArrowRight, ArrowLeft, Plus, UploadCloud, Save, CheckCircle, X } from 'lucide-react';
+import { Bell, Globe, User, ShieldAlert, ArrowRight, ArrowLeft, Plus, UploadCloud, Save, CheckCircle, X, Activity, Info } from 'lucide-react';
+
+const STORAGE_KEY = 'REKAM_JEJAK_FORM_DATA';
 
 export default function PendaftaranPekerjaPage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [perusahaanList, setPerusahaanList] = useState<any[]>([]);
+  const [duplicateWarning, setDuplicateWarning] = useState<{ nik?: string; email?: string }>({});
 
   // Form States 
   const [pasFoto, setPasFoto] = useState<File | null>(null);
@@ -101,6 +104,47 @@ export default function PendaftaranPekerjaPage() {
     advokasiQuestions.map(q => ({ question: q, status: 'Tidak', file: null as File | null }))
   );
 
+  // Persistence: Load from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.step) setStep(parsed.step);
+        if (parsed.baseData) setBaseData(prev => ({ ...prev, ...parsed.baseData }));
+        if (parsed.pekerjaanSaatIni) setPekerjaanSaatIni(prev => ({ ...prev, ...parsed.pekerjaanSaatIni }));
+        if (parsed.medisData) setMedisData(prev => ({ ...prev, ...parsed.medisData }));
+        if (parsed.riwayatLalu) setRiwayatLalu(parsed.riwayatLalu);
+        if (parsed.apdData) setApdData(parsed.apdData);
+        if (parsed.advokasiData) {
+          // Restore question status but reset files (files can't be stored in localStorage)
+          setAdvokasiData(parsed.advokasiData.map((d: any) => ({ ...d, file: null })));
+        }
+        
+        toast.info("Data pendaftaran dipulihkan dari sesi sebelumnya.", {
+          description: "Silakan unggah kembali dokumen/foto jika ada.",
+          duration: 10000,
+        });
+      } catch (err) {
+        console.error("Failed to restore form data", err);
+      }
+    }
+  }, []);
+
+  // Persistence: Save to localStorage
+  useEffect(() => {
+    const dataToSave = {
+      step,
+      baseData,
+      pekerjaanSaatIni,
+      medisData,
+      riwayatLalu,
+      apdData,
+      advokasiData: advokasiData.map(d => ({ question: d.question, status: d.status }))
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+  }, [step, baseData, pekerjaanSaatIni, medisData, riwayatLalu, apdData, advokasiData]);
+
   useEffect(() => {
     const fetchPerusahaan = async () => {
       try {
@@ -115,6 +159,32 @@ export default function PendaftaranPekerjaPage() {
 
   const handleLanjut = () => setStep(step + 1);
   const handleKembali = () => setStep(step - 1);
+
+  const checkDuplicate = async (field: 'nik' | 'email', value: string) => {
+    if (!value || value.length < 5) return;
+    try {
+      const res = await api.get(`/pekerja?search=${encodeURIComponent(value)}`);
+      const match = res.data.data.data.find((p: any) => 
+        field === 'nik' ? p.nik === value : p.user?.email.toLowerCase() === value.toLowerCase()
+      );
+      
+      if (match) {
+        setDuplicateWarning(prev => ({ ...prev, [field]: `Data ${field.toUpperCase()} sudah terdaftar. Melanjutkan akan memperbarui data pekerja yang ada.` }));
+        toast.info(`Pekerja dengan ${field.toUpperCase()} ini sudah terdaftar.`, {
+          description: "Anda tetap bisa melanjutkan untuk memperbarui datanya.",
+          duration: 5000
+        });
+      } else {
+        setDuplicateWarning(prev => {
+          const newW = { ...prev };
+          delete (newW as any)[field];
+          return newW;
+        });
+      }
+    } catch (e) {
+      console.error("Failed to check duplicate", e);
+    }
+  };
 
   const handleSubmit = async () => {
     if (!baseData.nik || !baseData.nama_lengkap || !baseData.email || !baseData.perusahaan_id) {
@@ -142,9 +212,32 @@ export default function PendaftaranPekerjaPage() {
           finalPerusahaanId = res.data.data.id.toString();
           currentPerusahaanName = res.data.data.nama_perusahaan;
         } catch (err: any) {
-          toast.error(err.response?.data?.message || "Gagal menambahkan perusahaan baru.");
-          setLoading(false);
-          return;
+          if (err.response?.status === 422 && err.response?.data?.errors?.nama_perusahaan) {
+            // Gracefully handle duplicate name by searching for the existing one
+            try {
+              toast.loading("Perusahaan sudah ada, mengambil data...", { id: 'fetch-perusahaan' });
+              const searchRes = await api.get(`/perusahaan?search=${encodeURIComponent(pekerjaanSaatIni.nama_perusahaan_baru)}`);
+              const existing = searchRes.data.data.data.find((p: any) => 
+                p.nama_perusahaan.trim().toLowerCase() === pekerjaanSaatIni.nama_perusahaan_baru.trim().toLowerCase()
+              );
+              
+              if (existing) {
+                finalPerusahaanId = existing.id.toString();
+                currentPerusahaanName = existing.nama_perusahaan;
+                toast.success("Data perusahaan ditemukan.", { id: 'fetch-perusahaan' });
+              } else {
+                throw err;
+              }
+            } catch (searchErr) {
+              toast.error(err.response?.data?.message || "Gagal memproses data perusahaan.");
+              setLoading(false);
+              return;
+            }
+          } else {
+            toast.error(err.response?.data?.message || "Gagal menambahkan perusahaan baru.");
+            setLoading(false);
+            return;
+          }
         }
       } else {
         currentPerusahaanName = perusahaanList.find(p => p.id.toString() === finalPerusahaanId)?.nama_perusahaan || '';
@@ -180,59 +273,90 @@ export default function PendaftaranPekerjaPage() {
         obat_rutin: medisData.obat_rutin,
       }] : [];
 
-      const response = await api.post('/pekerja', {
-        ...baseData,
-        perusahaan_id: finalPerusahaanId,
-        riwayat: [...allRiwayat, ...prevRiwayat],
-        medis: finalMedis
-      });
-
-      const newPekerjaId = response.data.data.id;
-
-      if (pasFoto) {
-        const formData = new FormData();
-        formData.append('pas_foto', pasFoto);
-        await api.post(`/pekerja/${newPekerjaId}/foto`, formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
+      const performSubmit = async (pId: string, riwayatData: any[]) => {
+        const response = await api.post('/pekerja', {
+          ...baseData,
+          perusahaan_id: pId,
+          riwayat: riwayatData,
+          medis: finalMedis
         });
-      }
 
-      // Sync status advokasi dan file unggahan
-      const advokasiKeys = [
-        'riwayat_pajanan',
-        'persetujuan_dokter',
-        'perusahaan_lapor',
-        'penetapan_pak',
-        'kompensasi_bpjstk',
-        'rehabilitasi_bpjskes'
-      ];
+        const newPekerjaId = response.data.data.id;
 
-      for (let i = 0; i < advokasiData.length; i++) {
-        const item = advokasiData[i];
-        if (item.status === 'Ya' || item.file) {
-          const advFormData = new FormData();
+        if (pasFoto) {
+          const formData = new FormData();
+          formData.append('pas_foto', pasFoto);
+          await api.post(`/pekerja/${newPekerjaId}/foto`, formData);
+        }
 
-          if (item.status === 'Ya') {
-            advFormData.append(advokasiKeys[i], '1'); // boolean representation
-          }
+        // Sync status advokasi dan file unggahan
+        const advokasiKeys = [
+          'riwayat_pajanan',
+          'persetujuan_dokter',
+          'perusahaan_lapor',
+          'penetapan_pak',
+          'kompensasi_bpjstk',
+          'rehabilitasi_bpjskes'
+        ];
 
-          if (item.file) {
-            advFormData.append('step_key', advokasiKeys[i]);
-            advFormData.append('file', item.file);
-          }
+        for (let i = 0; i < advokasiData.length; i++) {
+          const item = advokasiData[i];
+          if (item.status === 'Ya' || item.file) {
+            const advFormData = new FormData();
 
-          try {
-            await api.post(`/pekerja/${newPekerjaId}/advokasi`, advFormData, {
-              headers: { 'Content-Type': 'multipart/form-data' }
-            });
-          } catch (e) {
-            console.error('Gagal mengintegrasikan advokasi', advokasiKeys[i]);
+            if (item.status === 'Ya') {
+              advFormData.append(advokasiKeys[i], '1'); 
+            }
+
+            if (item.file) {
+              advFormData.append('step_key', advokasiKeys[i]);
+              advFormData.append('file', item.file);
+            }
+
+            try {
+              await api.post(`/pekerja/${newPekerjaId}/advokasi`, advFormData);
+            } catch (e) {
+              console.error('Gagal mengintegrasikan advokasi', advokasiKeys[i]);
+            }
           }
         }
-      }
+      };
 
-      toast.success('Pekerja berhasil didaftarkan!');
-      router.push('/pekerja');
+      try {
+        await performSubmit(finalPerusahaanId, [...allRiwayat, ...prevRiwayat]);
+        localStorage.removeItem(STORAGE_KEY);
+        toast.success('Pekerja berhasil didaftarkan!');
+        router.push('/pekerja');
+      } catch (error: any) {
+        // Handle "taken" error for new company gracefully
+        if (error.response?.status === 422 && error.response?.data?.errors?.nama_perusahaan) {
+          try {
+            toast.loading("Mengecek ketersediaan data perusahaan...", { id: 'check-perusahaan' });
+            const searchRes = await api.get(`/perusahaan?search=${encodeURIComponent(pekerjaanSaatIni.nama_perusahaan_baru)}`);
+            const existing = searchRes.data.data.data.find((p: any) => 
+              p.nama_perusahaan.trim().toLowerCase() === pekerjaanSaatIni.nama_perusahaan_baru.trim().toLowerCase()
+            );
+
+            if (existing) {
+              toast.success("Perusahaan sudah terdaftar. Menghubungkan otomatis...", { id: 'check-perusahaan' });
+              
+              const updatedRiwayat = [...allRiwayat.map(r => 
+                r.nama_perusahaan === currentPerusahaanName ? { ...r, nama_perusahaan: existing.nama_perusahaan } : r
+              ), ...prevRiwayat];
+
+              await performSubmit(existing.id.toString(), updatedRiwayat);
+              
+              localStorage.removeItem(STORAGE_KEY);
+              toast.success('Pekerja berhasil didaftarkan!');
+              router.push('/pekerja');
+              return;
+            }
+          } catch (searchErr) {
+            toast.error("Gagal memproses data perusahaan.", { id: 'check-perusahaan' });
+          }
+        }
+        throw error; // Re-throw to the outer catch
+      }
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Gagal mendaftar. Pastikan form valid.');
     } finally {
@@ -314,7 +438,15 @@ export default function PendaftaranPekerjaPage() {
                     </div>
                     <div className="space-y-2">
                       <Label>Nomor Induk Kependudukan / NIK</Label>
-                      <Input placeholder="Masukkan NIK 16 Digit" maxLength={16} className="h-11" value={baseData.nik} onChange={e => setBaseData({ ...baseData, nik: e.target.value.replace(/\\D/g, '') })} />
+                      <Input 
+                        placeholder="Masukkan NIK 16 Digit" 
+                        maxLength={16} 
+                        className={`h-11 ${duplicateWarning.nik ? 'border-amber-400 bg-amber-50/30' : ''}`}
+                        value={baseData.nik} 
+                        onChange={e => setBaseData({ ...baseData, nik: e.target.value.replace(/\\D/g, '') })} 
+                        onBlur={(e) => checkDuplicate('nik', e.target.value)}
+                      />
+                      {duplicateWarning.nik && <p className="text-[10px] text-amber-600 font-medium">{duplicateWarning.nik}</p>}
                     </div>
                   </div>
                 </div>
@@ -366,7 +498,15 @@ export default function PendaftaranPekerjaPage() {
                     </div>
                     <div className="space-y-2">
                       <Label>Alamat Email (Wajib untuk Login)</Label>
-                      <Input placeholder="nama@email.com" type="email" className="h-11" value={baseData.email} onChange={e => setBaseData({ ...baseData, email: e.target.value })} />
+                      <Input 
+                        placeholder="nama@email.com" 
+                        type="email" 
+                        className={`h-11 ${duplicateWarning.email ? 'border-amber-400 bg-amber-50/30' : ''}`}
+                        value={baseData.email} 
+                        onChange={e => setBaseData({ ...baseData, email: e.target.value })} 
+                        onBlur={(e) => checkDuplicate('email', e.target.value)}
+                      />
+                      {duplicateWarning.email && <p className="text-[10px] text-amber-600 font-medium">{duplicateWarning.email}</p>}
                     </div>
                     <div className="space-y-2">
                       <Label>Alamat Domisili</Label>
@@ -384,7 +524,14 @@ export default function PendaftaranPekerjaPage() {
                       accept="image/*"
                       className="hidden"
                       onChange={(e) => {
-                        if (e.target.files?.[0]) setPasFoto(e.target.files[0]);
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          if (!['image/jpeg', 'image/png', 'image/jpg', 'image/webp'].includes(file.type)) {
+                            toast.error("Format file tidak didukung. Gunakan JPG, PNG, atau WEBP.");
+                            return;
+                          }
+                          setPasFoto(file);
+                        }
                       }}
                     />
                     {pasFoto ? (
@@ -925,7 +1072,7 @@ export default function PendaftaranPekerjaPage() {
                     <ArrowLeft className="mr-2 h-4 w-4" /> Kembali
                   </Button>
                   <Button className="w-2/3 h-12 text-base bg-[#0ea5e9] hover:bg-[#0284c7]" onClick={handleSubmit} disabled={loading}>
-                    <Save className="mr-2 h-4 w-4" /> {loading ? 'Menyimpan...' : 'Selesai & Simpan'}
+                    <Save className="mr-2 h-4 w-4" /> {loading ? (Object.keys(duplicateWarning).length > 0 ? 'Memperbarui...' : 'Menyimpan...') : 'Selesai & Simpan'}
                   </Button>
                 </div>
               </div>

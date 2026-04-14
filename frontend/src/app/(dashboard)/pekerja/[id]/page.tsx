@@ -299,9 +299,9 @@ export default function PekerjaDetailPage() {
                     data.status_kesehatan === 'sehat' ? 'text-emerald-600' : 
                     data.status_kesehatan === 'sakit_ringan' ? 'text-amber-600' : 'text-rose-600'
                   }`}>
-                    {data.status_kesehatan === 'sehat' ? 'Fit' : 
-                     data.status_kesehatan === 'sakit_ringan' ? 'Fit with Note' : 
-                     data.status_kesehatan === 'sakit_berat' ? 'Unfit' : data.status_kesehatan}
+                    {data.status_kesehatan === 'sehat' ? 'Sehat' : 
+                     data.status_kesehatan === 'sakit_ringan' ? 'Sehat dengan Catatan' : 
+                     data.status_kesehatan === 'sakit_berat' ? 'Tidak Sehat' : data.status_kesehatan}
                   </span>
                   
                   {/* Status Switcher Popover Logic (Only for admin) */}
@@ -312,9 +312,9 @@ export default function PekerjaDetailPage() {
                       onChange={(e) => updateStatusKesehatan(e.target.value)}
                       disabled={statusLoading}
                     >
-                      <option value="sehat">Fit</option>
-                      <option value="sakit_ringan">Fit with Note</option>
-                      <option value="sakit_berat">Unfit</option>
+                      <option value="sehat">Sehat</option>
+                      <option value="sakit_ringan">Sehat dengan Catatan</option>
+                      <option value="sakit_berat">Tidak Sehat</option>
                     </select>
                   )}
                 </div>
@@ -324,7 +324,7 @@ export default function PekerjaDetailPage() {
                   <div className="mt-2 flex items-center gap-1.5 animate-pulse">
                     <span className="w-1.5 h-1.5 bg-amber-500 rounded-full"></span>
                     <span className="text-[9px] font-extrabold text-amber-600 uppercase tracking-tighter">
-                      Saran: {data.status_saran === 'sehat' ? 'Fit' : data.status_saran === 'sakit_ringan' ? 'Note' : 'Unfit'}
+                      Saran: {data.status_saran === 'sehat' ? 'Sehat' : data.status_saran === 'sakit_ringan' ? 'Catatan' : 'Tidak Sehat'}
                     </span>
                   </div>
                 )}

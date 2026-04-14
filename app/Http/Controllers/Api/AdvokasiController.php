@@ -17,6 +17,47 @@ class AdvokasiController extends Controller
      */
     public function stats(): JsonResponse
     {
+        $now = now();
+        $startOfThisMonth = $now->copy()->startOfMonth();
+
+        // Helper for trends
+        $calcTrend = function ($current, $previous) {
+            if ($previous == 0) return $current > 0 ? 100 : 0;
+            return round((($current - $previous) / $previous) * 100, 1);
+        };
+
+        // 1. Total Kasus
+        $totalAll = StatusAdvokasi::whereNotNull('jenis_kasus')->count();
+        $totalLastMonth = StatusAdvokasi::whereNotNull('jenis_kasus')
+            ->where('created_at', '<', $startOfThisMonth)
+            ->count();
+        
+        // 2. Selesai (rehabilitasi_bpjskes = true)
+        $selesaiAll = StatusAdvokasi::where('rehabilitasi_bpjskes', true)->count();
+        $selesaiLastMonth = StatusAdvokasi::where('rehabilitasi_bpjskes', true)
+            ->where('created_at', '<', $startOfThisMonth)
+            ->count();
+
+        // 3. Dalam Proses (Total - Selesai)
+        $prosesAll = $totalAll - $selesaiAll;
+        $prosesLastMonth = $totalLastMonth - $selesaiLastMonth;
+
+        $summary = [
+            'total' => [
+                'count' => $totalAll,
+                'trend' => $calcTrend($totalAll, $totalLastMonth)
+            ],
+            'proses' => [
+                'count' => $prosesAll,
+                'trend' => $calcTrend($prosesAll, $prosesLastMonth)
+            ],
+            'selesai' => [
+                'count' => $selesaiAll,
+                'trend' => $calcTrend($selesaiAll, $selesaiLastMonth)
+            ]
+        ];
+
+        // Existing step-by-step logic
         $steps = [
             ['key' => 'riwayat_pajanan', 'label' => 'Riwayat Pajanan', 'column' => 'riwayat_pajanan'],
             ['key' => 'persetujuan_dokter', 'label' => 'Evaluasi Dokter Okupasi', 'column' => 'persetujuan_dokter'],
@@ -27,7 +68,6 @@ class AdvokasiController extends Controller
         ];
 
         $results = [];
-
         foreach ($steps as $step) {
             $col = $step['column'];
             $workers = StatusAdvokasi::with(['pekerja:id,nama_lengkap,nik', 'pekerja.perusahaan:id,nama_perusahaan'])
@@ -51,19 +91,10 @@ class AdvokasiController extends Controller
             ];
         }
 
-        $totalUnique = StatusAdvokasi::where(function ($q) {
-            $q->where('riwayat_pajanan', true)
-              ->orWhere('persetujuan_dokter', true)
-              ->orWhere('perusahaan_lapor', true)
-              ->orWhere('penetapan_pak', true)
-              ->orWhere('kompensasi_bpjstk', true)
-              ->orWhere('rehabilitasi_bpjskes', true);
-        })->count();
-
         return response()->json([
-            'status' => 'success',
-            'total'  => $totalUnique,
-            'data'   => $results,
+            'status'  => 'success',
+            'summary' => $summary,
+            'data'    => $results,
         ]);
     }
 
