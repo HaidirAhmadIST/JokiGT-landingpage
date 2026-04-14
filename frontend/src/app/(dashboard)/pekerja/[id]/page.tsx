@@ -25,6 +25,7 @@ export default function PekerjaDetailPage() {
   const [isEditingCatatan, setIsEditingCatatan] = useState(false);
   const [catatanInput, setCatatanInput] = useState('');
   const [savingCatatan, setSavingCatatan] = useState(false);
+  const [selectedJobId, setSelectedJobId] = useState<number | string | null>(null);
   const isAdmin = user ? (user.role === 'admin') : false;
 
   const fetchDetail = async () => {
@@ -191,6 +192,24 @@ export default function PekerjaDetailPage() {
   };
 
   const terkiniMedis = data.detail_medis?.[0]; // Assuming first is most recent
+
+  // Interactive Health Filtering Logic
+  const filteredHealthRecords = data?.detail_medis?.filter((m: any) => {
+    if (selectedJobId === null) return true;
+    
+    const job = data.riwayat_pekerja?.[selectedJobId as number];
+    if (!job) return true;
+    
+    const checkDate = parseISO(m.tanggal_pemeriksaan || m.tgl_pemeriksaan);
+    const startDate = parseISO(job.tgl_masuk);
+    const endDate = job.tgl_keluar ? parseISO(job.tgl_keluar) : null;
+    
+    if (endDate) {
+      return checkDate >= startDate && checkDate <= endDate;
+    } else {
+      return checkDate >= startDate;
+    }
+  });
 
   const getFilePath = (stepKey: string) => {
     const map: Record<string, string> = {
@@ -367,6 +386,57 @@ export default function PekerjaDetailPage() {
 
           {/* LEFT COLUMN (Wider) */}
           <div className="lg:col-span-8 space-y-6">
+            
+            {/* Profil Medis Dasar (Baseline) */}
+            <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6">
+               <h3 className="text-sm font-bold text-[#1e293b] flex items-center mb-6">
+                 <ClipboardList className="h-4 w-4 text-[#0ea5e9] mr-2" /> Profil Medis Dasar
+               </h3>
+               
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
+                 <div className="space-y-6">
+                   <div>
+                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Golongan Darah & Rhesus</p>
+                     <p className="text-[14px] font-bold text-slate-700">
+                        {data.riwayat_medis?.golongan_darah || '-'} {data.riwayat_medis?.rhesus || ''}
+                     </p>
+                   </div>
+                   <div>
+                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Penyakit Bawaan / Kronis</p>
+                     <p className="text-[13px] font-semibold text-slate-600 leading-relaxed">
+                        {Array.isArray(data.riwayat_medis?.riwayat_penyakit) && data.riwayat_medis.riwayat_penyakit.length > 0 
+                          ? data.riwayat_medis.riwayat_penyakit.join(', ') 
+                          : (data.riwayat_medis?.riwayat_penyakit || 'Tidak ada catatan')}
+                     </p>
+                   </div>
+                   <div>
+                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Alergi (Obat/Makanan/Debu)</p>
+                     <p className="text-[13px] font-semibold text-slate-600 leading-relaxed">
+                        {Array.isArray(data.riwayat_medis?.alergi) && data.riwayat_medis.alergi.length > 0 
+                          ? data.riwayat_medis.alergi.join(', ') 
+                          : (data.riwayat_medis?.alergi || 'Tidak ada catatan')}
+                     </p>
+                   </div>
+                 </div>
+
+                 <div className="space-y-6">
+                   <div>
+                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Riwayat Operasi</p>
+                     <p className="text-[13px] font-semibold text-slate-600 leading-relaxed">
+                        {Array.isArray(data.riwayat_medis?.riwayat_operasi) && data.riwayat_medis.riwayat_operasi.length > 0 
+                          ? data.riwayat_medis.riwayat_operasi.join(', ') 
+                          : (data.riwayat_medis?.riwayat_operasi || 'Tidak ada catatan')}
+                     </p>
+                   </div>
+                   <div>
+                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Obat Rutin Yang Dikonsumsi</p>
+                     <p className="text-[13px] font-semibold text-slate-600 leading-relaxed">
+                        {data.riwayat_medis?.obat_rutin || 'Tidak ada catatan'}
+                     </p>
+                   </div>
+                 </div>
+               </div>
+            </div>
 
             {/* Contact Info Card */}
             <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6">
@@ -437,114 +507,122 @@ export default function PekerjaDetailPage() {
               </div>
             </div>
 
-            {/* Riwayat Pekerjaan */}
-            <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-sm font-bold text-[#1e293b] flex items-center">
-                  <Briefcase className="h-4 w-4 text-[#0ea5e9] mr-2" /> Riwayat Pekerjaan
-                </h3>
-                <button className="text-[11px] font-bold text-[#0ea5e9] tracking-wider uppercase hover:underline">LIHAT SEMUA</button>
+            {/* SIDE-BY-SIDE GRID: Riwayat Pekerjaan & Riwayat Kesehatan */}
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              {/* Riwayat Pekerjaan */}
+              <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-sm font-bold text-[#1e293b] flex items-center">
+                    <Briefcase className="h-4 w-4 text-[#0ea5e9] mr-2" /> Riwayat Pekerjaan
+                  </h3>
+                  <button onClick={() => setSelectedJobId(null)} className="text-[11px] font-bold text-[#0ea5e9] tracking-wider uppercase hover:underline">SHOW ALL</button>
+                </div>
+
+                <div className="w-full overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-100 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">
+                        <th className="pb-3 px-2 font-bold">Perusahaan</th>
+                        <th className="pb-3 px-2 font-bold">Masa Kerja</th>
+                        <th className="pb-3 px-2 font-bold text-right">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50/80">
+                      {data.riwayat_pekerja?.map((r: any, idx: number) => {
+                         const isActive = !r.tgl_keluar;
+                         let wText = `${r.tgl_masuk ? format(parseISO(r.tgl_masuk), 'MMM yy', {locale: localeID}) : '-'} - ${r.tgl_keluar ? format(parseISO(r.tgl_keluar), 'MMM yy', {locale: localeID}) : 'Now'}`;
+                         const isSelected = selectedJobId === idx;
+
+                         return (
+                           <tr 
+                             key={idx} 
+                             onClick={() => setSelectedJobId(isSelected ? null : idx)}
+                             className={`cursor-pointer transition-all group border-l-4 ${isSelected ? 'bg-blue-50/80 border-[#0ea5e9]' : 'hover:bg-slate-50/50 border-transparent'}`}
+                           >
+                             <td className="py-4 px-2">
+                               <p className="text-[13px] font-bold text-slate-800">{r.nama_perusahaan}</p>
+                               <p className="text-[11px] text-slate-400 mt-0.5">{r.bagian || r.jabatan || 'Produksi'}</p>
+                             </td>
+                             <td className="py-4 px-2">
+                               <p className="text-[12px] text-slate-500 whitespace-nowrap">{wText}</p>
+                             </td>
+                             <td className="py-4 px-2 text-right">
+                               {isActive ? (
+                                 <span className="px-2 py-1 bg-emerald-100 text-emerald-600 text-[9px] font-extrabold tracking-wide rounded-md uppercase">Aktif</span>
+                               ) : (
+                                 <span className="px-2 py-1 bg-slate-100 text-slate-500 text-[9px] font-extrabold tracking-wide rounded-md uppercase">Selesai</span>
+                               )}
+                             </td>
+                           </tr>
+                         );
+                      })}
+                      {(!data.riwayat_pekerja || data.riwayat_pekerja.length === 0) && (
+                        <tr>
+                          <td colSpan={3} className="py-8 text-center text-slate-400 text-xs">Belum ada riwayat pekerjaan.</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
 
-              <div className="w-full overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-slate-100 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">
-                      <th className="pb-3 px-2 font-bold">Perusahaan</th>
-                      <th className="pb-3 px-2 font-bold">Jabatan</th>
-                      <th className="pb-3 px-2 font-bold whitespace-nowrap">Masa Kerja</th>
-                      <th className="pb-3 px-2 font-bold text-right">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-50/80">
-                    {data.riwayat_pekerja?.map((r: any, idx: number) => {
-                      const isActive = !r.tgl_keluar;
-                      let wText = `${r.tgl_masuk ? format(parseISO(r.tgl_masuk), 'MMM yyyy', { locale: localeID }) : '-'} - ${r.tgl_keluar ? format(parseISO(r.tgl_keluar), 'MMM yyyy', { locale: localeID }) : 'Sekarang'}`;
+              {/* Riwayat Kesehatan (Filtered) */}
+              <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-sm font-bold text-[#1e293b] flex items-center">
+                    <FileCheck className="h-4 w-4 text-[#0ea5e9] mr-2" /> Riwayat Kesehatan
+                  </h3>
+                  {selectedJobId !== null && (
+                    <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full uppercase tracking-tighter">FILTERED BY JOB</span>
+                  )}
+                </div>
 
-                      return (
-                        <tr key={idx} className="hover:bg-slate-50/50 transition-colors group">
-                          <td className="py-4 px-2">
-                            <p className="text-[13px] font-bold text-slate-800">{r.nama_perusahaan}</p>
-                            <p className="text-[11px] text-slate-400 mt-0.5">{r.deskripsi_usaha || 'Industri'}</p>
-                          </td>
-                          <td className="py-4 px-2">
-                            <p className="text-[13px] font-medium text-slate-700">{r.bagian || r.jabatan || '-'}</p>
-                          </td>
-                          <td className="py-4 px-2">
-                            <p className="text-[12px] text-slate-500 whitespace-nowrap">{wText}</p>
-                          </td>
-                          <td className="py-4 px-2 text-right">
-                            {isActive ? (
-                              <span className="px-2 py-1 bg-[#0ea5e9]/10 text-[#0ea5e9] text-[9px] font-extrabold tracking-wide rounded-md">AKTIF</span>
-                            ) : (
-                              <span className="px-2 py-1 bg-slate-100 text-slate-500 text-[9px] font-extrabold tracking-wide rounded-md">SELESAI</span>
+                <div className="w-full overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-100 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">
+                        <th className="pb-3 px-2 font-bold">TANGGAL & JENIS</th>
+                        <th className="pb-3 px-2 font-bold">HASIL DIAGNOSIS</th>
+                        <th className="pb-3 px-2 font-bold">FASILITAS MEDIS</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50/80">
+                      {filteredHealthRecords?.map((m: any, idx: number) => (
+                         <tr key={idx} className="hover:bg-slate-50/50 transition-colors group">
+                           <td className="py-4 px-2">
+                             <p className="text-[12px] font-bold text-slate-800">
+                                {m.tanggal_pemeriksaan ? format(parseISO(m.tanggal_pemeriksaan), 'dd MMM yy', {locale: localeID}) : '-'}
+                             </p>
+                             <p className="text-[10px] text-[#0ea5e9] font-bold mt-0.5 uppercase">{m.jenis_pemeriksaan || '-'}</p>
+                           </td>
+                           <td className="py-4 px-2">
+                             <p className="text-[12px] text-slate-600 line-clamp-2 max-w-[150px]" title={m.hasil_diagnosis}>
+                                {m.hasil_diagnosis || '-'}
+                             </p>
+                           </td>
+                           <td className="py-4 px-2">
+                             <p className="text-[11px] font-medium text-slate-500">{m.tempat_pemeriksaan || '-'}</p>
+                           </td>
+                         </tr>
+                      ))}
+                      {(!filteredHealthRecords || filteredHealthRecords.length === 0) && (
+                        <tr>
+                          <td colSpan={3} className="py-12 text-center bg-slate-50/30 rounded-xl">
+                            <Activity className="h-8 w-8 text-slate-200 mx-auto mb-2" />
+                            <p className="text-xs font-semibold text-slate-400">Tidak ada rekam medis pada periode ini.</p>
+                            {selectedJobId !== null && (
+                              <button onClick={() => setSelectedJobId(null)} className="mt-2 text-[10px] font-bold text-[#0ea5e9] hover:underline">LIHAT SEMUA</button>
                             )}
                           </td>
                         </tr>
-                      );
-                    })}
-                    {(!data.riwayat_pekerja || data.riwayat_pekerja.length === 0) && (
-                      <tr>
-                        <td colSpan={4} className="py-8 text-center text-slate-400 text-xs">Belum ada riwayat pekerjaan.</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* BARU: Profil Medis Dasar (Baseline) */}
-            <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6">
-              <h3 className="text-sm font-bold text-[#1e293b] flex items-center mb-6">
-                <ClipboardList className="h-4 w-4 text-[#0ea5e9] mr-2" /> Profil Medis Dasar
-              </h3>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
-                <div className="space-y-6">
-                  <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Golongan Darah & Rhesus</p>
-                    <p className="text-[14px] font-bold text-slate-700">
-                      {data.riwayat_medis?.golongan_darah || '-'} {data.riwayat_medis?.rhesus || ''}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Penyakit Bawaan / Kronis</p>
-                    <p className="text-[13px] font-semibold text-slate-600 leading-relaxed">
-                      {Array.isArray(data.riwayat_medis?.riwayat_penyakit) && data.riwayat_medis.riwayat_penyakit.length > 0
-                        ? data.riwayat_medis.riwayat_penyakit.join(', ')
-                        : (data.riwayat_medis?.riwayat_penyakit || 'Tidak ada catatan')}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Alergi (Obat/Makanan/Debu)</p>
-                    <p className="text-[13px] font-semibold text-slate-600 leading-relaxed">
-                      {Array.isArray(data.riwayat_medis?.alergi) && data.riwayat_medis.alergi.length > 0
-                        ? data.riwayat_medis.alergi.join(', ')
-                        : (data.riwayat_medis?.alergi || 'Tidak ada catatan')}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="space-y-6">
-                  <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Riwayat Operasi</p>
-                    <p className="text-[13px] font-semibold text-slate-600 leading-relaxed">
-                      {Array.isArray(data.riwayat_medis?.riwayat_operasi) && data.riwayat_medis.riwayat_operasi.length > 0
-                        ? data.riwayat_medis.riwayat_operasi.join(', ')
-                        : (data.riwayat_medis?.riwayat_operasi || 'Tidak ada catatan')}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Obat Rutin Yang Dikonsumsi</p>
-                    <p className="text-[13px] font-semibold text-slate-600 leading-relaxed">
-                      {data.riwayat_medis?.obat_rutin || 'Tidak ada catatan'}
-                    </p>
-                  </div>
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>
 
-            {/* BARU: Info Medis Terkini (Moved from Right Column) */}
+            {/* Info Medis Terkini */}
             <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6">
               <h3 className="text-sm font-bold text-[#1e293b] flex items-center mb-6">
                 <Activity className="h-4 w-4 text-[#0ea5e9] mr-2" /> Info Medis Terkini
@@ -556,7 +634,7 @@ export default function PekerjaDetailPage() {
                     <div className="grid grid-cols-2 gap-y-4 gap-x-8 mb-6">
                       <div>
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Fasilitas Medis</p>
-                        <p className="text-[14px] font-bold text-slate-800 leading-tight">{terkiniMedis.tempat_pemeriksa || terkiniMedis.tempat_pemeriksaan || '-'}</p>
+                        <p className="text-[13px] font-bold text-slate-800 leading-tight">{terkiniMedis.tempat_pemeriksa || terkiniMedis.tempat_pemeriksaan || '-'}</p>
                       </div>
                       <div>
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Tanggal Periksa</p>
@@ -568,11 +646,11 @@ export default function PekerjaDetailPage() {
                       </div>
                       <div>
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Jenis Layanan</p>
-                        <p className="text-[14px] font-bold text-slate-800 leading-tight">{terkiniMedis.jenis_pemeriksa || terkiniMedis.jenis_pemeriksaan || '-'}</p>
+                        <p className="text-[13px] font-bold text-slate-800 leading-tight">{terkiniMedis.jenis_pemeriksa || terkiniMedis.jenis_pemeriksaan || '-'}</p>
                       </div>
                       <div>
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Dokter / Tenaga Medis</p>
-                        <p className="text-[14px] font-bold text-slate-800 leading-tight">{terkiniMedis.dokter_pemeriksa || terkiniMedis.nama_dokter || '-'}</p>
+                        <p className="text-[13px] font-bold text-slate-800 leading-tight">{terkiniMedis.dokter_pemeriksa || terkiniMedis.nama_dokter || '-'}</p>
                       </div>
                     </div>
                   </div>
@@ -581,12 +659,12 @@ export default function PekerjaDetailPage() {
                     <div>
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Ringkasan Diagnosis</p>
                       <div className="bg-slate-50 border border-slate-100/50 rounded-xl p-4 mb-4">
-                        <p className="text-slate-600 text-[13px] leading-relaxed italic">
+                        <p className="text-slate-600 text-[12px] leading-relaxed italic">
                           "{terkiniMedis.hasil_diagnosis || 'Tidak ada ringkasan diagnosis.'}"
                         </p>
                       </div>
                     </div>
-                    <Button variant="outline" className="w-full border-[#0ea5e9] text-[#0ea5e9] hover:bg-blue-50 hover:text-[#0284c7] font-bold text-xs h-10 tracking-wider">
+                    <Button variant="outline" className="w-full border-[#0ea5e9] text-[#0ea5e9] hover:bg-blue-50 hover:text-[#0284c7] font-bold text-[10px] h-9 tracking-wider uppercase">
                       LIHAT LAPORAN LENGKAP
                     </Button>
                   </div>
@@ -597,69 +675,6 @@ export default function PekerjaDetailPage() {
                 </div>
               )}
             </div>
-
-            {/* BARU: Tabel Riwayat Kesehatan (Bottom) */}
-            <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-sm font-bold text-[#1e293b] flex items-center">
-                  <FileCheck className="h-4 w-4 text-[#0ea5e9] mr-2" /> Riwayat Kesehatan
-                </h3>
-              </div>
-
-              <div className="w-full overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-slate-100 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">
-                      <th className="pb-3 px-2 font-bold">TANGGAL & JENIS</th>
-                      <th className="pb-3 px-2 font-bold">HASIL DIAGNOSIS</th>
-                      <th className="pb-3 px-2 font-bold">FASILITAS MEDIS</th>
-                      <th className="pb-3 px-2 font-bold text-right">STATUS KESEHATAN</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-50/80">
-                    {data.detail_medis?.map((m: any, idx: number) => {
-                      const statusLabel = m.status_kesehatan === 'fit' ? 'Fit' :
-                        m.status_kesehatan === 'fit_with_note' ? 'Fit with Note' :
-                          m.status_kesehatan === 'unfit' ? 'Unfit' : (m.status_kesehatan || 'Fit');
-
-                      const statusColor = m.status_kesehatan === 'fit' ? 'bg-emerald-50 text-emerald-600' :
-                        m.status_kesehatan === 'fit_with_note' ? 'bg-amber-50 text-amber-600' :
-                          m.status_kesehatan === 'unfit' ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600';
-
-                      return (
-                        <tr key={idx} className="hover:bg-slate-50/50 transition-colors group">
-                          <td className="py-4 px-2">
-                            <p className="text-[13px] font-bold text-slate-800">
-                              {m.tanggal_pemeriksaan ? format(parseISO(m.tanggal_pemeriksaan), 'dd MMM yyyy', { locale: localeID }) : '-'}
-                            </p>
-                            <p className="text-[11px] text-[#0ea5e9] font-bold mt-0.5">{m.jenis_pemeriksaan || '-'}</p>
-                          </td>
-                          <td className="py-4 px-2">
-                            <p className="text-[13px] text-slate-600 line-clamp-2 max-w-[200px]" title={m.hasil_diagnosis}>
-                              {m.hasil_diagnosis || '-'}
-                            </p>
-                          </td>
-                          <td className="py-4 px-2">
-                            <p className="text-[12px] font-medium text-slate-700">{m.tempat_pemeriksaan || '-'}</p>
-                          </td>
-                          <td className="py-4 px-2 text-right">
-                            <span className={`px-2 py-1 ${statusColor} text-[9px] font-extrabold tracking-wide rounded-md whitespace-nowrap`}>
-                              {statusLabel.toUpperCase()}
-                            </span>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                    {(!data.detail_medis || data.detail_medis.length === 0) && (
-                      <tr>
-                        <td colSpan={4} className="py-8 text-center text-slate-400 text-xs text-slate-400 font-medium bg-slate-50/30">Belum ada riwayat medis terdaftar.</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
           </div>
 
           {/* RIGHT COLUMN (Stacking Cards) */}
