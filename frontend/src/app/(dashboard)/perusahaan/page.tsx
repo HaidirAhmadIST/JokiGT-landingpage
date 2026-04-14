@@ -31,7 +31,7 @@ interface Perusahaan {
   id: number;
   nama_perusahaan: string;
   sektor_industri: string;
-  status_pendamping: 'aktif' | 'tidak_aktif' | 'pending';
+  status_pendamping: 'Berkasus' | 'Selesai' | 'Dalam pantauan';
   alamat?: string;
   nama_pic?: string;
   kontak_pic?: string;
@@ -147,7 +147,7 @@ export default function PerusahaanPage() {
   const [data, setData] = useState<Perusahaan[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('Semua Status');
 
   // Sheet State (Add/Edit form)
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -155,7 +155,7 @@ export default function PerusahaanPage() {
   const [formData, setFormData] = useState({
     nama_perusahaan: '',
     sektor_industri: '',
-    status_pendamping: 'aktif',
+    status_pendamping: 'Berkasus',
     alamat: '',
     nama_pic: '',
     kontak_pic: '',
@@ -185,7 +185,7 @@ export default function PerusahaanPage() {
     setLoading(true);
     try {
       const params: any = { search };
-      if (statusFilter && statusFilter !== 'all') {
+      if (statusFilter && statusFilter !== 'Semua Status') {
         params.status = statusFilter;
       }
       const response = await api.get('/perusahaan', { params });
@@ -225,7 +225,7 @@ export default function PerusahaanPage() {
     setFormData({
       nama_perusahaan: p.nama_perusahaan,
       sektor_industri: p.sektor_industri || '',
-      status_pendamping: p.status_pendamping === 'tidak_aktif' ? 'pending' : p.status_pendamping,
+      status_pendamping: p.status_pendamping === 'Selesai' ? 'Dalam pantauan' : p.status_pendamping,
       alamat: p.alamat || '',
       nama_pic: p.nama_pic || '',
       kontak_pic: p.kontak_pic || '',
@@ -240,7 +240,7 @@ export default function PerusahaanPage() {
     setFormData({
       nama_perusahaan: '',
       sektor_industri: '',
-      status_pendamping: 'aktif',
+      status_pendamping: 'Berkasus',
       alamat: '',
       nama_pic: '',
       kontak_pic: '',
@@ -376,26 +376,26 @@ export default function PerusahaanPage() {
 
   const getStatusDisplay = (status: string) => {
     switch (status) {
-      case 'aktif':
+      case 'Berkasus':
         return (
           <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-600 border border-emerald-100">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5"></span>
-            Aktif
+            Berkasus
           </span>
         );
-      case 'pending':
+      case 'Dalam Pantauan':
         return (
           <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-600 border border-amber-100">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mr-1.5"></span>
-            Pending
+            Dalam Pantauan
           </span>
         );
-      case 'tidak_aktif':
+      case 'Selesai':
       default:
         return (
           <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-50 text-slate-600 border border-slate-100">
             <span className="w-1.5 h-1.5 rounded-full bg-slate-500 mr-1.5"></span>
-            Tidak Aktif
+            Selesai
           </span>
         );
     }
@@ -430,27 +430,23 @@ export default function PerusahaanPage() {
             Kelola informasi dan status kerjasama perusahaan mitra Anda secara terpusat.
           </p>
         </div>
-
         <div className="flex flex-col sm:flex-row items-end sm:items-center gap-3 w-full sm:w-auto">
-          <Select value={statusFilter} onValueChange={(v: any) => setStatusFilter(v || 'all')}>
+          <Select value={statusFilter} onValueChange={(v: any) => setStatusFilter(v || 'Semua Status')}>
             <SelectTrigger className="w-full sm:w-[180px] bg-white h-11 border-slate-200 focus:ring-[#0ea5e9]">
               <SelectValue placeholder="Semua Status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Semua Status</SelectItem>
-              <SelectItem value="aktif">Berkasus</SelectItem>
-              <SelectItem value="pending">Dalam Pantauan</SelectItem>
-              <SelectItem value="tidak_aktif">Selesai</SelectItem>
+              <SelectItem value="Semua Status">Semua Status</SelectItem>
+              <SelectItem value="Berkasus">Berkasus</SelectItem>
+              <SelectItem value="Dalam Pantauan">Dalam Pantauan</SelectItem>
+              <SelectItem value="Selesai">Selesai</SelectItem>
             </SelectContent>
           </Select>
 
           <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-            {/* @ts-ignore */}
-            <SheetTrigger asChild>
-              <Button onClick={openCreate} className="bg-[#0284c7] hover:bg-[#0369a1] text-white font-semibold h-11 px-6 rounded-lg shadow-sm w-full sm:w-auto">
-                <Plus className="mr-2 h-5 w-5" />
-                Tambah Perusahaan
-              </Button>
+            <SheetTrigger render={<Button onClick={openCreate} className="bg-[#0284c7] hover:bg-[#0369a1] text-white font-semibold h-11 px-6 rounded-lg shadow-sm w-full sm:w-auto" />}>
+              <Plus className="mr-2 h-5 w-5" />
+              Tambah Perusahaan
             </SheetTrigger>
             <SheetContent className="sm:max-w-xl p-0 overflow-hidden flex flex-col bg-white border-l shadow-2xl">
               <SheetHeader className="px-8 py-6 border-b border-slate-100 bg-white z-10">
@@ -506,9 +502,9 @@ export default function PerusahaanPage() {
                             <SelectValue placeholder="Pilih status" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="aktif">Berkasus (Otomatis)</SelectItem>
-                            <SelectItem value="pending">Dalam Pantauan (Manual)</SelectItem>
-                            <SelectItem value="tidak_aktif">Selesai (Otomatis)</SelectItem>
+                            <SelectItem value="Berkasus">Berkasus</SelectItem>
+                            <SelectItem value="Dalam Pantauan">Dalam Pantauan</SelectItem>
+                            <SelectItem value="Selesai">Selesai</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
