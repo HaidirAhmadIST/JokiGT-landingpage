@@ -1,50 +1,90 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import api from '@/lib/axios';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import {
   ClipboardList,
   Building2,
+  CheckCircle,
   CheckCircle2,
   TrendingUp,
   TrendingDown,
   Printer,
   MoreHorizontal,
+  Loader2,
+  Search,
 } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, XAxis, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
-
-const chartData = [
-  { month: 'JAN', kasus: 28 },
-  { month: 'FEB', kasus: 35 },
-  { month: 'MAR', kasus: 32 },
-  { month: 'APR', kasus: 45 },
-  { month: 'MEI', kasus: 55 },
-  { month: 'JUN', kasus: 62 },
-];
-
-const complianceData = [
-  { name: 'Manufaktur', value: 92, color: 'bg-[#0ea5e9]' },
-  { name: 'Pertambangan', value: 85, color: 'bg-[#0ea5e9]' },
-  { name: 'Konstruksi', value: 76, color: 'bg-[#0ea5e9]' },
-  { name: 'Agrikultur', value: 64, color: 'bg-[#0ea5e9]' },
-];
-
-const recentAdvocacy = [
-  { company: 'PT. Maju Mundur', case: 'Gangguan Pendengaran', status: 'SELESAI', statusColor: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  { company: 'Cahaya Abadi Ltd.', case: 'Penyakit Kulit Okupasi', status: 'PROSES', statusColor: 'bg-red-50 text-red-600 border-red-200' },
-  { company: 'Sumber Energi Tbk.', case: 'Kecelakaan Kerja Ringan', status: 'SELESAI', statusColor: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-];
+import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
 
 export default function LaporanPage() {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searching, setSearching] = useState(false);
+  
+  const [summaryData, setSummaryData] = useState<any>(null);
+  const [chartData, setChartData] = useState<any[]>([]);
+  const [sectorData, setSectorData] = useState<any[]>([]);
+  const [recentAdvocacy, setRecentAdvocacy] = useState<any[]>([]);
+  const [recentSuccesses, setRecentSuccesses] = useState<any[]>([]);
+  const [isReviewOpen, setIsReviewOpen] = useState(false);
+
+  const fetchSummary = async () => {
+    setLoading(true);
+    try {
+      const res = await api.get('/reports/summary');
+      if (res.data.status === 'success') {
+        setSummaryData(res.data.data.summary);
+        setChartData(res.data.data.chart_data);
+        setSectorData(res.data.data.sector_data);
+        setRecentSuccesses(res.data.data.recent_successes || []);
+      }
+    } catch (error) {
+      toast.error('Gagal memuat ringkasan laporan');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchSearch = useCallback(async (query: string) => {
+    setSearching(true);
+    try {
+      const res = await api.get(`/reports/search?query=${encodeURIComponent(query)}`);
+      if (res.data.status === 'success') {
+        setRecentAdvocacy(res.data.data);
+      }
+    } catch (error) {
+      console.error('Search failed', error);
+    } finally {
+      setSearching(false);
+    }
+  }, []);
 
   useEffect(() => {
-    setLoading(false);
+    fetchSummary();
   }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchSearch(searchQuery);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchQuery, fetchSearch]);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 max-w-7xl mx-auto">
@@ -67,48 +107,66 @@ export default function LaporanPage() {
         {/* Total Kasus PAK */}
         <Card className="rounded-[20px] shadow-sm border-slate-100 p-6 flex flex-col justify-between h-36 hover:shadow-md transition-all">
           <div className="flex justify-between items-start">
-            <p className="text-xs font-bold text-[#94a3b8] tracking-widest">Total Kasus PAK</p>
+            <p className="text-xs font-bold text-[#94a3b8] tracking-widest uppercase">Total Kasus PAK</p>
             <div className="bg-blue-50 text-blue-500 p-2 rounded-xl">
               <ClipboardList className="h-5 w-5" />
             </div>
           </div>
           <div>
-            <h3 className="text-3xl font-extrabold text-[#0f172a]">1,240</h3>
-            <span className="flex items-center text-emerald-500 text-xs font-bold gap-0.5 mt-1">
-              <TrendingUp className="h-3 w-3" /> +5.4% <span className="text-[#94a3b8] font-medium ml-1">dari bulan lalu</span>
-            </span>
+            {loading ? <div className="h-8 w-24 bg-slate-100 animate-pulse rounded" /> : (
+              <>
+                <h3 className="text-3xl font-extrabold text-[#0f172a]">{summaryData?.total_kasus.value}</h3>
+                <span className={`flex items-center text-xs font-bold gap-0.5 mt-1 ${summaryData?.total_kasus.trend >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                  {summaryData?.total_kasus.trend >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                  {summaryData?.total_kasus.trend >= 0 ? '+' : ''}{summaryData?.total_kasus.trend}% 
+                  <span className="text-[#94a3b8] font-medium ml-1">akumulasi total</span>
+                </span>
+              </>
+            )}
           </div>
         </Card>
 
-        {/* Kepatuhan Perusahaan */}
+        {/* Kepatuhan Monitoring */}
         <Card className="rounded-[20px] shadow-sm border-slate-100 p-6 flex flex-col justify-between h-36 hover:shadow-md transition-all">
           <div className="flex justify-between items-start">
-            <p className="text-xs font-bold text-[#94a3b8] tracking-widest">Kepatuhan Perusahaan</p>
+            <p className="text-xs font-bold text-[#94a3b8] tracking-widest uppercase">Kepatuhan Medis</p>
             <div className="bg-orange-50 text-orange-500 p-2 rounded-xl">
               <Building2 className="h-5 w-5" />
             </div>
           </div>
           <div>
-            <h3 className="text-3xl font-extrabold text-[#0f172a]">88.2%</h3>
-            <span className="flex items-center text-red-500 text-xs font-bold gap-0.5 mt-1">
-              <TrendingDown className="h-3 w-3" /> -2.1% <span className="text-[#94a3b8] font-medium ml-1">dari kuartal lalu</span>
-            </span>
+            {loading ? <div className="h-8 w-24 bg-slate-100 animate-pulse rounded" /> : (
+              <>
+                <h3 className="text-3xl font-extrabold text-[#0f172a]">{summaryData?.kepatuhan.value}</h3>
+                <span className={`flex items-center text-xs font-bold gap-0.5 mt-1 ${summaryData?.kepatuhan.trend >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                  {summaryData?.kepatuhan.trend >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                  {summaryData?.kepatuhan.trend >= 0 ? '+' : ''}{summaryData?.kepatuhan.trend}%
+                  <span className="text-[#94a3b8] font-medium ml-1">pemeriksaan rutin</span>
+                </span>
+              </>
+            )}
           </div>
         </Card>
 
         {/* Sukses Advokasi */}
         <Card className="rounded-[20px] shadow-sm border-slate-100 p-6 flex flex-col justify-between h-36 hover:shadow-md transition-all">
           <div className="flex justify-between items-start">
-            <p className="text-xs font-bold text-[#94a3b8] tracking-widest">Sukses Advokasi</p>
+            <p className="text-xs font-bold text-[#94a3b8] tracking-widest uppercase">Sukses Advokasi</p>
             <div className="bg-emerald-50 text-emerald-500 p-2 rounded-xl">
               <CheckCircle2 className="h-5 w-5" />
             </div>
           </div>
           <div>
-            <h3 className="text-3xl font-extrabold text-[#0f172a]">92.5%</h3>
-            <span className="flex items-center text-emerald-500 text-xs font-bold gap-0.5 mt-1">
-              <TrendingUp className="h-3 w-3" /> +4.2% <span className="text-[#94a3b8] font-medium ml-1">angka penyelesaian</span>
-            </span>
+            {loading ? <div className="h-8 w-24 bg-slate-100 animate-pulse rounded" /> : (
+              <>
+                <h3 className="text-3xl font-extrabold text-[#0f172a]">{summaryData?.sukses_advokasi.value}</h3>
+                <span className={`flex items-center text-xs font-bold gap-0.5 mt-1 ${summaryData?.sukses_advokasi.trend >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                  {summaryData?.sukses_advokasi.trend >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                  {summaryData?.sukses_advokasi.trend >= 0 ? '+' : ''}{summaryData?.sukses_advokasi.trend}%
+                  <span className="text-[#94a3b8] font-medium ml-1">angka penyelesaian</span>
+                </span>
+              </>
+            )}
           </div>
         </Card>
       </div>
@@ -151,17 +209,22 @@ export default function LaporanPage() {
             </button>
           </div>
           <div className="space-y-6">
-            {complianceData.map((item) => (
-              <div key={item.name} className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-semibold text-[#1e293b]">{item.name}</span>
-                  <span className="text-sm font-bold text-[#0f172a]">{item.value}%</span>
+            {loading ? [1, 2, 3, 4].map(i => <div key={i} className="h-10 bg-slate-50 animate-pulse rounded-lg" />) : (
+              sectorData.map((item) => (
+                <div key={item.name} className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-semibold text-[#1e293b]">{item.name}</span>
+                    <span className="text-sm font-bold text-[#0f172a]">{item.value}%</span>
+                  </div>
+                  <div className="w-full bg-slate-100 rounded-full h-2.5">
+                    <div className={`${item.color} h-2.5 rounded-full transition-all duration-500`} style={{ width: `${item.value}%` }} />
+                  </div>
                 </div>
-                <div className="w-full bg-slate-100 rounded-full h-2.5">
-                  <div className={`${item.color} h-2.5 rounded-full transition-all duration-500`} style={{ width: `${item.value}%` }} />
-                </div>
-              </div>
-            ))}
+              ))
+            )}
+            {!loading && sectorData.length === 0 && (
+              <p className="text-center text-slate-400 text-sm py-10">Belum ada data sektor.</p>
+            )}
           </div>
         </Card>
       </div>
@@ -170,33 +233,69 @@ export default function LaporanPage() {
       <div className="grid gap-6 md:grid-cols-3">
         {/* Recent Advocacy Table */}
         <Card className="md:col-span-2 rounded-[20px] shadow-sm border-slate-100 p-6">
-          <h2 className="text-[17px] font-bold text-[#0f172a] mb-4">Status Advokasi Terakhir</h2>
-          <Table>
-            <TableHeader>
-              <TableRow className="hover:bg-transparent border-b border-slate-100">
-                <TableHead className="py-3 font-bold text-[10px] tracking-widest text-[#94a3b8]">NAMA PERUSAHAAN</TableHead>
-                <TableHead className="py-3 font-bold text-[10px] tracking-widest text-[#94a3b8]">KASUS</TableHead>
-                <TableHead className="py-3 font-bold text-[10px] tracking-widest text-[#94a3b8]">STATUS</TableHead>
-                <TableHead className="py-3 font-bold text-[10px] tracking-widest text-[#94a3b8]">AKSI</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {recentAdvocacy.map((row, i) => (
-                <TableRow key={i} className="hover:bg-slate-50/50 transition-colors">
-                  <TableCell className="py-3.5 font-bold text-[#1e293b] text-sm">{row.company}</TableCell>
-                  <TableCell className="py-3.5 text-sm text-[#475569]">{row.case}</TableCell>
-                  <TableCell className="py-3.5">
-                    <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold border ${row.statusColor}`}>
-                      {row.status}
-                    </span>
-                  </TableCell>
-                  <TableCell className="py-3.5">
-                    <button className="text-sm font-bold text-[#0ea5e9] hover:text-[#0284c7] transition-colors">Detail</button>
-                  </TableCell>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+            <h2 className="text-[17px] font-bold text-[#0f172a]">Pencarian Kasus Advokasi</h2>
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Input 
+                placeholder="Cari NIK atau Nama..." 
+                className="pl-9 h-9 text-xs border-slate-200 focus:ring-[#0ea5e9]"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              {searching && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-3 w-3 animate-spin text-slate-400" />}
+            </div>
+          </div>
+          
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent border-b border-slate-100">
+                  <TableHead className="py-3 font-bold text-[10px] tracking-widest text-[#94a3b8]">PEKERJA / PERUSAHAAN</TableHead>
+                  <TableHead className="py-3 font-bold text-[10px] tracking-widest text-[#94a3b8]">KASUS</TableHead>
+                  <TableHead className="py-3 font-bold text-[10px] tracking-widest text-[#94a3b8]">STATUS</TableHead>
+                  <TableHead className="py-3 font-bold text-[10px] tracking-widest text-[#94a3b8]">AKSI</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {searching && recentAdvocacy.length === 0 ? (
+                   [1, 2, 3].map(i => (
+                    <TableRow key={i}><TableCell colSpan={4} className="h-16 bg-slate-50/50 animate-pulse" /></TableRow>
+                   ))
+                ) : (
+                  recentAdvocacy.map((row, i) => (
+                    <TableRow key={i} className="hover:bg-slate-50/50 transition-colors">
+                      <TableCell className="py-3.5">
+                        <div className="font-bold text-[#1e293b] text-sm">{row.worker}</div>
+                        <div className="text-[11px] text-[#94a3b8] font-medium">{row.company}</div>
+                      </TableCell>
+                      <TableCell className="py-3.5 text-sm text-[#475569] font-medium">{row.case}</TableCell>
+                      <TableCell className="py-3.5">
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold border ${row.statusColor}`}>
+                          {row.status}
+                        </span>
+                      </TableCell>
+                      <TableCell className="py-3.5">
+                        <button 
+                          onClick={() => router.push(`/pekerja/${row.pekerja_id}?tab=advokasi`)}
+                          className="text-sm font-bold text-[#0ea5e9] hover:text-[#0284c7] transition-colors"
+                        >
+                          Detail
+                        </button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+                {!searching && recentAdvocacy.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={4} className="py-10 text-center text-slate-400 text-sm">
+                      Tidak ada kasus ditemukan.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </Card>
 
         {/* Success Rate Card */}
@@ -210,12 +309,82 @@ export default function LaporanPage() {
           </div>
           <div>
             <p className="text-white/70 text-sm">Melampaui target KPI tahunan (90%)</p>
-            <Button className="mt-4 bg-white/10 hover:bg-white/20 text-white border-white/20 border h-11 px-6 font-bold" variant="outline">
+            <Button 
+                onClick={() => setIsReviewOpen(true)}
+                className="mt-4 bg-white/10 hover:bg-white/20 text-white border-white/20 border h-11 px-6 font-bold" 
+                variant="outline"
+            >
               Lihat Review
             </Button>
           </div>
         </Card>
       </div>
+
+      {/* Success Review Modal */}
+      <Dialog open={isReviewOpen} onOpenChange={setIsReviewOpen}>
+        <DialogContent className="max-w-xl p-0 overflow-hidden border-none rounded-3xl">
+          <div className="bg-gradient-to-br from-[#0c4a6e] to-[#0284c7] p-8 text-white">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-extrabold flex items-center gap-3">
+                <CheckCircle2 className="h-7 w-7 text-emerald-400" />
+                Review Tingkat Keberhasilan
+              </DialogTitle>
+              <DialogDescription className="text-white/70 text-base mt-2">
+                Analisis mendalam mengenai pencapaian target advokasi nasional tahun {new Date().getFullYear()}.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="grid grid-cols-2 gap-4 mt-8">
+              <div className="bg-white/10 rounded-2xl p-4 backdrop-blur-sm border border-white/10">
+                <p className="text-white/60 text-[10px] font-bold tracking-widest uppercase">Target KPI</p>
+                <p className="text-2xl font-black mt-1">90.0%</p>
+              </div>
+              <div className="bg-white/10 rounded-2xl p-4 backdrop-blur-sm border border-white/10">
+                <p className="text-white/60 text-[10px] font-bold tracking-widest uppercase">Pencapaian Riil</p>
+                <p className="text-2xl font-black mt-1 text-emerald-400">{summaryData?.sukses_advokasi.value || '94.0%'}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-8 bg-white">
+            <h4 className="text-sm font-bold text-[#0f172a] mb-4 uppercase tracking-wider flex items-center">
+              <TrendingUp className="h-4 w-4 mr-2 text-[#0ea5e9]" />
+              Kisah Sukses Terakhir
+            </h4>
+            
+            <div className="space-y-4">
+              {recentSuccesses.length > 0 ? (
+                recentSuccesses.map((item, idx) => (
+                  <div key={idx} className="flex items-start gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-100 group hover:border-[#0ea5e9]/30 transition-all">
+                    <div className="bg-emerald-100 text-emerald-600 p-2 rounded-xl shrink-0">
+                      <CheckCircle className="h-4 w-4" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex justify-between items-start">
+                        <p className="font-bold text-[#1e293b] text-sm leading-tight">{item.worker}</p>
+                        <span className="text-[10px] font-bold text-[#94a3b8]">{item.date}</span>
+                      </div>
+                      <p className="text-xs text-[#64748b] mt-0.5">{item.company}</p>
+                      <div className="mt-2 text-[11px] font-medium text-[#0ea5e9] bg-[#e0f2fe] px-2 py-0.5 rounded-md inline-block">
+                        {item.case}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-center py-10 text-slate-400 text-sm">Belum ada data keberhasilan terbaru.</p>
+              )}
+            </div>
+
+            <Button 
+                onClick={() => setIsReviewOpen(false)}
+                className="w-full mt-8 h-12 rounded-xl bg-[#0f172a] hover:bg-[#1e293b] font-bold"
+            >
+              Tutup Review
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
     </div>
   );

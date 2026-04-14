@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import Cookies from 'js-cookie';
 import api from '@/lib/axios';
 import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -56,6 +56,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import { useRole } from '@/hooks/useRole';
 
 // Mock data
 const stages = [
@@ -94,11 +95,17 @@ function ProgressDots({ level }: { level: number }) {
 
 export default function AdvokasiPage() {
   const router = useRouter();
+  const { isSuperAdmin, isStaffOrAbove, loading: roleLoading } = useRole();
   const [activeTab, setActiveTab] = useState('Semua Kasus');
   const [sheetOpen, setSheetOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [cases, setCases] = useState<any[]>([]);
+  const [summaryStats, setSummaryStats] = useState({
+    total: { count: 0, trend: 0 },
+    proses: { count: 0, trend: 0 },
+    selesai: { count: 0, trend: 0 }
+  });
 
   const [openWorkerSearch, setOpenWorkerSearch] = useState(false);
   const [workers, setWorkers] = useState<any[]>([]);
@@ -129,8 +136,20 @@ export default function AdvokasiPage() {
     }
   };
 
+  const fetchSummaryStats = async () => {
+    try {
+      const resp = await api.get('/advokasi/stats');
+      if (resp.data.status === 'success') {
+        setSummaryStats(resp.data.summary);
+      }
+    } catch (err) {
+      console.error('Gagal memuat statistik:', err);
+    }
+  };
+
   useEffect(() => {
     fetchCases();
+    fetchSummaryStats();
   }, []);
 
   const handleSave = async (e: React.FormEvent) => {
@@ -147,6 +166,7 @@ export default function AdvokasiPage() {
         toast.success('Kasus berhasil disimpan.');
         setSheetOpen(false);
         fetchCases();
+        fetchSummaryStats();
         // Reset form
         setFormData({
           pekerja_id: '', pekerja_name: '', jenis_kasus: '', perusahaan: '',
@@ -204,9 +224,13 @@ export default function AdvokasiPage() {
             </div>
           </div>
           <div className="flex items-end gap-3">
-            <h3 className="text-4xl font-extrabold text-[#0f172a]">128</h3>
-            <span className="flex items-center text-emerald-500 text-xs font-bold gap-0.5 mb-1.5">
-              <TrendingUp className="h-3 w-3" /> +12%
+            <h3 className="text-4xl font-extrabold text-[#0f172a]">{summaryStats.total.count}</h3>
+            <span className={cn(
+              "flex items-center text-xs font-bold gap-0.5 mb-1.5",
+              summaryStats.total.trend >= 0 ? "text-emerald-500" : "text-rose-500"
+            )}>
+              {summaryStats.total.trend >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+              {summaryStats.total.trend >= 0 ? '+' : ''}{summaryStats.total.trend}%
             </span>
           </div>
           <p className="text-xs font-medium text-[#94a3b8]">Sejak bulan lalu</p>
@@ -221,9 +245,13 @@ export default function AdvokasiPage() {
             </div>
           </div>
           <div className="flex items-end gap-3">
-            <h3 className="text-4xl font-extrabold text-[#0f172a]">45</h3>
-            <span className="flex items-center text-emerald-500 text-xs font-bold gap-0.5 mb-1.5">
-              <TrendingUp className="h-3 w-3" /> +5%
+            <h3 className="text-4xl font-extrabold text-[#0f172a]">{summaryStats.proses.count}</h3>
+            <span className={cn(
+              "flex items-center text-xs font-bold gap-0.5 mb-1.5",
+              summaryStats.proses.trend >= 0 ? "text-emerald-500" : "text-rose-500"
+            )}>
+              {summaryStats.proses.trend >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+              {summaryStats.proses.trend >= 0 ? '+' : ''}{summaryStats.proses.trend}%
             </span>
           </div>
           <p className="text-xs font-medium text-[#94a3b8]">Aktif di lapangan</p>
@@ -238,9 +266,13 @@ export default function AdvokasiPage() {
             </div>
           </div>
           <div className="flex items-end gap-3">
-            <h3 className="text-4xl font-extrabold text-[#0f172a]">83</h3>
-            <span className="flex items-center text-red-500 text-xs font-bold gap-0.5 mb-1.5">
-              <TrendingDown className="h-3 w-3" /> -2%
+            <h3 className="text-4xl font-extrabold text-[#0f172a]">{summaryStats.selesai.count}</h3>
+            <span className={cn(
+              "flex items-center text-xs font-bold gap-0.5 mb-1.5",
+              summaryStats.selesai.trend >= 0 ? "text-emerald-500" : "text-rose-500"
+            )}>
+              {summaryStats.selesai.trend >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+              {summaryStats.selesai.trend >= 0 ? '+' : ''}{summaryStats.selesai.trend}%
             </span>
           </div>
           <p className="text-xs font-medium text-[#94a3b8]">Kasus tertutup</p>
@@ -274,9 +306,11 @@ export default function AdvokasiPage() {
             <Button variant="outline" className="h-9 px-4 text-sm font-semibold border-slate-200 text-slate-600">
               <SlidersHorizontal className="mr-2 h-4 w-4" /> Filter
             </Button>
-            <Button onClick={() => setSheetOpen(true)} className="h-9 px-4 text-sm font-bold bg-[#0284c7] hover:bg-[#0369a1] text-white">
-              <Plus className="mr-2 h-4 w-4" /> Tambah Kasus
-            </Button>
+            {isStaffOrAbove && (
+              <Button onClick={() => setSheetOpen(true)} className="h-9 px-4 text-sm font-bold bg-[#0284c7] hover:bg-[#0369a1] text-white">
+                <Plus className="mr-2 h-4 w-4" /> Tambah Kasus
+              </Button>
+            )}
           </div>
         </div>
 
@@ -335,17 +369,23 @@ export default function AdvokasiPage() {
                     <TableCell className="py-4 px-6 text-sm text-[#475569]">{new Date(c.updated_at).toLocaleDateString('id-ID')}</TableCell>
                     <TableCell className="py-4 px-6">
                       <DropdownMenu>
-                        {/* @ts-ignore */}
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-700">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
+                        <DropdownMenuTrigger
+                          className={cn(
+                            buttonVariants({ variant: 'ghost', size: 'icon' }),
+                            "h-8 w-8 text-slate-400 hover:text-slate-700"
+                          )}
+                        >
+                          <MoreVertical className="h-4 w-4" />
                         </DropdownMenuTrigger>
                         {/* @ts-ignore */}
                         <DropdownMenuContent align="end" className="w-48">
                           <DropdownMenuItem className="cursor-pointer" onClick={() => router.push(`/advokasi/${c.id}`)}><Eye className="mr-2 h-4 w-4" /> Lihat Detail</DropdownMenuItem>
-                          <DropdownMenuItem className="cursor-pointer"><RefreshCw className="mr-2 h-4 w-4" /> Update Status</DropdownMenuItem>
-                          <DropdownMenuItem className="cursor-pointer"><Archive className="mr-2 h-4 w-4" /> Tutup/Arsip Kasus</DropdownMenuItem>
+                          {isStaffOrAbove && (
+                            <>
+                              <DropdownMenuItem className="cursor-pointer"><RefreshCw className="mr-2 h-4 w-4" /> Update Status</DropdownMenuItem>
+                              <DropdownMenuItem className="cursor-pointer"><Archive className="mr-2 h-4 w-4" /> Tutup/Arsip Kasus</DropdownMenuItem>
+                            </>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -358,7 +398,9 @@ export default function AdvokasiPage() {
 
         {/* Pagination Footer */}
         <div className="border-t border-slate-100 p-4 px-6 flex items-center justify-between text-sm text-slate-500 font-medium">
-          <p className="text-xs font-bold text-[#94a3b8] tracking-wider">MENAMPILKAN 4 DARI 128 KASUS</p>
+          <p className="text-xs font-bold text-[#94a3b8] tracking-wider uppercase">
+            MENAMPILKAN {cases.length} DARI {summaryStats.total.count} KASUS
+          </p>
           <div className="flex items-center gap-1">
             <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400" disabled>&lt;</Button>
             <Button variant="ghost" className="h-8 w-8 bg-[#0284c7] hover:bg-[#0369a1] text-white rounded-full text-xs font-bold">1</Button>
@@ -392,20 +434,20 @@ export default function AdvokasiPage() {
                 <div className="space-y-3">
                   <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Cari Pekerja</Label>
                   <Popover open={openWorkerSearch} onOpenChange={setOpenWorkerSearch}>
-                    <PopoverTrigger>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        aria-expanded={openWorkerSearch}
-                        className="w-full justify-between h-12 bg-slate-50 border-slate-200 hover:bg-slate-100 px-4 font-normal"
-                      >
-                        {formData.pekerja_name ? (
-                          <span className="font-semibold text-slate-900">{formData.pekerja_name}</span>
-                        ) : (
-                          <span className="text-slate-400">Pilih pekerja yang terdaftar...</span>
-                        )}
-                        <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
+                    <PopoverTrigger
+                      className={cn(
+                        buttonVariants({ variant: 'outline' }),
+                        "w-full justify-between h-11 border-slate-200 bg-slate-50/50 hover:bg-slate-50"
+                      )}
+                      role="combobox"
+                      aria-expanded={openWorkerSearch}
+                    >
+                      {formData.pekerja_name ? (
+                        <span className="font-semibold text-slate-900">{formData.pekerja_name}</span>
+                      ) : (
+                        <span className="text-slate-400">Pilih pekerja yang terdaftar...</span>
+                      )}
+                      <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </PopoverTrigger>
                     <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
                       <Command shouldFilter={false}>

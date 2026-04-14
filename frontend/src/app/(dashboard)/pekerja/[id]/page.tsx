@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { format, differenceInYears, parseISO } from 'date-fns';
 import { id as localeID } from 'date-fns/locale';
+import { useRole } from '@/hooks/useRole';
 
 export default function PekerjaDetailPage() {
   const { id } = useParams();
@@ -20,13 +21,11 @@ export default function PekerjaDetailPage() {
   const [loading, setLoading] = useState(true);
   const [uploadLoading, setUploadLoading] = useState<string | null>(null);
   const [statusLoading, setStatusLoading] = useState(false);
-  const [user, setUser] = useState<any>(null);
-
   const [isEditingCatatan, setIsEditingCatatan] = useState(false);
   const [catatanInput, setCatatanInput] = useState('');
   const [savingCatatan, setSavingCatatan] = useState(false);
   const [selectedJobId, setSelectedJobId] = useState<number | string | null>(null);
-  const isAdmin = user ? (user.role === 'admin') : false;
+  const { isSuperAdmin, isStaffOrAbove, loading: roleLoading } = useRole();
 
   const fetchDetail = async () => {
     try {
@@ -42,11 +41,6 @@ export default function PekerjaDetailPage() {
 
   useEffect(() => {
     fetchDetail();
-    // Fetch user from localStorage
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
   }, [id]);
 
   const toggleAdvokasi = async (field: string, checked: boolean) => {
@@ -94,6 +88,22 @@ export default function PekerjaDetailPage() {
     } catch (error) {
       toast.dismiss();
       toast.error('Gagal membuka dokumen yang terunggah.');
+    }
+  };
+
+  const downloadMedisDoc = async (medisId: number) => {
+    try {
+      const toastId = toast.loading('Memproses berkas medis...');
+      const response = await api.get(`/medis/${medisId}/file`, {
+        responseType: 'blob',
+      });
+      
+      const fileUrl = window.URL.createObjectURL(new Blob([response.data], { type: response.headers['content-type'] }));
+      window.open(fileUrl, '_blank');
+      toast.dismiss(toastId);
+    } catch (error) {
+      toast.dismiss();
+      toast.error('Gagal membuka berkas medis.');
     }
   };
 
@@ -263,7 +273,30 @@ export default function PekerjaDetailPage() {
         <Button variant="ghost" size="icon" onClick={() => router.back()} className="hover:bg-slate-200 bg-white shadow-sm border border-slate-200">
           <ArrowLeft className="h-4 w-4 text-slate-600" />
         </Button>
-        <span className="text-sm font-medium text-slate-500">Kembali ke Daftar Pekerja</span>
+        <div className="flex-1">
+          <span className="text-sm font-medium text-slate-500">Kembali ke Daftar Pekerja</span>
+        </div>
+        
+        {isSuperAdmin && (
+          <Button 
+            variant="destructive" 
+            size="sm" 
+            className="rounded-xl font-bold bg-rose-500 hover:bg-rose-600 px-5"
+            onClick={async () => {
+              if (confirm('Hapus data pekerja ini secara PERMANEN?')) {
+                try {
+                  await api.delete(`/pekerja/${id}`);
+                  toast.success('Pekerja dihapus secara permanen');
+                  router.push('/pekerja');
+                } catch (e) {
+                  toast.error('Gagal menghapus pekerja');
+                }
+              }
+            }}
+          >
+            Hapus Pekerja (S.Admin)
+          </Button>
+        )}
       </div>
 
       <div className="max-w-6xl mx-auto space-y-6">
@@ -325,12 +358,50 @@ export default function PekerjaDetailPage() {
 
           {/* Right: Stats */}
           <div className="flex flex-wrap lg:flex-nowrap gap-4 w-full lg:w-auto h-full">
-            <div className={`bg-slate-50/50 border border-slate-100 rounded-xl p-4 flex-1 min-w-[170px] relative transition-all ${isAdmin ? 'hover:bg-blue-50/30 cursor-pointer group/status border-dashed' : ''}`}>
+            <div className={`bg-slate-50/50 border border-slate-100 rounded-xl p-4 flex-1 min-w-[170px] relative transition-all ${isStaffOrAbove ? 'hover:bg-blue-50/30 cursor-pointer group/status border-dashed' : ''}`}>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Status Kesehatan</p>
               <div className="flex items-center gap-2">
-                <span className={`text-xl font-bold capitalize ${getStatusColor(data.status_kesehatan)}`}>
-                  {getStatusLabel(data.status_kesehatan)}
+                <span className={`text-xl font-bold capitalize ${
+                  data.status_kesehatan === 'sehat' ? 'text-emerald-600' : 
+                  data.status_kesehatan === 'sakit_ringan' ? 'text-amber-600' : 'text-rose-600'
+                }`}>
+                  {data.status_kesehatan === 'sehat' ? 'Sehat' : 
+                   data.status_kesehatan === 'sakit_ringan' ? 'Sehat dengan Catatan' : 
+                   data.status_kesehatan === 'sakit_berat' ? 'Tidak Sehat' : data.status_kesehatan}
                 </span>
+
+                {isStaffOrAbove && <Edit3 className="h-3.5 w-3.5 text-slate-400 group-hover/status:text-[#0ea5e9] transition-colors" />}
+
+                {/* Status Switcher Popover Logic (Only for Staff+) */}
+                {isStaffOrAbove && (
+                  <select 
+                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                    value={data.status_kesehatan}
+                    onChange={(e) => updateStatusKesehatan(e.target.value)}
+                    disabled={statusLoading}
+                  >
+                    <option value="sehat">Sehat</option>
+                    <option value="sakit_ringan">Sehat dengan Catatan</option>
+                    <option value="sakit_berat">Tidak Sehat</option>
+                  </select>
+                )}
+              </div>
+              
+              {/* Suggestion Indicator (Only for Staff+) */}
+              {isStaffOrAbove && data.status_saran && data.status_saran !== data.status_kesehatan && (
+                <div className="mt-2 flex items-center gap-1.5 animate-pulse">
+                  <span className="w-1.5 h-1.5 bg-amber-500 rounded-full"></span>
+                  <span className="text-[9px] font-extrabold text-amber-600 uppercase tracking-tighter">
+                    Saran: {data.status_saran === 'sehat' ? 'Sehat' : data.status_saran === 'sakit_ringan' ? 'Catatan' : 'Tidak Sehat'}
+                  </span>
+                </div>
+              )}
+            </div>
+            <div className="bg-slate-50/50 border border-slate-100 rounded-xl p-4 flex-1 min-w-[140px]">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Masa Kerja</p>
+              <span className="text-xl font-bold text-slate-800 block">{masaKerjaText}</span>
+              <span className="text-[11px] text-slate-400 mt-1 block">{sejakText}</span>
+            </div>
 
                 {isAdmin && <Edit3 className="h-3.5 w-3.5 text-slate-400 group-hover/status:text-[#0ea5e9] transition-colors" />}
 
@@ -348,36 +419,6 @@ export default function PekerjaDetailPage() {
                   </select>
                 )}
               </div>
-
-              {/* Suggestion Indicator (Only for admin) */}
-              {isAdmin && data.status_saran && data.status_saran !== data.status_kesehatan && (
-                <div className="mt-2 flex items-center gap-1.5 animate-pulse">
-                  <span className="w-1.5 h-1.5 bg-amber-500 rounded-full"></span>
-                  <span className="text-[9px] font-extrabold text-amber-600 uppercase tracking-tighter">
-                    Saran: {getStatusLabel(data.status_saran)}
-                  </span>
-                </div>
-              )}
-            </div>
-            <div className="bg-slate-50/50 border border-slate-100 rounded-xl p-4 flex-1 min-w-[140px]">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Masa Kerja</p>
-              <span className="text-xl font-bold text-slate-800 block">{masaKerjaText}</span>
-              <span className="text-[11px] text-slate-400 mt-1 block">{sejakText}</span>
-            </div>
-
-            <div className="bg-slate-50/50 border border-slate-100 rounded-xl p-4 flex-1 min-w-[140px]">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Kasus Advokasi</p>
-              <div className="flex items-center gap-2">
-                <span className="text-xl font-bold text-slate-800">
-                  {completedStepsCount > 0 ? `${completedStepsCount} / 6 Langkah` : 'Tidak Ada'}
-                </span>
-                {completedStepsCount > 0 && (
-                  <span className={`px-2 py-0.5 ${completedStepsCount === 6 ? 'bg-emerald-100 text-emerald-600' : 'bg-orange-100 text-orange-600'} text-[9px] font-extrabold tracking-wide rounded-full`}>
-                    {completedStepsCount === 6 ? 'SELESAI' : 'PROSES'}
-                  </span>
-                )}
-              </div>
-            </div>
           </div>
         </div>
 
@@ -470,7 +511,7 @@ export default function PekerjaDetailPage() {
                 <h3 className="text-sm font-bold text-orange-800 flex items-center">
                   <Pin className="h-4 w-4 mr-2" /> Catatan Internal Admin
                 </h3>
-                {isAdmin && !isEditingCatatan && (
+                {isStaffOrAbove && !isEditingCatatan && (
                   <button onClick={handleEditCatatan} className="text-orange-400 hover:text-orange-600 transition-colors" title="Edit Catatan">
                     <Edit3 className="h-4 w-4" />
                   </button>
@@ -566,11 +607,89 @@ export default function PekerjaDetailPage() {
                 </div>
               </div>
 
+<<<<<<< HEAD
               {/* Riwayat Kesehatan (Filtered) */}
               <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6">
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="text-sm font-bold text-[#1e293b] flex items-center">
                     <FileCheck className="h-4 w-4 text-[#0ea5e9] mr-2" /> Riwayat Kesehatan
+                  </h3>
+                  {selectedJobId !== null && (
+                    <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full uppercase tracking-tighter">FILTERED BY JOB</span>
+                  )}
+                </div>
+=======
+            {/* Baseline Health Info Card */}
+            <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6">
+              <h3 className="text-sm font-bold text-[#1e293b] flex items-center mb-6">
+                <Activity className="h-4 w-4 text-[#0ea5e9] mr-2" /> Riwayat Kesehatan
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-12">
+            {/* SIDE-BY-SIDE GRID: Riwayat Pekerjaan & Riwayat Kesehatan */}
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              {/* Riwayat Pekerjaan */}
+              <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-sm font-bold text-[#1e293b] flex items-center">
+                    <Briefcase className="h-4 w-4 text-[#0ea5e9] mr-2" /> Riwayat Pekerjaan
+                  </h3>
+                  <button onClick={() => setSelectedJobId(null)} className="text-[11px] font-bold text-[#0ea5e9] tracking-wider uppercase hover:underline">LIHAT SEMUA</button>
+                </div>
+
+                <div className="w-full overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-100 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">
+                        <th className="pb-3 px-2 font-bold">Perusahaan</th>
+                        <th className="pb-3 px-2 font-bold">Masa Kerja</th>
+                        <th className="pb-3 px-2 font-bold text-right">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50/80">
+                      {data.riwayat_pekerja?.map((r: any, idx: number) => {
+                         const isActive = !r.tgl_keluar;
+                         let wText = `${r.tgl_masuk ? format(parseISO(r.tgl_masuk), 'MMM yy', {locale: localeID}) : '-'} - ${r.tgl_keluar ? format(parseISO(r.tgl_keluar), 'MMM yy', {locale: localeID}) : 'Now'}`;
+                         const isSelected = selectedJobId === idx;
+
+                         return (
+                           <tr 
+                             key={idx} 
+                             onClick={() => setSelectedJobId(isSelected ? null : idx)}
+                             className={`cursor-pointer transition-all group border-l-4 ${isSelected ? 'bg-blue-50/80 border-[#0ea5e9]' : 'hover:bg-slate-50/50 border-transparent'}`}
+                           >
+                             <td className="py-4 px-2">
+                               <p className="text-[13px] font-bold text-slate-800">{r.nama_perusahaan}</p>
+                               <p className="text-[11px] text-slate-400 mt-0.5">{r.bagian || r.jabatan || 'Produksi'}</p>
+                             </td>
+                             <td className="py-4 px-2">
+                               <p className="text-[12px] text-slate-500 whitespace-nowrap">{wText}</p>
+                             </td>
+                             <td className="py-4 px-2 text-right">
+                               {isActive ? (
+                                 <span className="px-2 py-1 bg-emerald-100 text-emerald-600 text-[9px] font-extrabold tracking-wide rounded-md uppercase">Aktif</span>
+                               ) : (
+                                 <span className="px-2 py-1 bg-slate-100 text-slate-500 text-[9px] font-extrabold tracking-wide rounded-md uppercase">Selesai</span>
+                               )}
+                             </td>
+                           </tr>
+                         );
+                      })}
+                      {(!data.riwayat_pekerja || data.riwayat_pekerja.length === 0) && (
+                        <tr>
+                          <td colSpan={3} className="py-8 text-center text-slate-400 text-xs">Belum ada riwayat pekerjaan.</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Riwayat Kesehatan (Filtered) */}
+              <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-sm font-bold text-[#1e293b] flex items-center">
+                    <Activity className="h-4 w-4 text-[#0ea5e9] mr-2" /> Riwayat Kesehatan
                   </h3>
                   {selectedJobId !== null && (
                     <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full uppercase tracking-tighter">FILTERED BY JOB</span>
@@ -622,153 +741,211 @@ export default function PekerjaDetailPage() {
               </div>
             </div>
 
-            {/* Info Medis Terkini */}
+                <div className="w-full overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-100 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">
+                        <th className="pb-3 px-2 font-bold">TANGGAL & JENIS</th>
+                        <th className="pb-3 px-2 font-bold">HASIL DIAGNOSIS</th>
+                        <th className="pb-3 px-2 font-bold">FASILITAS MEDIS</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50/80">
+                      {filteredHealthRecords?.map((m: any, idx: number) => (
+                         <tr key={idx} className="hover:bg-slate-50/50 transition-colors group">
+                           <td className="py-4 px-2">
+                             <p className="text-[12px] font-bold text-slate-800">
+                                {m.tanggal_pemeriksaan ? format(parseISO(m.tanggal_pemeriksaan), 'dd MMM yy', {locale: localeID}) : '-'}
+                             </p>
+                             <p className="text-[10px] text-[#0ea5e9] font-bold mt-0.5 uppercase">{m.jenis_pemeriksaan || '-'}</p>
+                           </td>
+                           <td className="py-4 px-2">
+                             <p className="text-[12px] text-slate-600 line-clamp-2 max-w-[150px]" title={m.hasil_diagnosis}>
+                                {m.hasil_diagnosis || '-'}
+                             </p>
+                           </td>
+                           <td className="py-4 px-2">
+                             <p className="text-[11px] font-medium text-slate-500">{m.tempat_pemeriksaan || '-'}</p>
+                           </td>
+                         </tr>
+                      ))}
+                      {(!filteredHealthRecords || filteredHealthRecords.length === 0) && (
+                        <tr>
+                          <td colSpan={3} className="py-12 text-center bg-slate-50/30 rounded-xl">
+                            <Activity className="h-8 w-8 text-slate-200 mx-auto mb-2" />
+                            <p className="text-xs font-semibold text-slate-400">Tidak ada rekam medis pada periode ini.</p>
+                            {selectedJobId !== null && (
+                              <button onClick={() => setSelectedJobId(null)} className="mt-2 text-[10px] font-bold text-[#0ea5e9] hover:underline">LIHAT SEMUA</button>
+                            )}
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            {/* Detailed Health History Table */}
             <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6">
-              <h3 className="text-sm font-bold text-[#1e293b] flex items-center mb-6">
-                <Activity className="h-4 w-4 text-[#0ea5e9] mr-2" /> Info Medis Terkini
-              </h3>
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-sm font-bold text-[#1e293b] flex items-center">
+                  <Activity className="h-4 w-4 text-[#0ea5e9] mr-2" /> Hasil Diagnosis Terkini
+                </h3>
+                <span className="text-[11px] font-bold text-slate-400 tracking-wider uppercase">{data.detail_medis?.length || 0} REKAM MEDIS</span>
+              </div>
 
-              {terkiniMedis ? (
-                <div className="flex flex-col md:flex-row gap-8">
-                  <div className="flex-1">
-                    <div className="grid grid-cols-2 gap-y-4 gap-x-8 mb-6">
-                      <div>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Fasilitas Medis</p>
-                        <p className="text-[13px] font-bold text-slate-800 leading-tight">{terkiniMedis.tempat_pemeriksa || terkiniMedis.tempat_pemeriksaan || '-'}</p>
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Tanggal Periksa</p>
-                        <p className="text-[14px] font-bold text-slate-800 leading-tight">
-                          {terkiniMedis.tgl_pemeriksaan || terkiniMedis.tanggal_pemeriksaan
-                            ? format(parseISO(terkiniMedis.tgl_pemeriksaan || terkiniMedis.tanggal_pemeriksaan), 'dd MMMM yyyy', { locale: localeID })
-                            : '-'}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Jenis Layanan</p>
-                        <p className="text-[13px] font-bold text-slate-800 leading-tight">{terkiniMedis.jenis_pemeriksa || terkiniMedis.jenis_pemeriksaan || '-'}</p>
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Dokter / Tenaga Medis</p>
-                        <p className="text-[13px] font-bold text-slate-800 leading-tight">{terkiniMedis.dokter_pemeriksa || terkiniMedis.nama_dokter || '-'}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex-1 flex flex-col justify-between">
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Ringkasan Diagnosis</p>
-                      <div className="bg-slate-50 border border-slate-100/50 rounded-xl p-4 mb-4">
-                        <p className="text-slate-600 text-[12px] leading-relaxed italic">
-                          "{terkiniMedis.hasil_diagnosis || 'Tidak ada ringkasan diagnosis.'}"
-                        </p>
-                      </div>
-                    </div>
-                    <Button variant="outline" className="w-full border-[#0ea5e9] text-[#0ea5e9] hover:bg-blue-50 hover:text-[#0284c7] font-bold text-[10px] h-9 tracking-wider uppercase">
-                      LIHAT LAPORAN LENGKAP
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center p-8 text-slate-400 bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
-                  <p className="text-xs font-medium">Belum ada rekam medis terdaftar dalam sistem.</p>
-                </div>
-              )}
+              <div className="w-full overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-100 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">
+                      <th className="pb-3 px-2 font-bold">Tanggal & Tempat</th>
+                      <th className="pb-3 px-2 font-bold">Jenis & Dokter</th>
+                      <th className="pb-3 px-2 font-bold">Hasil Diagnosis</th>
+                      <th className="pb-3 px-2 font-bold text-right">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50/80">
+                    {data.detail_medis?.map((m: any, idx: number) => (
+                      <tr key={idx} className="hover:bg-slate-50/50 transition-colors group">
+                        <td className="py-4 px-2">
+                          <p className="text-[13px] font-bold text-slate-800">
+                             {m.tanggal_pemeriksaan ? format(parseISO(m.tanggal_pemeriksaan), 'dd MMM yyyy', {locale: localeID}) : '-'}
+                          </p>
+                          <p className="text-[11px] text-slate-400 mt-0.5">{m.tempat_pemeriksaan || '-'}</p>
+                        </td>
+                        <td className="py-4 px-2">
+                          <p className="text-[13px] font-medium text-slate-700">{m.jenis_pemeriksaan || '-'}</p>
+                          <p className="text-[11px] text-slate-400 mt-0.5">dr. {m.dokter || '-'}</p>
+                        </td>
+                        <td className="py-4 px-2 max-w-[250px]">
+                          <p className="text-[12px] text-slate-600 line-clamp-2" title={m.hasil_diagnosis}>
+                            {m.hasil_diagnosis || '-'}
+                          </p>
+                        </td>
+                        <td className="py-4 px-2 text-right">
+                          {m.file_bukti_path || m.file_hasil_path ? (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => downloadMedisDoc(m.id)}
+                              className="h-8 text-[10px] font-bold text-[#0ea5e9] hover:bg-blue-50 border border-blue-100 rounded-lg px-3"
+                            >
+                              <FileCheck className="h-3 w-3 mr-1.5" /> Berkas
+                            </Button>
+                          ) : (
+                            <span className="text-[10px] font-bold text-slate-300 px-3 italic">Tanpa File</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                    {(!data.detail_medis || data.detail_medis.length === 0) && (
+                      <tr>
+                        <td colSpan={4} className="py-8 text-center text-slate-400 text-xs">Belum ada rekam medis terdaftar.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
 
           {/* RIGHT COLUMN (Stacking Cards) */}
           <div className="lg:col-span-4 space-y-6">
-
             {/* Status Advokasi Box */}
             <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6">
-              <h3 className="text-sm font-bold text-[#1e293b] flex items-center mb-6">
-                <ShieldAlert className="h-4 w-4 text-[#0ea5e9] mr-2" /> Status Advokasi
-              </h3>
+               <h3 className="text-sm font-bold text-[#1e293b] flex items-center mb-6">
+                 <ShieldAlert className="h-4 w-4 text-[#0ea5e9] mr-2" /> Status Advokasi
+               </h3>
+               
+               <div className="relative pl-3 space-y-6">
+                 {/* Timeline line connecting items */}
+                 <div className="absolute top-2 bottom-5 left-[19px] w-[2px] bg-slate-100 rounded-full" />
+                 
+                 {advSteps.map((step, idx) => {
+                    const isCompleted = isStepCompleted(step.key);
+                    const hasFile = !!getFilePath(step.key);
+                    const isCurrent = idx === activeStepIndex;
+                    const isFuture = idx > activeStepIndex && !isCurrent;
+                    
+                    return (
+                      <div key={step.key} className="relative z-10 flex items-start group">
+                        {/* Interactive Toggle Target on the Icon */}
+                        <button 
+                          onClick={() => {
+                            if (isStaffOrAbove) toggleAdvokasi(step.key, !isCompleted);
+                          }}
+                          disabled={!isStaffOrAbove}
+                          className={`mt-0.5 z-20 flex-shrink-0 mr-4 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#0ea5e9] rounded-full transition-transform transform ${isStaffOrAbove ? 'active:scale-90' : 'cursor-default'}`}
+                          title={isStaffOrAbove ? "Klik untuk mengubah status" : ""}
+                        >
+                          {hasFile ? (
+                             <CheckCircle2 className="h-6 w-6 text-emerald-500 bg-white" />
+                          ) : isCurrent ? (
+                             <div className="h-6 w-6 rounded-full border-[3px] border-[#0ea5e9] bg-white flex items-center justify-center">
+                               <div className="h-2 w-2 rounded-full bg-[#0ea5e9]" />
+                             </div>
+                          ) : (
+                             <Circle className="h-6 w-6 text-slate-200 fill-white" />
+                          )}
+                        </button>
 
-              <div className="relative pl-3 space-y-6">
-                {/* Timeline line connecting items */}
-                <div className="absolute top-2 bottom-5 left-[19px] w-[2px] bg-slate-100 rounded-full" />
+                        <div className="flex-1 pb-1">
+                          <p className={`text-[13px] font-bold ${hasFile ? 'text-slate-800' : isCurrent ? 'text-[#0ea5e9]' : 'text-slate-400'}`}>
+                            {step.label}
+                          </p>
+                          <p className={`text-[10px] mt-1 ${hasFile ? 'text-emerald-500 font-bold' : 'text-slate-400'}`}>
+                            {hasFile ? 'Dokumen Terunggah' : isCurrent ? 'Sedang Berjalan' : 'Belum Dimulai'}
+                          </p>
 
-                {advSteps.map((step, idx) => {
-                  const isCompleted = isStepCompleted(step.key);
-                  const hasFile = !!getFilePath(step.key);
-                  const isCurrent = idx === activeStepIndex;
-                  const isFuture = idx > activeStepIndex && !isCurrent;
+                          {/* File Upload / Display for Each Step */}
+                          <div className="mt-3 p-3 bg-slate-50 border border-slate-100 rounded-lg">
+                             <div className="flex justify-between items-center mb-2">
+                               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Dokumen / Bukti Pendukung</span>
+                               {getFilePath(step.key) && getUploadDate(step.key) && (
+                                 <span className="text-[9px] font-medium text-slate-400 italic">
+                                   Diunggah: {formatDate(getUploadDate(step.key))}
+                                 </span>
+                               )}
+                             </div>
+                             
+                             <div className="flex flex-col gap-2">
+                               {!isStaffOrAbove ? (
+                                  <div className="h-10 w-full border border-slate-200 border-dashed rounded-md flex items-center justify-center px-3 text-[10px] font-medium text-slate-400 italic">
+                                     Akses unggah hanya untuk Staff
+                                  </div>
+                                ) : (
+                                 <div className="relative w-full">
+                                   <input 
+                                      type="file" 
+                                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
+                                      accept=".pdf,.jpg,.jpeg,.png"
+                                      onChange={(e) => handleFileUpload(step.key, e)}
+                                      disabled={uploadLoading === step.key}
+                                   />
+                                   <div className={`h-10 w-full bg-white border ${uploadLoading === step.key ? 'border-[#0ea5e9] bg-blue-50' : 'border-slate-200 border-dashed'} rounded-md flex items-center justify-center px-3 text-[10px] font-bold text-[#0ea5e9] hover:bg-blue-50 transition-colors whitespace-nowrap`}>
+                                      {uploadLoading === step.key ? 'Mengunggah...' : '+ Pilih File Bukti (Max 5MB)'}
+                                   </div>
+                                 </div>
+                               )}
 
-                  return (
-                    <div key={step.key} className="relative z-10 flex items-start group">
-                      {/* Interactive Toggle Target on the Icon */}
-                      <button
-                        onClick={() => toggleAdvokasi(step.key, !isCompleted)}
-                        className="mt-0.5 z-20 flex-shrink-0 mr-4 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#0ea5e9] rounded-full transition-transform transform active:scale-90"
-                        title="Klik untuk mengubah status"
-                      >
-                        {hasFile ? (
-                          <CheckCircle2 className="h-6 w-6 text-emerald-500 bg-white" />
-                        ) : isCurrent ? (
-                          <div className="h-6 w-6 rounded-full border-[3px] border-[#0ea5e9] bg-white flex items-center justify-center">
-                            <div className="h-2 w-2 rounded-full bg-[#0ea5e9]" />
-                          </div>
-                        ) : (
-                          <Circle className="h-6 w-6 text-slate-200 fill-white" />
-                        )}
-                      </button>
-
-                      <div className="flex-1 pb-1">
-                        <p className={`text-[13px] font-bold ${hasFile ? 'text-slate-800' : isCurrent ? 'text-[#0ea5e9]' : 'text-slate-400'}`}>
-                          {step.label}
-                        </p>
-                        <p className={`text-[10px] mt-1 ${hasFile ? 'text-emerald-500 font-bold' : 'text-slate-400'}`}>
-                          {hasFile ? 'Dokumen Terunggah' : isCurrent ? 'Sedang Berjalan' : 'Belum Dimulai'}
-                        </p>
-
-                        {/* File Upload / Display for Each Step */}
-                        <div className="mt-3 p-3 bg-slate-50 border border-slate-100 rounded-lg">
-                          <div className="flex justify-between items-center mb-2">
-                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Dokumen / Bukti Pendukung</span>
-                            {getFilePath(step.key) && getUploadDate(step.key) && (
-                              <span className="text-[9px] font-medium text-slate-400 italic">
-                                Diunggah: {formatDate(getUploadDate(step.key))}
-                              </span>
-                            )}
-                          </div>
-
-                          <div className="flex flex-col gap-2">
-                            {!isAdmin && (
-                              <div className="relative w-full">
-                                <input
-                                  type="file"
-                                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                                  accept=".pdf,.jpg,.jpeg,.png"
-                                  onChange={(e) => handleFileUpload(step.key, e)}
-                                  disabled={uploadLoading === step.key}
-                                />
-                                <div className={`h-10 w-full bg-white border ${uploadLoading === step.key ? 'border-[#0ea5e9] bg-blue-50' : 'border-slate-200 border-dashed'} rounded-md flex items-center justify-center px-3 text-[10px] font-bold text-[#0ea5e9] hover:bg-blue-50 transition-colors whitespace-nowrap`}>
-                                  {uploadLoading === step.key ? 'Mengunggah...' : '+ Pilih File Bukti (Max 5MB)'}
-                                </div>
-                              </div>
-                            )}
-
-                            {getFilePath(step.key) ? (
-                              <button onClick={() => downloadFile(step.key)} className="h-10 w-full bg-white border border-slate-200 rounded-md flex items-center justify-center text-[10px] font-bold text-slate-600 hover:text-[#0ea5e9] hover:border-[#0ea5e9] transition-colors cursor-pointer">
-                                <FileText className="h-3.5 w-3.5 mr-1.5" /> Lihat Terunggah
-                              </button>
-                            ) : isAdmin ? (
-                              <div className="h-10 w-full border border-slate-200 border-dashed rounded-md flex items-center justify-center px-3 text-[10px] font-medium text-slate-400 italic">
-                                Belum ada dokumen terunggah
-                              </div>
-                            ) : null}
+                               {getFilePath(step.key) ? (
+                                  <button onClick={() => downloadFile(step.key)} className="h-10 w-full bg-white border border-slate-200 rounded-md flex items-center justify-center text-[10px] font-bold text-slate-600 hover:text-[#0ea5e9] hover:border-[#0ea5e9] transition-colors cursor-pointer">
+                                     <FileText className="h-3.5 w-3.5 mr-1.5" /> Lihat Terunggah
+                                  </button>
+                               ) : isStaffOrAbove ? (
+                                  <div className="h-10 w-full border border-slate-200 border-dashed rounded-md flex items-center justify-center px-3 text-[10px] font-medium text-slate-400 italic">
+                                     Belum ada dokumen terunggah
+                                  </div>
+                               ) : null}
+                             </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  )
-                })}
-              </div>
+                    )
+                 })}
+               </div>
             </div>
-
-
           </div>
         </div>
       </div>

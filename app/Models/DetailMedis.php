@@ -29,8 +29,14 @@ class DetailMedis extends Model
         'nama_dokter',
         'status_kesehatan',
         'hasil_diagnosis',
-        'dokumen_rekomendasi_path',
-        'dokumen_bukti_path',
+        'rekomendasi',
+        'file_hasil_path',
+        'golongan_darah',
+        'rhesus',
+        'riwayat_penyakit',
+        'alergi',
+        'riwayat_operasi',
+        'obat_rutin',
     ];
 
     /**

@@ -23,12 +23,12 @@ class StorePekerjaRequest extends FormRequest
     {
         return [
             // User Data
-            'email' => ['required', 'string', 'email', 'unique:users,email'],
+            'email' => ['required', 'string', 'email'],
             'password' => ['required', 'string', 'min:8'],
             
             // Pekerja Data
             'perusahaan_id' => ['required', 'exists:perusahaan,id'],
-            'nik' => ['required', 'string', 'size:16', 'unique:pekerja,nik'],
+            'nik' => ['required', 'string', 'size:16'],
             'nama_lengkap' => ['required', 'string', 'max:255'],
             'status_kesehatan' => ['required', 'in:fit,fit_with_note,unfit'],
             'catatan_admin' => ['nullable', 'string'],
@@ -66,6 +66,12 @@ class StorePekerjaRequest extends FormRequest
             'medis.*.nama_dokter' => ['required', 'string', 'max:255'],
             'medis.*.status_kesehatan' => ['required', 'in:fit,fit_with_note,unfit'],
             'medis.*.hasil_diagnosis' => ['required', 'string'],
+            'medis.*.golongan_darah' => ['nullable', 'string', 'in:A,B,AB,O'],
+            'medis.*.rhesus' => ['nullable', 'string', 'in:+,-'],
+            'medis.*.riwayat_penyakit' => ['nullable', 'string'],
+            'medis.*.alergi' => ['nullable', 'string'],
+            'medis.*.riwayat_operasi' => ['nullable', 'string'],
+            'medis.*.obat_rutin' => ['nullable', 'string'],
         ];
     }
     

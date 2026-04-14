@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\AdvokasiController;
 use App\Http\Controllers\Api\ActivityLogController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\FileController;
+use App\Http\Controllers\Api\ReportController;
 
 // =========================================================================
 // Public Routes
@@ -28,24 +29,43 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // Dashboard
     Route::get('dashboard/stats', [DashboardController::class, 'stats']);
 
-    // Perusahaan CRUD + Soft Delete/Restore
-    Route::apiResource('perusahaan', PerusahaanController::class);
-    Route::patch('perusahaan/{id}/restore', [PerusahaanController::class, 'restore']);
+    // Perusahaan Management
+    Route::group(['middleware' => ['role:admin,petugas']], function () {
+        Route::post('perusahaan', [PerusahaanController::class, 'store']);
+        Route::put('perusahaan/{perusahaan}', [PerusahaanController::class, 'update']);
+        Route::patch('perusahaan/{id}/restore', [PerusahaanController::class, 'restore']);
+    });
+    Route::delete('perusahaan/{perusahaan}', [PerusahaanController::class, 'destroy'])->middleware('role:admin');
+    Route::get('perusahaan', [PerusahaanController::class, 'index']);
+    Route::get('perusahaan/{perusahaan}', [PerusahaanController::class, 'show']);
 
-    // Activity Logs (for dual-tab panel)
+    // Pekerja Management
+    Route::get('pekerja', [PekerjaController::class, 'index']);
+    Route::get('pekerja/{pekerja}', [PekerjaController::class, 'show']);
+    Route::post('pekerja', [PekerjaController::class, 'store']); // All can register
+    
+    Route::group(['middleware' => ['role:admin,petugas']], function () {
+        Route::put('pekerja/{pekerja}', [PekerjaController::class, 'update']);
+        Route::post('pekerja-bulk-update', [PekerjaController::class, 'bulkUpdate']);
+        Route::post('pekerja/{pekerja}/foto', [PekerjaController::class, 'uploadFoto']);
+        Route::post('pekerja/{pekerja_id}/advokasi', [AdvokasiController::class, 'update']);
+    });
+    Route::delete('pekerja/{pekerja}', [PekerjaController::class, 'destroy'])->middleware('role:admin');
+
+    // Dashboard & Reports
+    Route::get('dashboard/stats', [DashboardController::class, 'stats']);
     Route::get('activity-logs', [ActivityLogController::class, 'index']);
+    Route::get('reports/summary', [ReportController::class, 'summary']);
+    Route::get('reports/search', [ReportController::class, 'search']);
 
-    // Pekerja CRUD
-    Route::apiResource('pekerja', PekerjaController::class);
-    Route::post('pekerja-bulk-update', [PekerjaController::class, 'bulkUpdate']);
-    Route::post('pekerja/{pekerja}/foto', [PekerjaController::class, 'uploadFoto']);
-
-    // Advokasi
+    // Advokasi Stats (All can view)
     Route::get('advokasi/stats', [AdvokasiController::class, 'stats']);
     Route::get('advokasi', [AdvokasiController::class, 'index']);
-    Route::post('pekerja/{pekerja_id}/advokasi', [AdvokasiController::class, 'update']);
 
-    // Secure File Downloads (RBAC handled in controller)
-    Route::get('pekerja/{pekerja_id}/files/medis', [FileController::class, 'downloadMedis']);
-    Route::get('pekerja/{pekerja_id}/files/advokasi/{step_key}', [FileController::class, 'downloadAdvokasiProof']);
+    // File Downloads (RBAC handled in controller or by role)
+    Route::group(['middleware' => ['role:admin,petugas']], function () {
+        Route::get('pekerja/{pekerja_id}/files/medis', [FileController::class, 'downloadMedis']);
+        Route::get('medis/{id}/file', [FileController::class, 'downloadMedisById']);
+        Route::get('pekerja/{pekerja_id}/files/advokasi/{step_key}', [FileController::class, 'downloadAdvokasiProof']);
+    });
 });

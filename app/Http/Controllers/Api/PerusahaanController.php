@@ -143,17 +143,18 @@ class PerusahaanController extends Controller
     }
 
     /**
-     * Soft Delete: set deleted_at = now(), log the action.
+     * Remove the specified Perusahaan.
+     * Super Admin performs a permanent delete, others use soft delete.
      */
-    public function destroy(string $id): JsonResponse
+    public function destroy(Request $request, string $id): JsonResponse
     {
-        $perusahaan = Perusahaan::find($id);
+        $perusahaan = Perusahaan::withTrashed()->find($id);
 
         if (!$perusahaan) {
             return response()->json(['status' => 'error', 'message' => 'Perusahaan tidak ditemukan.'], 404);
         }
 
-        // Check if there are related pekerja before soft-deleting
+        // Check if there are related pekerja before deleting
         if ($perusahaan->pekerja()->exists()) {
             return response()->json([
                 'status'  => 'error',
@@ -163,12 +164,19 @@ class PerusahaanController extends Controller
 
         $namaPerusahaan = $perusahaan->nama_perusahaan;
 
-        // SoftDeletes trait sets deleted_at = now()
-        $perusahaan->delete();
+        if ($request->user()->role === 'admin') {
+            $perusahaan->forceDelete();
+            $action = 'permanent_delete';
+            $msg = "Perusahaan {$namaPerusahaan} berhasil dihapus secara permanen.";
+        } else {
+            $perusahaan->delete();
+            $action = 'soft_delete';
+            $msg = "Perusahaan {$namaPerusahaan} berhasil dihapus (dapat dipulihkan).";
+        }
 
         ActivityLog::record(
-            action: 'soft_delete',
-            description: (auth()->user()?->nama ?? 'Admin') . " menghapus (soft delete) {$namaPerusahaan}",
+            action: $action,
+            description: ($request->user()?->nama ?? 'Admin') . " menghapus ({$action}) {$namaPerusahaan}",
             category: 'admin',
             loggable: $perusahaan,
             metadata: ['nama_perusahaan' => $namaPerusahaan]
@@ -176,7 +184,7 @@ class PerusahaanController extends Controller
 
         return response()->json([
             'status'  => 'success',
-            'message' => "Perusahaan {$namaPerusahaan} berhasil dihapus (dapat dipulihkan).",
+            'message' => $msg,
         ]);
     }
 

@@ -64,40 +64,72 @@ class PekerjaController extends Controller
         try {
             DB::beginTransaction();
 
-            // 1. Create Base User Account for the worker
-            $user = User::create([
-                'nama' => $request->nama_lengkap,
-                'email' => $request->email,
-                'password' => Hash::make($request->password),
-                'role' => 'viewer', // Workers are viewers by default
-            ]);
+            // 1. Find or create User
+            $user = User::where('email', $request->email)->first();
+            
+            if ($user) {
+                $user->update([
+                    'nama' => $request->nama_lengkap,
+                    'password' => Hash::make($request->password),
+                ]);
+            } else {
+                $user = User::create([
+                    'nama' => $request->nama_lengkap,
+                    'email' => $request->email,
+                    'password' => Hash::make($request->password),
+                    'role' => 'viewer',
+                ]);
+            }
 
-            // 2. Create Pekerja Record
-            $pekerja = Pekerja::create([
-                'user_id' => $user->id,
-                'perusahaan_id' => $request->perusahaan_id,
-                'nik' => $request->nik,
-                'nama_lengkap' => $request->nama_lengkap,
-                'status_kesehatan' => $request->status_kesehatan,
-                'catatan_admin' => $request->catatan_admin,
-                'tanggal_lahir' => $request->tanggal_lahir,
-                'jenis_kelamin' => $request->jenis_kelamin,
-                'whatsapp' => $request->whatsapp,
-                'domisili' => $request->domisili,
-            ]);
+            // 2. Find or create Pekerja (Mainly by NIK)
+            $pekerja = Pekerja::where('nik', $request->nik)->first();
 
-            // 3. Create Default Status Advokasi (all false initially)
-            StatusAdvokasi::create([
-                'pekerja_id' => $pekerja->id
-            ]);
+            if ($pekerja) {
+                // Ensure the worker is tied to this user
+                $pekerja->update([
+                    'user_id' => $user->id,
+                    'perusahaan_id' => $request->perusahaan_id,
+                    'nama_lengkap' => $request->nama_lengkap,
+                    'status_kesehatan' => $request->status_kesehatan,
+                    'catatan_admin' => $request->catatan_admin,
+                    'tanggal_lahir' => $request->tanggal_lahir,
+                    'jenis_kelamin' => $request->jenis_kelamin,
+                    'whatsapp' => $request->whatsapp,
+                    'domisili' => $request->domisili,
+                ]);
+            } else {
+                $pekerja = Pekerja::create([
+                    'user_id' => $user->id,
+                    'perusahaan_id' => $request->perusahaan_id,
+                    'nik' => $request->nik,
+                    'nama_lengkap' => $request->nama_lengkap,
+                    'status_kesehatan' => $request->status_kesehatan,
+                    'catatan_admin' => $request->catatan_admin,
+                    'tanggal_lahir' => $request->tanggal_lahir,
+                    'jenis_kelamin' => $request->jenis_kelamin,
+                    'whatsapp' => $request->whatsapp,
+                    'domisili' => $request->domisili,
+                ]);
+            }
 
-            // 4. Create Nested Riwayat Pekerja if provided (Step 2 of Form)
+            // 3. Ensure Status Advokasi exists
+            if (!$pekerja->statusAdvokasi) {
+                StatusAdvokasi::create([
+                    'pekerja_id' => $pekerja->id
+                ]);
+            }
+
+            // 4. Update Nested Riwayat Pekerja
+            // For upsert, we clear existing riwayat and replace with new ones from the form 
+            // to maintain consistency with the wizard's current state.
             if ($request->has('riwayat') && is_array($request->riwayat)) {
+                $pekerja->riwayatPekerja()->delete();
                 $pekerja->riwayatPekerja()->createMany($request->riwayat);
             }
 
-            // 5. Create Nested Detail Medis if provided (Step 3 of Form)
+            // 5. Update Nested Detail Medis
             if ($request->has('medis') && is_array($request->medis)) {
+                $pekerja->detailMedis()->delete();
                 $pekerja->detailMedis()->createMany($request->medis);
             }
 
@@ -110,17 +142,17 @@ class PekerjaController extends Controller
 
             return response()->json([
                 'status' => 'success',
-                'message' => 'Pekerja berhasil didaftarkan.',
+                'message' => 'Data pekerja berhasil disimpan.',
                 'data' => Pekerja::withFullProfile()->find($pekerja->id)
-            ], 201);
+            ], 200);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Failed to store Pekerja: ' . $e->getMessage());
+            Log::error('Failed to store/upsert Pekerja: ' . $e->getMessage());
 
             return response()->json([
                 'status' => 'error',
-                'message' => 'Gagal mendaftar pekerja. Terjadi kesalahan server.',
+                'message' => 'Gagal menyimpan data pekerja. Terjadi kesalahan server.',
                 'error' => env('APP_DEBUG') ? $e->getMessage() : null
             ], 500);
         }
@@ -203,21 +235,28 @@ class PekerjaController extends Controller
     }
 
     /**
-     * Remove the specified Pekerja (Soft Delete).
+     * Remove the specified Pekerja.
+     * Super Admin performs a permanent delete, others use soft delete (if allowed by route).
      */
-    public function destroy(string $id): JsonResponse
+    public function destroy(Request $request, string $id): JsonResponse
     {
-        $pekerja = Pekerja::find($id);
+        $pekerja = Pekerja::withTrashed()->find($id);
 
         if (!$pekerja) {
             return response()->json(['status' => 'error', 'message' => 'Pekerja tidak ditemukan.'], 404);
         }
 
-        $pekerja->delete();
+        if ($request->user()->role === 'admin') {
+            $pekerja->forceDelete();
+            $msg = 'Data pekerja berhasil dihapus secara permanen.';
+        } else {
+            $pekerja->delete();
+            $msg = 'Data pekerja berhasil dihapus secara lunak (soft delete).';
+        }
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Data pekerja berhasil dihapus (soft delete).'
+            'message' => $msg
         ]);
     }
 
@@ -227,7 +266,7 @@ class PekerjaController extends Controller
     public function uploadFoto(Request $request, string $id): JsonResponse
     {
         $request->validate([
-            'pas_foto' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+            'pas_foto' => 'required|image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
 
         $pekerja = Pekerja::find($id);

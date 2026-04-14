@@ -10,21 +10,25 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import {
   Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle,
 } from '@/components/ui/sheet';
-import { Plus, ExternalLink, ChevronLeft, ChevronRight, AlertTriangle, Save, Users } from 'lucide-react';
+import { Plus, ExternalLink, ChevronLeft, ChevronRight, AlertTriangle, Save, Users, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useRole } from '@/hooks/useRole';
 
 export default function PekerjaPage() {
   const router = useRouter();
+  const [saving, setSaving] = useState(false);
+  const { isSuperAdmin, isStaffOrAbove, loading: roleLoading } = useRole();
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [total, setTotal] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [perPage] = useState(10);
+  const [total, setTotal] = useState(0);
   const [lastPage, setLastPage] = useState(1);
+
+  // Bulk Edit Sheet State
   const [bulkOpen, setBulkOpen] = useState(false);
-  const [bulkEdits, setBulkEdits] = useState<Record<number, { jenis_kelamin: string; tanggal_lahir: string }>>({});
-  const [saving, setSaving] = useState(false);
+  const [bulkFormData, setBulkFormData] = useState<Record<number, { jenis_kelamin: string, tanggal_lahir: string }>>({});
 
   const fetchData = async () => {
     setLoading(true);
@@ -101,10 +105,10 @@ export default function PekerjaPage() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Hapus pekerja ini (Soft Delete)?')) return;
+    if (!confirm('Hapus pekerja ini secara PERMANEN?')) return;
     try {
       await api.delete(`/pekerja/${id}`);
-      toast.success('Pekerja dihapus');
+      toast.success('Pekerja dihapus secara permanen');
       fetchData();
     } catch (e) {
       toast.error('Gagal menghapus');
@@ -122,7 +126,7 @@ export default function PekerjaPage() {
         </div>
         
         <div className="flex items-center gap-3">
-          {incompleteWorkers.length > 0 && (
+          {isStaffOrAbove && incompleteWorkers.length > 0 && (
             <Button
               onClick={() => setBulkOpen(true)}
               variant="outline"
@@ -191,26 +195,33 @@ export default function PekerjaPage() {
                        {p.status_kesehatan === 'sehat' && (
                          <div className="inline-flex items-center justify-center px-4 py-1.5 rounded-full border border-emerald-200 bg-emerald-100/50 text-emerald-700 font-bold text-[11px] tracking-wide shadow-[0_2px_10px_-3px_rgba(16,185,129,0.2)]">
                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-2 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
-                           Fit
+                           Sehat
                          </div>
                        )}
                        {p.status_kesehatan === 'sakit_ringan' && (
                          <div className="inline-flex items-center justify-center px-4 py-1.5 rounded-full border border-amber-200 bg-amber-100/50 text-amber-700 font-bold text-[11px] tracking-wide shadow-[0_2px_10px_-3px_rgba(245,158,11,0.2)]">
                            <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mr-2 shadow-[0_0_8px_rgba(245,158,11,0.5)]"></div>
-                           Fit with Note
+                           Sehat dengan Catatan
                          </div>
                        )}
                        {p.status_kesehatan === 'sakit_berat' && (
                          <div className="inline-flex items-center justify-center px-4 py-1.5 rounded-full border border-rose-200 bg-rose-100/50 text-rose-700 font-bold text-[11px] tracking-wide shadow-[0_2px_10px_-3px_rgba(244,63,94,0.2)]">
                            <div className="w-1.5 h-1.5 rounded-full bg-rose-500 mr-2 shadow-[0_0_8px_rgba(244,63,94,0.5)]"></div>
-                           Unfit
+                           Tidak Sehat
                          </div>
                        )}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" className="text-[#0ea5e9] hover:text-[#0284c7] hover:bg-[#F0F9FF] font-bold text-sm h-10 px-4 rounded-xl" onClick={() => router.push(`/pekerja/${p.id}`)}>
-                        Lihat Detail <ExternalLink className="h-4 w-4 ml-2" />
-                      </Button>
+                      <div className="flex justify-end gap-2">
+                        <Button variant="ghost" className="text-[#0ea5e9] hover:text-[#0284c7] hover:bg-[#F0F9FF] font-bold text-sm h-10 px-4 rounded-xl" onClick={() => router.push(`/pekerja/${p.id}`)}>
+                          Lihat Detail <ExternalLink className="h-4 w-4 ml-2" />
+                        </Button>
+                        {isSuperAdmin && (
+                          <Button variant="ghost" className="text-rose-500 hover:text-rose-700 hover:bg-rose-50 font-bold text-sm h-10 w-10 p-0 rounded-xl" onClick={() => handleDelete(p.id)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
