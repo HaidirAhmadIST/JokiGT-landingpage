@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\AdvokasiController;
 use App\Http\Controllers\Api\ActivityLogController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\FileController;
+use App\Http\Controllers\Api\ReportController;
 
 // =========================================================================
 // Public Routes
@@ -44,6 +45,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('advokasi/stats', [AdvokasiController::class, 'stats']);
     Route::get('advokasi', [AdvokasiController::class, 'index']);
     Route::post('pekerja/{pekerja_id}/advokasi', [AdvokasiController::class, 'update']);
+
+    // Reports
+    Route::get('reports/summary', [ReportController::class, 'summary']);
+    Route::get('reports/search', [ReportController::class, 'search']);
 
     // Secure File Downloads (RBAC handled in controller)
     Route::get('pekerja/{pekerja_id}/files/medis', [FileController::class, 'downloadMedis']);
