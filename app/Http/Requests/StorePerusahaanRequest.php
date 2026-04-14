@@ -28,7 +28,7 @@ class StorePerusahaanRequest extends FormRequest
         return [
             'nama_perusahaan' => ['required', 'string', 'max:255', 'unique:perusahaan,nama_perusahaan,' . $perusahaanId],
             'sektor_industri' => ['nullable', 'string', 'max:255'],
-            'status_pendamping' => ['required', 'in:aktif,tidak_aktif,pending'],
+            'status_pendamping' => ['required', 'in:Berkasus,Selesai,Dalam Pantauan'],
             'alamat' => ['nullable', 'string'],
             'nama_pic' => ['nullable', 'string', 'max:255'],
             'kontak_pic' => ['nullable', 'string', 'max:255'],

@@ -4,7 +4,7 @@ import type { NextRequest } from 'next/server';
 // Routes that don't require authentication
 const publicRoutes = ['/login', '/register'];
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const token = request.cookies.get('auth_token')?.value;
   const isPublicRoute = publicRoutes.some(route => request.nextUrl.pathname.startsWith(route));
 

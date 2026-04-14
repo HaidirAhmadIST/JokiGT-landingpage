@@ -53,6 +53,6 @@ class Perusahaan extends Model
      */
     public function scopeAktif($query)
     {
-        return $query->where('status_pendamping', 'aktif');
+        return $query->where('status_pendamping', 'Berkasus');
     }
 }
