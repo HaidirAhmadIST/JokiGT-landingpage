@@ -1082,14 +1082,6 @@ export default function PendaftaranPekerjaPage() {
                 onChange={handleDetailMedisChange}
               />
 
-<<<<<<< HEAD
-              <div className="pt-8 flex gap-4">
-                <Button variant="outline" className="w-1/3 h-12 text-slate-600 bg-slate-50 border-slate-200" onClick={handleKembali}>
-                  <ArrowLeft className="mr-2 h-4 w-4" /> Kembali
-                </Button>
-                <Button className="w-2/3 h-12 text-base bg-[#0ea5e9] hover:bg-[#0284c7]" onClick={handleLanjut}>
-                  Lanjut ke Langkah 4 <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
               <div className="pt-8 flex gap-4">
                 <Button variant="outline" className="w-1/3 h-12 text-slate-600 bg-slate-50 border-slate-200" onClick={handleKembali}>
                   <ArrowLeft className="mr-2 h-4 w-4" /> Kembali
@@ -1098,7 +1090,7 @@ export default function PendaftaranPekerjaPage() {
                   Lanjut ke Langkah 4 <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </div>
-              </div>
+            </div>
             </div>
           )}
 
