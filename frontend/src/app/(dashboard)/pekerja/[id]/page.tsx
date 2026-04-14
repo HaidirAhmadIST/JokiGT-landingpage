@@ -12,20 +12,14 @@ import {
 } from 'lucide-react';
 import { format, differenceInYears, parseISO } from 'date-fns';
 import { id as localeID } from 'date-fns/locale';
+import { useRole } from '@/hooks/useRole';
 
 export default function PekerjaDetailPage() {
   const { id } = useParams();
   const router = useRouter();
   const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [uploadLoading, setUploadLoading] = useState<string | null>(null);
-  const [statusLoading, setStatusLoading] = useState(false);
-  const [user, setUser] = useState<any>(null);
-  
-  const [isEditingCatatan, setIsEditingCatatan] = useState(false);
-  const [catatanInput, setCatatanInput] = useState('');
   const [savingCatatan, setSavingCatatan] = useState(false);
-  const isAdmin = user ? (user.role === 'admin') : false;
+  const { isSuperAdmin, isStaffOrAbove, loading: roleLoading } = useRole();
 
   const fetchDetail = async () => {
     try {
@@ -41,11 +35,6 @@ export default function PekerjaDetailPage() {
 
   useEffect(() => {
     fetchDetail();
-    // Fetch user from localStorage
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
   }, [id]);
 
   const toggleAdvokasi = async (field: string, checked: boolean) => {
@@ -230,7 +219,30 @@ export default function PekerjaDetailPage() {
         <Button variant="ghost" size="icon" onClick={() => router.back()} className="hover:bg-slate-200 bg-white shadow-sm border border-slate-200">
           <ArrowLeft className="h-4 w-4 text-slate-600" />
         </Button>
-        <span className="text-sm font-medium text-slate-500">Kembali ke Daftar Pekerja</span>
+        <div className="flex-1">
+          <span className="text-sm font-medium text-slate-500">Kembali ke Daftar Pekerja</span>
+        </div>
+        
+        {isSuperAdmin && (
+          <Button 
+            variant="destructive" 
+            size="sm" 
+            className="rounded-xl font-bold bg-rose-500 hover:bg-rose-600 px-5"
+            onClick={async () => {
+              if (confirm('Hapus data pekerja ini secara PERMANEN?')) {
+                try {
+                  await api.delete(`/pekerja/${id}`);
+                  toast.success('Pekerja dihapus secara permanen');
+                  router.push('/pekerja');
+                } catch (e) {
+                  toast.error('Gagal menghapus pekerja');
+                }
+              }
+            }}
+          >
+            Hapus Pekerja (S.Admin)
+          </Button>
+        )}
       </div>
 
       <div className="max-w-6xl mx-auto space-y-6">
@@ -304,8 +316,8 @@ export default function PekerjaDetailPage() {
                      data.status_kesehatan === 'sakit_berat' ? 'Tidak Sehat' : data.status_kesehatan}
                   </span>
                   
-                  {/* Status Switcher Popover Logic (Only for admin) */}
-                  {isAdmin && (
+                  {/* Status Switcher Popover Logic (Only for Staff+) */}
+                  {isStaffOrAbove && (
                     <select 
                       className="absolute inset-0 opacity-0 cursor-pointer"
                       value={data.status_kesehatan}
@@ -319,8 +331,8 @@ export default function PekerjaDetailPage() {
                   )}
                 </div>
                 
-                {/* Suggestion Indicator (Only for admin) */}
-                {isAdmin && data.status_saran && data.status_saran !== data.status_kesehatan && (
+                {/* Suggestion Indicator (Only for Staff+) */}
+                {isStaffOrAbove && data.status_saran && data.status_saran !== data.status_kesehatan && (
                   <div className="mt-2 flex items-center gap-1.5 animate-pulse">
                     <span className="w-1.5 h-1.5 bg-amber-500 rounded-full"></span>
                     <span className="text-[9px] font-extrabold text-amber-600 uppercase tracking-tighter">
@@ -329,8 +341,8 @@ export default function PekerjaDetailPage() {
                   </div>
                 )}
                 
-                {/* Tooltip hint (Only for admin) */}
-                {isAdmin && (
+                {/* Tooltip hint (Only for Staff+) */}
+                {isStaffOrAbove && (
                   <div className="absolute -top-1 px-2 py-0.5 bg-slate-800 text-white text-[8px] font-bold rounded opacity-0 group-hover/status:opacity-100 transition-opacity pointer-events-none">
                     KLIK UNTUK MENGUBAH
                   </div>
@@ -371,7 +383,7 @@ export default function PekerjaDetailPage() {
                 <h3 className="text-sm font-bold text-orange-800 flex items-center">
                   <Pin className="h-4 w-4 mr-2" /> Catatan Internal Admin
                 </h3>
-                {isAdmin && !isEditingCatatan && (
+                {isStaffOrAbove && !isEditingCatatan && (
                   <button onClick={handleEditCatatan} className="text-orange-400 hover:text-orange-600 transition-colors" title="Edit Catatan">
                     <Edit3 className="h-4 w-4" />
                   </button>
@@ -621,9 +633,12 @@ export default function PekerjaDetailPage() {
                       <div key={step.key} className="relative z-10 flex items-start group">
                         {/* Interactive Toggle Target on the Icon */}
                         <button 
-                          onClick={() => toggleAdvokasi(step.key, !isCompleted)}
-                          className="mt-0.5 z-20 flex-shrink-0 mr-4 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#0ea5e9] rounded-full transition-transform transform active:scale-90"
-                          title="Klik untuk mengubah status"
+                          onClick={() => {
+                            if (isStaffOrAbove) toggleAdvokasi(step.key, !isCompleted);
+                          }}
+                          disabled={!isStaffOrAbove}
+                          className={`mt-0.5 z-20 flex-shrink-0 mr-4 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#0ea5e9] rounded-full transition-transform transform ${isStaffOrAbove ? 'active:scale-90' : 'cursor-default'}`}
+                          title={isStaffOrAbove ? "Klik untuk mengubah status" : ""}
                         >
                           {hasFile ? (
                              <CheckCircle2 className="h-6 w-6 text-emerald-500 bg-white" />
@@ -656,7 +671,11 @@ export default function PekerjaDetailPage() {
                              </div>
                              
                              <div className="flex flex-col gap-2">
-                               {!isAdmin && (
+                               {!isStaffOrAbove ? (
+                                  <div className="h-10 w-full border border-slate-200 border-dashed rounded-md flex items-center justify-center px-3 text-[10px] font-medium text-slate-400 italic">
+                                     Akses unggah hanya untuk Staff
+                                  </div>
+                                ) : (
                                  <div className="relative w-full">
                                    <input 
                                       type="file" 
@@ -675,7 +694,7 @@ export default function PekerjaDetailPage() {
                                   <button onClick={() => downloadFile(step.key)} className="h-10 w-full bg-white border border-slate-200 rounded-md flex items-center justify-center text-[10px] font-bold text-slate-600 hover:text-[#0ea5e9] hover:border-[#0ea5e9] transition-colors cursor-pointer">
                                      <FileText className="h-3.5 w-3.5 mr-1.5" /> Lihat Terunggah
                                   </button>
-                               ) : isAdmin ? (
+                               ) : isStaffOrAbove ? (
                                   <div className="h-10 w-full border border-slate-200 border-dashed rounded-md flex items-center justify-center px-3 text-[10px] font-medium text-slate-400 italic">
                                      Belum ada dokumen terunggah
                                   </div>

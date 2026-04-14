@@ -56,6 +56,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import { useRole } from '@/hooks/useRole';
 
 // Mock data
 const stages = [
@@ -94,6 +95,7 @@ function ProgressDots({ level }: { level: number }) {
 
 export default function AdvokasiPage() {
   const router = useRouter();
+  const { isSuperAdmin, isStaffOrAbove, loading: roleLoading } = useRole();
   const [activeTab, setActiveTab] = useState('Semua Kasus');
   const [sheetOpen, setSheetOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -304,9 +306,11 @@ export default function AdvokasiPage() {
             <Button variant="outline" className="h-9 px-4 text-sm font-semibold border-slate-200 text-slate-600">
               <SlidersHorizontal className="mr-2 h-4 w-4" /> Filter
             </Button>
-            <Button onClick={() => setSheetOpen(true)} className="h-9 px-4 text-sm font-bold bg-[#0284c7] hover:bg-[#0369a1] text-white">
-              <Plus className="mr-2 h-4 w-4" /> Tambah Kasus
-            </Button>
+            {isStaffOrAbove && (
+              <Button onClick={() => setSheetOpen(true)} className="h-9 px-4 text-sm font-bold bg-[#0284c7] hover:bg-[#0369a1] text-white">
+                <Plus className="mr-2 h-4 w-4" /> Tambah Kasus
+              </Button>
+            )}
           </div>
         </div>
 
@@ -376,8 +380,12 @@ export default function AdvokasiPage() {
                         {/* @ts-ignore */}
                         <DropdownMenuContent align="end" className="w-48">
                           <DropdownMenuItem className="cursor-pointer" onClick={() => router.push(`/advokasi/${c.id}`)}><Eye className="mr-2 h-4 w-4" /> Lihat Detail</DropdownMenuItem>
-                          <DropdownMenuItem className="cursor-pointer"><RefreshCw className="mr-2 h-4 w-4" /> Update Status</DropdownMenuItem>
-                          <DropdownMenuItem className="cursor-pointer"><Archive className="mr-2 h-4 w-4" /> Tutup/Arsip Kasus</DropdownMenuItem>
+                          {isStaffOrAbove && (
+                            <>
+                              <DropdownMenuItem className="cursor-pointer"><RefreshCw className="mr-2 h-4 w-4" /> Update Status</DropdownMenuItem>
+                              <DropdownMenuItem className="cursor-pointer"><Archive className="mr-2 h-4 w-4" /> Tutup/Arsip Kasus</DropdownMenuItem>
+                            </>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>

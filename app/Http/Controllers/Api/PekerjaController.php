@@ -230,21 +230,28 @@ class PekerjaController extends Controller
     }
 
     /**
-     * Remove the specified Pekerja (Soft Delete).
+     * Remove the specified Pekerja.
+     * Super Admin performs a permanent delete, others use soft delete (if allowed by route).
      */
-    public function destroy(string $id): JsonResponse
+    public function destroy(Request $request, string $id): JsonResponse
     {
-        $pekerja = Pekerja::find($id);
+        $pekerja = Pekerja::withTrashed()->find($id);
 
         if (!$pekerja) {
             return response()->json(['status' => 'error', 'message' => 'Pekerja tidak ditemukan.'], 404);
         }
 
-        $pekerja->delete();
+        if ($request->user()->role === 'admin') {
+            $pekerja->forceDelete();
+            $msg = 'Data pekerja berhasil dihapus secara permanen.';
+        } else {
+            $pekerja->delete();
+            $msg = 'Data pekerja berhasil dihapus secara lunak (soft delete).';
+        }
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Data pekerja berhasil dihapus (soft delete).'
+            'message' => $msg
         ]);
     }
 
