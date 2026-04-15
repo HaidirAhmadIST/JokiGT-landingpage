@@ -118,6 +118,8 @@ export default function PendaftaranPekerjaPage() {
     rhesus: '',
     riwayat_penyakit: '',
     alergi: '',
+    riwayat_operasi: '',
+    obat_rutin: '',
     keluhan_kesehatan: [],
     keluhan_parah_waktu: '',
     keluhan_membaik_libur: '',
@@ -310,30 +312,25 @@ export default function PendaftaranPekerjaPage() {
       const prevRiwayat = riwayatLalu.filter(r => r.nama_perusahaan.trim() !== '');
 
       // Mapped Medis Data (Transactional)
-      const hasMedis = medisData.tanggal_pemeriksaan && medisData.tempat_pemeriksaan && medisData.jenis_pemeriksaan && medisData.dokter && medisData.hasil_diagnosis;
-      const finalMedis = hasMedis ? [{
-        tanggal_pemeriksaan: medisData.tanggal_pemeriksaan,
-        tempat_pemeriksaan: medisData.tempat_pemeriksaan,
-        jenis_pemeriksaan: medisData.jenis_pemeriksaan,
-        nama_dokter: medisData.dokter,
-        hasil_diagnosis: medisData.hasil_diagnosis,
-        golongan_darah: medisData.golongan_darah,
-        rhesus: medisData.rhesus,
-        riwayat_penyakit: medisData.riwayat_penyakit,
-        alergi: medisData.alergi,
-        riwayat_operasi: medisData.riwayat_operasi,
-        obat_rutin: medisData.obat_rutin,
-      }] : [];
+      const finalMedis = detailMedisData.riwayat_pemeriksaan
+        .filter((m: any) => m.tanggal_pemeriksaan && m.hasil_diagnosis)
+        .map((m: any) => ({
+          tanggal_pemeriksaan: m.tanggal_pemeriksaan,
+          tempat_pemeriksaan: m.tempat_pemeriksaan,
+          jenis_pemeriksaan: m.jenis_pemeriksaan,
+          nama_dokter: m.dokter,
+          hasil_diagnosis: m.hasil_diagnosis,
+        }));
 
       // Mapped Riwayat Medis (Baseline)
-      const hasRiwayatMedis = riwayatMedisData.golongan_darah || riwayatMedisData.riwayat_penyakit || riwayatMedisData.alergi || riwayatMedisData.obat_rutin;
+      const hasRiwayatMedis = detailMedisData.golongan_darah || detailMedisData.riwayat_penyakit || detailMedisData.alergi || detailMedisData.obat_rutin || detailMedisData.riwayat_operasi;
       const finalRiwayatMedis = hasRiwayatMedis ? {
-        golongan_darah: riwayatMedisData.golongan_darah,
-        rhesus: riwayatMedisData.rhesus,
-        riwayat_penyakit: riwayatMedisData.riwayat_penyakit ? riwayatMedisData.riwayat_penyakit.split(',').map(s => s.trim()).filter(Boolean) : [],
-        alergi: riwayatMedisData.alergi ? riwayatMedisData.alergi.split(',').map(s => s.trim()).filter(Boolean) : [],
-        riwayat_operasi: riwayatMedisData.riwayat_operasi ? riwayatMedisData.riwayat_operasi.split(',').map(s => s.trim()).filter(Boolean) : [],
-        obat_rutin: riwayatMedisData.obat_rutin
+        golongan_darah: detailMedisData.golongan_darah,
+        rhesus: detailMedisData.rhesus,
+        riwayat_penyakit: detailMedisData.riwayat_penyakit ? detailMedisData.riwayat_penyakit.split(',').map((s: string) => s.trim()).filter(Boolean) : [],
+        alergi: detailMedisData.alergi ? detailMedisData.alergi.split(',').map((s: string) => s.trim()).filter(Boolean) : [],
+        riwayat_operasi: detailMedisData.riwayat_operasi ? detailMedisData.riwayat_operasi.split(',').map((s: string) => s.trim()).filter(Boolean) : [],
+        obat_rutin: detailMedisData.obat_rutin
       } : null;
 
       const performSubmit = async (pId: string, riwayatData: any[]) => {

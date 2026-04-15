@@ -26,6 +26,8 @@ export interface DataMedis {
   rhesus: string;
   riwayat_penyakit: string;
   alergi: string;
+  riwayat_operasi: string;
+  obat_rutin: string;
   keluhan_kesehatan: string[];
   keluhan_parah_waktu: string;
   keluhan_membaik_libur: string;
@@ -194,6 +196,34 @@ export default function FormDetailMedis({ data, onChange }: FormDetailMedisProps
               className="bg-white border-gray-300 focus-visible:ring-1 focus-visible:ring-blue-500 focus-visible:border-blue-500 h-11"
               value={data.alergi || ''}
               onChange={e => onChange('alergi', e.target.value)}
+            />
+          </div>
+
+          {/* Riwayat Operasi — full width */}
+          <div className="space-y-2">
+            <Label htmlFor="riwayat_operasi" className="text-gray-700 font-medium">
+              Riwayat Operasi <span className="text-red-500 ml-1">*</span>
+            </Label>
+            <Input
+              id="riwayat_operasi"
+              placeholder="Contoh: Usus buntu, Patah tulang (Jika tidak ada, tulis 'Tidak ada')"
+              className="bg-white border-gray-300 focus-visible:ring-1 focus-visible:ring-blue-500 focus-visible:border-blue-500 h-11"
+              value={data.riwayat_operasi || ''}
+              onChange={e => onChange('riwayat_operasi', e.target.value)}
+            />
+          </div>
+
+          {/* Obat Rutin — full width */}
+          <div className="space-y-2">
+            <Label htmlFor="obat_rutin" className="text-gray-700 font-medium">
+              Obat Rutin Yang Dikonsumsi <span className="text-red-500 ml-1">*</span>
+            </Label>
+            <Input
+              id="obat_rutin"
+              placeholder="Contoh: Amlodipine, Inhaler (Jika tidak ada, tulis 'Tidak ada')"
+              className="bg-white border-gray-300 focus-visible:ring-1 focus-visible:ring-blue-500 focus-visible:border-blue-500 h-11"
+              value={data.obat_rutin || ''}
+              onChange={e => onChange('obat_rutin', e.target.value)}
             />
           </div>
 

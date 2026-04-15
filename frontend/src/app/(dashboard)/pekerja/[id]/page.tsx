@@ -419,6 +419,19 @@ export default function PekerjaDetailPage() {
               <span className="text-xl font-bold text-slate-800 block">{masaKerjaText}</span>
               <span className="text-[11px] text-slate-400 mt-1 block">{sejakText}</span>
             </div>
+            <div className="bg-slate-50/50 border border-slate-100 rounded-xl p-4 flex-1 min-w-[140px]">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Kasus Advokasi</p>
+              <div className="flex items-center gap-2">
+                <span className="text-xl font-bold text-slate-800">
+                  {completedStepsCount > 0 ? `${completedStepsCount} / 6 Langkah` : 'Tidak Ada'}
+                </span>
+                {completedStepsCount > 0 && (
+                  <span className={`px-2 py-0.5 ${completedStepsCount === 6 ? 'bg-emerald-100 text-emerald-600' : 'bg-orange-100 text-orange-600'} text-[9px] font-extrabold tracking-wide rounded-full`}>
+                    {completedStepsCount === 6 ? 'SELESAI' : 'PROSES'}
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
