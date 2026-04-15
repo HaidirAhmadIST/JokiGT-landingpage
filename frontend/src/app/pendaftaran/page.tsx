@@ -1091,7 +1091,6 @@ export default function PendaftaranPekerjaPage() {
                 </Button>
               </div>
             </div>
-            </div>
           )}
 
           {/* STEP 4: RIWAYAT ADVOKASI */}

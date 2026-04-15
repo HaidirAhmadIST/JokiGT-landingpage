@@ -369,12 +369,7 @@ export default function AdvokasiPage() {
                     <TableCell className="py-4 px-6 text-sm text-[#475569]">{new Date(c.updated_at).toLocaleDateString('id-ID')}</TableCell>
                     <TableCell className="py-4 px-6">
                       <DropdownMenu>
-                        <DropdownMenuTrigger
-                          className={cn(
-                            buttonVariants({ variant: 'ghost', size: 'icon' }),
-                            "h-8 w-8 text-slate-400 hover:text-slate-700"
-                          )}
-                        >
+                        <DropdownMenuTrigger className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "h-8 w-8 text-slate-400 hover:text-slate-700")}>
                           <MoreVertical className="h-4 w-4" />
                         </DropdownMenuTrigger>
                         {/* @ts-ignore */}
@@ -436,8 +431,8 @@ export default function AdvokasiPage() {
                   <Popover open={openWorkerSearch} onOpenChange={setOpenWorkerSearch}>
                     <PopoverTrigger
                       className={cn(
-                        buttonVariants({ variant: 'outline' }),
-                        "w-full justify-between h-11 border-slate-200 bg-slate-50/50 hover:bg-slate-50"
+                        buttonVariants({ variant: "outline" }),
+                        "w-full justify-between h-12 bg-slate-50 border-slate-200 hover:bg-slate-100 px-4 font-normal"
                       )}
                       role="combobox"
                       aria-expanded={openWorkerSearch}

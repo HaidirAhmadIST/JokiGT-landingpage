@@ -13,6 +13,7 @@ import {
 import { format, differenceInYears, parseISO } from 'date-fns';
 import { id as localeID } from 'date-fns/locale';
 import { useRole } from '@/hooks/useRole';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function PekerjaDetailPage() {
   const { id } = useParams();
@@ -25,6 +26,7 @@ export default function PekerjaDetailPage() {
   const [catatanInput, setCatatanInput] = useState('');
   const [savingCatatan, setSavingCatatan] = useState(false);
   const [selectedJobId, setSelectedJobId] = useState<number | string | null>(null);
+  const [isHealthLoading, setIsHealthLoading] = useState(false);
   const { isSuperAdmin, isStaffOrAbove, loading: roleLoading } = useRole();
 
   const fetchDetail = async () => {
@@ -42,6 +44,26 @@ export default function PekerjaDetailPage() {
   useEffect(() => {
     fetchDetail();
   }, [id]);
+
+  // Simulate fetching when selected job changes
+  useEffect(() => {
+    if (selectedJobId !== null) {
+      setIsHealthLoading(true);
+      const timer = setTimeout(() => {
+        setIsHealthLoading(false);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [selectedJobId]);
+
+  // Set default selection to first job
+  useEffect(() => {
+    if (data?.riwayat_pekerja?.length > 0 && selectedJobId === null) {
+      // Find active job first, otherwise first in list
+      const activeIdx = data.riwayat_pekerja.findIndex((r: any) => !r.tgl_keluar);
+      setSelectedJobId(activeIdx !== -1 ? activeIdx : 0);
+    }
+  }, [data]);
 
   const toggleAdvokasi = async (field: string, checked: boolean) => {
     try {
@@ -279,9 +301,9 @@ export default function PekerjaDetailPage() {
         
         {isSuperAdmin && (
           <Button 
-            variant="destructive" 
+            variant="ghost" 
             size="sm" 
-            className="rounded-xl font-bold bg-rose-500 hover:bg-rose-600 px-5"
+            className="rounded-xl font-semibold text-slate-400 hover:text-rose-600 hover:bg-rose-50 px-5 border border-transparent hover:border-rose-100 transition-all duration-200"
             onClick={async () => {
               if (confirm('Hapus data pekerja ini secara PERMANEN?')) {
                 try {
@@ -294,7 +316,7 @@ export default function PekerjaDetailPage() {
               }
             }}
           >
-            Hapus Pekerja (S.Admin)
+            Hapus Data Pekerja (S.Admin)
           </Button>
         )}
       </div>
@@ -361,13 +383,8 @@ export default function PekerjaDetailPage() {
             <div className={`bg-slate-50/50 border border-slate-100 rounded-xl p-4 flex-1 min-w-[170px] relative transition-all ${isStaffOrAbove ? 'hover:bg-blue-50/30 cursor-pointer group/status border-dashed' : ''}`}>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Status Kesehatan</p>
               <div className="flex items-center gap-2">
-                <span className={`text-xl font-bold capitalize ${
-                  data.status_kesehatan === 'sehat' ? 'text-emerald-600' : 
-                  data.status_kesehatan === 'sakit_ringan' ? 'text-amber-600' : 'text-rose-600'
-                }`}>
-                  {data.status_kesehatan === 'sehat' ? 'Sehat' : 
-                   data.status_kesehatan === 'sakit_ringan' ? 'Sehat dengan Catatan' : 
-                   data.status_kesehatan === 'sakit_berat' ? 'Tidak Sehat' : data.status_kesehatan}
+                <span className={`text-xl font-bold capitalize ${getStatusColor(data.status_kesehatan)}`}>
+                  {getStatusLabel(data.status_kesehatan)}
                 </span>
 
                 {isStaffOrAbove && <Edit3 className="h-3.5 w-3.5 text-slate-400 group-hover/status:text-[#0ea5e9] transition-colors" />}
@@ -376,13 +393,13 @@ export default function PekerjaDetailPage() {
                 {isStaffOrAbove && (
                   <select 
                     className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                    value={data.status_kesehatan}
+                    value={data.status_kesehatan === 'sehat' ? 'fit' : data.status_kesehatan === 'sakit_ringan' ? 'fit_with_note' : data.status_kesehatan === 'sakit_berat' ? 'unfit' : data.status_kesehatan}
                     onChange={(e) => updateStatusKesehatan(e.target.value)}
                     disabled={statusLoading}
                   >
-                    <option value="sehat">Sehat</option>
-                    <option value="sakit_ringan">Sehat dengan Catatan</option>
-                    <option value="sakit_berat">Tidak Sehat</option>
+                    <option value="fit">Fit</option>
+                    <option value="fit_with_note">Fit with Note</option>
+                    <option value="unfit">Unfit</option>
                   </select>
                 )}
               </div>
@@ -392,7 +409,7 @@ export default function PekerjaDetailPage() {
                 <div className="mt-2 flex items-center gap-1.5 animate-pulse">
                   <span className="w-1.5 h-1.5 bg-amber-500 rounded-full"></span>
                   <span className="text-[9px] font-extrabold text-amber-600 uppercase tracking-tighter">
-                    Saran: {data.status_saran === 'sehat' ? 'Sehat' : data.status_saran === 'sakit_ringan' ? 'Catatan' : 'Tidak Sehat'}
+                    Saran: {getStatusLabel(data.status_saran)}
                   </span>
                 </div>
               )}
@@ -531,245 +548,143 @@ export default function PekerjaDetailPage() {
               </div>
             </div>
 
-            {/* SIDE-BY-SIDE GRID: Riwayat Pekerjaan & Riwayat Kesehatan */}
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-              {/* Riwayat Pekerjaan */}
-              <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6">
+            {/* MASTER-DETAIL GRID: Riwayat Pekerjaan & Riwayat Kesehatan */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+              {/* Left Column: Riwayat Pekerjaan (Master) */}
+              <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6 flex flex-col">
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="text-sm font-bold text-[#1e293b] flex items-center">
                     <Briefcase className="h-4 w-4 text-[#0ea5e9] mr-2" /> Riwayat Pekerjaan
                   </h3>
-                  <button onClick={() => setSelectedJobId(null)} className="text-[11px] font-bold text-[#0ea5e9] tracking-wider uppercase hover:underline">SHOW ALL</button>
+                  <button 
+                    onClick={() => setSelectedJobId(null)} 
+                    className="text-[11px] font-bold text-[#0ea5e9] tracking-wider uppercase hover:underline"
+                  >
+                    LIHAT SEMUA
+                  </button>
                 </div>
 
-                <div className="w-full overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="border-b border-slate-100 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">
-                        <th className="pb-3 px-2 font-bold">Perusahaan</th>
-                        <th className="pb-3 px-2 font-bold">Masa Kerja</th>
-                        <th className="pb-3 px-2 font-bold text-right">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-50/80">
-                      {data.riwayat_pekerja?.map((r: any, idx: number) => {
-                         const isActive = !r.tgl_keluar;
-                         let wText = `${r.tgl_masuk ? format(parseISO(r.tgl_masuk), 'MMM yy', {locale: localeID}) : '-'} - ${r.tgl_keluar ? format(parseISO(r.tgl_keluar), 'MMM yy', {locale: localeID}) : 'Now'}`;
-                         const isSelected = selectedJobId === idx;
+                <div className="flex-1 overflow-y-auto pr-1 -mr-1">
+                  <div className="space-y-3">
+                    {data.riwayat_pekerja?.map((r: any, idx: number) => {
+                       const isActive = !r.tgl_keluar;
+                       let wText = `${r.tgl_masuk ? format(parseISO(r.tgl_masuk), 'MMM yy', {locale: localeID}) : '-'} - ${r.tgl_keluar ? format(parseISO(r.tgl_keluar), 'MMM yy', {locale: localeID}) : 'Now'}`;
+                       const isSelected = selectedJobId === idx;
 
-                         return (
-                           <tr 
-                             key={idx} 
-                             onClick={() => setSelectedJobId(isSelected ? null : idx)}
-                             className={`cursor-pointer transition-all group border-l-4 ${isSelected ? 'bg-blue-50/80 border-[#0ea5e9]' : 'hover:bg-slate-50/50 border-transparent'}`}
-                           >
-                             <td className="py-4 px-2">
-                               <p className="text-[13px] font-bold text-slate-800">{r.nama_perusahaan}</p>
-                               <p className="text-[11px] text-slate-400 mt-0.5">{r.bagian || r.jabatan || 'Produksi'}</p>
-                             </td>
-                             <td className="py-4 px-2">
-                               <p className="text-[12px] text-slate-500 whitespace-nowrap">{wText}</p>
-                             </td>
-                             <td className="py-4 px-2 text-right">
-                               {isActive ? (
-                                 <span className="px-2 py-1 bg-emerald-100 text-emerald-600 text-[9px] font-extrabold tracking-wide rounded-md uppercase">Aktif</span>
-                               ) : (
-                                 <span className="px-2 py-1 bg-slate-100 text-slate-500 text-[9px] font-extrabold tracking-wide rounded-md uppercase">Selesai</span>
+                       return (
+                         <div
+                           key={idx}
+                           onClick={() => setSelectedJobId(idx)}
+                           className={`p-4 rounded-xl border-l-4 cursor-pointer transition-all duration-200 flex items-center justify-between group ${
+                             isSelected 
+                               ? 'bg-slate-50 border-[#0ea5e9] shadow-inner ring-1 ring-slate-200/50' 
+                               : 'bg-white border-transparent hover:bg-slate-50/50 hover:border-slate-200'
+                           }`}
+                         >
+                           <div className="min-w-0 flex-1">
+                             <div className="flex items-center gap-2 mb-1">
+                               <p className={`text-[13px] font-bold truncate ${isSelected ? 'text-[#0ea5e9]' : 'text-slate-800'}`}>
+                                 {r.nama_perusahaan}
+                               </p>
+                               {isActive && (
+                                 <span className="shrink-0 w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
                                )}
-                             </td>
-                           </tr>
-                         );
-                      })}
-                      {(!data.riwayat_pekerja || data.riwayat_pekerja.length === 0) && (
-                        <tr>
-                          <td colSpan={3} className="py-8 text-center text-slate-400 text-xs">Belum ada riwayat pekerjaan.</td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
+                             </div>
+                             <p className="text-[11px] text-slate-400 font-medium truncate">
+                               {r.bagian || r.jabatan || 'Produksi'} • {wText}
+                             </p>
+                           </div>
+                           <div className="ml-4 shrink-0">
+                             {isActive ? (
+                               <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 text-[9px] font-bold rounded uppercase">Aktif</span>
+                             ) : (
+                               <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-[9px] font-bold rounded uppercase">Selesai</span>
+                             )}
+                           </div>
+                         </div>
+                       );
+                    })}
+                    {(!data.riwayat_pekerja || data.riwayat_pekerja.length === 0) && (
+                      <div className="py-12 text-center bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
+                        <Briefcase className="h-8 w-8 text-slate-200 mx-auto mb-2" />
+                        <p className="text-xs font-semibold text-slate-400">Belum ada riwayat pekerjaan.</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
-<<<<<<< HEAD
-              {/* Riwayat Kesehatan (Filtered) */}
-              <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6">
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-sm font-bold text-[#1e293b] flex items-center">
-                    <FileCheck className="h-4 w-4 text-[#0ea5e9] mr-2" /> Riwayat Kesehatan
-                  </h3>
-                  {selectedJobId !== null && (
-                    <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full uppercase tracking-tighter">FILTERED BY JOB</span>
-                  )}
-                </div>
-=======
-            {/* Baseline Health Info Card */}
-            <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6">
-              <h3 className="text-sm font-bold text-[#1e293b] flex items-center mb-6">
-                <Activity className="h-4 w-4 text-[#0ea5e9] mr-2" /> Riwayat Kesehatan
-              </h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-12">
-            {/* SIDE-BY-SIDE GRID: Riwayat Pekerjaan & Riwayat Kesehatan */}
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-              {/* Riwayat Pekerjaan */}
-              <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6">
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-sm font-bold text-[#1e293b] flex items-center">
-                    <Briefcase className="h-4 w-4 text-[#0ea5e9] mr-2" /> Riwayat Pekerjaan
-                  </h3>
-                  <button onClick={() => setSelectedJobId(null)} className="text-[11px] font-bold text-[#0ea5e9] tracking-wider uppercase hover:underline">LIHAT SEMUA</button>
-                </div>
-
-                <div className="w-full overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="border-b border-slate-100 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">
-                        <th className="pb-3 px-2 font-bold">Perusahaan</th>
-                        <th className="pb-3 px-2 font-bold">Masa Kerja</th>
-                        <th className="pb-3 px-2 font-bold text-right">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-50/80">
-                      {data.riwayat_pekerja?.map((r: any, idx: number) => {
-                         const isActive = !r.tgl_keluar;
-                         let wText = `${r.tgl_masuk ? format(parseISO(r.tgl_masuk), 'MMM yy', {locale: localeID}) : '-'} - ${r.tgl_keluar ? format(parseISO(r.tgl_keluar), 'MMM yy', {locale: localeID}) : 'Now'}`;
-                         const isSelected = selectedJobId === idx;
-
-                         return (
-                           <tr 
-                             key={idx} 
-                             onClick={() => setSelectedJobId(isSelected ? null : idx)}
-                             className={`cursor-pointer transition-all group border-l-4 ${isSelected ? 'bg-blue-50/80 border-[#0ea5e9]' : 'hover:bg-slate-50/50 border-transparent'}`}
-                           >
-                             <td className="py-4 px-2">
-                               <p className="text-[13px] font-bold text-slate-800">{r.nama_perusahaan}</p>
-                               <p className="text-[11px] text-slate-400 mt-0.5">{r.bagian || r.jabatan || 'Produksi'}</p>
-                             </td>
-                             <td className="py-4 px-2">
-                               <p className="text-[12px] text-slate-500 whitespace-nowrap">{wText}</p>
-                             </td>
-                             <td className="py-4 px-2 text-right">
-                               {isActive ? (
-                                 <span className="px-2 py-1 bg-emerald-100 text-emerald-600 text-[9px] font-extrabold tracking-wide rounded-md uppercase">Aktif</span>
-                               ) : (
-                                 <span className="px-2 py-1 bg-slate-100 text-slate-500 text-[9px] font-extrabold tracking-wide rounded-md uppercase">Selesai</span>
-                               )}
-                             </td>
-                           </tr>
-                         );
-                      })}
-                      {(!data.riwayat_pekerja || data.riwayat_pekerja.length === 0) && (
-                        <tr>
-                          <td colSpan={3} className="py-8 text-center text-slate-400 text-xs">Belum ada riwayat pekerjaan.</td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {/* Riwayat Kesehatan (Filtered) */}
-              <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6">
+              {/* Right Column: Riwayat Kesehatan (Detail) */}
+              <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6 flex flex-col">
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="text-sm font-bold text-[#1e293b] flex items-center">
                     <Activity className="h-4 w-4 text-[#0ea5e9] mr-2" /> Riwayat Kesehatan
                   </h3>
-                  {selectedJobId !== null && (
-                    <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full uppercase tracking-tighter">FILTERED BY JOB</span>
+                  {selectedJobId !== null && !isHealthLoading && (
+                    <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full uppercase tracking-tighter">
+                      Filtered by Job
+                    </span>
                   )}
                 </div>
 
-                <div className="w-full overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="border-b border-slate-100 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">
-                        <th className="pb-3 px-2 font-bold">TANGGAL & JENIS</th>
-                        <th className="pb-3 px-2 font-bold">HASIL DIAGNOSIS</th>
-                        <th className="pb-3 px-2 font-bold">FASILITAS MEDIS</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-50/80">
-                      {filteredHealthRecords?.map((m: any, idx: number) => (
-                         <tr key={idx} className="hover:bg-slate-50/50 transition-colors group">
-                           <td className="py-4 px-2">
-                             <p className="text-[12px] font-bold text-slate-800">
-                                {m.tanggal_pemeriksaan ? format(parseISO(m.tanggal_pemeriksaan), 'dd MMM yy', {locale: localeID}) : '-'}
-                             </p>
-                             <p className="text-[10px] text-[#0ea5e9] font-bold mt-0.5 uppercase">{m.jenis_pemeriksaan || '-'}</p>
-                           </td>
-                           <td className="py-4 px-2">
-                             <p className="text-[12px] text-slate-600 line-clamp-2 max-w-[150px]" title={m.hasil_diagnosis}>
+                <div className="flex-1">
+                  {isHealthLoading ? (
+                    <div className="space-y-4">
+                      {[1, 2, 3].map((i) => (
+                        <div key={i} className="p-4 border border-slate-100 rounded-xl space-y-3">
+                          <div className="flex justify-between">
+                            <Skeleton className="h-4 w-24" />
+                            <Skeleton className="h-3 w-16" />
+                          </div>
+                          <Skeleton className="h-4 w-full" />
+                          <Skeleton className="h-3 w-32" />
+                        </div>
+                      ))}
+                    </div>
+                  ) : filteredHealthRecords && filteredHealthRecords.length > 0 ? (
+                    <div className="space-y-4">
+                      {filteredHealthRecords.map((m: any, idx: number) => (
+                         <div key={idx} className="p-4 bg-white border border-slate-100 rounded-xl hover:border-blue-100 transition-colors group">
+                           <div className="flex justify-between items-start mb-2">
+                             <div>
+                               <p className="text-[12px] font-bold text-slate-800">
+                                  {m.tanggal_pemeriksaan ? format(parseISO(m.tanggal_pemeriksaan), 'dd MMM yyyy', {locale: localeID}) : '-'}
+                               </p>
+                               <p className="text-[10px] text-[#0ea5e9] font-bold mt-0.5 uppercase tracking-wider">
+                                 {m.jenis_pemeriksaan || '-'}
+                               </p>
+                             </div>
+                             <span className="text-[10px] text-slate-400 font-medium">
+                               {m.tempat_pemeriksaan || '-'}
+                             </span>
+                           </div>
+                           <div className="bg-slate-50/50 p-2.5 rounded-lg border border-slate-100/50">
+                             <p className="text-[12px] text-slate-600 leading-relaxed font-medium">
                                 {m.hasil_diagnosis || '-'}
                              </p>
-                           </td>
-                           <td className="py-4 px-2">
-                             <p className="text-[11px] font-medium text-slate-500">{m.tempat_pemeriksaan || '-'}</p>
-                           </td>
-                         </tr>
+                           </div>
+                         </div>
                       ))}
-                      {(!filteredHealthRecords || filteredHealthRecords.length === 0) && (
-                        <tr>
-                          <td colSpan={3} className="py-12 text-center bg-slate-50/30 rounded-xl">
-                            <Activity className="h-8 w-8 text-slate-200 mx-auto mb-2" />
-                            <p className="text-xs font-semibold text-slate-400">Tidak ada rekam medis pada periode ini.</p>
-                            {selectedJobId !== null && (
-                              <button onClick={() => setSelectedJobId(null)} className="mt-2 text-[10px] font-bold text-[#0ea5e9] hover:underline">LIHAT SEMUA</button>
-                            )}
-                          </td>
-                        </tr>
+                    </div>
+                  ) : (
+                    <div className="h-full flex flex-col items-center justify-center py-12 bg-slate-50/30 rounded-xl border border-dashed border-slate-100">
+                      <Activity className="h-10 w-10 text-slate-200 mb-3" />
+                      <p className="text-sm font-bold text-slate-400 text-center">
+                        Tidak ada rekam medis pada periode ini.
+                      </p>
+                      {selectedJobId !== null && (
+                        <button 
+                          onClick={() => setSelectedJobId(null)} 
+                          className="mt-3 text-[11px] font-bold text-[#0ea5e9] hover:underline uppercase tracking-wider"
+                        >
+                          Lihat Seluruh Riwayat
+                        </button>
                       )}
-                    </tbody>
-                  </table>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
-
-                <div className="w-full overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="border-b border-slate-100 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">
-                        <th className="pb-3 px-2 font-bold">TANGGAL & JENIS</th>
-                        <th className="pb-3 px-2 font-bold">HASIL DIAGNOSIS</th>
-                        <th className="pb-3 px-2 font-bold">FASILITAS MEDIS</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-50/80">
-                      {filteredHealthRecords?.map((m: any, idx: number) => (
-                         <tr key={idx} className="hover:bg-slate-50/50 transition-colors group">
-                           <td className="py-4 px-2">
-                             <p className="text-[12px] font-bold text-slate-800">
-                                {m.tanggal_pemeriksaan ? format(parseISO(m.tanggal_pemeriksaan), 'dd MMM yy', {locale: localeID}) : '-'}
-                             </p>
-                             <p className="text-[10px] text-[#0ea5e9] font-bold mt-0.5 uppercase">{m.jenis_pemeriksaan || '-'}</p>
-                           </td>
-                           <td className="py-4 px-2">
-                             <p className="text-[12px] text-slate-600 line-clamp-2 max-w-[150px]" title={m.hasil_diagnosis}>
-                                {m.hasil_diagnosis || '-'}
-                             </p>
-                           </td>
-                           <td className="py-4 px-2">
-                             <p className="text-[11px] font-medium text-slate-500">{m.tempat_pemeriksaan || '-'}</p>
-                           </td>
-                         </tr>
-                      ))}
-                      {(!filteredHealthRecords || filteredHealthRecords.length === 0) && (
-                        <tr>
-                          <td colSpan={3} className="py-12 text-center bg-slate-50/30 rounded-xl">
-                            <Activity className="h-8 w-8 text-slate-200 mx-auto mb-2" />
-                            <p className="text-xs font-semibold text-slate-400">Tidak ada rekam medis pada periode ini.</p>
-                            {selectedJobId !== null && (
-                              <button onClick={() => setSelectedJobId(null)} className="mt-2 text-[10px] font-bold text-[#0ea5e9] hover:underline">LIHAT SEMUA</button>
-                            )}
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-
-            {/* Detailed Health History Table */}
             <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-sm font-bold text-[#1e293b] flex items-center">
