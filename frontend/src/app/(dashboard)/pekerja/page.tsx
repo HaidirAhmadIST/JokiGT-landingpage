@@ -28,7 +28,7 @@ export default function PekerjaPage() {
 
   // Bulk Edit Sheet State
   const [bulkOpen, setBulkOpen] = useState(false);
-  const [bulkFormData, setBulkFormData] = useState<Record<number, { jenis_kelamin: string, tanggal_lahir: string }>>({});
+  const [bulkEdits, setBulkEdits] = useState<Record<number, { jenis_kelamin: string, tanggal_lahir: string }>>({});
 
   const fetchData = async () => {
     setLoading(true);

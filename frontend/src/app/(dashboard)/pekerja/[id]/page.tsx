@@ -402,23 +402,6 @@ export default function PekerjaDetailPage() {
               <span className="text-xl font-bold text-slate-800 block">{masaKerjaText}</span>
               <span className="text-[11px] text-slate-400 mt-1 block">{sejakText}</span>
             </div>
-
-                {isAdmin && <Edit3 className="h-3.5 w-3.5 text-slate-400 group-hover/status:text-[#0ea5e9] transition-colors" />}
-
-                {/* Status Switcher Popover Logic (Only for admin) */}
-                {isAdmin && (
-                  <select
-                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                    value={normalizeStatus(data.status_kesehatan)}
-                    onChange={(e) => updateStatusKesehatan(e.target.value)}
-                    disabled={statusLoading}
-                  >
-                    <option value="fit">Fit</option>
-                    <option value="fit_with_note">Fit with Note</option>
-                    <option value="unfit">Unfit</option>
-                  </select>
-                )}
-              </div>
           </div>
         </div>
 
