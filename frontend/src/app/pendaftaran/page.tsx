@@ -200,6 +200,18 @@ export default function PendaftaranPekerjaPage() {
   const handleLanjut = () => setStep(step + 1);
   const handleKembali = () => setStep(step - 1);
 
+  const scrollToField = (fieldId: string, targetStep: number) => {
+    if (step !== targetStep) setStep(targetStep);
+    // Wait for state transition if step changed
+    setTimeout(() => {
+      const element = document.getElementById(fieldId);
+      if (element) {
+        element.focus();
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, step === targetStep ? 0 : 300);
+  };
+
   const checkDuplicate = async (field: 'nik' | 'email', value: string) => {
     if (!value || value.length < 5) return;
     try {
@@ -227,13 +239,56 @@ export default function PendaftaranPekerjaPage() {
   };
 
   const handleSubmit = async () => {
-    if (!baseData.nik || !baseData.nama_lengkap || !baseData.email || !baseData.perusahaan_id) {
-      toast.error("Mohon lengkapi NIK, Nama, Email, dan Perusahaan!");
+    const optionalCompanyStatuses = ['Borongan', 'Harian Lepas', 'Outsourcing'];
+    const isCompanyOptional = optionalCompanyStatuses.includes(pekerjaanSaatIni.status_pekerjaan);
+    const isInformal = pekerjaanSaatIni.status_pekerjaan === 'Borongan' || pekerjaanSaatIni.status_pekerjaan === 'Harian Lepas';
+    
+    // Explicit Validation Check with detailed feedback and scroll-to-focus
+    if (!baseData.nama_lengkap) {
+      toast.error("Nama Lengkap wajib diisi!");
+      scrollToField('nama_lengkap', 1);
       return;
+    }
+    if (!baseData.nik) {
+      toast.error("NIK wajib diisi!");
+      scrollToField('nik', 1);
+      return;
+    }
+    if (!baseData.email) {
+      toast.error("Email wajib diisi!");
+      scrollToField('email', 1);
+      return;
+    }
+    if (!isCompanyOptional && !baseData.perusahaan_id) {
+      toast.error("Pilih perusahaan Anda!");
+      scrollToField('perusahaan_id', 1);
+      return;
+    }
+    
+    // Check Step 2 fields if not informal
+    if (!isInformal) {
+      if (!pekerjaanSaatIni.bagian) {
+        toast.error("Bagian pekerjaan wajib diisi!");
+        scrollToField('bagian', 2);
+        return;
+      }
+      if (!pekerjaanSaatIni.jabatan) {
+        toast.error("Jabatan wajib diisi!");
+        scrollToField('jabatan', 2);
+        return;
+      }
+      if (!pekerjaanSaatIni.tgl_masuk) {
+        toast.error("Tanggal masuk wajib diisi!");
+        scrollToField('tgl_masuk', 2);
+        return;
+      }
     }
     setLoading(true);
     try {
-      let finalPerusahaanId = baseData.perusahaan_id;
+      const optionalCompanyStatuses = ['Borongan', 'Harian Lepas', 'Outsourcing'];
+      const isCompanyOptional = optionalCompanyStatuses.includes(pekerjaanSaatIni.status_pekerjaan);
+      
+      let finalPerusahaanId = isCompanyOptional ? null : baseData.perusahaan_id;
       let currentPerusahaanName = '';
 
       // Handle New Perusahaan Creation
@@ -285,9 +340,11 @@ export default function PendaftaranPekerjaPage() {
 
       // Build riwayat array combining current job and previous jobs
       const allRiwayat = [];
-      if (currentPerusahaanName) {
+      const workerName = currentPerusahaanName || (isCompanyOptional ? "Pekerja Informal / Mandiri" : "");
+      
+      if (workerName || pekerjaanSaatIni.status_pekerjaan) {
         allRiwayat.push({
-          nama_perusahaan: currentPerusahaanName,
+          nama_perusahaan: workerName || "-",
           deskripsi_usaha: pekerjaanSaatIni.deskripsi_usaha,
           bagian: pekerjaanSaatIni.bagian,
           jabatan: pekerjaanSaatIni.jabatan,
@@ -312,13 +369,15 @@ export default function PendaftaranPekerjaPage() {
       const prevRiwayat = riwayatLalu.filter(r => r.nama_perusahaan.trim() !== '');
 
       // Mapped Medis Data (Transactional)
-      const finalMedis = detailMedisData.riwayat_pemeriksaan
-        .filter((m: any) => m.tanggal_pemeriksaan && m.hasil_diagnosis)
-        .map((m: any) => ({
+      const validMedisRecords = detailMedisData.riwayat_pemeriksaan
+        .filter((m: any) => m.tanggal_pemeriksaan && m.hasil_diagnosis);
+
+      const finalMedis = validMedisRecords.map((m: any) => ({
           tanggal_pemeriksaan: m.tanggal_pemeriksaan,
           tempat_pemeriksaan: m.tempat_pemeriksaan,
           jenis_pemeriksaan: m.jenis_pemeriksaan,
-          nama_dokter: m.dokter,
+          dokter: m.dokter,
+          status_kesehatan: m.status_kesehatan,
           hasil_diagnosis: m.hasil_diagnosis,
         }));
 
@@ -333,7 +392,7 @@ export default function PendaftaranPekerjaPage() {
         obat_rutin: detailMedisData.obat_rutin
       } : null;
 
-      const performSubmit = async (pId: string, riwayatData: any[]) => {
+      const performSubmit = async (pId: string | null, riwayatData: any[], medisDataOrisinal: any[]) => {
         const payload: any = {
           ...baseData,
           perusahaan_id: pId,
@@ -348,11 +407,39 @@ export default function PendaftaranPekerjaPage() {
         const response = await api.post('/pekerja', payload);
 
         const newPekerjaId = response.data.data.id;
+        const savedRiwayat = response.data.data.riwayat_pekerja || [];
+        const savedMedis = response.data.data.detail_medis || [];
 
         if (pasFoto) {
           const formData = new FormData();
           formData.append('pas_foto', pasFoto);
           await api.post(`/pekerja/${newPekerjaId}/foto`, formData);
+        }
+
+        // Sync Riwayat Files
+        for (let i = 0; i < riwayatData.length; i++) {
+          if (riwayatData[i].file_bukti && savedRiwayat[i]) {
+            const formData = new FormData();
+            formData.append('file_bukti', riwayatData[i].file_bukti);
+            try {
+              await api.post(`/riwayat-pekerja/${savedRiwayat[i].id}/file`, formData);
+            } catch (e) {
+              console.error('Gagal mengunggah file riwayat', e);
+            }
+          }
+        }
+
+        // Sync Medis Files
+        for (let i = 0; i < medisDataOrisinal.length; i++) {
+          if (medisDataOrisinal[i].file_hasil && savedMedis[i]) {
+            const formData = new FormData();
+            formData.append('file_hasil', medisDataOrisinal[i].file_hasil);
+            try {
+              await api.post(`/detail-medis/${savedMedis[i].id}/file`, formData);
+            } catch (e) {
+              console.error('Gagal mengunggah file medis', e);
+            }
+          }
         }
 
         // Sync status advokasi dan file unggahan
@@ -393,11 +480,33 @@ export default function PendaftaranPekerjaPage() {
       };
 
       try {
-        await performSubmit(finalPerusahaanId, [...allRiwayat, ...prevRiwayat]);
+        await performSubmit(finalPerusahaanId, [...allRiwayat, ...prevRiwayat], validMedisRecords);
         localStorage.removeItem(STORAGE_KEY);
         toast.success('Pekerja berhasil didaftarkan!');
         router.push('/pekerja');
       } catch (error: any) {
+        if (error.response?.status === 422) {
+          const errors = error.response.data.errors || {};
+          const firstField = Object.keys(errors)[0];
+          
+          // Map backend field names to UI IDs and Steps
+          const fieldMap: any = {
+            'nik': { id: 'nik', s: 1 },
+            'nama_lengkap': { id: 'nama_lengkap', s: 1 },
+            'email': { id: 'email', s: 1 },
+            'perusahaan_id': { id: 'perusahaan_id', s: 1 },
+            'whatsapp': { id: 'whatsapp', s: 1 },
+            'domisili': { id: 'domisili', s: 1 },
+            'status_pekerjaan': { id: 'status_pekerjaan', s: 2 }
+          };
+
+          if (fieldMap[firstField]) {
+            toast.error(errors[firstField][0]);
+            scrollToField(fieldMap[firstField].id, fieldMap[firstField].s);
+            return; // Stop here, we've handled it
+          }
+        }
+        
         // Handle "taken" error for new company gracefully
         if (error.response?.status === 422 && error.response?.data?.errors?.nama_perusahaan) {
           try {
@@ -409,13 +518,11 @@ export default function PendaftaranPekerjaPage() {
 
             if (existing) {
               toast.success("Perusahaan sudah terdaftar. Menghubungkan otomatis...", { id: 'check-perusahaan' });
-              
               const updatedRiwayat = [...allRiwayat.map(r => 
                 r.nama_perusahaan === currentPerusahaanName ? { ...r, nama_perusahaan: existing.nama_perusahaan } : r
               ), ...prevRiwayat];
 
-              await performSubmit(existing.id.toString(), updatedRiwayat);
-              
+              await performSubmit(existing.id.toString(), updatedRiwayat, validMedisRecords);
               localStorage.removeItem(STORAGE_KEY);
               toast.success('Pekerja berhasil didaftarkan!');
               router.push('/pekerja');
@@ -448,6 +555,19 @@ export default function PendaftaranPekerjaPage() {
           </div>
         </div>
         <div className="flex items-center gap-4 text-slate-500">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="text-xs font-bold text-red-500 hover:text-red-600 hover:bg-red-50 px-3"
+            onClick={() => {
+              if (confirm("Anda yakin ingin menghapus seluruh progres pendaftaran ini? Data yang sudah diisi akan hilang.")) {
+                localStorage.removeItem(STORAGE_KEY);
+                window.location.reload();
+              }
+            }}
+          >
+            Hapus Sesi / Reset
+          </Button>
           <Bell className="h-5 w-5 cursor-pointer hover:text-slate-800" />
           <Globe className="h-5 w-5 cursor-pointer hover:text-slate-800" />
         </div>
@@ -503,17 +623,18 @@ export default function PendaftaranPekerjaPage() {
                   </h3>
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label>Nama Lengkap (Sesuai KTP)</Label>
-                      <Input placeholder="Masukkan nama lengkap" className="h-11" value={baseData.nama_lengkap} onChange={e => setBaseData({ ...baseData, nama_lengkap: e.target.value })} />
+                      <Label htmlFor="nama_lengkap">Nama Lengkap (Sesuai KTP)</Label>
+                      <Input id="nama_lengkap" placeholder="Masukkan nama lengkap" className="h-11" value={baseData.nama_lengkap} onChange={e => setBaseData({ ...baseData, nama_lengkap: e.target.value })} />
                     </div>
                     <div className="space-y-2">
-                      <Label>Nomor Induk Kependudukan / NIK</Label>
+                      <Label htmlFor="nik">Nomor Induk Kependudukan / NIK</Label>
                       <Input 
+                        id="nik"
                         placeholder="Masukkan NIK 16 Digit" 
                         maxLength={16} 
                         className={`h-11 ${duplicateWarning.nik ? 'border-amber-400 bg-amber-50/30' : ''}`}
                         value={baseData.nik} 
-                        onChange={e => setBaseData({ ...baseData, nik: e.target.value.replace(/\\D/g, '') })} 
+                        onChange={e => setBaseData({ ...baseData, nik: e.target.value.replace(/\D/g, '') })} 
                         onBlur={(e) => checkDuplicate('nik', e.target.value)}
                       />
                       {duplicateWarning.nik && <p className="text-[10px] text-amber-600 font-medium">{duplicateWarning.nik}</p>}
@@ -557,18 +678,19 @@ export default function PendaftaranPekerjaPage() {
                     <ShieldAlert className="h-4 w-4 mr-2" /> Kontak & Alamat
                   </h3>
                   <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>Nomor WhatsApp</Label>
+                     <div className="space-y-2">
+                      <Label htmlFor="whatsapp">Nomor WhatsApp</Label>
                       <div className="flex">
                         <span className="inline-flex items-center px-4 rounded-l-lg border border-r-0 border-slate-200 bg-slate-50 text-slate-500 sm:text-sm">
                           +62
                         </span>
-                        <Input placeholder="8123456xxx" className="rounded-l-none h-11" value={baseData.whatsapp} onChange={e => setBaseData({ ...baseData, whatsapp: e.target.value.replace(/\\D/g, '') })} />
+                        <Input id="whatsapp" placeholder="8123456xxx" className="rounded-l-none h-11" value={baseData.whatsapp} onChange={e => setBaseData({ ...baseData, whatsapp: e.target.value.replace(/\D/g, '') })} />
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label>Alamat Email (Wajib untuk Login)</Label>
+                      <Label htmlFor="email">Alamat Email (Wajib untuk Login)</Label>
                       <Input 
+                        id="email"
                         placeholder="nama@email.com" 
                         type="email" 
                         className={`h-11 ${duplicateWarning.email ? 'border-amber-400 bg-amber-50/30' : ''}`}
@@ -628,11 +750,11 @@ export default function PendaftaranPekerjaPage() {
                     <ShieldAlert className="h-4 w-4 mr-2" /> Pekerjaan Saat Ini
                   </h3>
                   <div className="space-y-5">
-                    {pekerjaanSaatIni.status_pekerjaan !== 'Borongan' && pekerjaanSaatIni.status_pekerjaan !== 'Harian Lepas' && (
+                     {!['Borongan', 'Harian Lepas', 'Outsourcing'].includes(pekerjaanSaatIni.status_pekerjaan) && (
                       <div className="space-y-2">
-                        <Label>Pilih Perusahaan Saat Ini</Label>
+                        <Label htmlFor="perusahaan_id">Pilih Perusahaan Saat Ini</Label>
                         <Select value={baseData.perusahaan_id} onValueChange={(v: any) => setBaseData({ ...baseData, perusahaan_id: v })}>
-                          <SelectTrigger className="h-11 w-full">
+                          <SelectTrigger id="perusahaan_id" className="h-11 w-full">
                             <SelectValue placeholder="Pilih Perusahaan">
                               {baseData.perusahaan_id === 'NEW'
                                 ? "+ Tambah Perusahaan Baru"
@@ -672,9 +794,9 @@ export default function PendaftaranPekerjaPage() {
                       </div>
                     )}
                     <div className="space-y-2">
-                      <Label>Status Pekerjaan</Label>
+                      <Label htmlFor="status_pekerjaan">Status Pekerjaan</Label>
                       <Select value={pekerjaanSaatIni.status_pekerjaan} onValueChange={(v: any) => setPekerjaanSaatIni({ ...pekerjaanSaatIni, status_pekerjaan: v })}>
-                        <SelectTrigger className="h-11 w-full"><SelectValue placeholder="Pilih Status" /></SelectTrigger>
+                        <SelectTrigger id="status_pekerjaan" className="h-11 w-full"><SelectValue placeholder="Pilih Status" /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="PKWTT">1. PKWTT (Pekerja Tetap)</SelectItem>
                           <SelectItem value="PKWT">2. PKWT (Pekerja Kontrak)</SelectItem>
@@ -714,17 +836,17 @@ export default function PendaftaranPekerjaPage() {
                       <>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                           <div className="space-y-2">
-                            <Label>Bagian</Label>
-                            <Input placeholder="Contoh: Produksi / Logistik" className="h-11" value={pekerjaanSaatIni.bagian} onChange={e => setPekerjaanSaatIni({ ...pekerjaanSaatIni, bagian: e.target.value })} />
+                            <Label htmlFor="bagian">Bagian</Label>
+                            <Input id="bagian" placeholder="Contoh: Produksi / Logistik" className="h-11" value={pekerjaanSaatIni.bagian} onChange={e => setPekerjaanSaatIni({ ...pekerjaanSaatIni, bagian: e.target.value })} />
                           </div>
                           <div className="space-y-2">
-                            <Label>Jabatan / Posisi</Label>
-                            <Input placeholder="Contoh: Operator Produksi" className="h-11" value={pekerjaanSaatIni.jabatan} onChange={e => setPekerjaanSaatIni({ ...pekerjaanSaatIni, jabatan: e.target.value })} />
+                            <Label htmlFor="jabatan">Jabatan / Posisi</Label>
+                            <Input id="jabatan" placeholder="Contoh: Operator Produksi" className="h-11" value={pekerjaanSaatIni.jabatan} onChange={e => setPekerjaanSaatIni({ ...pekerjaanSaatIni, jabatan: e.target.value })} />
                           </div>
                         </div>
                         <div className="space-y-2">
-                          <Label>Mulai Bekerja</Label>
-                          <Input type="date" className="h-11 text-slate-500" value={pekerjaanSaatIni.tgl_masuk} onChange={e => setPekerjaanSaatIni({ ...pekerjaanSaatIni, tgl_masuk: e.target.value })} />
+                          <Label htmlFor="tgl_masuk">Mulai Bekerja</Label>
+                          <Input id="tgl_masuk" type="date" className="h-11 text-slate-500" value={pekerjaanSaatIni.tgl_masuk} onChange={e => setPekerjaanSaatIni({ ...pekerjaanSaatIni, tgl_masuk: e.target.value })} />
                         </div>
                         <div className="space-y-2">
                           <Label>Deskripsi Pekerjaan</Label>
@@ -955,7 +1077,7 @@ export default function PendaftaranPekerjaPage() {
                       className="border-blue-300 text-blue-700 hover:bg-blue-50"
                       onClick={() => handleDetailMedisChange('riwayat_pemeriksaan', [
                         ...detailMedisData.riwayat_pemeriksaan,
-                        { tanggal_pemeriksaan: '', tempat_pemeriksaan: '', jenis_pemeriksaan: '', dokter: '', hasil_diagnosis: '', rekomendasi: '', file_hasil: null, pendamping: '' }
+                        { tanggal_pemeriksaan: '', tempat_pemeriksaan: '', jenis_pemeriksaan: '', dokter: '', status_kesehatan: 'sehat', hasil_diagnosis: '', rekomendasi: '', file_hasil: null, pendamping: '' }
                       ])}
                     >
                       <Plus className="h-4 w-4 mr-1" /> Tambah Pemeriksaan
@@ -966,7 +1088,7 @@ export default function PendaftaranPekerjaPage() {
                     <div
                       className="border border-dashed border-slate-200 rounded-xl p-8 text-center bg-slate-50 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-100 transition-colors"
                       onClick={() => handleDetailMedisChange('riwayat_pemeriksaan', [
-                        { tanggal_pemeriksaan: '', tempat_pemeriksaan: '', jenis_pemeriksaan: '', dokter: '', hasil_diagnosis: '', rekomendasi: '', file_hasil: null, pendamping: '' }
+                        { tanggal_pemeriksaan: '', tempat_pemeriksaan: '', jenis_pemeriksaan: '', dokter: '', status_kesehatan: 'sehat', hasil_diagnosis: '', rekomendasi: '', file_hasil: null, pendamping: '' }
                       ])}
                     >
                       <Plus className="h-8 w-8 text-slate-300 mb-2" />
@@ -1018,8 +1140,18 @@ export default function PendaftaranPekerjaPage() {
                                 <Textarea placeholder="Ringkasan hasil diagnosis..." className="min-h-[80px] bg-white resize-none" value={item.hasil_diagnosis} onChange={e => updateItem('hasil_diagnosis', e.target.value)} />
                               </div>
                               <div className="space-y-2 col-span-1 sm:col-span-2">
-                                <Label className="text-slate-700">Rekomendasi Tindak Lanjut</Label>
                                 <Textarea placeholder="Saran dari dokter (opsional)" className="min-h-[80px] bg-white resize-none" value={item.rekomendasi} onChange={e => updateItem('rekomendasi', e.target.value)} />
+                              </div>
+                              <div className="space-y-2">
+                                <Label className="text-slate-700">Status Kesehatan</Label>
+                                <Select value={item.status_kesehatan || 'sehat'} onValueChange={v => updateItem('status_kesehatan', v)}>
+                                  <SelectTrigger className="h-11 w-full bg-white"><SelectValue placeholder="Pilih Status" /></SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="sehat">Sehat</SelectItem>
+                                    <SelectItem value="sehat_dengan_catatan">Sehat dengan Catatan</SelectItem>
+                                    <SelectItem value="tidak_sehat">Tidak Sehat</SelectItem>
+                                  </SelectContent>
+                                </Select>
                               </div>
                               <div className="space-y-2">
                                 <Label className="text-slate-700">Unggah Hasil Pemeriksaan</Label>
