@@ -32,6 +32,7 @@ class RiwayatPekerja extends Model
         'tgl_masuk',
         'tgl_keluar',
         'tanggal_selesai_kontrak',
+        'file_bukti_path',
     ];
 
     /**

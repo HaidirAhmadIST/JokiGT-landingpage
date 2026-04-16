@@ -43,6 +43,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('pekerja', [PekerjaController::class, 'index']);
     Route::get('pekerja/{pekerja}', [PekerjaController::class, 'show']);
     Route::post('pekerja', [PekerjaController::class, 'store']); // All can register
+    Route::post('riwayat-pekerja/{id}/file', [FileController::class, 'uploadRiwayatFile']);
+    Route::post('detail-medis/{id}/file', [FileController::class, 'uploadMedisFile']);
     
     Route::group(['middleware' => ['role:admin,petugas']], function () {
         Route::put('pekerja/{pekerja}', [PekerjaController::class, 'update']);
@@ -66,6 +68,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::group(['middleware' => ['role:admin,petugas']], function () {
         Route::get('pekerja/{pekerja_id}/files/medis', [FileController::class, 'downloadMedis']);
         Route::get('medis/{id}/file', [FileController::class, 'downloadMedisById']);
+        Route::get('riwayat/{id}/file', [FileController::class, 'downloadRiwayatById']);
         Route::get('pekerja/{pekerja_id}/files/advokasi/{step_key}', [FileController::class, 'downloadAdvokasiProof']);
     });
 });
