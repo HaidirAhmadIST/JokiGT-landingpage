@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StorePekerjaRequest extends FormRequest
 {
@@ -27,10 +28,17 @@ class StorePekerjaRequest extends FormRequest
             'password' => ['required', 'string', 'min:8'],
             
             // Pekerja Data
-            'perusahaan_id' => ['required', 'exists:perusahaan,id'],
+            'perusahaan_id' => [
+                'nullable',
+                'exists:perusahaan,id',
+                Rule::requiredIf(function () {
+                    $status = $this->riwayat[0]['status_pekerjaan'] ?? null;
+                    return !in_array($status, ['Borongan', 'Harian Lepas', 'Outsourcing']);
+                }),
+            ],
             'nik' => ['required', 'string', 'size:16'],
             'nama_lengkap' => ['required', 'string', 'max:255'],
-            'status_kesehatan' => ['required', 'in:fit,fit_with_note,unfit'],
+            'status_kesehatan' => ['required', 'in:sehat,sehat_dengan_catatan,tidak_sehat'],
             'catatan_admin' => ['nullable', 'string'],
             'tanggal_lahir' => ['nullable', 'date'],
             'jenis_kelamin' => ['nullable', 'in:L,P'],
@@ -62,9 +70,9 @@ class StorePekerjaRequest extends FormRequest
             'medis' => ['nullable', 'array'],
             'medis.*.tanggal_pemeriksaan' => ['required', 'date', 'before_or_equal:today'],
             'medis.*.tempat_pemeriksaan' => ['required', 'string', 'max:255'],
-            'medis.*.jenis_pemeriksaan' => ['required', 'in:Rawat Jalan,Rawat Inap,MCU,IGD,Lainnya'],
-            'medis.*.nama_dokter' => ['required', 'string', 'max:255'],
-            'medis.*.status_kesehatan' => ['required', 'in:fit,fit_with_note,unfit'],
+            'medis.*.jenis_pemeriksaan' => ['required', 'string'],
+            'medis.*.dokter' => ['required', 'string', 'max:255'],
+            'medis.*.status_kesehatan' => ['required', 'in:sehat,sehat_dengan_catatan,tidak_sehat'],
             'medis.*.hasil_diagnosis' => ['required', 'string'],
             'medis.*.golongan_darah' => ['nullable', 'string', 'in:A,B,AB,O'],
             'medis.*.rhesus' => ['nullable', 'string', 'in:+,-'],

@@ -15,6 +15,7 @@ export interface RiwayatPemeriksaanItem {
   tempat_pemeriksaan: string;
   jenis_pemeriksaan: string;
   dokter: string;
+  status_kesehatan: string;
   hasil_diagnosis: string;
   rekomendasi: string;
   file_hasil: File | null;
@@ -70,6 +71,7 @@ export default function FormDetailMedis({ data, onChange }: FormDetailMedisProps
         tempat_pemeriksaan: '',
         jenis_pemeriksaan: '',
         dokter: '',
+        status_kesehatan: 'sehat',
         hasil_diagnosis: '',
         rekomendasi: '',
         file_hasil: null,
