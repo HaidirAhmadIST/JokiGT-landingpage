@@ -8,11 +8,19 @@ import { Button } from '@/components/ui/button';
 import {
   ArrowLeft, Printer, Pin, Mail, Phone, MapPin,
   Briefcase, ShieldAlert, CheckCircle2, Circle, Edit3,
-  Download, Image as ImageIcon, Activity, FileText, FileCheck, ClipboardList
+  Download, Image as ImageIcon, Activity, FileText, FileCheck, ClipboardList, HeartPulse
 } from 'lucide-react';
 import { format, differenceInYears, parseISO } from 'date-fns';
 import { id as localeID } from 'date-fns/locale';
 import { useRole } from '@/hooks/useRole';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function PekerjaDetailPage() {
@@ -27,6 +35,7 @@ export default function PekerjaDetailPage() {
   const [savingCatatan, setSavingCatatan] = useState(false);
   const [selectedJobId, setSelectedJobId] = useState<number | string | null>(null);
   const [isHealthLoading, setIsHealthLoading] = useState(false);
+  const [isRekamJejakOpen, setIsRekamJejakOpen] = useState(false);
   const { isSuperAdmin, isStaffOrAbove, loading: roleLoading } = useRole();
 
   const fetchDetail = async () => {
@@ -129,6 +138,22 @@ export default function PekerjaDetailPage() {
     }
   };
 
+  const downloadRiwayatDoc = async (riwayatId: number) => {
+    try {
+      const toastId = toast.loading('Memproses berkas riwayat...');
+      const response = await api.get(`/riwayat/${riwayatId}/file`, {
+        responseType: 'blob',
+      });
+      
+      const fileUrl = window.URL.createObjectURL(new Blob([response.data], { type: response.headers['content-type'] }));
+      window.open(fileUrl, '_blank');
+      toast.dismiss(toastId);
+    } catch (error) {
+      toast.dismiss();
+      toast.error('Gagal membuka berkas riwayat.');
+    }
+  };
+
   const updateStatusKesehatan = async (newStatus: string) => {
     try {
       setStatusLoading(true);
@@ -149,20 +174,22 @@ export default function PekerjaDetailPage() {
   // Normalize legacy status values to new enum values
   const normalizeStatus = (s: string) => {
     const map: Record<string, string> = {
-      'sehat': 'fit',
-      'sakit_ringan': 'fit_with_note',
-      'sakit': 'unfit',
-      'sakit_berat': 'unfit',
+      'fit': 'sehat',
+      'fit_with_note': 'sehat_dengan_catatan',
+      'unfit': 'tidak_sehat',
+      'sakit_ringan': 'sehat_dengan_catatan',
+      'sakit_berat': 'tidak_sehat',
+      'sakit': 'tidak_sehat',
     };
     return map[s] || s;
   };
 
   const getStatusLabel = (s: string) => {
     const normalized = normalizeStatus(s);
-    if (normalized === 'fit') return 'Fit';
-    if (normalized === 'fit_with_note') return 'Fit with Note';
-    if (normalized === 'unfit') return 'Unfit';
-    return s;
+    if (normalized === 'sehat') return 'Sehat';
+    if (normalized === 'sehat_dengan_catatan') return 'Sehat dengan Catatan';
+    if (normalized === 'tidak_sehat') return 'Tidak Sehat';
+    return s.replace(/_/g, ' ');
   };
 
   const getStatusColor = (s: string) => {
@@ -393,13 +420,13 @@ export default function PekerjaDetailPage() {
                 {isStaffOrAbove && (
                   <select 
                     className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                    value={data.status_kesehatan === 'sehat' ? 'fit' : data.status_kesehatan === 'sakit_ringan' ? 'fit_with_note' : data.status_kesehatan === 'sakit_berat' ? 'unfit' : data.status_kesehatan}
+                    value={normalizeStatus(data.status_kesehatan)}
                     onChange={(e) => updateStatusKesehatan(e.target.value)}
                     disabled={statusLoading}
                   >
-                    <option value="fit">Fit</option>
-                    <option value="fit_with_note">Fit with Note</option>
-                    <option value="unfit">Unfit</option>
+                    <option value="sehat">Sehat</option>
+                    <option value="sehat_dengan_catatan">Sehat dengan Catatan</option>
+                    <option value="tidak_sehat">Tidak Sehat</option>
                   </select>
                 )}
               </div>
@@ -561,6 +588,214 @@ export default function PekerjaDetailPage() {
               </div>
             </div>
 
+            {/* ACTION BAR: Rekam Jejak Terpadu */}
+            <div className="bg-gradient-to-r from-[#0ea5e9] to-blue-600 rounded-2xl p-6 shadow-md flex flex-col md:flex-row items-center justify-between gap-4 text-white">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-white/20 backdrop-blur-md rounded-xl">
+                  <ClipboardList className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold">Rekam Jejak Terpadu</h3>
+                  <p className="text-blue-100 text-xs font-medium">Lihat seluruh riwayat pekerjaan & kesehatan dalam satu tampilan panel.</p>
+                </div>
+              </div>
+              
+              <Dialog open={isRekamJejakOpen} onOpenChange={setIsRekamJejakOpen}>
+                <DialogTrigger render={
+                  <Button className="bg-white text-[#0ea5e9] hover:bg-blue-50 font-bold px-6 py-6 rounded-xl shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98]">
+                    Buka Rekam Jejak Lengkap
+                  </Button>
+                } />
+                <DialogContent className="max-w-[95vw] lg:max-w-6xl h-[90vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl bg-slate-50">
+                  <DialogHeader className="p-6 bg-white border-b border-slate-100 flex flex-row items-center justify-between shrink-0">
+                    <div className="flex items-center gap-4">
+                      <div className="bg-[#0ea5e9] p-2.5 rounded-xl">
+                        <FileText className="h-6 w-6 text-white" />
+                      </div>
+                      <div>
+                        <DialogTitle className="text-xl font-extrabold text-[#1e293b]">Rekam Jejak Pekerja</DialogTitle>
+                        <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">{data.nama_lengkap} • NIK: {data.nik}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 mr-8">
+                       <Button variant="outline" size="sm" className="rounded-lg h-9 border-slate-200 text-slate-600 font-bold" onClick={() => window.print()}>
+                          <Printer className="h-4 w-4 mr-2" /> Cetak PDF
+                       </Button>
+                    </div>
+                  </DialogHeader>
+
+                  <div className="flex-1 p-6 overflow-y-auto">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                      
+                      {/* MODAL LEFT: Riwayat Pekerjaan */}
+                      <div className="space-y-6">
+                        <div className="flex items-center gap-2 mb-2 px-1">
+                          <Briefcase className="h-5 w-5 text-[#0ea5e9]" />
+                          <h4 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider">Riwayat Pekerjaan Lengkap</h4>
+                        </div>
+                        
+                        <div className="space-y-4">
+                          {data.riwayat_pekerja?.map((r: any, idx: number) => (
+                            <div key={idx} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm relative overflow-hidden group hover:border-[#0ea5e9]/30 transition-all">
+                              {/* Background highlight for active job */}
+                              {!r.tgl_keluar && <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-50 rounded-bl-[100px] -mr-12 -mt-12 group-hover:bg-emerald-100/50 transition-colors" />}
+                              
+                              <div className="relative z-10">
+                                <div className="flex justify-between items-start mb-4">
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <h5 className="text-base font-extrabold text-slate-900 leading-tight">{r.nama_perusahaan}</h5>
+                                      {!r.tgl_keluar ? (
+                                        <span className="px-2 py-0.5 bg-emerald-100 text-emerald-600 text-[10px] font-extrabold rounded-md uppercase tracking-wider">AKTIF</span>
+                                      ) : (
+                                        <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-[10px] font-extrabold rounded-md uppercase tracking-wider">SELESAI</span>
+                                      )}
+                                    </div>
+                                    <p className="text-[#0ea5e9] text-xs font-bold uppercase tracking-tight">{r.deskripsi_usaha || 'Bidang Industri'}</p>
+                                  </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4 mb-4">
+                                  <div>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Bagian / Jabatan</p>
+                                    <p className="text-sm font-semibold text-slate-700">{r.bagian || 'Produksi'} / {r.jabatan || 'Kepala Regu'}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Periode Kerja</p>
+                                    <p className="text-sm font-semibold text-slate-700">
+                                      {r.tgl_masuk ? format(parseISO(r.tgl_masuk), 'MMM yyyy', {locale: localeID}) : '-'} — {r.tgl_keluar ? format(parseISO(r.tgl_keluar), 'MMM yyyy', {locale: localeID}) : 'Sekarang'}
+                                    </p>
+                                  </div>
+                                  <div>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Status Karyawan</p>
+                                    <p className="text-sm font-semibold text-slate-700">{r.status_pekerjaan || 'TETAP'}</p>
+                                  </div>
+                                  {r.nama_agen_penyalur && (
+                                    <div>
+                                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Agen Penyalur</p>
+                                      <p className="text-sm font-semibold text-slate-700">{r.nama_agen_penyalur}</p>
+                                    </div>
+                                  )}
+                                </div>
+
+                                {r.deskripsi_pekerjaan && (
+                                  <div className="mb-4">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Deskripsi Pekerjaan</p>
+                                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                      <p className="text-xs text-slate-600 leading-relaxed italic">{r.deskripsi_pekerjaan}</p>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {r.file_bukti_path && (
+                                  <div className="pt-2">
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm" 
+                                      onClick={() => downloadRiwayatDoc(r.id)}
+                                      className="h-9 w-full bg-blue-50 text-[#0ea5e9] hover:bg-blue-100 border border-blue-100 rounded-xl font-bold transition-all"
+                                    >
+                                      <Download className="h-4 w-4 mr-2" /> Unduh Bukti Riwayat / Pajanan
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                          {(!data.riwayat_pekerja || data.riwayat_pekerja.length === 0) && (
+                            <div className="py-20 text-center bg-white rounded-2xl border border-dashed border-slate-300">
+                              <Briefcase className="h-10 w-10 text-slate-200 mx-auto mb-3" />
+                              <p className="text-sm font-bold text-slate-400">Belum ada riwayat pekerjaan terdaftar.</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* MODAL RIGHT: Riwayat Kesehatan */}
+                      <div className="space-y-8">
+                        {/* Section 2: Timeline Pemeriksaan Terpadu */}
+                        <div>
+                          <div className="flex items-center gap-2 mb-4 px-1">
+                            <HeartPulse className="h-5 w-5 text-[#0ea5e9]" />
+                            <h4 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider">Riwayat Kesehatan (Timeline)</h4>
+                          </div>
+                          <div className="space-y-4">
+                            {data.detail_medis?.map((m: any, idx: number) => (
+                              <div key={idx} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:border-[#0ea5e9]/30 transition-all group relative overflow-hidden">
+                                <div className="relative z-10">
+                                  <div className="flex justify-between items-start mb-4">
+                                    <div className="flex-1">
+                                      <div className="flex items-center gap-2 mb-1">
+                                        <h5 className="text-base font-extrabold text-slate-900 leading-tight">
+                                          {m.tanggal_pemeriksaan ? format(parseISO(m.tanggal_pemeriksaan), 'dd MMMM yyyy', {locale: localeID}) : '-'}
+                                        </h5>
+                                        <span className="px-2 py-0.5 bg-blue-50 text-[#0ea5e9] text-[10px] font-extrabold rounded-md uppercase tracking-wider">
+                                          {m.jenis_pemeriksaan || 'MCU BERKALA'}
+                                        </span>
+                                      </div>
+                                      <p className="text-slate-400 text-xs font-bold uppercase tracking-tight">dr. {m.dokter || 'Dokter Pemeriksa'}</p>
+                                    </div>
+                                  </div>
+
+                                  <div className="grid grid-cols-2 gap-4 mb-4">
+                                    <div className="col-span-2">
+                                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Tempat Pemeriksaan</p>
+                                      <p className="text-sm font-semibold text-slate-700">{m.tempat_pemeriksaan || '-'}</p>
+                                    </div>
+                                    <div className="col-span-2">
+                                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Hasil Diagnosis / Keluhan</p>
+                                      <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                        <p className="text-xs text-slate-600 font-medium leading-relaxed">{m.hasil_diagnosis || '-'}</p>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {(m.file_bukti_path || m.file_hasil_path) && (
+                                    <div className="pt-2">
+                                      <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        onClick={() => downloadMedisDoc(m.id)}
+                                        className="h-9 w-full bg-blue-50 text-[#0ea5e9] hover:bg-blue-100 border border-blue-100 rounded-xl font-bold transition-all"
+                                      >
+                                        <Download className="h-4 w-4 mr-2" /> Lihat Laporan Hasil Medis
+                                      </Button>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                            {(!data.detail_medis || data.detail_medis.length === 0) && (
+                              <div className="py-20 text-center bg-white rounded-2xl border border-dashed border-slate-300">
+                                <Activity className="h-10 w-10 text-slate-200 mx-auto mb-3" />
+                                <p className="text-sm font-bold text-slate-400">Tidak ada rekam medis terdaftar.</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <DialogFooter className="p-4 bg-white border-t border-slate-100 flex flex-col md:flex-row items-center justify-between gap-4 shrink-0 sm:justify-between">
+                    <div className="flex items-center gap-6 px-4">
+                      <div className="flex flex-col">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Status Kesehatan</span>
+                        <span className={`text-sm font-extrabold ${getStatusColor(data.status_kesehatan)}`}>{getStatusLabel(data.status_kesehatan)}</span>
+                      </div>
+                      <div className="flex flex-col border-l border-slate-200 pl-6">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Progress Advokasi</span>
+                        <span className="text-sm font-extrabold text-slate-800">{completedStepsCount} dari 6 Langkah</span>
+                      </div>
+                    </div>
+                    <Button variant="ghost" className="rounded-xl font-bold text-slate-500 hover:text-slate-800" onClick={() => setIsRekamJejakOpen(false)}>
+                      Tutup Panel
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
+
             {/* MASTER-DETAIL GRID: Riwayat Pekerjaan & Riwayat Kesehatan */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
               {/* Left Column: Riwayat Pekerjaan (Master) */}
@@ -607,11 +842,21 @@ export default function PekerjaDetailPage() {
                                {r.bagian || r.jabatan || 'Produksi'} • {wText}
                              </p>
                            </div>
-                           <div className="ml-4 shrink-0">
+                           <div className="ml-4 flex flex-col items-end gap-2 shrink-0">
                              {isActive ? (
                                <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 text-[9px] font-bold rounded uppercase">Aktif</span>
                              ) : (
                                <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-[9px] font-bold rounded uppercase">Selesai</span>
+                             )}
+                             {r.file_bukti_path && (
+                               <Button 
+                                 variant="ghost" 
+                                 size="sm"
+                                 onClick={(e) => { e.stopPropagation(); downloadRiwayatDoc(r.id); }}
+                                 className="h-6 text-[9px] font-bold text-[#0ea5e9] hover:bg-blue-50 border border-blue-100 rounded px-2"
+                               >
+                                 <FileCheck className="h-2 w-2 mr-1" /> Bukti
+                               </Button>
                              )}
                            </div>
                          </div>

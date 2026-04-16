@@ -30,12 +30,12 @@ class DashboardController extends Controller
             // Klaim Disetujui: Step kompensasi_bpjstk bernilai true
             $klaimDisetujui = StatusAdvokasi::where('kompensasi_bpjstk', true)->count();
 
-            // Statistik Kesehatan (Fit, Note, Unfit)
+            // Statistik Kesehatan (Sehat, Catatan, Tidak Sehat)
             // Mapping from DB 'status_kesehatan' to UI labels
             $kesehatan = [
                 'fit' => Pekerja::where('status_kesehatan', 'sehat')->count(),
-                'note' => Pekerja::where('status_kesehatan', 'sakit_ringan')->count(),
-                'unfit' => Pekerja::where('status_kesehatan', 'sakit_berat')->count(),
+                'note' => Pekerja::where('status_kesehatan', 'sehat_dengan_catatan')->count(),
+                'unfit' => Pekerja::where('status_kesehatan', 'tidak_sehat')->count(),
             ];
 
             return response()->json([

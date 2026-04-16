@@ -112,26 +112,26 @@ class Pekerja extends Model
 
         $adv = $this->relationLoaded('statusAdvokasi') ? $this->statusAdvokasi : $this->statusAdvokasi()->first();
 
-        // Logic check for "Unfit" — PAK sudah ditetapkan
+        // Logic check for "Tidak Sehat" — PAK sudah ditetapkan
         if ($adv && $adv->penetapan_pak) {
-            return 'unfit';
+            return 'tidak_sehat';
         }
         
         if ($medis) {
             $diagnosis = strtolower($medis->hasil_diagnosis ?? '');
-            // Unfit: diagnosis berat atau positif PAK
+            // Tidak Sehat: diagnosis berat atau positif PAK
             if (str_contains($diagnosis, 'berat') || str_contains($diagnosis, 'positif pak')) {
-                return 'unfit';
+                return 'tidak_sehat';
             }
-            // Fit with note: suspek atau gejala ringan
+            // Sehat dengan Catatan: suspek atau gejala ringan
             if (str_contains($diagnosis, 'suspek') || str_contains($diagnosis, 'ringan') || str_contains($diagnosis, 'silikosis')) {
-                return 'fit_with_note';
+                return 'sehat_dengan_catatan';
             }
             // Jika ada rekam medis tapi tidak ada indikasi, kembalikan status_kesehatan aktual
-            return $this->status_kesehatan ?? 'fit';
+            return $this->status_kesehatan ?? 'sehat';
         }
 
-        return 'fit';
+        return 'sehat';
     }
 
     /**
