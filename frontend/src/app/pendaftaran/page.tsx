@@ -89,41 +89,13 @@ export default function PendaftaranPekerjaPage() {
     domisili: '',
   });
 
-  const [medisData, setMedisData] = useState({
-    tanggal_pemeriksaan: '',
-    tempat_pemeriksaan: '',
-    jenis_pemeriksaan: '',
-    dokter: '',
-    hasil_diagnosis: '',
-    status_kesehatan: '',
-    golongan_darah: '',
-    rhesus: '',
-    riwayat_penyakit: '',
-    alergi: '',
-    riwayat_operasi: '',
-    obat_rutin: ''
-  });
-
-  const [riwayatMedisData, setRiwayatMedisData] = useState({
-    golongan_darah: '',
-    rhesus: '',
-    riwayat_penyakit: '',
-    alergi: '',
-    riwayat_operasi: '',
-    obat_rutin: ''
-  });
-
   const [detailMedisData, setDetailMedisData] = useState<DataMedis>({
     golongan_darah: '',
-    rhesus: '',
     riwayat_penyakit: '',
     alergi: '',
     riwayat_operasi: '',
     obat_rutin: '',
-    keluhan_kesehatan: [],
-    keluhan_parah_waktu: '',
-    keluhan_membaik_libur: '',
-    riwayat_merokok: '',
+    riwayat_merokok: 'Tidak Pernah',
     riwayat_pemeriksaan: []
   });
 
@@ -160,7 +132,7 @@ export default function PendaftaranPekerjaPage() {
           // Restore question status but reset files (files can't be stored in localStorage)
           setAdvokasiData(parsed.advokasiData.map((d: any) => ({ ...d, file: null })));
         }
-        
+
         toast.info("Data pendaftaran dipulihkan dari sesi sebelumnya.", {
           description: "Silakan unggah kembali dokumen/foto jika ada.",
           duration: 10000,
@@ -216,10 +188,10 @@ export default function PendaftaranPekerjaPage() {
     if (!value || value.length < 5) return;
     try {
       const res = await api.get(`/pekerja?search=${encodeURIComponent(value)}`);
-      const match = res.data.data.data.find((p: any) => 
+      const match = res.data.data.data.find((p: any) =>
         field === 'nik' ? p.nik === value : p.user?.email.toLowerCase() === value.toLowerCase()
       );
-      
+
       if (match) {
         setDuplicateWarning(prev => ({ ...prev, [field]: `Data ${field.toUpperCase()} sudah terdaftar. Melanjutkan akan memperbarui data pekerja yang ada.` }));
         toast.info(`Pekerja dengan ${field.toUpperCase()} ini sudah terdaftar.`, {
@@ -242,7 +214,7 @@ export default function PendaftaranPekerjaPage() {
     const optionalCompanyStatuses = ['Borongan', 'Harian Lepas', 'Outsourcing'];
     const isCompanyOptional = optionalCompanyStatuses.includes(pekerjaanSaatIni.status_pekerjaan);
     const isInformal = pekerjaanSaatIni.status_pekerjaan === 'Borongan' || pekerjaanSaatIni.status_pekerjaan === 'Harian Lepas';
-    
+
     // Explicit Validation Check with detailed feedback and scroll-to-focus
     if (!baseData.nama_lengkap) {
       toast.error("Nama Lengkap wajib diisi!");
@@ -264,7 +236,7 @@ export default function PendaftaranPekerjaPage() {
       scrollToField('perusahaan_id', 1);
       return;
     }
-    
+
     // Check Step 2 fields if not informal
     if (!isInformal) {
       if (!pekerjaanSaatIni.bagian) {
@@ -287,7 +259,7 @@ export default function PendaftaranPekerjaPage() {
     try {
       const optionalCompanyStatuses = ['Borongan', 'Harian Lepas', 'Outsourcing'];
       const isCompanyOptional = optionalCompanyStatuses.includes(pekerjaanSaatIni.status_pekerjaan);
-      
+
       let finalPerusahaanId = isCompanyOptional ? null : baseData.perusahaan_id;
       let currentPerusahaanName = '';
 
@@ -312,10 +284,10 @@ export default function PendaftaranPekerjaPage() {
             try {
               toast.loading("Perusahaan sudah ada, mengambil data...", { id: 'fetch-perusahaan' });
               const searchRes = await api.get(`/perusahaan?search=${encodeURIComponent(pekerjaanSaatIni.nama_perusahaan_baru)}`);
-              const existing = searchRes.data.data.data.find((p: any) => 
+              const existing = searchRes.data.data.data.find((p: any) =>
                 p.nama_perusahaan.trim().toLowerCase() === pekerjaanSaatIni.nama_perusahaan_baru.trim().toLowerCase()
               );
-              
+
               if (existing) {
                 finalPerusahaanId = existing.id.toString();
                 currentPerusahaanName = existing.nama_perusahaan;
@@ -341,7 +313,7 @@ export default function PendaftaranPekerjaPage() {
       // Build riwayat array combining current job and previous jobs
       const allRiwayat = [];
       const workerName = currentPerusahaanName || (isCompanyOptional ? "Pekerja Informal / Mandiri" : "");
-      
+
       if (workerName || pekerjaanSaatIni.status_pekerjaan) {
         allRiwayat.push({
           nama_perusahaan: workerName || "-",
@@ -373,13 +345,13 @@ export default function PendaftaranPekerjaPage() {
         .filter((m: any) => m.tanggal_pemeriksaan && m.hasil_diagnosis);
 
       const finalMedis = validMedisRecords.map((m: any) => ({
-          tanggal_pemeriksaan: m.tanggal_pemeriksaan,
-          tempat_pemeriksaan: m.tempat_pemeriksaan,
-          jenis_pemeriksaan: m.jenis_pemeriksaan,
-          dokter: m.dokter,
-          status_kesehatan: m.status_kesehatan,
-          hasil_diagnosis: m.hasil_diagnosis,
-        }));
+        tanggal_pemeriksaan: m.tanggal_pemeriksaan,
+        tempat_pemeriksaan: m.tempat_pemeriksaan,
+        jenis_pemeriksaan: m.jenis_pemeriksaan,
+        dokter: m.dokter,
+        status_kesehatan: m.status_kesehatan,
+        hasil_diagnosis: m.hasil_diagnosis,
+      }));
 
       // Mapped Riwayat Medis (Baseline)
       const hasRiwayatMedis = detailMedisData.golongan_darah || detailMedisData.riwayat_penyakit || detailMedisData.alergi || detailMedisData.obat_rutin || detailMedisData.riwayat_operasi;
@@ -458,7 +430,7 @@ export default function PendaftaranPekerjaPage() {
             const advFormData = new FormData();
 
             if (item.status === 'Ya') {
-              advFormData.append(advokasiKeys[i], '1'); 
+              advFormData.append(advokasiKeys[i], '1');
             }
 
             if (item.file) {
@@ -488,7 +460,7 @@ export default function PendaftaranPekerjaPage() {
         if (error.response?.status === 422) {
           const errors = error.response.data.errors || {};
           const firstField = Object.keys(errors)[0];
-          
+
           // Map backend field names to UI IDs and Steps
           const fieldMap: any = {
             'nik': { id: 'nik', s: 1 },
@@ -506,19 +478,19 @@ export default function PendaftaranPekerjaPage() {
             return; // Stop here, we've handled it
           }
         }
-        
+
         // Handle "taken" error for new company gracefully
         if (error.response?.status === 422 && error.response?.data?.errors?.nama_perusahaan) {
           try {
             toast.loading("Mengecek ketersediaan data perusahaan...", { id: 'check-perusahaan' });
             const searchRes = await api.get(`/perusahaan?search=${encodeURIComponent(pekerjaanSaatIni.nama_perusahaan_baru)}`);
-            const existing = searchRes.data.data.data.find((p: any) => 
+            const existing = searchRes.data.data.data.find((p: any) =>
               p.nama_perusahaan.trim().toLowerCase() === pekerjaanSaatIni.nama_perusahaan_baru.trim().toLowerCase()
             );
 
             if (existing) {
               toast.success("Perusahaan sudah terdaftar. Menghubungkan otomatis...", { id: 'check-perusahaan' });
-              const updatedRiwayat = [...allRiwayat.map(r => 
+              const updatedRiwayat = [...allRiwayat.map(r =>
                 r.nama_perusahaan === currentPerusahaanName ? { ...r, nama_perusahaan: existing.nama_perusahaan } : r
               ), ...prevRiwayat];
 
@@ -555,9 +527,9 @@ export default function PendaftaranPekerjaPage() {
           </div>
         </div>
         <div className="flex items-center gap-4 text-slate-500">
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             className="text-xs font-bold text-red-500 hover:text-red-600 hover:bg-red-50 px-3"
             onClick={() => {
               if (confirm("Anda yakin ingin menghapus seluruh progres pendaftaran ini? Data yang sudah diisi akan hilang.")) {
@@ -628,13 +600,13 @@ export default function PendaftaranPekerjaPage() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="nik">Nomor Induk Kependudukan / NIK</Label>
-                      <Input 
+                      <Input
                         id="nik"
-                        placeholder="Masukkan NIK 16 Digit" 
-                        maxLength={16} 
+                        placeholder="Masukkan NIK 16 Digit"
+                        maxLength={16}
                         className={`h-11 ${duplicateWarning.nik ? 'border-amber-400 bg-amber-50/30' : ''}`}
-                        value={baseData.nik} 
-                        onChange={e => setBaseData({ ...baseData, nik: e.target.value.replace(/\D/g, '') })} 
+                        value={baseData.nik}
+                        onChange={e => setBaseData({ ...baseData, nik: e.target.value.replace(/\D/g, '') })}
                         onBlur={(e) => checkDuplicate('nik', e.target.value)}
                       />
                       {duplicateWarning.nik && <p className="text-[10px] text-amber-600 font-medium">{duplicateWarning.nik}</p>}
@@ -678,7 +650,7 @@ export default function PendaftaranPekerjaPage() {
                     <ShieldAlert className="h-4 w-4 mr-2" /> Kontak & Alamat
                   </h3>
                   <div className="space-y-4">
-                     <div className="space-y-2">
+                    <div className="space-y-2">
                       <Label htmlFor="whatsapp">Nomor WhatsApp</Label>
                       <div className="flex">
                         <span className="inline-flex items-center px-4 rounded-l-lg border border-r-0 border-slate-200 bg-slate-50 text-slate-500 sm:text-sm">
@@ -689,13 +661,13 @@ export default function PendaftaranPekerjaPage() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="email">Alamat Email (Wajib untuk Login)</Label>
-                      <Input 
+                      <Input
                         id="email"
-                        placeholder="nama@email.com" 
-                        type="email" 
+                        placeholder="nama@email.com"
+                        type="email"
                         className={`h-11 ${duplicateWarning.email ? 'border-amber-400 bg-amber-50/30' : ''}`}
-                        value={baseData.email} 
-                        onChange={e => setBaseData({ ...baseData, email: e.target.value })} 
+                        value={baseData.email}
+                        onChange={e => setBaseData({ ...baseData, email: e.target.value })}
                         onBlur={(e) => checkDuplicate('email', e.target.value)}
                       />
                       {duplicateWarning.email && <p className="text-[10px] text-amber-600 font-medium">{duplicateWarning.email}</p>}
@@ -750,7 +722,7 @@ export default function PendaftaranPekerjaPage() {
                     <ShieldAlert className="h-4 w-4 mr-2" /> Pekerjaan Saat Ini
                   </h3>
                   <div className="space-y-5">
-                     {!['Borongan', 'Harian Lepas', 'Outsourcing'].includes(pekerjaanSaatIni.status_pekerjaan) && (
+                    {!['Borongan', 'Harian Lepas', 'Outsourcing'].includes(pekerjaanSaatIni.status_pekerjaan) && (
                       <div className="space-y-2">
                         <Label htmlFor="perusahaan_id">Pilih Perusahaan Saat Ini</Label>
                         <Select value={baseData.perusahaan_id} onValueChange={(v: any) => setBaseData({ ...baseData, perusahaan_id: v })}>
