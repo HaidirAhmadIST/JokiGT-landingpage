@@ -130,7 +130,19 @@ class PekerjaController extends Controller
             // 5. Update Nested Detail Medis
             if ($request->has('medis') && is_array($request->medis)) {
                 $pekerja->detailMedis()->delete();
-                $pekerja->detailMedis()->createMany($request->medis);
+                $mappedMedis = array_map(function ($m) {
+                    return [
+                        'tgl_pemeriksaan'    => $m['tanggal_pemeriksaan'] ?? null,
+                        'tempat_pemeriksa'   => $m['tempat_pemeriksaan']  ?? null,
+                        'jenis_pemeriksa'    => $m['jenis_pemeriksaan']   ?? null,
+                        'dokter_pemeriksa'   => $m['dokter']              ?? null,
+                        'status_kesehatan'   => $m['status_kesehatan']    ?? 'sehat',
+                        'hasil_diagnosis'    => $m['hasil_diagnosis']     ?? null,
+                        'rekomendasi'        => $m['rekomendasi']         ?? null,
+                        'pendamping'         => $m['pendamping']          ?? null,
+                    ];
+                }, $request->medis);
+                $pekerja->detailMedis()->createMany($mappedMedis);
             }
 
             // 6. Create Riwayat Medis Baseline Data

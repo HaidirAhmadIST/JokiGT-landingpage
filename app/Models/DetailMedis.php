@@ -23,14 +23,15 @@ class DetailMedis extends Model
      */
     protected $fillable = [
         'pekerja_id',
-        'tanggal_pemeriksaan',
-        'tempat_pemeriksaan',
-        'jenis_pemeriksaan',
-        'nama_dokter',
+        'tgl_pemeriksaan',
+        'tempat_pemeriksa',
+        'jenis_pemeriksa',
+        'dokter_pemeriksa',
         'status_kesehatan',
         'hasil_diagnosis',
         'rekomendasi',
         'file_hasil_path',
+        'pendamping',
         'golongan_darah',
         'rhesus',
         'riwayat_penyakit',
@@ -47,7 +48,7 @@ class DetailMedis extends Model
     protected function casts(): array
     {
         return [
-            'tanggal_pemeriksaan' => 'date',
+            'tgl_pemeriksaan' => 'date',
         ];
     }
 
