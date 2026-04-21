@@ -38,7 +38,8 @@ export default function PendaftaranPekerjaPage() {
     tanggal_selesai_kontrak: '',
     tgl_masuk: '',
     tgl_keluar: '',
-    file_bukti: null as File | null,
+    deskripsi_pekerjaan: '',
+    file_bukti: [] as File[],
     riwayat_pemeriksaan: [] as any[],
   });
 
@@ -51,7 +52,7 @@ export default function PendaftaranPekerjaPage() {
     status_kesehatan: 'sehat',
     hasil_diagnosis: '',
     rekomendasi: '',
-    file_hasil: null,
+    file_hasil: [] as File[],
     pendamping: '',
   });
   const [riwayatLalu, setRiwayatLalu] = useState<any[]>([]);
@@ -138,7 +139,7 @@ export default function PendaftaranPekerjaPage() {
     'Program Rehabilitasi BPJSKes?'
   ];
   const [advokasiData, setAdvokasiData] = useState(
-    advokasiQuestions.map(q => ({ question: q, status: 'Tidak', file: null as File | null, tanggal: '' }))
+    advokasiQuestions.map(q => ({ question: q, status: 'Tidak', file: [] as File[] }))
   );
 
   // Persistence: Load from localStorage
@@ -433,7 +434,7 @@ export default function PendaftaranPekerjaPage() {
         obat_rutin: detailMedisData.obat_rutin
       } : null;
 
-      const performSubmit = async (pId: string | null, riwayatData: any[], medisDataOrisinal: any[]) => {
+      const performSubmit = async (pId: string | null, riwayatData: any[]) => {
         const payload: any = {
           ...baseData,
           perusahaan_id: pId,
@@ -447,90 +448,70 @@ export default function PendaftaranPekerjaPage() {
 
         const response = await api.post('/pekerja', payload);
 
-        const newPekerjaId = response.data.data.id;
+        const pekerjaId = response.data.data.id;
         const savedRiwayat = response.data.data.riwayat_pekerja || [];
         const savedMedis = response.data.data.detail_medis || [];
 
+        // 1. Profile Photo (Single)
         if (pasFoto) {
-          const formData = new FormData();
-          formData.append('pas_foto', pasFoto);
-          await api.post(`/pekerja/${newPekerjaId}/foto`, formData);
+          const profileForm = new FormData();
+          profileForm.append('pas_foto', pasFoto);
+          await api.post(`/pekerja/${pekerjaId}/foto`, profileForm);
         }
 
-        // Sync Riwayat Files (termasuk file medis per riwayat pekerjaan)
+        // 2. Employment History Files
         for (let i = 0; i < riwayatData.length; i++) {
-          if (riwayatData[i].file_bukti && savedRiwayat[i]) {
-            const formData = new FormData();
-            formData.append('file_bukti', riwayatData[i].file_bukti);
-            try {
-              await api.post(`/riwayat-pekerja/${savedRiwayat[i].id}/file`, formData);
-            } catch (e) {
-              console.error('Gagal mengunggah file riwayat', e);
-            }
+          if (riwayatData[i].file_bukti && riwayatData[i].file_bukti.length > 0 && savedRiwayat[i]) {
+            const riwayatForm = new FormData();
+            riwayatData[i].file_bukti.forEach((f: File) => riwayatForm.append('file_bukti[]', f));
+            await api.post(`/files/riwayat/${savedRiwayat[i].id}`, riwayatForm);
           }
 
-          // Upload file hasil medis yang embedded di riwayat pekerjaan
+          // Embedded medical records in work history
           const embeddedMedis = riwayatData[i]?.riwayat_pemeriksaan_raw || [];
           const savedEmbeddedMedis = savedRiwayat[i]?.detail_medis || [];
           for (let j = 0; j < embeddedMedis.length; j++) {
-            if (embeddedMedis[j].file_hasil && savedEmbeddedMedis[j]) {
+            if (embeddedMedis[j].file_hasil && embeddedMedis[j].file_hasil.length > 0 && savedEmbeddedMedis[j]) {
               const medisForm = new FormData();
-              medisForm.append('file_hasil', embeddedMedis[j].file_hasil);
-              try {
-                await api.post(`/detail-medis/${savedEmbeddedMedis[j].id}/file`, medisForm);
-              } catch (e) {
-                console.error('Gagal mengunggah file medis embedded', e);
-              }
+              embeddedMedis[j].file_hasil.forEach((f: File) => medisForm.append('file_hasil[]', f));
+              await api.post(`/files/medis/${savedEmbeddedMedis[j].id}`, medisForm);
             }
           }
         }
 
-        // Sync Medis Mandiri Files
-        for (let i = 0; i < medisDataOrisinal.length; i++) {
-          if (medisDataOrisinal[i].file_hasil && savedMedis[i]) {
-            const formData = new FormData();
-            formData.append('file_hasil', medisDataOrisinal[i].file_hasil);
-            try {
-              await api.post(`/detail-medis/${savedMedis[i].id}/file`, formData);
-            } catch (e) {
-              console.error('Gagal mengunggah file medis mandiri', e);
-            }
+        // 3. Independent Medical Records
+        // Independent medis are appended AFTER embedded ones in the backend usually
+        const medisStartIndex = savedMedis.length - finalMedis.length;
+        for (let i = 0; i < finalMedis.length; i++) {
+          const mData = validMedisRecords[i]; // Accessing the original with file objects
+          const sMedis = savedMedis[medisStartIndex + i];
+          if (mData && mData.file_hasil && mData.file_hasil.length > 0 && sMedis) {
+            const mForm = new FormData();
+            mData.file_hasil.forEach((f: File) => mForm.append('file_hasil[]', f));
+            await api.post(`/files/medis/${sMedis.id}`, mForm);
           }
         }
 
-        // Sync status advokasi dan file unggahan
-        const advokasiKeys = [
-          'riwayat_pajanan',
-          'persetujuan_dokter',
-          'perusahaan_lapor',
-          'penetapan_pak',
-          'kompensasi_bpjstk',
-          'rehabilitasi_bpjskes'
+        // 4. Advocacy Files
+        const advSteps = [
+          'riwayat_pajanan', 'persetujuan_dokter', 'perusahaan_lapor',
+          'penetapan_pak', 'kompensasi_bpjstk', 'rehabilitasi_bpjskes'
         ];
-
         for (let i = 0; i < advokasiData.length; i++) {
           const item = advokasiData[i];
-          if (item.status === 'Ya' || item.file) {
-            const advFormData = new FormData();
-
+          if (item.status === 'Ya' || (item.file && item.file.length > 0)) {
+            const advForm = new FormData();
+            advForm.append('step_key', advSteps[i]);
+            
             if (item.status === 'Ya') {
-              advFormData.append(advokasiKeys[i], '1');
+              advForm.append(advSteps[i], '1');
             }
 
-            if (item.file) {
-              advFormData.append('step_key', advokasiKeys[i]);
-              advFormData.append('file', item.file);
+            if (item.file && item.file.length > 0) {
+              item.file.forEach((f: File) => advForm.append('file[]', f));
             }
 
-            if (item.tanggal) {
-              advFormData.append(`${advokasiKeys[i]}_tanggal`, item.tanggal);
-            }
-
-            try {
-              await api.post(`/pekerja/${newPekerjaId}/advokasi`, advFormData);
-            } catch (e) {
-              console.error('Gagal mengintegrasikan advokasi', advokasiKeys[i]);
-            }
+            await api.post(`/pekerja/${pekerjaId}/advokasi`, advForm);
           }
         }
       };
@@ -1035,29 +1016,46 @@ export default function PendaftaranPekerjaPage() {
                                 }} />
                               </div>
 
+                              <div className="space-y-2 col-span-1 sm:col-span-2">
+                                <Label>Deskripsikan pekerjaan anda</Label>
+                                <Textarea 
+                                  placeholder="Contoh: Mengoperasikan mesin cetak, melakukan pengecekan kualitas produk secara rutin..." 
+                                  className="min-h-[80px] bg-white resize-none"
+                                  value={item.deskripsi_pekerjaan} 
+                                  onChange={(e) => {
+                                    const newR = [...riwayatLalu]; 
+                                    newR[idx].deskripsi_pekerjaan = e.target.value; 
+                                    setRiwayatLalu(newR);
+                                  }} 
+                                />
+                              </div>
+
                               <div className="space-y-2 col-span-1 sm:col-span-2 mt-1">
                                 <Label>Upload Paklaring / Dokumen Verifikasi <span className="text-slate-400 font-normal italic ml-1">(Opsional)</span></Label>
-                                <label className="mt-1 border border-dashed border-slate-200 bg-slate-50 rounded-lg p-3 flex items-center justify-center text-slate-500 hover:border-[#0ea5e9] transition-colors cursor-pointer">
-                                  <input type="file" accept=".pdf,.jpg,.png" className="hidden" onChange={(e) => {
-                                    if (e.target.files?.[0]) {
-                                      const newR = [...riwayatLalu];
-                                      newR[idx].file_bukti = e.target.files[0];
-                                      setRiwayatLalu(newR);
-                                    }
-                                  }} />
-                                  {item.file_bukti ? (
-                                    <div className="flex items-center space-x-2">
-                                      <CheckCircle className="h-5 w-5 text-emerald-500" />
-                                      <span className="text-sm font-medium text-slate-700">{item.file_bukti.name}</span>
-                                      <Button variant="ghost" size="sm" className="h-6 ml-2 text-xs text-red-500 hover:text-red-600 hover:bg-red-50" onClick={(e) => { e.preventDefault(); const newR = [...riwayatLalu]; newR[idx].file_bukti = null; setRiwayatLalu(newR); }}>Hapus</Button>
-                                    </div>
-                                  ) : (
-                                    <div className="flex items-center space-x-2">
-                                      <UploadCloud className="h-4 w-4 text-[#0ea5e9]" />
-                                      <span className="text-sm">Klik untuk melampirkan file <strong className="text-[#0ea5e9]">(PDF, JPG)</strong></span>
-                                    </div>
+                                <div className="mt-1 flex items-center gap-3">
+                                  <div className="relative group">
+                                    <input 
+                                      type="file" 
+                                      multiple
+                                      onChange={(e) => {
+                                        const files = e.target.files ? Array.from(e.target.files) : [];
+                                        const newR = [...riwayatLalu];
+                                        newR[idx].file_bukti = files;
+                                        setRiwayatLalu(newR);
+                                      }}
+                                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                    />
+                                    <Button variant="outline" size="sm" className="h-8 text-[11px] border-dashed border-slate-300">
+                                      <UploadCloud className="h-3 w-3 mr-2" /> 
+                                      {item.file_bukti?.length > 0 ? `Update Berkas (${item.file_bukti.length})` : 'Pilih Berkas Bukti (Multiple)'}
+                                    </Button>
+                                  </div>
+                                  {item.file_bukti?.length > 0 && (
+                                    <span className="text-[10px] text-slate-500 italic truncate max-w-[150px]">
+                                      {item.file_bukti.map((f: any) => f.name).join(', ')}
+                                    </span>
                                   )}
-                                </label>
+                                </div>
                               </div>
                             </div>
 
@@ -1077,7 +1075,7 @@ export default function PendaftaranPekerjaPage() {
                                   status_kesehatan:    src?.status_kesehatan    ?? 'sehat',
                                   hasil_diagnosis:     src?.hasil_diagnosis     ?? '',
                                   rekomendasi:         src?.rekomendasi         ?? '',
-                                  file_hasil:          src?.file_hasil          ?? null as File | null,
+                                  file_hasil:          src?.file_hasil          ?? [] as File[],
                                   pendamping:          src?.pendamping          ?? '',
                                 };
                                 const updateMed = (field: string, value: any) => {
@@ -1091,7 +1089,7 @@ export default function PendaftaranPekerjaPage() {
                                     status_kesehatan:    cur?.status_kesehatan    ?? 'sehat',
                                     hasil_diagnosis:     cur?.hasil_diagnosis     ?? '',
                                     rekomendasi:         cur?.rekomendasi         ?? '',
-                                    file_hasil:          cur?.file_hasil          ?? null,
+                                    file_hasil:          cur?.file_hasil          ?? [],
                                     pendamping:          cur?.pendamping          ?? '',
                                     [field]: value,
                                   }];
@@ -1158,11 +1156,24 @@ export default function PendaftaranPekerjaPage() {
                                         <Textarea placeholder="Saran dari dokter..." className="min-h-[60px] bg-white resize-none text-sm" value={med.rekomendasi} onChange={e => updateMed('rekomendasi', e.target.value)} />
                                       </div>
                                       <div className="space-y-1 col-span-1 sm:col-span-2">
-                                        <Label className="text-xs text-slate-600">Unggah Hasil Pemeriksaan <span className="text-slate-400 font-normal">(Opsional)</span></Label>
+                                        <Label className="text-xs text-slate-600">Unggah Hasil Pemeriksaan (Multiple) <span className="text-slate-400 font-normal">(Opsional)</span></Label>
                                         <label className="flex items-center gap-3 bg-white border border-slate-200 hover:border-[#0ea5e9] rounded-lg px-3 py-2 cursor-pointer transition-colors h-9">
                                           <UploadCloud className="w-3.5 h-3.5 text-[#0ea5e9]" />
-                                          <span className="text-xs text-slate-500 flex-1 truncate">{med.file_hasil ? med.file_hasil.name : 'Pilih file PDF/JPG'}</span>
-                                          <input type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={e => { if (e.target.files?.[0]) updateMed('file_hasil', e.target.files[0]); }} />
+                                          <span className="text-xs text-slate-500 flex-1 truncate">
+                                            {med.file_hasil?.length > 0 
+                                              ? `${med.file_hasil.length} file dipilih: ${med.file_hasil.map((f: any) => f.name).join(', ')}` 
+                                              : 'Pilih file PDF/JPG'}
+                                          </span>
+                                          <input 
+                                            type="file" 
+                                            multiple
+                                            accept=".pdf,.jpg,.jpeg,.png" 
+                                            className="hidden" 
+                                            onChange={e => { 
+                                              const files = e.target.files ? Array.from(e.target.files) : [];
+                                              updateMed('file_hasil', files); 
+                                            }} 
+                                          />
                                         </label>
                                       </div>
                                     </div>
@@ -1421,42 +1432,31 @@ export default function PendaftaranPekerjaPage() {
                             <label className="text-sm text-[#0ea5e9] flex items-center cursor-pointer max-w-fit">
                               <input
                                 type="file"
+                                multiple
                                 accept=".pdf,.png,.jpg"
                                 className="hidden"
                                 onChange={(e) => {
-                                  if (e.target.files?.[0]) {
+                                  const files = e.target.files ? Array.from(e.target.files) : [];
+                                  if (files.length > 0) {
                                     const newA = [...advokasiData];
-                                    newA[idx].file = e.target.files[0];
+                                    newA[idx].file = files;
                                     newA[idx].status = 'Ya';
                                     setAdvokasiData(newA);
                                   }
                                 }}
                               />
-                              {item.file ? (
+                              {item.file?.length > 0 ? (
                                 <span className="flex items-center text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md text-xs font-semibold">
-                                  <CheckCircle className="h-3 w-3 mr-1" /> {item.file.name}
-                                  <Button variant="ghost" size="sm" className="h-4 p-0 ml-3 text-red-500 hover:text-red-700 hover:bg-transparent" onClick={(e) => { e.preventDefault(); const newA = [...advokasiData]; newA[idx].file = null; newA[idx].status = 'Tidak'; setAdvokasiData(newA); }}>[Hapus]</Button>
+                                  <CheckCircle className="h-3 w-3 mr-1" /> {item.file.length} file dipilih
+                                  <Button variant="ghost" size="sm" className="h-4 p-0 ml-3 text-red-500 hover:text-red-700 hover:bg-transparent" onClick={(e) => { e.preventDefault(); const newA = [...advokasiData]; newA[idx].file = []; newA[idx].status = 'Tidak'; setAdvokasiData(newA); }}>[Hapus]</Button>
                                 </span>
                               ) : (
                                 <span className="flex items-center hover:underline">
-                                  <UploadCloud className="h-3 w-3 mr-1" /> Unggah Bukti
+                                  <UploadCloud className="h-3 w-3 mr-1" /> Unggah Bukti (Multiple)
                                 </span>
                               )}
                             </label>
 
-                            <div className="flex items-center space-x-2">
-                              <span className="text-xs text-slate-500">Tanggal:</span>
-                              <Input
-                                type="date"
-                                className="h-8 text-xs text-slate-500 w-[130px]"
-                                value={item.tanggal || ''}
-                                onChange={(e) => {
-                                  const newA = [...advokasiData];
-                                  newA[idx].tanggal = e.target.value;
-                                  setAdvokasiData(newA);
-                                }}
-                              />
-                            </div>
                           </div>
                         </div>
                         <div className="flex gap-4 items-center">

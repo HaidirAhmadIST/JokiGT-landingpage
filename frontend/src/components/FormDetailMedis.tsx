@@ -18,7 +18,7 @@ export interface RiwayatPemeriksaanItem {
   status_kesehatan: string;
   hasil_diagnosis: string;
   rekomendasi: string;
-  file_hasil: File | null;
+  file_hasil: File[];
   pendamping: string;
 }
 
@@ -54,7 +54,7 @@ export default function FormDetailMedis({ data, onChange }: FormDetailMedisProps
         status_kesehatan: 'sehat',
         hasil_diagnosis: '',
         rekomendasi: '',
-        file_hasil: null,
+        file_hasil: [],
         pendamping: ''
       }
     ]);

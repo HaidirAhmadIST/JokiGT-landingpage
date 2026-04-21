@@ -34,12 +34,12 @@ export default function PekerjaWizard({ onSuccess, onCancel, perusahaanList }: P
 
   // Step 2: Riwayat Pekerjaan (Array)
   const [riwayat, setRiwayat] = useState<any[]>([
-    { nama_perusahaan: '', deskripsi_usaha: '', bagian: '', tgl_masuk: '', tgl_keluar: '' }
+    { nama_perusahaan: '', deskripsi_usaha: '', bagian: '', deskripsi_pekerjaan: '', tgl_masuk: '', tgl_keluar: '', file_bukti: [] as File[] }
   ]);
 
   // Step 3: Detail Medis (Array)
   const [medis, setMedis] = useState<any[]>([
-    { tgl_pemeriksaan: '', tempat_pemeriksa: '', jenis_pemeriksa: '', dokter_pemeriksa: '', hasil_diagnosis: '' }
+    { tgl_pemeriksaan: '', tempat_pemeriksa: '', jenis_pemeriksa: '', dokter_pemeriksa: '', hasil_diagnosis: '', file_hasil: [] as File[] }
   ]);
 
   const handleNext = () => setStep(step + 1);
@@ -59,17 +59,47 @@ export default function PekerjaWizard({ onSuccess, onCancel, perusahaanList }: P
       };
 
       const response = await api.post('/pekerja', payload);
+      toast.success('Pekerja berhasil didaftarkan.');
+      
       const newPekerjaId = response.data.data.id;
 
+      // Handle Pas Foto (Single)
       if (pasFoto) {
         const formData = new FormData();
         formData.append('pas_foto', pasFoto);
-        await api.post(`/pekerja/${newPekerjaId}/foto`, formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        });
+        await api.post(`/pekerja/${newPekerjaId}/foto`, formData);
       }
 
-      toast.success('Pekerja berhasil didaftarkan.');
+      // Handle Riwayat Files (Multiple -> PDF)
+      const savedRiwayat = response.data.data.riwayat_pekerja || [];
+      for (let i = 0; i < filteredRiwayat.length; i++) {
+        if (filteredRiwayat[i].file_bukti && filteredRiwayat[i].file_bukti.length > 0) {
+          const riwayatId = savedRiwayat[i]?.id;
+          if (riwayatId) {
+            const formData = new FormData();
+            filteredRiwayat[i].file_bukti.forEach((file: File) => {
+              formData.append('file_bukti[]', file);
+            });
+            await api.post(`/files/riwayat/${riwayatId}`, formData);
+          }
+        }
+      }
+
+      // Handle Medis Files (Multiple -> PDF)
+      const savedMedis = response.data.data.detail_medis || [];
+      for (let i = 0; i < filteredMedis.length; i++) {
+        if (filteredMedis[i].file_hasil && filteredMedis[i].file_hasil.length > 0) {
+          const medisId = savedMedis[i]?.id;
+          if (medisId) {
+            const formData = new FormData();
+            filteredMedis[i].file_hasil.forEach((file: File) => {
+              formData.append('file_hasil[]', file);
+            });
+            await api.post(`/files/medis/${medisId}`, formData);
+          }
+        }
+      }
+
       onSuccess();
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Gagal mendaftarkan pekerja. Pastikan NIK unik (16 digit) dan email belum terdaftar.');
@@ -154,7 +184,7 @@ export default function PekerjaWizard({ onSuccess, onCancel, perusahaanList }: P
           <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
             <div className="flex items-center justify-between border-b pb-2">
               <h3 className="font-semibold text-lg">Riwayat Pekerjaan</h3>
-              <Button size="sm" variant="outline" onClick={() => setRiwayat([...riwayat, { nama_perusahaan: '', deskripsi_usaha: '', bagian: '', tgl_masuk: '', tgl_keluar: '' }])}>
+              <Button size="sm" variant="outline" onClick={() => setRiwayat([...riwayat, { nama_perusahaan: '', deskripsi_usaha: '', bagian: '', deskripsi_pekerjaan: '', tgl_masuk: '', tgl_keluar: '', file_bukti: [] }])}>
                 + Tambah Riwayat
               </Button>
             </div>
@@ -198,6 +228,26 @@ export default function PekerjaWizard({ onSuccess, onCancel, perusahaanList }: P
                       const newR = [...riwayat]; newR[idx].tgl_keluar = e.target.value; setRiwayat(newR);
                     }} />
                   </div>
+                  <div className="space-y-2 col-span-2">
+                    <Label>Deskripsikan Pekerjaan Anda</Label>
+                    <Input value={item.deskripsi_pekerjaan} onChange={(e) => {
+                      const newR = [...riwayat]; newR[idx].deskripsi_pekerjaan = e.target.value; setRiwayat(newR);
+                    }} placeholder="Jelaskan tugas dan tanggung jawab utama Anda..." />
+                  </div>
+                  <div className="space-y-2 col-span-2">
+                    <Label>Unggah Bukti Paklaring / Kontrak (Multiple)</Label>
+                    <div className="flex items-center gap-3">
+                      <Input type="file" multiple onChange={(e) => {
+                        const files = e.target.files ? Array.from(e.target.files) : [];
+                        const newR = [...riwayat]; newR[idx].file_bukti = files; setRiwayat(newR);
+                      }} />
+                      {item.file_bukti?.length > 0 && (
+                        <span className="text-[10px] text-slate-500 italic truncate max-w-[150px]">
+                          {item.file_bukti.length} file dipilih
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             ))}
@@ -208,7 +258,7 @@ export default function PekerjaWizard({ onSuccess, onCancel, perusahaanList }: P
           <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
             <div className="flex items-center justify-between border-b pb-2">
               <h3 className="font-semibold text-lg">Pemeriksaan Medis Awal</h3>
-              <Button size="sm" variant="outline" onClick={() => setMedis([...medis, { tgl_pemeriksaan: '', tempat_pemeriksa: '', jenis_pemeriksa: '', dokter_pemeriksa: '', hasil_diagnosis: '' }])}>
+              <Button size="sm" variant="outline" onClick={() => setMedis([...medis, { tgl_pemeriksaan: '', tempat_pemeriksa: '', jenis_pemeriksa: '', dokter_pemeriksa: '', hasil_diagnosis: '', file_hasil: [] }])}>
                 + Tambah Pemeriksaan
               </Button>
             </div>
@@ -251,6 +301,20 @@ export default function PekerjaWizard({ onSuccess, onCancel, perusahaanList }: P
                     <Input value={item.hasil_diagnosis} onChange={(e) => {
                       const newM = [...medis]; newM[idx].hasil_diagnosis = e.target.value; setMedis(newM);
                     }} placeholder="Suspek Silikosis" />
+                  </div>
+                  <div className="space-y-2 col-span-2">
+                    <Label>Unggah Hasil Pemeriksaan (Multiple)</Label>
+                    <div className="flex items-center gap-3">
+                      <Input type="file" multiple onChange={(e) => {
+                        const files = e.target.files ? Array.from(e.target.files) : [];
+                        const newM = [...medis]; newM[idx].file_hasil = files; setMedis(newM);
+                      }} />
+                      {item.file_hasil?.length > 0 && (
+                        <span className="text-[10px] text-slate-500 italic truncate max-w-[150px]">
+                          {item.file_hasil.length} file dipilih
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
