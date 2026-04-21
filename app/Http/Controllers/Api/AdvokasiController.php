@@ -147,14 +147,18 @@ class AdvokasiController extends Controller
                     Storage::disk('private')->delete($status->{$columnName});
                 }
 
-                $file = $request->file('file');
-                $path = $file->store('bukti_advokasi', 'private');
+                $files = $request->file('file');
+                if (!is_array($files)) {
+                    $files = [$files];
+                }
+
+                $path = $this->processAndStoreFiles($files, 'bukti_advokasi', $pekerja_id);
                 
                 $status->{$columnName} = $path;
 
                 // FIX: Column name is bukti_xxx_name, not bukti_xxx_path_name
                 $actualNameColumn = str_replace('_path', '_name', $columnName);
-                $status->{$actualNameColumn} = $file->getClientOriginalName();
+                $status->{$actualNameColumn} = count($files) > 1 ? 'Dokumen_Gabungan.pdf' : $files[0]->getClientOriginalName();
                 
                 // Automatically set boolean and date
                 $status->{$stepKey} = true;

@@ -10,16 +10,20 @@ use App\Models\RiwayatPekerja;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use App\Traits\HandlesPdfUploads;
 
 class FileController extends Controller
 {
+    use HandlesPdfUploads;
+
     /**
      * Upload medical documentation for a specific record
      */
     public function uploadMedisFile(Request $request, string $id)
     {
         $request->validate([
-            'file_hasil' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'file_hasil' => 'required', // Can be multiple
+            'file_hasil.*' => 'file|mimes:pdf,jpg,jpeg,png,webp|max:5120',
         ]);
 
         $medis = DetailMedis::find($id);
@@ -35,23 +39,24 @@ class FileController extends Controller
         }
 
         if ($request->hasFile('file_hasil')) {
-            $file = $request->file('file_hasil');
-            $extension = $file->getClientOriginalExtension();
-            $filename = 'medis_' . $medis->id . '_' . time() . '.' . $extension;
+            $files = $request->file('file_hasil');
+            
+            if (!is_array($files)) {
+                $files = [$files];
+            }
+
+            $path = $this->processAndStoreFiles($files, 'medis', $medis->id);
 
             // Delete old file if exists
             if ($medis->file_hasil_path) {
                 Storage::disk('private')->delete($medis->file_hasil_path);
             }
 
-            // Store new file (using private disk matching other medical data)
-            $path = $file->storeAs('medis', $filename, 'private');
-
             $medis->update(['file_hasil_path' => $path]);
 
             return response()->json([
                 'status' => 'success',
-                'message' => 'Berkas medis berhasil diunggah.'
+                'message' => 'Berkas medis berhasil diunggah (terkonversi ke PDF).'
             ]);
         }
 
@@ -64,7 +69,8 @@ class FileController extends Controller
     public function uploadRiwayatFile(Request $request, string $id)
     {
         $request->validate([
-            'file_bukti' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'file_bukti' => 'required', // Can be multiple
+            'file_bukti.*' => 'file|mimes:pdf,jpg,jpeg,png,webp|max:5120',
         ]);
 
         $riwayat = RiwayatPekerja::find($id);
@@ -80,23 +86,24 @@ class FileController extends Controller
         }
 
         if ($request->hasFile('file_bukti')) {
-            $file = $request->file('file_bukti');
-            $extension = $file->getClientOriginalExtension();
-            $filename = 'riwayat_' . $riwayat->id . '_' . time() . '.' . $extension;
+            $files = $request->file('file_bukti');
+            
+            if (!is_array($files)) {
+                $files = [$files];
+            }
+
+            $path = $this->processAndStoreFiles($files, 'riwayat', $riwayat->id);
 
             // Delete old file if exists
             if ($riwayat->file_bukti_path) {
                 Storage::disk('private')->delete($riwayat->file_bukti_path);
             }
 
-            // Store new file (private to protect user data)
-            $path = $file->storeAs('riwayat', $filename, 'private');
-
             $riwayat->update(['file_bukti_path' => $path]);
 
             return response()->json([
                 'status' => 'success',
-                'message' => 'Bukti riwayat pekerjaan berhasil diunggah.'
+                'message' => 'Bukti riwayat pekerjaan berhasil diunggah (terkonversi ke PDF).'
             ]);
         }
 
