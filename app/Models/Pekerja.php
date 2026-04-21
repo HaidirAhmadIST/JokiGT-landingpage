@@ -82,6 +82,14 @@ class Pekerja extends Model
     }
 
     /**
+     * Get the latest medical detail record.
+     */
+    public function latestDetailMedis(): HasOne
+    {
+        return $this->hasOne(DetailMedis::class)->latestOfMany('tgl_pemeriksaan');
+    }
+
+    /**
      * Get the advocacy status record.
      */
     public function statusAdvokasi(): HasOne
@@ -106,9 +114,9 @@ class Pekerja extends Model
     public function getStatusSaranAttribute(): string
     {
         // Use the loaded relationship if available to avoid N+1
-        $medis = $this->relationLoaded('detailMedis') 
-            ? $this->detailMedis->sortByDesc('tanggal_pemeriksaan')->first() 
-            : $this->detailMedis()->latest('tanggal_pemeriksaan')->first();
+        $medis = $this->relationLoaded('latestDetailMedis') 
+            ? $this->latestDetailMedis 
+            : $this->latestDetailMedis()->first();
 
         $adv = $this->relationLoaded('statusAdvokasi') ? $this->statusAdvokasi : $this->statusAdvokasi()->first();
 
@@ -158,7 +166,7 @@ class Pekerja extends Model
             'user',
             'perusahaan',
             'statusAdvokasi',
-            'detailMedis', // Added to prevent N+1 in status_saran accessor
+            'latestDetailMedis', // Efficiently load only the latest medical record
         ]);
     }
 }

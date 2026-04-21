@@ -46,7 +46,7 @@ class PekerjaController extends Controller
             $query->where('status_kesehatan', $request->query('status'));
         }
 
-        $perPage = $request->has('perusahaan_id') ? 10 : 15;
+        $perPage = $request->input('per_page', $request->has('perusahaan_id') ? 10 : 15);
         $pekerja = $query->latest()->paginate($perPage);
 
         return response()->json([
@@ -128,7 +128,23 @@ class PekerjaController extends Controller
             }
 
             // 5. Update Nested Detail Medis
+            // We consolidate medical records from both the independent "medis" array 
+            // and the embedded "riwayat_pemeriksaan" found in each employment history entry.
+            $allMedis = [];
+
             if ($request->has('medis') && is_array($request->medis)) {
+                $allMedis = array_merge($allMedis, $request->medis);
+            }
+
+            if ($request->has('riwayat') && is_array($request->riwayat)) {
+                foreach ($request->riwayat as $r) {
+                    if (isset($r['riwayat_pemeriksaan']) && is_array($r['riwayat_pemeriksaan'])) {
+                        $allMedis = array_merge($allMedis, $r['riwayat_pemeriksaan']);
+                    }
+                }
+            }
+
+            if (!empty($allMedis)) {
                 $pekerja->detailMedis()->delete();
                 $mappedMedis = array_map(function ($m) {
                     return [
@@ -141,7 +157,7 @@ class PekerjaController extends Controller
                         'rekomendasi'        => $m['rekomendasi']         ?? null,
                         'pendamping'         => $m['pendamping']          ?? null,
                     ];
-                }, $request->medis);
+                }, $allMedis);
                 $pekerja->detailMedis()->createMany($mappedMedis);
             }
 
