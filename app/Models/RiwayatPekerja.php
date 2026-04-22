@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class RiwayatPekerja extends Model
 {
@@ -59,5 +60,13 @@ class RiwayatPekerja extends Model
     public function pekerja(): BelongsTo
     {
         return $this->belongsTo(Pekerja::class);
+    }
+
+    /**
+     * Get all medical check records linked to this employment period.
+     */
+    public function detailMedis(): HasMany
+    {
+        return $this->hasMany(DetailMedis::class)->orderBy('tgl_pemeriksaan', 'asc');
     }
 }

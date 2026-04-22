@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class DetailMedis extends Model
@@ -23,6 +24,7 @@ class DetailMedis extends Model
      */
     protected $fillable = [
         'pekerja_id',
+        'riwayat_pekerja_id',
         'tgl_pemeriksaan',
         'tempat_pemeriksa',
         'jenis_pemeriksa',
@@ -62,5 +64,13 @@ class DetailMedis extends Model
     public function pekerja(): BelongsTo
     {
         return $this->belongsTo(Pekerja::class);
+    }
+
+    /**
+     * Get the employment history record this medical check belongs to.
+     */
+    public function riwayatPekerja(): BelongsTo
+    {
+        return $this->belongsTo(RiwayatPekerja::class);
     }
 }

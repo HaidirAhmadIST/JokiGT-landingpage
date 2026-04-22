@@ -150,8 +150,8 @@ class Pekerja extends Model
         return $query->with([
             'user',
             'perusahaan',
-            'riwayatPekerja',
-            'detailMedis',
+            'riwayatPekerja.detailMedis', // Load detail_medis nested per riwayat pekerjaan
+            'detailMedis',                // Juga load semua detail_medis (termasuk yang NULL riwayat_pekerja_id)
             'riwayatMedis',
             'statusAdvokasi',
         ]);
