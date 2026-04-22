@@ -517,7 +517,7 @@ export default function PendaftaranPekerjaPage() {
       };
 
       try {
-        await performSubmit(finalPerusahaanId, [...allRiwayat, ...prevRiwayat], validMedisRecords);
+        await performSubmit(finalPerusahaanId, [...allRiwayat, ...prevRiwayat]);
         localStorage.removeItem(STORAGE_KEY);
         toast.success('Pekerja berhasil didaftarkan!');
         router.push('/pekerja');
@@ -559,7 +559,7 @@ export default function PendaftaranPekerjaPage() {
                 r.nama_perusahaan === currentPerusahaanName ? { ...r, nama_perusahaan: existing.nama_perusahaan } : r
               ), ...prevRiwayat];
 
-              await performSubmit(existing.id.toString(), updatedRiwayat, validMedisRecords);
+              await performSubmit(existing.id.toString(), updatedRiwayat);
               localStorage.removeItem(STORAGE_KEY);
               toast.success('Pekerja berhasil didaftarkan!');
               router.push('/pekerja');
