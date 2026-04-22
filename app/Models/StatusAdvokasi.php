@@ -94,6 +94,19 @@ class StatusAdvokasi extends Model
     // =========================================================================
 
     /**
+     * Ensure jenis_kasus is always uppercase.
+     */
+    public function setJenisKasusAttribute($value)
+    {
+        $this->attributes['jenis_kasus'] = $value ? strtoupper($value) : null;
+    }
+
+    public function getJenisKasusAttribute($value)
+    {
+        return $value ? strtoupper($value) : null;
+    }
+
+    /**
      * Calculate advocacy completion percentage.
      */
     public function getProgressPercentageAttribute(): int
