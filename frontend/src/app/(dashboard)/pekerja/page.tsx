@@ -192,24 +192,40 @@ export default function PekerjaPage() {
                     <TableCell className="font-semibold text-sm text-slate-600 tracking-wide">{p.nik}</TableCell>
                     <TableCell className="text-slate-600 font-medium text-sm max-w-[200px] truncate">{p.perusahaan?.nama_perusahaan}</TableCell>
                     <TableCell>
-                       {p.status_kesehatan === 'sehat' && (
-                         <div className="inline-flex items-center justify-center px-4 py-1.5 rounded-full border border-emerald-200 bg-emerald-100/50 text-emerald-700 font-bold text-[11px] tracking-wide shadow-[0_2px_10px_-3px_rgba(16,185,129,0.2)]">
-                           <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-2 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
-                           Sehat
-                         </div>
-                       )}
-                       {p.status_kesehatan === 'sakit_ringan' && (
-                         <div className="inline-flex items-center justify-center px-4 py-1.5 rounded-full border border-amber-200 bg-amber-100/50 text-amber-700 font-bold text-[11px] tracking-wide shadow-[0_2px_10px_-3px_rgba(245,158,11,0.2)]">
-                           <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mr-2 shadow-[0_0_8px_rgba(245,158,11,0.5)]"></div>
-                           Sehat dengan Catatan
-                         </div>
-                       )}
-                       {p.status_kesehatan === 'sakit_berat' && (
-                         <div className="inline-flex items-center justify-center px-4 py-1.5 rounded-full border border-rose-200 bg-rose-100/50 text-rose-700 font-bold text-[11px] tracking-wide shadow-[0_2px_10px_-3px_rgba(244,63,94,0.2)]">
-                           <div className="w-1.5 h-1.5 rounded-full bg-rose-500 mr-2 shadow-[0_0_8px_rgba(244,63,94,0.5)]"></div>
-                           Tidak Sehat
-                         </div>
-                       )}
+                       {/* Normalize status logic for display */}
+                       {(() => {
+                         const s = p.status_kesehatan;
+                         if (s === 'sehat' || s === 'fit') {
+                           return (
+                             <div className="inline-flex items-center justify-center px-4 py-1.5 rounded-full border border-emerald-200 bg-emerald-100/50 text-emerald-700 font-bold text-[11px] tracking-wide shadow-[0_2px_10px_-3px_rgba(16,185,129,0.2)]">
+                               <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-2 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+                               Sehat
+                             </div>
+                           );
+                         }
+                         if (s === 'sehat_dengan_catatan' || s === 'sakit_ringan' || s === 'fit_with_note') {
+                           return (
+                             <div className="inline-flex items-center justify-center px-4 py-1.5 rounded-full border border-amber-200 bg-amber-100/50 text-amber-700 font-bold text-[11px] tracking-wide shadow-[0_2px_10px_-3px_rgba(245,158,11,0.2)]">
+                               <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mr-2 shadow-[0_0_8px_rgba(245,158,11,0.5)]"></div>
+                               Sehat dengan Catatan
+                             </div>
+                           );
+                         }
+                         if (s === 'tidak_sehat' || s === 'sakit_berat' || s === 'unfit' || s === 'sakit') {
+                           return (
+                             <div className="inline-flex items-center justify-center px-4 py-1.5 rounded-full border border-rose-200 bg-rose-100/50 text-rose-700 font-bold text-[11px] tracking-wide shadow-[0_2px_10px_-3px_rgba(244,63,94,0.2)]">
+                               <div className="w-1.5 h-1.5 rounded-full bg-rose-500 mr-2 shadow-[0_0_8px_rgba(244,63,94,0.5)]"></div>
+                               Tidak Sehat
+                             </div>
+                           );
+                         }
+                         return (
+                           <div className="inline-flex items-center justify-center px-4 py-1.5 rounded-full border border-slate-200 bg-slate-100/50 text-slate-500 font-bold text-[11px] tracking-wide">
+                             <div className="w-1.5 h-1.5 rounded-full bg-slate-400 mr-2"></div>
+                             Belum Diperiksa
+                           </div>
+                         );
+                       })()}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">

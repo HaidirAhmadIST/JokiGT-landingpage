@@ -58,32 +58,49 @@ import {
 import { cn } from '@/lib/utils';
 import { useRole } from '@/hooks/useRole';
 
-// Mock data
-const stages = [
-  { id: 'UPTD', label: 'Tahap 1: UPTD', color: 'bg-amber-50 text-amber-700 border-amber-200' },
-  { id: 'BPJS', label: 'Tahap 2: BPJS', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  { id: 'Pengadilan', label: 'Tahap 3: Pengadilan', color: 'bg-blue-50 text-blue-700 border-blue-200' },
+const milestoneKeys = [
+  'riwayat_pajanan',
+  'persetujuan_dokter',
+  'perusahaan_lapor',
+  'penetapan_pak',
+  'kompensasi_bpjstk',
+  'rehabilitasi_bpjskes'
+];
+
+const milestoneLabels = [
+  'Pajanan',
+  'Diagnosis',
+  'Pelaporan',
+  'Penetapan',
+  'Kompensasi',
+  'Rehabilitasi'
 ];
 
 const caseTypeLabels: Record<string, string> = {
-  pak: 'Penyakit Kerja',
-  k3: 'Kecelakaan K3',
-  phk: 'Kasus PHK',
-  jht: 'Jaminan / JHT',
+  PAK: 'PAK (Penyakit Kerja)',
+  K3: 'Kecelakaan K3',
+  PHK: 'Kasus PHK',
+  JHT: 'Jaminan / JHT',
 };
 
 const tabs = ['Semua Kasus', 'Tahap UPTD', 'Tahap BPJS', 'Tahap Pengadilan'];
 
-function ProgressDots({ level }: { level: number }) {
-  const stages = [1, 2, 3];
+function ProgressDots({ level, total = 6 }: { level: number; total?: number }) {
+  const steps = Array.from({ length: total }, (_, i) => i + 1);
   return (
     <div className="flex flex-col gap-1">
       <div className="flex items-center gap-1">
-        {stages.map((s, i) => (
+        {steps.map((s, i) => (
           <div key={i} className="flex items-center">
-            <div className={`w-3.5 h-3.5 rounded-full ${s <= level ? 'bg-emerald-400' : 'bg-slate-200'}`} />
-            {i < stages.length - 1 && (
-              <div className={`w-6 h-0.5 ${s < level ? 'bg-emerald-400' : 'bg-slate-200'}`} />
+            <div className={cn(
+              "w-2.5 h-2.5 rounded-full transition-all duration-500",
+              s <= level ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]' : 'bg-slate-200'
+            )} />
+            {i < steps.length - 1 && (
+              <div className={cn(
+                "w-3 h-[2px] transition-all duration-500",
+                s < level ? 'bg-emerald-500' : 'bg-slate-100'
+              )} />
             )}
           </div>
         ))}
@@ -152,6 +169,24 @@ export default function AdvokasiPage() {
     fetchSummaryStats();
   }, []);
 
+  const defaultNotes: Record<string, string> = {
+    PAK: "Pekerja didiagnosa mengalami Penyakit Akibat Kerja (PAK) berupa [NAMA PENYAKIT]. Dilaporkan adanya pajanan [JENIS PAJANAN] di area kerja [NAMA AREA] yang berlangsung selama [DURASI]. Dibutuhkan pendampingan medis dan pelaporan ke pihak berwenang.",
+    K3: "Terjadi kecelakaan kerja pada tanggal [TANGGAL] pukul [JAM] di lokasi [LOKASI]. Kejadian bermula saat [KRONOLOGI SINGKAT]. Kondisi pekerja saat ini [KONDISI].",
+    PHK: "Pekerja mengalami perselisihan hubungan kerja terkait [ALASAN PHK]. Hak-hak pekerja seperti pesangon dan uang penggantian hak masih dalam tahap perundingan.",
+    JHT: "Pendampingan pengurusan klaim Jaminan Hari Tua (JHT) / Jaminan Pensiun bagi pekerja yang telah memasuki masa purna tugas atau kondisi tertentu.",
+  };
+
+  const handleCaseTypeSelect = (typeId: string) => {
+    setFormData(prev => ({ 
+      ...prev, 
+      jenis_kasus: typeId,
+      // Auto-fill catatan only if it's empty or currently matches another default note
+      catatan: (!prev.catatan || Object.values(defaultNotes).includes(prev.catatan)) 
+        ? defaultNotes[typeId] 
+        : prev.catatan
+    }));
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.pekerja_id || !formData.jenis_kasus) {
@@ -197,10 +232,10 @@ export default function AdvokasiPage() {
   };
 
   const caseTypes = [
-    { id: 'pak', label: 'Penyakit Kerja', icon: Activity, desc: 'Penyakit akibat lingkungan kerja', color: 'text-rose-500', bg: 'bg-rose-50' },
-    { id: 'k3', label: 'Kecelakaan K3', icon: HardHat, desc: 'Kecelakaan saat bekerja', color: 'text-amber-500', bg: 'bg-amber-50' },
-    { id: 'phk', label: 'Kasus PHK', icon: Gavel, desc: 'Perselisihan hubungan kerja', color: 'text-blue-500', bg: 'bg-blue-50' },
-    { id: 'jht', label: 'Jaminan / JHT', icon: Coins, desc: 'Klaim jaminan sosial/tua', color: 'text-emerald-500', bg: 'bg-emerald-50' },
+    { id: 'PAK', label: 'PAK (Penyakit Kerja)', icon: Activity, desc: 'Penyakit akibat lingkungan kerja', color: 'text-rose-500', bg: 'bg-rose-50' },
+    { id: 'K3', label: 'K3 (Kecelakaan)', icon: HardHat, desc: 'Kecelakaan saat bekerja', color: 'text-amber-500', bg: 'bg-amber-50' },
+    { id: 'PHK', label: 'PHK (Kasus)', icon: Gavel, desc: 'Perselisihan hubungan kerja', color: 'text-blue-500', bg: 'bg-blue-50' },
+    { id: 'JHT', label: 'JHT (Jaminan)', icon: Coins, desc: 'Klaim jaminan sosial/tua', color: 'text-emerald-500', bg: 'bg-emerald-50' },
   ];
 
   return (
@@ -338,10 +373,18 @@ export default function AdvokasiPage() {
                   <TableCell colSpan={7} className="py-20 text-center text-slate-400 font-medium italic">Belum ada kasus advokasi terdaftar.</TableCell>
                 </TableRow>
               ) : cases.map((c) => {
-                const stageData = stages.find(s => s.id === c.tahap) || stages[0];
                 const worker = c.pekerja;
                 const initials = worker?.nama_lengkap.split(' ').map((n: string) => n[0]).join('').substring(0, 2);
-                const progressLevel = c.tahap === 'UPTD' ? 1 : (c.tahap === 'BPJS' ? 2 : 3);
+                
+                // Calculate progress based on milestones
+                const completedCount = milestoneKeys.filter(key => !!c[key]).length;
+                const nextStepIdx = milestoneKeys.findIndex(key => !c[key]);
+                const currentStatusLabel = nextStepIdx === -1 ? 'Selesai' : milestoneLabels[nextStepIdx];
+                
+                // Style for the "tahap" badge logic (keep it legacy-compatible for now or use a generic one)
+                const statusColor = completedCount === 6 
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                  : 'bg-blue-50 text-blue-700 border-blue-200';
 
                 return (
                   <TableRow key={c.id} className="hover:bg-slate-50/50 transition-colors group">
@@ -357,13 +400,15 @@ export default function AdvokasiPage() {
                     <TableCell className="py-4 px-6 text-sm text-[#475569]">{caseTypeLabels[c.jenis_kasus]}</TableCell>
                     <TableCell className="py-4 px-6">
                       <div className="flex flex-col gap-1">
-                        <ProgressDots level={progressLevel} />
-                        <span className="text-[10px] font-semibold text-[#94a3b8]">{stageData.label}</span>
+                        <ProgressDots level={completedCount} />
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">
+                          Langkah {completedCount}/6: <span className="text-[#0284c7]">{currentStatusLabel}</span>
+                        </span>
                       </div>
                     </TableCell>
                     <TableCell className="py-4 px-6">
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-bold border ${stageData.color}`}>
-                        {c.status_detail.replace(/_/g, ' ')}
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold border uppercase tracking-wide ${statusColor}`}>
+                        {c.status_detail?.replace(/_/g, ' ') || 'PROSES'}
                       </span>
                     </TableCell>
                     <TableCell className="py-4 px-6 text-sm text-[#475569]">{new Date(c.updated_at).toLocaleDateString('id-ID')}</TableCell>
@@ -500,7 +545,7 @@ export default function AdvokasiPage() {
                         <button
                           key={type.id}
                           type="button"
-                          onClick={() => setFormData({ ...formData, jenis_kasus: type.id })}
+                          onClick={() => handleCaseTypeSelect(type.id)}
                           className={cn(
                             "flex flex-col items-start p-4 rounded-[16px] border-2 text-left transition-all duration-200",
                             isActive

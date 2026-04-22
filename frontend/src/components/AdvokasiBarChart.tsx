@@ -90,10 +90,10 @@ const stepConfig: Record<string, {
 };
 
 const caseTypeLabels: Record<string, string> = {
-  pak: 'Penyakit Kerja',
-  k3: 'Kecelakaan K3',
-  phk: 'Kasus PHK',
-  jht: 'Jaminan / JHT',
+  PAK: 'PAK (Penyakit Kerja)',
+  K3: 'K3 (Kecelakaan)',
+  PHK: 'PHK (Kasus)',
+  JHT: 'JHT (Jaminan)',
 };
 
 // ─── X-axis tick with line breaks ─────────────────────────────────────────────

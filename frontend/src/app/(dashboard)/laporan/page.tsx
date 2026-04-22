@@ -36,7 +36,7 @@ export default function LaporanPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [searching, setSearching] = useState(false);
-  
+
   const [summaryData, setSummaryData] = useState<any>(null);
   const [chartData, setChartData] = useState<any[]>([]);
   const [sectorData, setSectorData] = useState<any[]>([]);
@@ -118,7 +118,7 @@ export default function LaporanPage() {
                 <h3 className="text-3xl font-extrabold text-[#0f172a]">{summaryData?.total_kasus.value}</h3>
                 <span className={`flex items-center text-xs font-bold gap-0.5 mt-1 ${summaryData?.total_kasus.trend >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
                   {summaryData?.total_kasus.trend >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                  {summaryData?.total_kasus.trend >= 0 ? '+' : ''}{summaryData?.total_kasus.trend}% 
+                  {summaryData?.total_kasus.trend >= 0 ? '+' : ''}{summaryData?.total_kasus.trend}%
                   <span className="text-[#94a3b8] font-medium ml-1">akumulasi total</span>
                 </span>
               </>
@@ -129,7 +129,7 @@ export default function LaporanPage() {
         {/* Kepatuhan Monitoring */}
         <Card className="rounded-[20px] shadow-sm border-slate-100 p-6 flex flex-col justify-between h-36 hover:shadow-md transition-all">
           <div className="flex justify-between items-start">
-            <p className="text-xs font-bold text-[#94a3b8] tracking-widest uppercase">Kepatuhan Medis</p>
+            <p className="text-xs font-bold text-[#94a3b8] tracking-widest uppercase">total advokasi dalam proses</p>
             <div className="bg-orange-50 text-orange-500 p-2 rounded-xl">
               <Building2 className="h-5 w-5" />
             </div>
@@ -141,7 +141,7 @@ export default function LaporanPage() {
                 <span className={`flex items-center text-xs font-bold gap-0.5 mt-1 ${summaryData?.kepatuhan.trend >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
                   {summaryData?.kepatuhan.trend >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
                   {summaryData?.kepatuhan.trend >= 0 ? '+' : ''}{summaryData?.kepatuhan.trend}%
-                  <span className="text-[#94a3b8] font-medium ml-1">pemeriksaan rutin</span>
+                  <span className="text-[#94a3b8] font-medium ml-1">kasus sedang berjalan</span>
                 </span>
               </>
             )}
@@ -151,7 +151,7 @@ export default function LaporanPage() {
         {/* Sukses Advokasi */}
         <Card className="rounded-[20px] shadow-sm border-slate-100 p-6 flex flex-col justify-between h-36 hover:shadow-md transition-all">
           <div className="flex justify-between items-start">
-            <p className="text-xs font-bold text-[#94a3b8] tracking-widest uppercase">Sukses Advokasi</p>
+            <p className="text-xs font-bold text-[#94a3b8] tracking-widest uppercase">jenis PAK</p>
             <div className="bg-emerald-50 text-emerald-500 p-2 rounded-xl">
               <CheckCircle2 className="h-5 w-5" />
             </div>
@@ -163,7 +163,7 @@ export default function LaporanPage() {
                 <span className={`flex items-center text-xs font-bold gap-0.5 mt-1 ${summaryData?.sukses_advokasi.trend >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
                   {summaryData?.sukses_advokasi.trend >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
                   {summaryData?.sukses_advokasi.trend >= 0 ? '+' : ''}{summaryData?.sukses_advokasi.trend}%
-                  <span className="text-[#94a3b8] font-medium ml-1">angka penyelesaian</span>
+                  <span className="text-[#94a3b8] font-medium ml-1">variasi tipe penyakit</span>
                 </span>
               </>
             )}
@@ -203,7 +203,7 @@ export default function LaporanPage() {
         {/* Compliance Bars */}
         <Card className="rounded-[20px] shadow-sm border-slate-100 p-6">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-[17px] font-bold text-[#0f172a]">Kepatuhan per Sektor Industri</h2>
+            <h2 className="text-[17px] font-bold text-[#0f172a]">Jenis Kasus</h2>
             <button className="text-slate-400 hover:text-slate-600 transition-colors">
               <MoreHorizontal className="h-5 w-5" />
             </button>
@@ -237,8 +237,8 @@ export default function LaporanPage() {
             <h2 className="text-[17px] font-bold text-[#0f172a]">Pencarian Kasus Advokasi</h2>
             <div className="relative w-full sm:w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <Input 
-                placeholder="Cari NIK atau Nama..." 
+              <Input
+                placeholder="Cari NIK atau Nama..."
                 className="pl-9 h-9 text-xs border-slate-200 focus:ring-[#0ea5e9]"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -246,7 +246,7 @@ export default function LaporanPage() {
               {searching && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-3 w-3 animate-spin text-slate-400" />}
             </div>
           </div>
-          
+
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
@@ -259,9 +259,9 @@ export default function LaporanPage() {
               </TableHeader>
               <TableBody>
                 {searching && recentAdvocacy.length === 0 ? (
-                   [1, 2, 3].map(i => (
+                  [1, 2, 3].map(i => (
                     <TableRow key={i}><TableCell colSpan={4} className="h-16 bg-slate-50/50 animate-pulse" /></TableRow>
-                   ))
+                  ))
                 ) : (
                   recentAdvocacy.map((row, i) => (
                     <TableRow key={i} className="hover:bg-slate-50/50 transition-colors">
@@ -276,7 +276,7 @@ export default function LaporanPage() {
                         </span>
                       </TableCell>
                       <TableCell className="py-3.5">
-                        <button 
+                        <button
                           onClick={() => router.push(`/pekerja/${row.pekerja_id}?tab=advokasi`)}
                           className="text-sm font-bold text-[#0ea5e9] hover:text-[#0284c7] transition-colors"
                         >
@@ -309,10 +309,10 @@ export default function LaporanPage() {
           </div>
           <div>
             <p className="text-white/70 text-sm">Melampaui target KPI tahunan (90%)</p>
-            <Button 
-                onClick={() => setIsReviewOpen(true)}
-                className="mt-4 bg-white/10 hover:bg-white/20 text-white border-white/20 border h-11 px-6 font-bold" 
-                variant="outline"
+            <Button
+              onClick={() => setIsReviewOpen(true)}
+              className="mt-4 bg-white/10 hover:bg-white/20 text-white border-white/20 border h-11 px-6 font-bold"
+              variant="outline"
             >
               Lihat Review
             </Button>
@@ -351,7 +351,7 @@ export default function LaporanPage() {
               <TrendingUp className="h-4 w-4 mr-2 text-[#0ea5e9]" />
               Kisah Sukses Terakhir
             </h4>
-            
+
             <div className="space-y-4">
               {recentSuccesses.length > 0 ? (
                 recentSuccesses.map((item, idx) => (
@@ -376,9 +376,9 @@ export default function LaporanPage() {
               )}
             </div>
 
-            <Button 
-                onClick={() => setIsReviewOpen(false)}
-                className="w-full mt-8 h-12 rounded-xl bg-[#0f172a] hover:bg-[#1e293b] font-bold"
+            <Button
+              onClick={() => setIsReviewOpen(false)}
+              className="w-full mt-8 h-12 rounded-xl bg-[#0f172a] hover:bg-[#1e293b] font-bold"
             >
               Tutup Review
             </Button>

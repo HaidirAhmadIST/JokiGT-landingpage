@@ -194,9 +194,10 @@ export default function PekerjaDetailPage() {
 
   const getStatusColor = (s: string) => {
     const normalized = normalizeStatus(s);
-    if (normalized === 'fit') return 'text-emerald-600';
-    if (normalized === 'fit_with_note') return 'text-amber-600';
-    return 'text-rose-600';
+    if (normalized === 'sehat') return 'text-emerald-600';
+    if (normalized === 'sehat_dengan_catatan') return 'text-amber-600';
+    if (normalized === 'tidak_sehat') return 'text-rose-600';
+    return 'text-slate-600';
   };
 
   const handleEditCatatan = () => {
@@ -769,11 +770,11 @@ export default function PekerjaDetailPage() {
                                             </p>
                                           </div>
                                           <span className={`px-2 py-0.5 text-[9px] font-extrabold rounded uppercase tracking-wider ${
-                                            m.status_kesehatan?.toLowerCase().includes('tidak') ? 'bg-red-50 text-red-600' : 
-                                            m.status_kesehatan?.toLowerCase().includes('catatan') ? 'bg-amber-50 text-amber-600' : 
+                                            normalizeStatus(m.status_kesehatan) === 'tidak_sehat' ? 'bg-red-50 text-red-600' : 
+                                            normalizeStatus(m.status_kesehatan) === 'sehat_dengan_catatan' ? 'bg-amber-50 text-amber-600' : 
                                             'bg-emerald-50 text-emerald-600'
                                           }`}>
-                                            {m.status_kesehatan?.replace(/_/g, ' ') || 'SEHAT'}
+                                            {getStatusLabel(m.status_kesehatan) || 'SEHAT'}
                                           </span>
                                         </div>
 
@@ -788,8 +789,11 @@ export default function PekerjaDetailPage() {
                                           </div>
                                         </div>
 
-                                        <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
-                                          <p className="text-xs text-slate-600 leading-relaxed italic">{m.hasil_diagnosis || '-'}</p>
+                                        <div>
+                                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Hasil Diagnosa</p>
+                                          <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                                            <p className="text-xs text-slate-600 leading-relaxed italic">{m.hasil_diagnosis || '-'}</p>
+                                          </div>
                                         </div>
 
                                         {(m.file_bukti_path || m.file_hasil_path) && (
@@ -833,9 +837,18 @@ export default function PekerjaDetailPage() {
                                           <p className="text-xs font-bold text-slate-800">
                                             {m.tgl_pemeriksaan ? format(parseISO(m.tgl_pemeriksaan), 'dd MMM yyyy', {locale: localeID}) : '-'}
                                           </p>
-                                          <span className="text-[9px] font-bold text-amber-600 uppercase tracking-wider">{m.status_kesehatan?.replace(/_/g, ' ') || 'SEHAT'}</span>
+                                            <span className={`text-[9px] font-bold uppercase tracking-wider ${
+                                              normalizeStatus(m.status_kesehatan) === 'tidak_sehat' ? 'text-rose-600' : 
+                                              normalizeStatus(m.status_kesehatan) === 'sehat_dengan_catatan' ? 'text-amber-600' : 
+                                              'text-emerald-600'
+                                            }`}>
+                                              {getStatusLabel(m.status_kesehatan) || 'SEHAT'}
+                                            </span>
                                         </div>
-                                        <p className="text-[11px] text-slate-600 italic">{m.hasil_diagnosis || '-'}</p>
+                                        <div className="mt-2">
+                                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Hasil Diagnosa</p>
+                                          <p className="text-[11px] text-slate-600 italic leading-relaxed">{m.hasil_diagnosis || '-'}</p>
+                                        </div>
                                       </div>
                                     ))}
                                   </div>
@@ -875,12 +888,6 @@ export default function PekerjaDetailPage() {
                   <h3 className="text-sm font-bold text-[#1e293b] flex items-center">
                     <Briefcase className="h-4 w-4 text-[#0ea5e9] mr-2" /> Riwayat Pekerjaan
                   </h3>
-                  <button 
-                    onClick={() => setSelectedJobId(null)} 
-                    className="text-[11px] font-bold text-[#0ea5e9] tracking-wider uppercase hover:underline"
-                  >
-                    LIHAT SEMUA
-                  </button>
                 </div>
 
                 <div className="flex-1 overflow-y-auto pr-1 -mr-1">
@@ -956,11 +963,6 @@ export default function PekerjaDetailPage() {
                   <h3 className="text-sm font-bold text-[#1e293b] flex items-center">
                     <Activity className="h-4 w-4 text-[#0ea5e9] mr-2" /> Riwayat Kesehatan
                   </h3>
-                  {selectedJobId !== null && !isHealthLoading && (
-                    <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full uppercase tracking-tighter">
-                      Filtered by Job
-                    </span>
-                  )}
                 </div>
 
                 <div className="flex-1">
@@ -978,108 +980,67 @@ export default function PekerjaDetailPage() {
                       ))}
                     </div>
                   ) : filteredHealthRecords && filteredHealthRecords.length > 0 ? (
-                    <div className="space-y-4">
+                    <div className="space-y-6">
                       {filteredHealthRecords.map((m: any, idx: number) => (
-                         <div key={idx} className="p-4 bg-white border border-slate-100 rounded-xl hover:border-blue-100 transition-colors group">
-                           <div className="flex justify-between items-start mb-2">
-                             <div>
-                               <p className="text-[12px] font-bold text-slate-800">
-                                  {m.tanggal_pemeriksaan ? format(parseISO(m.tanggal_pemeriksaan), 'dd MMM yyyy', {locale: localeID}) : '-'}
-                               </p>
-                               <p className="text-[10px] text-[#0ea5e9] font-bold mt-0.5 uppercase tracking-wider">
-                                 {m.jenis_pemeriksaan || '-'}
-                               </p>
-                             </div>
-                             <span className="text-[10px] text-slate-400 font-medium">
-                               {m.tempat_pemeriksaan || '-'}
-                             </span>
-                           </div>
-                           <div className="bg-slate-50/50 p-2.5 rounded-lg border border-slate-100/50">
-                             <p className="text-[12px] text-slate-600 leading-relaxed font-medium">
-                                {m.hasil_diagnosis || '-'}
-                             </p>
-                           </div>
-                         </div>
+                        <div key={idx} className={`${idx > 0 ? 'pt-6 border-t border-slate-100' : ''} group`}>
+                          <div className="flex justify-between items-start mb-4">
+                            <div>
+                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Pemeriksaan</p>
+                              <p className="text-[13px] font-extrabold text-[#1e293b]">
+                                {m.tgl_pemeriksaan ? format(parseISO(m.tgl_pemeriksaan), 'dd MMMM yyyy', {locale: localeID}) : '-'}
+                              </p>
+                            </div>
+                            <span className={`px-2 py-1 text-[9px] font-extrabold rounded-md uppercase tracking-wider ${
+                              normalizeStatus(m.status_kesehatan) === 'tidak_sehat' ? 'bg-rose-50 text-rose-600 border border-rose-100' : 
+                              normalizeStatus(m.status_kesehatan) === 'sehat_dengan_catatan' ? 'bg-amber-50 text-amber-600 border border-amber-100' : 
+                              'bg-emerald-50 text-emerald-600 border border-emerald-100'
+                            }`}>
+                              {getStatusLabel(m.status_kesehatan) || 'SEHAT'}
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4 mb-4">
+                            <div>
+                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Jenis</p>
+                              <p className="text-xs font-bold text-slate-700">{m.jenis_pemeriksa || 'MCU'}</p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Dokter / Rumah Sakit</p>
+                              <p className="text-xs font-bold text-slate-700 truncate">{m.dokter_pemeriksa || m.tempat_pemeriksa || '-'}</p>
+                            </div>
+                          </div>
+
+                          <div>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Hasil Diagnosa</p>
+                            <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 group-hover:border-[#0ea5e9]/20 transition-colors">
+                              <p className="text-xs text-slate-600 leading-relaxed italic">{m.hasil_diagnosis || '-'}</p>
+                            </div>
+                          </div>
+
+                          {m.file_hasil_path && (
+                            <Button
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => downloadMedisDoc(m.id)}
+                              className="mt-4 h-9 w-full bg-blue-50 text-[#0ea5e9] hover:bg-[#0ea5e9] hover:text-white border border-blue-100 rounded-xl font-bold text-[10px] transition-all uppercase tracking-wide"
+                            >
+                              <Download className="h-3.5 w-3.5 mr-2" /> Unduh Laporan Medis
+                            </Button>
+                          )}
+                        </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="h-full flex flex-col items-center justify-center py-12 bg-slate-50/30 rounded-xl border border-dashed border-slate-100">
-                      <Activity className="h-10 w-10 text-slate-200 mb-3" />
-                      <p className="text-sm font-bold text-slate-400 text-center">
-                        Tidak ada rekam medis pada periode ini.
+                    <div className="h-full flex flex-col items-center justify-center py-16 bg-slate-50/30 rounded-2xl border border-dashed border-slate-200">
+                      <div className="h-16 w-16 bg-white rounded-full flex items-center justify-center shadow-sm mb-4 border border-slate-100">
+                        <Activity className="h-8 w-8 text-slate-200" />
+                      </div>
+                      <p className="text-sm font-bold text-slate-500 text-center px-6">
+                        Pilih riwayat pekerjaan di sebelah kiri untuk melihat rekam medis terkait.
                       </p>
-                      {selectedJobId !== null && (
-                        <button 
-                          onClick={() => setSelectedJobId(null)} 
-                          className="mt-3 text-[11px] font-bold text-[#0ea5e9] hover:underline uppercase tracking-wider"
-                        >
-                          Lihat Seluruh Riwayat
-                        </button>
-                      )}
-                    </div>
+                             </div>
                   )}
                 </div>
-              </div>
-            </div>
-            <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-sm font-bold text-[#1e293b] flex items-center">
-                  <Activity className="h-4 w-4 text-[#0ea5e9] mr-2" /> Hasil Diagnosis Terkini
-                </h3>
-                <span className="text-[11px] font-bold text-slate-400 tracking-wider uppercase">{data.detail_medis?.length || 0} REKAM MEDIS</span>
-              </div>
-
-              <div className="w-full overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-slate-100 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">
-                      <th className="pb-3 px-2 font-bold">Tanggal & Tempat</th>
-                      <th className="pb-3 px-2 font-bold">Jenis & Dokter</th>
-                      <th className="pb-3 px-2 font-bold">Hasil Diagnosis</th>
-                      <th className="pb-3 px-2 font-bold text-right">Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-50/80">
-                    {data.detail_medis?.map((m: any, idx: number) => (
-                      <tr key={idx} className="hover:bg-slate-50/50 transition-colors group">
-                        <td className="py-4 px-2">
-                          <p className="text-[13px] font-bold text-slate-800">
-                             {m.tanggal_pemeriksaan ? format(parseISO(m.tanggal_pemeriksaan), 'dd MMM yyyy', {locale: localeID}) : '-'}
-                          </p>
-                          <p className="text-[11px] text-slate-400 mt-0.5">{m.tempat_pemeriksaan || '-'}</p>
-                        </td>
-                        <td className="py-4 px-2">
-                          <p className="text-[13px] font-medium text-slate-700">{m.jenis_pemeriksaan || '-'}</p>
-                          <p className="text-[11px] text-slate-400 mt-0.5">dr. {m.dokter || '-'}</p>
-                        </td>
-                        <td className="py-4 px-2 max-w-[250px]">
-                          <p className="text-[12px] text-slate-600 line-clamp-2" title={m.hasil_diagnosis}>
-                            {m.hasil_diagnosis || '-'}
-                          </p>
-                        </td>
-                        <td className="py-4 px-2 text-right">
-                          {m.file_bukti_path || m.file_hasil_path ? (
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              onClick={() => downloadMedisDoc(m.id)}
-                              className="h-8 text-[10px] font-bold text-[#0ea5e9] hover:bg-blue-50 border border-blue-100 rounded-lg px-3"
-                            >
-                              <FileCheck className="h-3 w-3 mr-1.5" /> Berkas
-                            </Button>
-                          ) : (
-                            <span className="text-[10px] font-bold text-slate-300 px-3 italic">Tanpa File</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                    {(!data.detail_medis || data.detail_medis.length === 0) && (
-                      <tr>
-                        <td colSpan={4} className="py-8 text-center text-slate-400 text-xs">Belum ada rekam medis terdaftar.</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
               </div>
             </div>
           </div>
@@ -1100,7 +1061,6 @@ export default function PekerjaDetailPage() {
                     const isCompleted = isStepCompleted(step.key);
                     const hasFile = !!getFilePath(step.key);
                     const isCurrent = idx === activeStepIndex;
-                    const isFuture = idx > activeStepIndex && !isCurrent;
                     
                     return (
                       <div key={step.key} className="relative z-10 flex items-start group">
@@ -1132,7 +1092,6 @@ export default function PekerjaDetailPage() {
                             {hasFile ? 'Dokumen Terunggah' : isCurrent ? 'Sedang Berjalan' : 'Belum Dimulai'}
                           </p>
 
-                          {/* File Upload / Display for Each Step */}
                           <div className="mt-3 p-3 bg-slate-50 border border-slate-100 rounded-lg">
                              <div className="flex justify-between items-center mb-2">
                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Dokumen / Bukti Pendukung</span>
@@ -1176,7 +1135,7 @@ export default function PekerjaDetailPage() {
                           </div>
                         </div>
                       </div>
-                    )
+                    );
                  })}
                </div>
             </div>

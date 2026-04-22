@@ -1,6 +1,9 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
+import { useState, useEffect, useCallback } from 'react';
+import { toast } from 'sonner';
+import api from '@/lib/axios';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -13,100 +16,150 @@ import {
   Download,
   Upload,
   FileText,
-  ImageIcon,
   ArrowLeft,
   User2,
   Stethoscope,
   Clock,
   FileStack,
+  HeartPulse,
+  Scale,
+  Search,
+  Coins,
+  Loader2,
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import SheetEditKasus from '@/components/SheetEditKasus';
 
-// Mock detailed data keyed by ID
-const caseDetails: Record<string, any> = {
-  '1': {
-    code: 'ADV-00129', statusLabel: 'DALAM PROSES',
-    title: 'Penyakit Akibat Kerja - Asbes',
-    stages: [
-      { name: 'UPTD', status: 'Selesai', active: false, done: true },
-      { name: 'BPJS (MEDIASI 1)', status: 'Aktif', active: true, done: false },
-      { name: 'COURT', status: 'Menunggu', active: false, done: false },
-    ],
-    worker: { name: 'Bambang Pamungkas', nik: '3275012304900001', company: 'PT. Teknologi Maju', job: 'Operator Alat Berat' },
-    caseDetail: { type: 'Asbes (Penyakit Kerja)', date: '12 Oktober 2023', note: 'Keluhan sesak napas setelah bekerja 10 tahun di area pengolahan material bangunan. Pasien mulai merasa kelelahan ekstrem saat melakukan aktivitas fisik ringan di lokasi proyek.' },
-    timeline: [
-      { date: '15 Okt', label: 'Verifikasi Dokumen (UPTD)', by: 'Oleh Admin Utama', active: false },
-      { date: '20 Okt', label: 'Mediasi 1 (BPJS)', by: 'SEDANG BERLANGSUNG - ADMIN', active: true },
-    ],
-    documents: [
-      { name: 'Surat Pengantar UPTD....', size: '2 MB', date: '15 Okt 2023', icon: 'pdf' },
-      { name: 'Hasil Lab RS.jpg', size: '4 MB', date: '18 Okt 2023', icon: 'img' },
-    ],
-    medis: { diagnosis: 'Asbestosis Kronis', file: 'Hasil Rontgen.pdf', recommendations: ['PINDAH AREA NON-PAJANAN', 'PENGOBATAN RUTIN'] },
-  },
-  '2': {
-    code: 'ADV-00130', statusLabel: 'SELESAI',
-    title: 'Pemutusan Hubungan Kerja',
-    stages: [
-      { name: 'UPTD', status: 'Selesai', active: false, done: true },
-      { name: 'BPJS', status: 'Selesai', active: false, done: true },
-      { name: 'COURT', status: 'Selesai', active: false, done: true },
-    ],
-    worker: { name: 'Siti Rahmawati', nik: '3275034509850002', company: 'CV. Agrikultur Jaya', job: 'Pekerja Lapangan' },
-    caseDetail: { type: 'Pemutusan Hubungan Kerja', date: '10 Oktober 2023', note: 'Pekerja diberhentikan secara sepihak tanpa pesangon setelah didiagnosa mengalami gangguan pernapasan akibat paparan pestisida.' },
-    timeline: [
-      { date: '10 Okt', label: 'Pendaftaran Kasus (UPTD)', by: 'Oleh Admin', active: false },
-      { date: '15 Okt', label: 'Mediasi BPJS', by: 'Oleh Mediator', active: false },
-      { date: '20 Okt', label: 'Sidang Pengadilan', by: 'Selesai', active: false },
-    ],
-    documents: [
-      { name: 'Surat PHK.pdf', size: '1 MB', date: '10 Okt 2023', icon: 'pdf' },
-    ],
-    medis: { diagnosis: 'Gangguan Pernapasan', file: 'Rekam Medis.pdf', recommendations: ['ISTIRAHAT TOTAL', 'TERAPI REHABILITASI'] },
-  },
-  '3': {
-    code: 'ADV-00131', statusLabel: 'DALAM PROSES',
-    title: 'Keselamatan Kerja (K3)',
-    stages: [
-      { name: 'UPTD', status: 'Aktif', active: true, done: false },
-      { name: 'BPJS', status: 'Menunggu', active: false, done: false },
-      { name: 'COURT', status: 'Menunggu', active: false, done: false },
-    ],
-    worker: { name: 'Agus Mulyadi', nik: '3275078712900003', company: 'PT. Logistik Cepat', job: 'Sopir Truk' },
-    caseDetail: { type: 'Keselamatan Kerja (K3)', date: '08 Oktober 2023', note: 'Kecelakaan saat bongkar muat barang di gudang. Pekerja mengalami patah tulang kaki kanan.' },
-    timeline: [
-      { date: '08 Okt', label: 'Verifikasi Dokumen (UPTD)', by: 'SEDANG BERLANGSUNG', active: true },
-    ],
-    documents: [
-      { name: 'Laporan Kecelakaan.pdf', size: '3 MB', date: '08 Okt 2023', icon: 'pdf' },
-    ],
-    medis: { diagnosis: 'Fraktur Tibia Dextra', file: 'Hasil X-Ray.pdf', recommendations: ['OPERASI TULANG', 'REHABILITASI MEDIS'] },
-  },
-  '4': {
-    code: 'ADV-00132', statusLabel: 'DALAM PROSES',
-    title: 'Jaminan Hari Tua',
-    stages: [
-      { name: 'UPTD', status: 'Selesai', active: false, done: true },
-      { name: 'BPJS', status: 'Aktif', active: true, done: false },
-      { name: 'COURT', status: 'Menunggu', active: false, done: false },
-    ],
-    worker: { name: 'Dewi Handayani', nik: '3275091234560004', company: 'PT. Garmen Indah', job: 'Penjahit Senior' },
-    caseDetail: { type: 'Jaminan Hari Tua', date: '05 Oktober 2023', note: 'Klaim JHT ditolak oleh BPJS dengan alasan administrasi. Pekerja telah bekerja selama 25 tahun.' },
-    timeline: [
-      { date: '05 Okt', label: 'Pendaftaran Kasus (UPTD)', by: 'Oleh Admin', active: false },
-      { date: '12 Okt', label: 'Review Dokumen BPJS', by: 'DOKUMEN DITOLAK', active: true },
-    ],
-    documents: [
-      { name: 'Dokumen JHT.pdf', size: '2 MB', date: '05 Okt 2023', icon: 'pdf' },
-    ],
-    medis: { diagnosis: '-', file: '-', recommendations: [] },
-  },
+const caseTypeLabels: Record<string, string> = {
+  PAK: 'PAK (Penyakit Akibat Kerja)',
+  K3: 'K3 (Kecelakaan Kerja)',
+  PHK: 'PHK (Pemutusan Hubungan Kerja)',
+  JHT: 'JHT (Jaminan / JHT)',
+};
+
+// Helpers for Status Kesehatan
+const normalizeStatus = (s: string) => {
+  const map: Record<string, string> = {
+    'fit': 'sehat',
+    'fit_with_note': 'sehat_dengan_catatan',
+    'unfit': 'tidak_sehat',
+    'sakit_ringan': 'sehat_dengan_catatan',
+    'sakit_berat': 'tidak_sehat',
+    'sakit': 'tidak_sehat',
+  };
+  return map[s] || s;
+};
+
+const getStatusLabel = (s: string) => {
+  if (!s) return 'Sehat';
+  const normalized = normalizeStatus(s);
+  if (normalized === 'sehat') return 'Sehat';
+  if (normalized === 'sehat_dengan_catatan') return 'Sehat dengan Catatan';
+  if (normalized === 'tidak_sehat') return 'Tidak Sehat';
+  return s.replace(/_/g, ' ');
+};
+
+const getStatusColor = (s: string) => {
+  if (!s) return 'text-emerald-600';
+  const normalized = normalizeStatus(s);
+  if (normalized === 'sehat') return 'text-emerald-600';
+  if (normalized === 'sehat_dengan_catatan') return 'text-amber-600';
+  if (normalized === 'tidak_sehat') return 'text-rose-600';
+  return 'text-slate-600';
 };
 
 export default function AdvokasiDetailPage() {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
-  const data = caseDetails[id] || caseDetails['1'];
+  
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<any>(null);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const resp = await api.get(`/advokasi/${id}`);
+      if (resp.data.status === 'success') {
+        setData(resp.data.data);
+      }
+    } catch (err) {
+      toast.error('Gagal memuat detail kasus.');
+    } finally {
+      setLoading(false);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  if (loading) {
+    return (
+      <div className="h-[60vh] flex flex-col items-center justify-center gap-4">
+        <Loader2 className="h-10 w-10 text-[#0284c7] animate-spin" />
+        <p className="text-slate-400 font-medium italic">Memuat detail kasus...</p>
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="h-[60vh] flex flex-col items-center justify-center gap-4">
+        <p className="text-slate-500 font-bold">Kasus tidak ditemukan.</p>
+        <Button onClick={() => router.push('/advokasi')}>Kembali ke Daftar</Button>
+      </div>
+    );
+  }
+
+  // Map backend data to UI structure
+  const code = `ADV-${data.id.toString().padStart(5, '0')}`;
+  const statusLabel = data.rehabilitasi_bpjskes ? 'SELESAI' : (data.status_detail || 'DALAM PROSES');
+  const title = caseTypeLabels[data.jenis_kasus] || data.jenis_kasus || 'Penyakit Akibat Kerja';
+  
+  const currentStages = [
+    { name: 'Pajanan', status: data?.riwayat_pajanan ? 'Selesai' : 'Pending', icon: Search, done: !!data?.riwayat_pajanan, active: !data?.riwayat_pajanan },
+    { name: 'Diagnosis', status: data?.persetujuan_dokter ? 'Selesai' : 'Pending', icon: Stethoscope, done: !!data?.persetujuan_dokter, active: !!data?.riwayat_pajanan && !data?.persetujuan_dokter },
+    { name: 'Pelaporan', status: data?.perusahaan_lapor ? 'Selesai' : 'Pending', icon: FileText, done: !!data?.perusahaan_lapor, active: !!data?.persetujuan_dokter && !data?.perusahaan_lapor },
+    { name: 'Penetapan', status: data?.penetapan_pak ? 'Selesai' : 'Pending', icon: Scale, done: !!data?.penetapan_pak, active: !!data?.perusahaan_lapor && !data?.penetapan_pak },
+    { name: 'Kompensasi', status: data?.kompensasi_bpjstk ? 'Selesai' : 'Pending', icon: Coins, done: !!data?.kompensasi_bpjstk, active: !!data?.penetapan_pak && !data?.kompensasi_bpjstk },
+    { name: 'Rehabilitasi', status: data?.rehabilitasi_bpjskes ? 'Selesai' : 'Pending', icon: HeartPulse, done: !!data?.rehabilitasi_bpjskes, active: !!data?.kompensasi_bpjstk && !data?.rehabilitasi_bpjskes },
+  ];
+
+  // Derived Data
+  const currentJob = data?.pekerja?.riwayat_pekerja?.find((r: any) => !r.tgl_keluar) || data?.pekerja?.riwayat_pekerja?.[0];
+
+  const documents = [
+    { key: 'riwayat_pajanan', name: 'Bukti Pajanan', path: data.bukti_pajanan_path, fileName: data.bukti_pajanan_name, date: data.bukti_pajanan_at },
+    { key: 'persetujuan_dokter', name: 'Diagnosis Dokter', path: data.bukti_persetujuan_dokter_path, fileName: data.bukti_persetujuan_dokter_name, date: data.bukti_persetujuan_dokter_at },
+    { key: 'perusahaan_lapor', name: 'Laporan Perusahaan', path: data.bukti_perusahaan_lapor_path, fileName: data.bukti_perusahaan_lapor_name, date: data.bukti_perusahaan_lapor_at },
+    { key: 'penetapan_pak', name: 'Penetapan PAK', path: data.bukti_penetapan_pak_path, fileName: data.bukti_penetapan_pak_name, date: data.bukti_penetapan_pak_at },
+    { key: 'kompensasi_bpjstk', name: 'Kompensasi BPJSTK', path: data.bukti_kompensasi_bpjstk_path, fileName: data.bukti_kompensasi_bpjstk_name, date: data.bukti_kompensasi_bpjstk_at },
+    { key: 'rehabilitasi_bpjskes', name: 'Rehabilitasi BPJSKES', path: data.bukti_rehabilitasi_bpjskes_path, fileName: data.bukti_rehabilitasi_bpjskes_name, date: data.bukti_rehabilitasi_bpjskes_at },
+  ].filter(d => !!d.path);
+
+  // Timeline Logic
+  const timelineMilestones = [
+    { key: 'riwayat_pajanan', label: 'Verifikasi Pajanan', at: data.bukti_pajanan_at, icon: Search, color: 'bg-blue-500' },
+    { key: 'persetujuan_dokter', label: 'Diagnosis Dokter', at: data.bukti_persetujuan_dokter_at, icon: Stethoscope, color: 'bg-emerald-500' },
+    { key: 'perusahaan_lapor', label: 'Laporan Perusahaan', at: data.bukti_perusahaan_lapor_at, icon: FileText, color: 'bg-amber-500' },
+    { key: 'penetapan_pak', label: 'Penetapan PAK', at: data.bukti_penetapan_pak_at, icon: Scale, color: 'bg-indigo-500' },
+    { key: 'kompensasi_bpjstk', label: 'Klaim Kompensasi', at: data.bukti_kompensasi_bpjstk_at, icon: Coins, color: 'bg-rose-500' },
+    { key: 'rehabilitasi_bpjskes', label: 'Prosedur Rehabilitasi', at: data.bukti_rehabilitasi_bpjskes_at, icon: HeartPulse, color: 'bg-sky-500' },
+  ];
+
+  const timelineItems = [
+    // System initiation event
+    { label: 'Kasus Didaftarkan', at: data.created_at, icon: ClipboardList, color: 'bg-slate-400' },
+    // Milestone events
+    ...timelineMilestones
+      .filter(m => !!data[m.key] && !!m.at)
+      .map(m => ({ ...m }))
+  ]
+    .map(m => ({ ...m, date: new Date(m.at) }))
+    .sort((a, b) => b.date.getTime() - a.date.getTime());
+
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 max-w-7xl mx-auto">
@@ -117,62 +170,61 @@ export default function AdvokasiDetailPage() {
             <button onClick={() => router.push('/advokasi')} className="text-slate-400 hover:text-slate-700 transition-colors">
               <ArrowLeft className="h-5 w-5" />
             </button>
-            <span className="text-sm font-bold text-[#0284c7]">{data.code}</span>
-            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5"></span>
-              {data.statusLabel}
+            <span className="text-sm font-bold text-[#0284c7]">{code}</span>
+            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold ${data.rehabilitasi_bpjskes ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
+              <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${data.rehabilitasi_bpjskes ? 'bg-emerald-500' : 'bg-blue-500'}`}></span>
+              {statusLabel}
             </span>
           </div>
-          <h1 className="text-[24px] font-extrabold tracking-tight text-[#0f172a]">{data.title}</h1>
+          <h1 className="text-[24px] font-extrabold tracking-tight text-[#0f172a]">{title}</h1>
         </div>
         <div className="flex items-center gap-3">
           <Button variant="outline" className="h-10 px-5 font-bold text-slate-700 border-slate-200">
             <Printer className="mr-2 h-4 w-4" /> Export PDF
           </Button>
-          <Button className="h-10 px-5 font-bold bg-[#0284c7] hover:bg-[#0369a1] text-white">
+          <Button 
+            onClick={() => setIsEditOpen(true)}
+            className="h-10 px-5 font-bold bg-[#0284c7] hover:bg-[#0369a1] text-white"
+          >
             <Pencil className="mr-2 h-4 w-4" /> Edit Kasus
           </Button>
         </div>
       </div>
 
-      {/* Progress Stepper — full width with long connecting lines */}
-      <Card className="rounded-[20px] shadow-sm border-slate-100 px-10 py-10">
-        <div className="flex items-start w-full">
-          {data.stages.map((stage: any, i: number) => (
-            <div key={i} className="flex items-start flex-1 last:flex-none">
-              {/* Node + Label */}
-              <div className="flex flex-col items-center min-w-[80px]">
-                <div className={`h-12 w-12 rounded-full flex items-center justify-center border-[3px] transition-all ${
-                  stage.done ? 'bg-[#0284c7] border-[#0284c7] text-white shadow-lg shadow-sky-200' :
-                  stage.active ? 'bg-white border-[#0284c7] text-[#0284c7] shadow-lg shadow-sky-100' :
-                  'bg-slate-50 border-slate-200 text-slate-400'
-                }`}>
-                  {stage.done ? <CheckCircle2 className="h-6 w-6" /> :
-                   stage.active ? <ClipboardList className="h-6 w-6" /> :
-                   <Waves className="h-6 w-6" />}
+      {/* Progress Stepper */}
+      <Card className="rounded-[20px] shadow-sm border-slate-100 px-6 py-10 overflow-x-auto overflow-y-hidden no-scrollbar">
+        <div className="flex items-start min-w-[800px] w-full">
+          {currentStages.map((stage: any, i: number) => {
+            const Icon = stage.icon;
+            return (
+              <div key={i} className="flex items-start flex-1 last:flex-none">
+                <div className="flex flex-col items-center min-w-[100px]">
+                  <div className={`h-12 w-12 rounded-full flex items-center justify-center border-[3px] transition-all duration-500 ${
+                    stage.done ? 'bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-100' :
+                    stage.active ? 'bg-white border-[#0284c7] text-[#0284c7] shadow-lg shadow-sky-100 animate-pulse' :
+                    'bg-slate-50 border-slate-200 text-slate-300'
+                  }`}>
+                    {stage.done ? <CheckCircle2 className="h-6 w-6" /> : <Icon className="h-5 w-5" />}
+                  </div>
+                  <p className={`text-[11px] font-bold mt-2.5 text-center whitespace-nowrap ${stage.active || stage.done ? 'text-[#1e293b]' : 'text-slate-400'}`}>
+                    {stage.name}
+                  </p>
+                  <p className={`text-[10px] font-medium mt-0.5 ${stage.done ? 'text-emerald-500' : (stage.active ? 'text-[#0284c7]' : 'text-slate-400')}`}>
+                    {stage.status}
+                  </p>
                 </div>
-                <p className={`text-[11px] font-bold mt-2.5 text-center whitespace-nowrap ${stage.active || stage.done ? 'text-[#0284c7]' : 'text-slate-400'}`}>
-                  {stage.name}
-                </p>
-                <p className={`text-[10px] font-medium mt-0.5 ${stage.active ? 'text-[#0284c7]' : 'text-slate-400'}`}>
-                  {stage.status}
-                </p>
+                {i < currentStages.length - 1 && (
+                  <div className={`flex-1 h-[3px] mt-[22px] mx-1 rounded-full transition-colors duration-1000 ${stage.done ? 'bg-emerald-500' : 'bg-slate-100'}`} />
+                )}
               </div>
-              {/* Long connecting line */}
-              {i < data.stages.length - 1 && (
-                <div className={`flex-1 h-[3px] mt-[22px] mx-1 rounded-full ${stage.done ? 'bg-[#0284c7]' : 'bg-slate-200'}`} />
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       </Card>
 
-      {/* Main Content Grid */}
       <div className="grid gap-6 md:grid-cols-3">
-        
         {/* LEFT COLUMN (2/3) */}
         <div className="md:col-span-2 space-y-6">
-          
           {/* Profil Pekerja */}
           <Card className="rounded-[20px] shadow-sm border-slate-100 p-6">
             <div className="flex items-center gap-2 mb-5">
@@ -180,25 +232,55 @@ export default function AdvokasiDetailPage() {
               <h3 className="text-xs font-bold text-[#94a3b8] tracking-widest">PROFIL PEKERJA</h3>
             </div>
             <div className="flex items-start gap-6">
-              <div className="h-20 w-20 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0">
-                <User2 className="h-10 w-10 text-slate-300" />
+              <div className="h-20 w-20 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0 overflow-hidden relative">
+                {data.pekerja?.pas_foto ? (
+                  <img 
+                    src={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://127.0.0.1:8000'}/storage/profil/${data.pekerja.pas_foto}`}
+                    alt={data.pekerja?.nama_lengkap}
+                    className="w-full h-full object-cover object-top"
+                  />
+                ) : (
+                  <User2 className="h-10 w-10 text-slate-300" />
+                )}
               </div>
-              <div className="grid grid-cols-2 gap-x-8 gap-y-3 flex-1">
+              <div className="grid grid-cols-2 gap-x-8 gap-y-4 flex-1">
                 <div>
                   <p className="text-[10px] font-bold text-[#94a3b8] tracking-wider">NAMA LENGKAP</p>
-                  <p className="text-sm font-bold text-[#1e293b] mt-0.5">{data.worker.name}</p>
+                  <p className="text-sm font-bold text-[#1e293b] mt-0.5">{data.pekerja?.nama_lengkap}</p>
                 </div>
                 <div>
                   <p className="text-[10px] font-bold text-[#94a3b8] tracking-wider">NIK</p>
-                  <p className="text-sm font-bold text-[#1e293b] mt-0.5">{data.worker.nik}</p>
+                  <p className="text-sm font-bold text-[#1e293b] mt-0.5">{data.pekerja?.nik}</p>
                 </div>
                 <div>
                   <p className="text-[10px] font-bold text-[#94a3b8] tracking-wider">PERUSAHAAN</p>
-                  <p className="text-sm font-bold text-[#1e293b] mt-0.5">{data.worker.company}</p>
+                  <p className="text-sm font-bold text-[#1e293b] mt-0.5">{data.pekerja?.perusahaan?.nama_perusahaan || currentJob?.nama_perusahaan || '-'}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold text-[#94a3b8] tracking-wider">PEKERJAAN</p>
-                  <p className="text-sm font-bold text-[#1e293b] mt-0.5">{data.worker.job}</p>
+                  <p className="text-[10px] font-bold text-[#94a3b8] tracking-wider">JABATAN / PEKERJAAN</p>
+                  <p className="text-sm font-bold text-[#1e293b] mt-0.5">{currentJob?.jabatan || 'OPERATOR'}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-[#94a3b8] tracking-wider">BAGIAN</p>
+                  <div className="mt-1">
+                    <span className="px-2 py-1 bg-sky-50 text-[#0284c7] text-[10px] font-bold rounded-md uppercase tracking-wide">
+                      {currentJob?.bagian || 'PRODUKSI'}
+                    </span>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-[#94a3b8] tracking-wider">STATUS PEKERJAAN</p>
+                  <div className="mt-1">
+                    <span className="px-2 py-1 bg-slate-100 text-slate-600 text-[10px] font-bold rounded-md uppercase tracking-wide">
+                      {currentJob?.status_pekerjaan || 'TETAP'}
+                    </span>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-[#94a3b8] tracking-wider">STATUS KESEHATAN</p>
+                  <p className={cn("text-sm font-bold mt-0.5 capitalize", getStatusColor(data.pekerja?.status_kesehatan))}>
+                    {getStatusLabel(data.pekerja?.status_kesehatan)}
+                  </p>
                 </div>
               </div>
             </div>
@@ -213,83 +295,66 @@ export default function AdvokasiDetailPage() {
             <div className="grid grid-cols-2 gap-x-8 gap-y-3 mb-5">
               <div>
                 <p className="text-[10px] font-bold text-[#94a3b8] tracking-wider">JENIS KASUS</p>
-                <p className="text-sm font-bold text-[#1e293b] mt-0.5">{data.caseDetail.type}</p>
+                <p className="text-sm font-bold text-[#1e293b] mt-0.5">{title}</p>
               </div>
               <div>
-                <p className="text-[10px] font-bold text-[#94a3b8] tracking-wider">TANGGAL KEJADIAN</p>
-                <p className="text-sm font-bold text-[#1e293b] mt-0.5">{data.caseDetail.date}</p>
+                <p className="text-[10px] font-bold text-[#94a3b8] tracking-wider">TANGGAL PELAPORAN</p>
+                <p className="text-sm font-bold text-[#1e293b] mt-0.5">
+                  {data.tanggal_pelaporan ? new Date(data.tanggal_pelaporan).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'}
+                </p>
               </div>
             </div>
             <div>
-              <p className="text-[10px] font-bold text-[#94a3b8] tracking-wider mb-2">CATATAN AWAL</p>
+              <p className="text-[10px] font-bold text-[#94a3b8] tracking-wider mb-2">CATATAN KASUS</p>
               <div className="bg-slate-50 border border-slate-100 rounded-xl p-4">
-                <p className="text-sm text-[#475569] leading-relaxed">{data.caseDetail.note}</p>
+                <p className="text-sm text-[#475569] leading-relaxed whitespace-pre-wrap">{data.catatan || 'Tidak ada catatan.'}</p>
               </div>
             </div>
           </Card>
 
-          {/* Data Medis */}
+          {/* Data Medis (Simplified) */}
           <Card className="rounded-[20px] shadow-sm border-slate-100 p-6">
             <div className="flex items-center gap-2 mb-5">
               <Stethoscope className="h-4 w-4 text-[#0284c7]" />
               <h3 className="text-xs font-bold text-[#94a3b8] tracking-widest">DATA MEDIS</h3>
             </div>
-            <div className="grid grid-cols-2 gap-x-8 gap-y-3 mb-5">
-              <div>
-                <p className="text-[10px] font-bold text-[#94a3b8] tracking-wider">DIAGNOSIS</p>
-                <p className="text-sm font-bold text-red-500 mt-0.5">{data.medis.diagnosis}</p>
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-[#94a3b8] tracking-wider">LINK FILE</p>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <FileText className="h-4 w-4 text-[#0284c7]" />
-                  <span className="text-sm font-bold text-[#0284c7] hover:underline cursor-pointer">{data.medis.file}</span>
-                </div>
-              </div>
+            <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 text-amber-700 text-xs font-medium">
+              Data medis utama dapat diakses melalui profil pekerja. Kasus ini berkaitan dengan diagnosis yang melibatkan paparan di lingkungan kerja.
             </div>
-            {data.medis.recommendations.length > 0 && (
-              <div>
-                <p className="text-[10px] font-bold text-[#94a3b8] tracking-wider mb-2">REKOMENDASI</p>
-                <div className="flex gap-2 flex-wrap">
-                  {data.medis.recommendations.map((r: string, i: number) => (
-                    <span key={i} className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-bold border border-emerald-200 bg-emerald-50 text-emerald-700">
-                      {r}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
           </Card>
         </div>
 
         {/* RIGHT COLUMN (1/3) */}
         <div className="space-y-6">
-          
+
           {/* Lini Masa Aktivitas */}
           <Card className="rounded-[20px] shadow-sm border-slate-100 p-6">
-            <div className="flex items-center gap-2 mb-5">
+            <div className="flex items-center gap-2 mb-6">
               <Clock className="h-4 w-4 text-[#0284c7]" />
               <h3 className="text-xs font-bold text-[#94a3b8] tracking-widest">LINI MASA AKTIVITAS</h3>
             </div>
-            <div className="space-y-0">
-              {data.timeline.map((item: any, i: number) => (
-                <div key={i} className="flex gap-4 relative">
-                  {/* Vertical Line */}
-                  {i < data.timeline.length - 1 && (
-                    <div className="absolute left-[13px] top-7 bottom-0 w-0.5 bg-slate-200" />
-                  )}
-                  {/* Dot */}
-                  <div className={`h-7 w-7 rounded-full flex items-center justify-center shrink-0 z-10 ${
-                    item.active ? 'bg-[#0284c7] text-white border-2 border-[#0284c7]' : 'bg-white border-2 border-slate-300 text-slate-400'
-                  }`}>
-                    <div className={`h-2 w-2 rounded-full ${item.active ? 'bg-white' : 'bg-slate-300'}`} />
+            <div className="relative space-y-6 before:absolute before:inset-0 before:ml-[15px] before:-translate-x-px before:h-full before:w-0.5 before:bg-slate-100 last:before:h-[calc(100%-1.5rem)]">
+              {timelineItems.length === 0 ? (
+                <p className="text-xs text-slate-400 italic text-center py-4">Belum ada aktivitas tercatat.</p>
+              ) : timelineItems.map((item, i) => {
+                const Icon = item.icon;
+                return (
+                  <div key={i} className="relative flex items-start gap-4">
+                    <div className={cn(
+                      "relative z-10 flex items-center justify-center h-[31px] w-[31px] rounded-full border-4 border-white shadow-sm shrink-0",
+                      item.color
+                    )}>
+                      <Icon className="h-3 w-3 text-white" />
+                    </div>
+                    <div className="flex-1 pt-0.5">
+                      <p className="text-[11px] font-bold text-slate-900 uppercase tracking-tight">{item.label}</p>
+                      <p className="text-[10px] font-medium text-slate-400 leading-none mt-1">
+                        {item.date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })} • {item.date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
                   </div>
-                  <div className={`pb-6 ${item.active ? '' : ''}`}>
-                    <p className="text-[13px] font-bold text-[#1e293b]">{item.date}: {item.label}</p>
-                    <p className={`text-[11px] font-semibold mt-0.5 ${item.active ? 'text-[#0284c7]' : 'text-[#94a3b8]'}`}>{item.by}</p>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </Card>
 
@@ -300,22 +365,22 @@ export default function AdvokasiDetailPage() {
               <h3 className="text-xs font-bold text-[#94a3b8] tracking-widest">DOKUMEN BUKTI</h3>
             </div>
             <div className="space-y-4">
-              {data.documents.map((doc: any, i: number) => (
+              {documents.length === 0 ? (
+                <p className="text-xs text-slate-400 italic text-center py-4">Belum ada dokumen diunggah.</p>
+              ) : documents.map((doc: any, i: number) => (
                 <div key={i} className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
-                  <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${
-                    doc.icon === 'pdf' ? 'bg-red-50 text-red-500' : 'bg-purple-50 text-purple-500'
-                  }`}>
-                    {doc.icon === 'pdf' ? <FileText className="h-5 w-5" /> : <ImageIcon className="h-5 w-5" />}
+                  <div className="h-10 w-10 rounded-lg flex items-center justify-center shrink-0 bg-red-50 text-red-500">
+                    <FileText className="h-5 w-5" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-[#1e293b] truncate">{doc.name}</p>
-                    <p className="text-[10px] text-[#94a3b8] font-medium">{doc.size} · {doc.date}</p>
+                    <p className="text-sm font-bold text-[#1e293b] truncate uppercase text-[11px]">{doc.name}</p>
+                    <p className="text-[10px] text-[#94a3b8] font-medium truncate">{doc.fileName}</p>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
-                    <button className="p-1.5 text-slate-400 hover:text-slate-700 transition-colors">
-                      <Eye className="h-4 w-4" />
-                    </button>
-                    <button className="p-1.5 text-slate-400 hover:text-slate-700 transition-colors">
+                    <button 
+                      onClick={() => window.open(`${process.env.NEXT_PUBLIC_API_URL}/api/pekerja/${data.pekerja_id}/files/advokasi/${doc.key}`, '_blank')}
+                      className="p-1.5 text-slate-400 hover:text-slate-700 transition-colors"
+                    >
                       <Download className="h-4 w-4" />
                     </button>
                   </div>
@@ -323,11 +388,18 @@ export default function AdvokasiDetailPage() {
               ))}
             </div>
             <button className="w-full mt-4 py-3 border-2 border-dashed border-slate-200 rounded-xl text-xs font-bold text-[#94a3b8] hover:border-[#0ea5e9] hover:text-[#0284c7] transition-all flex items-center justify-center gap-2">
-              <Upload className="h-4 w-4" /> UNGGAH DOKUMEN BARU
+              <Upload className="h-4 w-4" /> KELOLA DOKUMEN
             </button>
           </Card>
         </div>
       </div>
+
+      <SheetEditKasus 
+        open={isEditOpen} 
+        onOpenChange={setIsEditOpen} 
+        data={data} 
+        onSuccess={fetchData}
+      />
     </div>
   );
 }
