@@ -252,23 +252,36 @@ export default function PekerjaDetailPage() {
 
   const terkiniMedis = data.detail_medis?.[0]; // Assuming first is most recent
 
-  // Interactive Health Filtering Logic
-  const filteredHealthRecords = data?.detail_medis?.filter((m: any) => {
-    if (selectedJobId === null) return true;
+  // Interactive Health Filtering Logic — menggunakan relasi eksplisit riwayat_pekerja_id
+  const filteredHealthRecords = (() => {
+    if (selectedJobId === null) {
+      // "Lihat Semua" — tampilkan seluruh detail_medis
+      return data?.detail_medis || [];
+    }
     
     const job = data.riwayat_pekerja?.[selectedJobId as number];
-    if (!job) return true;
+    if (!job) return data?.detail_medis || [];
     
-    const checkDate = parseISO(m.tanggal_pemeriksaan || m.tgl_pemeriksaan);
-    const startDate = parseISO(job.tgl_masuk);
-    const endDate = job.tgl_keluar ? parseISO(job.tgl_keluar) : null;
+    // Gunakan relasi langsung: ambil detail_medis dari dalam objek riwayat_pekerja
+    // (sudah di-eager-load oleh backend via riwayatPekerja.detailMedis)
+    const linkedMedis = job.detail_medis || [];
     
-    if (endDate) {
-      return checkDate >= startDate && checkDate <= endDate;
-    } else {
-      return checkDate >= startDate;
-    }
-  });
+    // Jika ada data medis yang linked ke pekerjaan ini, gunakan itu
+    if (linkedMedis.length > 0) return linkedMedis;
+    
+    // Fallback: jika masih kosong (data lama yang belum ter-migrasi), 
+    // gunakan filter tanggal sebagai safety net
+    return data?.detail_medis?.filter((m: any) => {
+      const tgl = m.tgl_pemeriksaan || m.tanggal_pemeriksaan;
+      if (!tgl || !job.tgl_masuk) return false;
+      const checkDate = parseISO(tgl);
+      const startDate = parseISO(job.tgl_masuk);
+      const endDate = job.tgl_keluar ? parseISO(job.tgl_keluar) : null;
+      return endDate
+        ? checkDate >= startDate && checkDate <= endDate
+        : checkDate >= startDate;
+    }) || [];
+  })();
 
   const getFilePath = (stepKey: string) => {
     const map: Record<string, string> = {
@@ -711,67 +724,125 @@ export default function PekerjaDetailPage() {
                         </div>
                       </div>
 
-                      {/* MODAL RIGHT: Riwayat Kesehatan */}
-                      <div className="space-y-8">
-                        {/* Section 2: Timeline Pemeriksaan Terpadu */}
-                        <div>
-                          <div className="flex items-center gap-2 mb-4 px-1">
-                            <HeartPulse className="h-5 w-5 text-[#0ea5e9]" />
-                            <h4 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider">Riwayat Kesehatan (Timeline)</h4>
-                          </div>
-                          <div className="space-y-4">
-                            {data.detail_medis?.map((m: any, idx: number) => (
-                              <div key={idx} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:border-[#0ea5e9]/30 transition-all group relative overflow-hidden">
+                      {/* MODAL RIGHT: Riwayat Kesehatan per Pekerjaan */}
+                      <div className="space-y-6">
+                        <div className="flex items-center gap-2 mb-2 px-1">
+                          <HeartPulse className="h-5 w-5 text-[#0ea5e9]" />
+                          <h4 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider">Riwayat Kesehatan (Per Pekerjaan)</h4>
+                        </div>
+
+                        <div className="space-y-4">
+                          {data.riwayat_pekerja?.map((r: any, rIdx: number) => {
+                            const medisPerJob: any[] = r.detail_medis || [];
+                            const isActive = !r.tgl_keluar;
+                            
+                            return (
+                              <div key={rIdx} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm relative overflow-hidden group hover:border-[#0ea5e9]/30 transition-all">
+                                {/* Corner accent - exact twin of left side */}
+                                {!r.tgl_keluar && <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-50 rounded-bl-[100px] -mr-12 -mt-12 group-hover:bg-emerald-100/50 transition-colors" />}
+
                                 <div className="relative z-10">
+                                  {/* Header: Exact copy of left side job card header */}
                                   <div className="flex justify-between items-start mb-4">
                                     <div className="flex-1">
                                       <div className="flex items-center gap-2 mb-1">
-                                        <h5 className="text-base font-extrabold text-slate-900 leading-tight">
-                                          {m.tanggal_pemeriksaan ? format(parseISO(m.tanggal_pemeriksaan), 'dd MMMM yyyy', {locale: localeID}) : '-'}
-                                        </h5>
-                                        <span className="px-2 py-0.5 bg-blue-50 text-[#0ea5e9] text-[10px] font-extrabold rounded-md uppercase tracking-wider">
-                                          {m.jenis_pemeriksaan || 'MCU BERKALA'}
-                                        </span>
+                                        <h5 className="text-base font-extrabold text-slate-900 leading-tight">{r.nama_perusahaan}</h5>
+                                        {isActive ? (
+                                          <span className="px-2 py-0.5 bg-emerald-100 text-emerald-600 text-[10px] font-extrabold rounded-md uppercase tracking-wider">AKTIF</span>
+                                        ) : (
+                                          <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-[10px] font-extrabold rounded-md uppercase tracking-wider">SELESAI</span>
+                                        )}
                                       </div>
-                                      <p className="text-slate-400 text-xs font-bold uppercase tracking-tight">dr. {m.dokter || 'Dokter Pemeriksa'}</p>
+                                      <p className="text-[#0ea5e9] text-xs font-bold uppercase tracking-tight">{r.deskripsi_usaha || 'Bidang Industri'}</p>
                                     </div>
                                   </div>
 
-                                  <div className="grid grid-cols-2 gap-4 mb-4">
-                                    <div className="col-span-2">
-                                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Tempat Pemeriksaan</p>
-                                      <p className="text-sm font-semibold text-slate-700">{m.tempat_pemeriksaan || '-'}</p>
-                                    </div>
-                                    <div className="col-span-2">
-                                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Hasil Diagnosis / Keluhan</p>
-                                      <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                                        <p className="text-xs text-slate-600 font-medium leading-relaxed">{m.hasil_diagnosis || '-'}</p>
-                                      </div>
-                                    </div>
-                                  </div>
+                                  {/* List of medical records for this specific job */}
+                                  <div className="space-y-6">
+                                    {medisPerJob.length > 0 ? medisPerJob.map((m: any, mIdx: number) => (
+                                      <div key={mIdx} className={`${mIdx > 0 ? 'pt-6 border-t border-slate-100' : ''}`}>
+                                        <div className="flex justify-between items-start mb-3">
+                                          <div>
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Pemeriksaan</p>
+                                            <p className="text-[13px] font-extrabold text-slate-800">
+                                              {m.tgl_pemeriksaan ? format(parseISO(m.tgl_pemeriksaan), 'dd MMMM yyyy', {locale: localeID}) : '-'}
+                                            </p>
+                                          </div>
+                                          <span className={`px-2 py-0.5 text-[9px] font-extrabold rounded uppercase tracking-wider ${
+                                            m.status_kesehatan?.toLowerCase().includes('tidak') ? 'bg-red-50 text-red-600' : 
+                                            m.status_kesehatan?.toLowerCase().includes('catatan') ? 'bg-amber-50 text-amber-600' : 
+                                            'bg-emerald-50 text-emerald-600'
+                                          }`}>
+                                            {m.status_kesehatan?.replace(/_/g, ' ') || 'SEHAT'}
+                                          </span>
+                                        </div>
 
-                                  {(m.file_bukti_path || m.file_hasil_path) && (
-                                    <div className="pt-2">
-                                      <Button 
-                                        variant="ghost" 
-                                        size="sm" 
-                                        onClick={() => downloadMedisDoc(m.id)}
-                                        className="h-9 w-full bg-blue-50 text-[#0ea5e9] hover:bg-blue-100 border border-blue-100 rounded-xl font-bold transition-all"
-                                      >
-                                        <Download className="h-4 w-4 mr-2" /> Lihat Laporan Hasil Medis
-                                      </Button>
-                                    </div>
-                                  )}
+                                        <div className="grid grid-cols-2 gap-4 mb-3">
+                                          <div>
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Jenis</p>
+                                            <p className="text-xs font-semibold text-slate-700">{m.jenis_pemeriksa || 'MCU'}</p>
+                                          </div>
+                                          <div>
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Dokter / Rumah Sakit</p>
+                                            <p className="text-xs font-semibold text-slate-700 truncate">{m.dokter_pemeriksa || m.tempat_pemeriksa || '-'}</p>
+                                          </div>
+                                        </div>
+
+                                        <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                                          <p className="text-xs text-slate-600 leading-relaxed italic">{m.hasil_diagnosis || '-'}</p>
+                                        </div>
+
+                                        {(m.file_bukti_path || m.file_hasil_path) && (
+                                          <Button
+                                            variant="ghost" 
+                                            size="sm"
+                                            onClick={() => downloadMedisDoc(m.id)}
+                                            className="mt-3 h-7 w-full bg-blue-50 text-[#0ea5e9] hover:bg-blue-100 border border-blue-100 rounded-lg font-bold text-[9px] transition-all uppercase"
+                                          >
+                                            <Download className="h-3 w-3 mr-1.5" /> Unduh Laporan Medis
+                                          </Button>
+                                        )}
+                                      </div>
+                                    )) : (
+                                      <div className="py-8 text-center bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
+                                        <Activity className="h-8 w-8 text-slate-200 mx-auto mb-2" />
+                                        <p className="text-[11px] font-bold text-slate-400">Tidak ada rekam medis<br />tercatat untuk periode ini.</p>
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
-                            ))}
-                            {(!data.detail_medis || data.detail_medis.length === 0) && (
-                              <div className="py-20 text-center bg-white rounded-2xl border border-dashed border-slate-300">
-                                <Activity className="h-10 w-10 text-slate-200 mx-auto mb-3" />
-                                <p className="text-sm font-bold text-slate-400">Tidak ada rekam medis terdaftar.</p>
+                            );
+                          })}
+
+                          {/* Independent medical records (orphans) */}
+                          {(() => {
+                            const orphanMedis = data.detail_medis?.filter((m: any) => !m.riwayat_pekerja_id) || [];
+                            if (orphanMedis.length === 0) return null;
+                            return (
+                              <div className="bg-white border border-amber-100 rounded-2xl p-5 shadow-sm relative overflow-hidden">
+                                <div className="absolute top-0 right-0 w-24 h-24 bg-amber-50/40 rounded-bl-[100px] -mr-12 -mt-12" />
+                                <div className="relative z-10">
+                                  <h5 className="text-base font-extrabold text-slate-900 mb-1">Pemeriksaan Mandiri</h5>
+                                  <p className="text-amber-500 text-[10px] font-bold uppercase tracking-widest mb-4">Luar Riwayat Kerja</p>
+                                  
+                                  <div className="space-y-4">
+                                    {orphanMedis.map((m: any, mIdx: number) => (
+                                      <div key={mIdx} className="p-3 bg-amber-50/20 rounded-xl border border-amber-100">
+                                        <div className="flex justify-between items-start mb-2">
+                                          <p className="text-xs font-bold text-slate-800">
+                                            {m.tgl_pemeriksaan ? format(parseISO(m.tgl_pemeriksaan), 'dd MMM yyyy', {locale: localeID}) : '-'}
+                                          </p>
+                                          <span className="text-[9px] font-bold text-amber-600 uppercase tracking-wider">{m.status_kesehatan?.replace(/_/g, ' ') || 'SEHAT'}</span>
+                                        </div>
+                                        <p className="text-[11px] text-slate-600 italic">{m.hasil_diagnosis || '-'}</p>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
                               </div>
-                            )}
-                          </div>
+                            );
+                          })()}
                         </div>
                       </div>
                     </div>
@@ -818,6 +889,7 @@ export default function PekerjaDetailPage() {
                        const isActive = !r.tgl_keluar;
                        let wText = `${r.tgl_masuk ? format(parseISO(r.tgl_masuk), 'MMM yy', {locale: localeID}) : '-'} - ${r.tgl_keluar ? format(parseISO(r.tgl_keluar), 'MMM yy', {locale: localeID}) : 'Now'}`;
                        const isSelected = selectedJobId === idx;
+                       const medisCount = r.detail_medis?.length || 0;
 
                        return (
                          <div
@@ -841,6 +913,12 @@ export default function PekerjaDetailPage() {
                              <p className="text-[11px] text-slate-400 font-medium truncate">
                                {r.bagian || r.jabatan || 'Produksi'} • {wText}
                              </p>
+                             {/* Badge jumlah pemeriksaan */}
+                             {medisCount > 0 && (
+                               <span className="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-[#0ea5e9] text-[9px] font-bold rounded-full">
+                                 <Activity className="h-2 w-2" /> {medisCount} Pemeriksaan
+                               </span>
+                             )}
                            </div>
                            <div className="ml-4 flex flex-col items-end gap-2 shrink-0">
                              {isActive ? (
