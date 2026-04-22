@@ -120,34 +120,38 @@ class PekerjaController extends Controller
             }
 
             // 4. Update Nested Riwayat Pekerja
-            // For upsert, we clear existing riwayat and replace with new ones from the form 
-            // to maintain consistency with the wizard's current state.
+            // Hapus riwayat lama dan buat baru satu per satu agar mendapatkan ID
+            // untuk dihubungkan ke detail_medis yang embedded.
+            $embeddedMedisAll = []; // Kumpulkan semua medis embedded beserta riwayat_pekerja_id-nya
+
             if ($request->has('riwayat') && is_array($request->riwayat)) {
                 $pekerja->riwayatPekerja()->delete();
-                $pekerja->riwayatPekerja()->createMany($request->riwayat);
-            }
 
-            // 5. Update Nested Detail Medis
-            // We consolidate medical records from both the independent "medis" array 
-            // and the embedded "riwayat_pemeriksaan" found in each employment history entry.
-            $allMedis = [];
+                foreach ($request->riwayat as $riwayatItem) {
+                    // Pisahkan riwayat_pemeriksaan dari data riwayat sebelum disimpan
+                    $pemeriksaan = $riwayatItem['riwayat_pemeriksaan'] ?? [];
+                    $riwayatData = array_diff_key($riwayatItem, array_flip(['riwayat_pemeriksaan']));
 
-            if ($request->has('medis') && is_array($request->medis)) {
-                $allMedis = array_merge($allMedis, $request->medis);
-            }
+                    $savedRiwayat = $pekerja->riwayatPekerja()->create($riwayatData);
 
-            if ($request->has('riwayat') && is_array($request->riwayat)) {
-                foreach ($request->riwayat as $r) {
-                    if (isset($r['riwayat_pemeriksaan']) && is_array($r['riwayat_pemeriksaan'])) {
-                        $allMedis = array_merge($allMedis, $r['riwayat_pemeriksaan']);
+                    // Kumpulkan detail medis embedded, tandai dengan riwayat_pekerja_id
+                    foreach ($pemeriksaan as $medisItem) {
+                        $embeddedMedisAll[] = array_merge($medisItem, [
+                            '_riwayat_pekerja_id' => $savedRiwayat->id,
+                        ]);
                     }
                 }
             }
 
-            if (!empty($allMedis)) {
-                $pekerja->detailMedis()->delete();
-                $mappedMedis = array_map(function ($m) {
-                    return [
+            // 5. Update Nested Detail Medis
+            // Gabungkan medis embedded (terikat ke riwayat pekerjaan tertentu)
+            // dengan medis mandiri (tidak terikat pekerjaan tertentu).
+            $allMedis = [];
+
+            // Medis mandiri dari form Step 3 (tidak terikat pekerjaan)
+            if ($request->has('medis') && is_array($request->medis)) {
+                foreach ($request->medis as $m) {
+                    $allMedis[] = [
                         'tgl_pemeriksaan'    => $m['tanggal_pemeriksaan'] ?? null,
                         'tempat_pemeriksa'   => $m['tempat_pemeriksaan']  ?? null,
                         'jenis_pemeriksa'    => $m['jenis_pemeriksaan']   ?? null,
@@ -156,9 +160,30 @@ class PekerjaController extends Controller
                         'hasil_diagnosis'    => $m['hasil_diagnosis']     ?? null,
                         'rekomendasi'        => $m['rekomendasi']         ?? null,
                         'pendamping'         => $m['pendamping']          ?? null,
+                        'riwayat_pekerja_id' => null, // Medis mandiri, tidak terikat pekerjaan
                     ];
-                }, $allMedis);
-                $pekerja->detailMedis()->createMany($mappedMedis);
+                }
+            }
+
+            // Medis embedded dari setiap riwayat pekerjaan (dengan riwayat_pekerja_id)
+            foreach ($embeddedMedisAll as $m) {
+                $riwayatPekerjaId = $m['_riwayat_pekerja_id'] ?? null;
+                $allMedis[] = [
+                    'tgl_pemeriksaan'    => $m['tanggal_pemeriksaan'] ?? null,
+                    'tempat_pemeriksa'   => $m['tempat_pemeriksaan']  ?? null,
+                    'jenis_pemeriksa'    => $m['jenis_pemeriksaan']   ?? null,
+                    'dokter_pemeriksa'   => $m['dokter']              ?? null,
+                    'status_kesehatan'   => $m['status_kesehatan']    ?? 'sehat',
+                    'hasil_diagnosis'    => $m['hasil_diagnosis']     ?? null,
+                    'rekomendasi'        => $m['rekomendasi']         ?? null,
+                    'pendamping'         => $m['pendamping']          ?? null,
+                    'riwayat_pekerja_id' => $riwayatPekerjaId,
+                ];
+            }
+
+            if (!empty($allMedis)) {
+                $pekerja->detailMedis()->delete();
+                $pekerja->detailMedis()->createMany($allMedis);
             }
 
             // 6. Create Riwayat Medis Baseline Data
