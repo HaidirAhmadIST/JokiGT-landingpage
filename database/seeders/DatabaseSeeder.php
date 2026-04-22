@@ -15,12 +15,23 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        // Super Admin
         \App\Models\User::updateOrCreate(
             ['email' => 'admin@pak.com'],
             [
-                'nama' => 'Admin Sistem',
+                'nama'     => 'Admin Sistem',
                 'password' => \Illuminate\Support\Facades\Hash::make('admin123'),
-                'role' => 'admin',
+                'role'     => 'admin',
+            ]
+        );
+
+        // Staff
+        \App\Models\User::updateOrCreate(
+            ['email' => 'staff@pak.com'],
+            [
+                'nama'     => 'Staff PAK',
+                'password' => \Illuminate\Support\Facades\Hash::make('staff123'),
+                'role'     => 'petugas',
             ]
         );
     }

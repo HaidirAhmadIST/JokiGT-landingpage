@@ -68,10 +68,10 @@ class StorePekerjaRequest extends FormRequest
 
             // Detail Medis (Transactional) Data (Optional)
             'medis' => ['nullable', 'array'],
-            'medis.*.tanggal_pemeriksaan' => ['required', 'date', 'before_or_equal:today'],
-            'medis.*.tempat_pemeriksaan' => ['required', 'string', 'max:255'],
-            'medis.*.jenis_pemeriksaan' => ['required', 'string'],
-            'medis.*.dokter' => ['required', 'string', 'max:255'],
+            'medis.*.tgl_pemeriksaan' => ['required', 'date', 'before_or_equal:today'],
+            'medis.*.tempat_pemeriksa' => ['required', 'string', 'max:255'],
+            'medis.*.jenis_pemeriksa' => ['required', 'in:Rawat Jalan,Rawat Inap,MCU,IGD,Lainnya'],
+            'medis.*.dokter_pemeriksa' => ['required', 'string', 'max:255'],
             'medis.*.status_kesehatan' => ['required', 'in:sehat,sehat_dengan_catatan,tidak_sehat'],
             'medis.*.hasil_diagnosis' => ['required', 'string'],
             'medis.*.golongan_darah' => ['nullable', 'string', 'in:A,B,AB,O'],
@@ -89,7 +89,7 @@ class StorePekerjaRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'medis.*.tanggal_pemeriksaan.before_or_equal' => 'Tanggal pemeriksaan tidak boleh mendahului hari ini.',
+            'medis.*.tgl_pemeriksaan.before_or_equal' => 'Tanggal pemeriksaan tidak boleh mendahului hari ini.',
         ];
     }
 }

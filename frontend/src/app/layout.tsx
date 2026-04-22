@@ -23,6 +23,7 @@ export default function RootLayout({
     <html
       lang="id"
       className={`${jakarta.variable} font-sans h-full antialiased`}
+      suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col font-sans bg-[#F8FAFC]">
         <Providers>

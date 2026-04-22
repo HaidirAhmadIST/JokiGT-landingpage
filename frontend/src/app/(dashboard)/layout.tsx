@@ -153,7 +153,7 @@ export default function DashboardLayout({
                     </div>
                     <div>
                       <p className="text-[11px] font-extrabold text-slate-800 tracking-wider">ADMIN PANEL</p>
-                      <p className="text-[10px] text-slate-500 font-medium">Management Mode</p>
+                      <p className="text-[10px] text-slate-500 font-medium">Mode Manajemen</p>
                     </div>
                  </div>
                </div>
@@ -199,6 +199,7 @@ export default function DashboardLayout({
               onFocus={() => { if (searchQuery.trim().length >= 2) setSearchOpen(true); }}
               onKeyDown={(e) => { if (e.key === 'Escape') setSearchOpen(false); }}
               className="w-full h-10 pl-11 pr-4 rounded-lg border-none bg-slate-100 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#0ea5e9]/20 focus:bg-white transition-all text-slate-700 placeholder:text-slate-400"
+              suppressHydrationWarning
             />
           </div>
 
@@ -264,16 +265,19 @@ export default function DashboardLayout({
 
         {/* Right Actions */}
         <div className="flex items-center gap-x-5 shrink-0">
-          <button className="relative text-slate-400 hover:text-slate-700 transition-colors">
+          <button suppressHydrationWarning className="relative text-slate-400 hover:text-slate-700 transition-colors">
             <Bell className="h-[22px] w-[22px]" />
           </button>
           
-          <button className="text-slate-400 hover:text-slate-700 transition-colors">
+          <button suppressHydrationWarning className="text-slate-400 hover:text-slate-700 transition-colors">
             <Settings className="h-[22px] w-[22px]" />
           </button>
 
           <DropdownMenu>
-            <DropdownMenuTrigger className="h-9 w-9 rounded-full bg-orange-100 text-orange-700 flex items-center justify-center font-bold text-sm border-2 border-orange-200 outline-none hover:ring-2 hover:ring-orange-300 hover:ring-offset-1 transition-all">
+            <DropdownMenuTrigger 
+              className="h-9 w-9 rounded-full bg-orange-100 text-orange-700 flex items-center justify-center font-bold text-sm border-2 border-orange-200 outline-none hover:ring-2 hover:ring-orange-300 hover:ring-offset-1 transition-all"
+              suppressHydrationWarning
+            >
                {/* Mockup uses a small avatar, I will use a simple initials trick */}
                {mounted && user?.nama ? user.nama.charAt(0).toUpperCase() : 'A'}
             </DropdownMenuTrigger>
@@ -293,7 +297,7 @@ export default function DashboardLayout({
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout} className="text-red-600 cursor-pointer">
                 <LogOut className="mr-2 h-4 w-4" />
-                <span>Sign Out</span>
+                <span>Keluar</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -315,7 +319,7 @@ export default function DashboardLayout({
                   </div>
                   <div>
                     <p className="text-[11px] font-extrabold text-[#1e293b] tracking-wider">ADMIN PANEL</p>
-                    <p className="text-[10px] text-slate-500 font-medium mt-0.5">Management Mode</p>
+                    <p className="text-[10px] text-slate-500 font-medium mt-0.5">Mode Manajemen</p>
                   </div>
                </div>
              </div>
@@ -350,7 +354,7 @@ export default function DashboardLayout({
                 className="group flex items-center py-3.5 text-sm font-semibold text-slate-500 hover:text-slate-800 transition-colors"
               >
                 <Settings className="mr-4 shrink-0 h-[18px] w-[18px] text-slate-400 group-hover:text-slate-600" />
-                Settings
+                Pengaturan
               </Link>
            </div>
         </aside>

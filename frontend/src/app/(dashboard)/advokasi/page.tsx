@@ -72,7 +72,7 @@ export default function AdvokasiPage() {
   // Data Fetching with React Query
   const { data: casesData, isLoading: loadingCases } = useGetAdvokasiCases();
   const { data: statsData, isLoading: loadingStats } = useGetAdvokasiStats();
-  
+
   const cases = casesData || [];
   const summaryStats = statsData?.summary || {
     total: { count: 0, trend: 0 },
@@ -130,7 +130,7 @@ export default function AdvokasiPage() {
 
   const handleCaseTypeSelect = (typeId: string) => {
     setValue('jenis_kasus', typeId, { shouldValidate: true });
-    
+
     // Auto-fill catatan
     const currentCatatan = formData.catatan;
     if (!currentCatatan || Object.values(defaultNotes).includes(currentCatatan)) {
@@ -185,6 +185,7 @@ export default function AdvokasiPage() {
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
+                  suppressHydrationWarning
                   className={`px-4 pb-3 text-sm font-semibold whitespace-nowrap transition-colors relative ${activeTab === tab
                     ? 'text-[#0284c7]'
                     : 'text-[#94a3b8] hover:text-slate-600'
@@ -206,217 +207,312 @@ export default function AdvokasiPage() {
           </div>
         </div>
 
-        {/* Table Content */}
-        <AdvokasiTable 
-          loading={loading} 
-          filteredCases={filteredCases} 
-          totalCount={summaryStats.total.count} 
-          isStaffOrAbove={isStaffOrAbove} 
-        />
-      </Card>
+<<<<<<< HEAD
+  {/* Table Content */ }
+  <AdvokasiTable
+    loading={loading}
+    filteredCases={filteredCases}
+    totalCount={summaryStats.total.count}
+    isStaffOrAbove={isStaffOrAbove}
+  />
+=======
+        {/* Table */}
+        <div className="overflow-x-auto mt-4">
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent border-b border-slate-100">
+                <TableHead className="py-4 px-6 font-bold text-[10px] tracking-widest text-[#94a3b8]">NAMA PEKERJA</TableHead>
+                <TableHead className="py-4 px-6 font-bold text-[10px] tracking-widest text-[#94a3b8]">PERUSAHAAN</TableHead>
+                <TableHead className="py-4 px-6 font-bold text-[10px] tracking-widest text-[#94a3b8]">JENIS KASUS</TableHead>
+                <TableHead className="py-4 px-6 font-bold text-[10px] tracking-widest text-[#94a3b8]">PROGRES ALUR</TableHead>
+                <TableHead className="py-4 px-6 font-bold text-[10px] tracking-widest text-[#94a3b8]">STATUS TERAKHIR</TableHead>
+                <TableHead className="py-4 px-6 font-bold text-[10px] tracking-widest text-[#94a3b8]">TANGGAL UPDATE</TableHead>
+                <TableHead className="py-4 px-6 font-bold text-[10px] tracking-widest text-[#94a3b8]">AKSI</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="py-20 text-center text-slate-400">Memuat data...</TableCell>
+                </TableRow>
+              ) : cases.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="py-20 text-center text-slate-400 font-medium italic">Belum ada kasus advokasi terdaftar.</TableCell>
+                </TableRow>
+              ) : cases.map((c) => {
+                const stageData = stages.find(s => s.id === c.tahap) || stages[0];
+                const worker = c.pekerja;
+                const initials = worker?.nama_lengkap 
+                  ? worker.nama_lengkap.split(' ').map((n: string) => n[0]).join('').substring(0, 2) 
+                  : '??';
+                const progressLevel = c.tahap === 'UPTD' ? 1 : (c.tahap === 'BPJS' ? 2 : 3);
 
-      {/* ===== Add New Case Sheet ===== */}
-      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent className="sm:max-w-xl p-0 overflow-hidden flex flex-col bg-white border-l shadow-2xl">
-          <SheetHeader className="px-8 py-6 border-b border-slate-100 bg-white z-10">
-            <SheetTitle className="text-xl font-bold text-slate-900">Tambah Kasus Baru</SheetTitle>
-            <SheetDescription className="mt-1 text-slate-500">
-              Masukkan profil kasus pendampingan baru untuk pekerja.
-            </SheetDescription>
-          </SheetHeader>
-
-          <div className="flex-1 overflow-y-auto px-8 py-6">
-            <form id="advokasi-form" onSubmit={handleSubmit(onSubmit)} className="space-y-8 pb-4">
-
-              {/* Section 01 */}
-              <div className="space-y-5">
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-[#0ea5e9] text-white text-[10px] font-bold">01</span>
-                  <h3 className="text-xs font-bold text-[#94a3b8] uppercase tracking-widest">IDENTITAS PEKERJA & KASUS</h3>
-                </div>
-
-                <div className="space-y-3">
-                  <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Cari Pekerja</Label>
-                  <Popover open={openWorkerSearch} onOpenChange={setOpenWorkerSearch}>
-                    <PopoverTrigger
-                      className={cn(
-                        buttonVariants({ variant: "outline" }),
-                        "w-full justify-between h-12 bg-slate-50 border-slate-200 hover:bg-slate-100 px-4 font-normal"
-                      )}
-                      role="combobox"
-                      aria-expanded={openWorkerSearch}
-                    >
-                      {formData.pekerja_name ? (
-                        <span className="font-semibold text-slate-900">{formData.pekerja_name}</span>
-                      ) : (
-                        <span className="text-slate-400">Pilih pekerja yang terdaftar...</span>
-                      )}
-                      <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
-                      <Command shouldFilter={false}>
-                        <CommandInput
-                          placeholder="Ketik nama atau NIK..."
-                          className="h-10"
-                          onValueChange={(v) => fetchWorkers(v)}
-                        />
-                        <CommandList>
-                          <CommandEmpty className="py-6 text-center text-sm text-slate-500 italic">
-                            {loadingWorkers ? 'Mencari...' : 'Pekerja tidak ditemukan.'}
-                          </CommandEmpty>
-                          <CommandGroup>
-                            {workers.map((worker) => (
-                              <CommandItem
-                                key={worker.id}
-                                value={worker.id.toString()}
-                                onSelect={() => {
-                                  setValue('pekerja_id', worker.id.toString(), { shouldValidate: true });
-                                  setValue('pekerja_name', worker.nama_lengkap);
-                                  setValue('perusahaan', worker.perusahaan?.nama_perusahaan || 'N/A');
-                                  setOpenWorkerSearch(false);
-                                }}
-                                className="flex items-center justify-between py-3 px-4 cursor-pointer hover:bg-slate-50 border-b border-slate-50 last:border-0"
-                              >
-                                <div className="flex flex-col">
-                                  <span className="font-bold text-slate-800">{worker.nama_lengkap}</span>
-                                  <span className="text-[10px] text-slate-400 font-medium">NIK: {worker.nik} • {worker.perusahaan?.nama_perusahaan}</span>
-                                </div>
-                                <Check
-                                  className={cn(
-                                    "mr-2 h-4 w-4 text-[#0ea5e9]",
-                                    formData.pekerja_id === worker.id.toString() ? "opacity-100" : "opacity-0"
-                                  )}
-                                />
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                  {errors.pekerja_id && (
-                    <p className="text-red-500 text-[11px] font-medium">{errors.pekerja_id.message}</p>
-                  )}
-                </div>
-
-                <div className="space-y-3">
-                  <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Jenis Kasus Advokasi</Label>
-                  <div className="grid grid-cols-2 gap-3">
-                    {caseTypes.map((type) => {
-                      const Icon = type.icon;
-                      const isActive = formData.jenis_kasus === type.id;
-                      return (
-                        <button
-                          key={type.id}
-                          type="button"
-                          onClick={() => handleCaseTypeSelect(type.id)}
-                          className={cn(
-                            "flex flex-col items-start p-4 rounded-[16px] border-2 text-left transition-all duration-200",
-                            isActive
-                              ? "border-[#0ea5e9] bg-[#f0f9ff] ring-1 ring-[#0ea5e9]/20 shadow-sm"
-                              : "border-slate-100 bg-white hover:border-slate-200 hover:bg-slate-50"
+                return (
+                  <TableRow key={c.id} className="hover:bg-slate-50/50 transition-colors group">
+                    <TableCell className="py-4 px-6">
+                      <div className="flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-xs font-bold shrink-0 border border-slate-200">
+                          {initials}
+                        </div>
+                        <span className="font-bold text-[#1e293b] text-sm">{worker?.nama_lengkap}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="py-4 px-6 text-sm text-[#475569]">{worker?.perusahaan?.nama_perusahaan}</TableCell>
+                    <TableCell className="py-4 px-6 text-sm text-[#475569]">{caseTypeLabels[c.jenis_kasus]}</TableCell>
+                    <TableCell className="py-4 px-6">
+                      <div className="flex flex-col gap-1">
+                        <ProgressDots level={progressLevel} />
+                        <span className="text-[10px] font-semibold text-[#94a3b8]">{stageData.label}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="py-4 px-6">
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-bold border ${stageData.color}`}>
+                        {c.status_detail.replace(/_/g, ' ')}
+                      </span>
+                    </TableCell>
+                    <TableCell className="py-4 px-6 text-sm text-[#475569]">{new Date(c.updated_at).toLocaleDateString('id-ID')}</TableCell>
+                    <TableCell className="py-4 px-6">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "h-8 w-8 text-slate-400 hover:text-slate-700")}>
+                          <MoreVertical className="h-4 w-4" />
+                        </DropdownMenuTrigger>
+                        {/* @ts-ignore */}
+                        <DropdownMenuContent align="end" className="w-48">
+                          <DropdownMenuItem className="cursor-pointer" onClick={() => router.push(`/advokasi/${c.id}`)}><Eye className="mr-2 h-4 w-4" /> Lihat Detail</DropdownMenuItem>
+                          {isStaffOrAbove && (
+                            <>
+                              <DropdownMenuItem className="cursor-pointer"><RefreshCw className="mr-2 h-4 w-4" /> Update Status</DropdownMenuItem>
+                              <DropdownMenuItem className="cursor-pointer"><Archive className="mr-2 h-4 w-4" /> Tutup/Arsip Kasus</DropdownMenuItem>
+                            </>
                           )}
-                        >
-                          <div className={cn("p-2 rounded-lg mb-3", type.bg, type.color)}>
-                            <Icon className="h-5 w-5" />
-                          </div>
-                          <span className={cn("text-sm font-bold block", isActive ? "text-[#0369a1]" : "text-slate-700")}>
-                            {type.label}
-                          </span>
-                          <span className="text-[10px] text-slate-400 font-medium mt-1">
-                            {type.desc}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {errors.jenis_kasus && (
-                    <p className="text-red-500 text-[11px] font-medium">{errors.jenis_kasus.message}</p>
-                  )}
-                </div>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
+            </TableBody>
+          </Table>
+        </div>
 
-                <div className="space-y-3">
-                  <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Perusahaan Terkait</Label>
-                  <div className="h-12 flex items-center px-4 bg-slate-50 border border-slate-200 rounded-xl text-slate-500 text-sm font-medium italic">
-                    {formData.perusahaan || 'Otomatis terisi saat pekerja dipilih'}
-                  </div>
-                </div>
-              </div>
-
-              {/* Section 02 */}
-              <div className="space-y-5">
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-[#0ea5e9] text-white text-[10px] font-bold">02</span>
-                  <h3 className="text-xs font-bold text-[#94a3b8] uppercase tracking-widest">PROGRES AWAL</h3>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-xs font-bold text-slate-600">TAHAP SAAT INI</Label>
-                    {/* @ts-ignore */}
-                    <Select value={formData.tahap || undefined} onValueChange={(v: any) => setFormData({ ...formData, tahap: v })}>
-                      <SelectTrigger className="h-11 bg-slate-50/50 border-slate-200 focus:ring-[#0ea5e9]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="UPTD">UPTD</SelectItem>
-                        <SelectItem value="BPJS">BPJS</SelectItem>
-                        <SelectItem value="Pengadilan">Pengadilan</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs font-bold text-slate-600">STATUS DETAIL</Label>
-                    {/* @ts-ignore */}
-                    <Select value={formData.status_detail || undefined} onValueChange={(v: any) => setFormData({ ...formData, status_detail: v })}>
-                      <SelectTrigger className="h-11 bg-slate-50/50 border-slate-200 focus:ring-[#0ea5e9]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Verifikasi Dokumen">Verifikasi Dokumen</SelectItem>
-                        <SelectItem value="Mediasi 1">Mediasi 1</SelectItem>
-                        <SelectItem value="Mediasi 2">Mediasi 2</SelectItem>
-                        <SelectItem value="Sidang">Sidang</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </div>
-
-              {/* Section 03 */}
-              <div className="space-y-5">
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-[#0ea5e9] text-white text-[10px] font-bold">03</span>
-                  <h3 className="text-xs font-bold text-[#94a3b8] uppercase tracking-widest">DOKUMENTASI AWAL</h3>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-xs font-bold text-slate-600">TANGGAL PELAPORAN</Label>
-                  <Input type="date" className="h-11 bg-slate-50/50 border-slate-200 focus-visible:ring-[#0ea5e9]"
-                    {...register('tanggal_pelaporan')} />
-                  {errors.tanggal_pelaporan && <p className="text-red-500 text-[11px] font-medium">{errors.tanggal_pelaporan.message}</p>}
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-xs font-bold text-slate-600">CATATAN AWAL KASUS</Label>
-                  <Textarea placeholder="Tuliskan ringkasan singkat kasus..." className="min-h-[100px] resize-none bg-slate-50/50 border-slate-200 focus-visible:ring-[#0ea5e9]"
-                    {...register('catatan')} />
-                </div>
-              </div>
-
-            </form>
+        {/* Pagination Footer */}
+        <div className="border-t border-slate-100 p-4 px-6 flex items-center justify-between text-sm text-slate-500 font-medium">
+          <p className="text-xs font-bold text-[#94a3b8] tracking-wider uppercase">
+            MENAMPILKAN {cases.length} DARI {summaryStats.total.count} KASUS
+          </p>
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400" disabled suppressHydrationWarning>&lt;</Button>
+            <Button variant="ghost" className="h-8 w-8 bg-[#0284c7] hover:bg-[#0369a1] text-white rounded-full text-xs font-bold" suppressHydrationWarning>1</Button>
+            <Button variant="ghost" className="h-8 w-8 rounded-full hover:bg-slate-100 text-xs font-bold" suppressHydrationWarning>2</Button>
+            <Button variant="ghost" className="h-8 w-8 rounded-full hover:bg-slate-100 text-xs font-bold" suppressHydrationWarning>3</Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-600 hover:bg-slate-100" suppressHydrationWarning>&gt;</Button>
           </div>
+        </div>
+>>>>>>> 6752ea5 (fix: resolve conflicts after pull and apply advocacy dashboard fixes)
+      </Card >
 
-          <div className="border-t border-slate-100 p-6 bg-slate-50/50 flex flex-col gap-3">
-            <Button type="submit" form="advokasi-form" disabled={isSubmitting} className="w-full h-12 text-sm font-bold bg-[#0284c7] hover:bg-[#0369a1] text-white">
-              {isSubmitting ? 'Menyimpan...' : 'Simpan Kasus'}
-            </Button>
-            <Button type="button" variant="outline" onClick={() => setSheetOpen(false)} className="w-full h-12 text-sm font-bold bg-white text-slate-600 border-slate-200 hover:bg-slate-100">
-              Batal
-            </Button>
-          </div>
-        </SheetContent>
-      </Sheet>
-    </div>
+    {/* ===== Add New Case Sheet ===== */ }
+    < Sheet open = { sheetOpen } onOpenChange = { setSheetOpen } >
+      <SheetContent className="sm:max-w-xl p-0 overflow-hidden flex flex-col bg-white border-l shadow-2xl">
+        <SheetHeader className="px-8 py-6 border-b border-slate-100 bg-white z-10">
+          <SheetTitle className="text-xl font-bold text-slate-900">Tambah Kasus Baru</SheetTitle>
+          <SheetDescription className="mt-1 text-slate-500">
+            Masukkan profil kasus pendampingan baru untuk pekerja.
+          </SheetDescription>
+        </SheetHeader>
+
+        <div className="flex-1 overflow-y-auto px-8 py-6">
+          <form id="advokasi-form" onSubmit={handleSubmit(onSubmit)} className="space-y-8 pb-4">
+
+            {/* Section 01 */}
+            <div className="space-y-5">
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-[#0ea5e9] text-white text-[10px] font-bold">01</span>
+                <h3 className="text-xs font-bold text-[#94a3b8] uppercase tracking-widest">IDENTITAS PEKERJA & KASUS</h3>
+              </div>
+
+              <div className="space-y-3">
+                <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Cari Pekerja</Label>
+                <Popover open={openWorkerSearch} onOpenChange={setOpenWorkerSearch}>
+                  <PopoverTrigger
+                    className={cn(
+                      buttonVariants({ variant: "outline" }),
+                      "w-full justify-between h-12 bg-slate-50 border-slate-200 hover:bg-slate-100 px-4 font-normal"
+                    )}
+                    role="combobox"
+                    aria-expanded={openWorkerSearch}
+                  >
+                    {formData.pekerja_name ? (
+                      <span className="font-semibold text-slate-900">{formData.pekerja_name}</span>
+                    ) : (
+                      <span className="text-slate-400">Pilih pekerja yang terdaftar...</span>
+                    )}
+                    <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                    <Command shouldFilter={false}>
+                      <CommandInput
+                        placeholder="Ketik nama atau NIK..."
+                        className="h-10"
+                        onValueChange={(v) => fetchWorkers(v)}
+                      />
+                      <CommandList>
+                        <CommandEmpty className="py-6 text-center text-sm text-slate-500 italic">
+                          {loadingWorkers ? 'Mencari...' : 'Pekerja tidak ditemukan.'}
+                        </CommandEmpty>
+                        <CommandGroup>
+                          {workers.map((worker) => (
+                            <CommandItem
+                              key={worker.id}
+                              value={worker.id.toString()}
+                              onSelect={() => {
+                                setValue('pekerja_id', worker.id.toString(), { shouldValidate: true });
+                                setValue('pekerja_name', worker.nama_lengkap);
+                                setValue('perusahaan', worker.perusahaan?.nama_perusahaan || 'N/A');
+                                setOpenWorkerSearch(false);
+                              }}
+                              className="flex items-center justify-between py-3 px-4 cursor-pointer hover:bg-slate-50 border-b border-slate-50 last:border-0"
+                            >
+                              <div className="flex flex-col">
+                                <span className="font-bold text-slate-800">{worker.nama_lengkap}</span>
+                                <span className="text-[10px] text-slate-400 font-medium">NIK: {worker.nik} • {worker.perusahaan?.nama_perusahaan}</span>
+                              </div>
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4 text-[#0ea5e9]",
+                                  formData.pekerja_id === worker.id.toString() ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+                {errors.pekerja_id && (
+                  <p className="text-red-500 text-[11px] font-medium">{errors.pekerja_id.message}</p>
+                )}
+              </div>
+
+              <div className="space-y-3">
+                <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Jenis Kasus Advokasi</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  {caseTypes.map((type) => {
+                    const Icon = type.icon;
+                    const isActive = formData.jenis_kasus === type.id;
+                    return (
+                      <button
+                        key={type.id}
+                        type="button"
+                        onClick={() => handleCaseTypeSelect(type.id)}
+                        className={cn(
+                          "flex flex-col items-start p-4 rounded-[16px] border-2 text-left transition-all duration-200",
+                          isActive
+                            ? "border-[#0ea5e9] bg-[#f0f9ff] ring-1 ring-[#0ea5e9]/20 shadow-sm"
+                            : "border-slate-100 bg-white hover:border-slate-200 hover:bg-slate-50"
+                        )}
+                      >
+                        <div className={cn("p-2 rounded-lg mb-3", type.bg, type.color)}>
+                          <Icon className="h-5 w-5" />
+                        </div>
+                        <span className={cn("text-sm font-bold block", isActive ? "text-[#0369a1]" : "text-slate-700")}>
+                          {type.label}
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-medium mt-1">
+                          {type.desc}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {errors.jenis_kasus && (
+                  <p className="text-red-500 text-[11px] font-medium">{errors.jenis_kasus.message}</p>
+                )}
+              </div>
+
+              <div className="space-y-3">
+                <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Perusahaan Terkait</Label>
+                <div className="h-12 flex items-center px-4 bg-slate-50 border border-slate-200 rounded-xl text-slate-500 text-sm font-medium italic">
+                  {formData.perusahaan || 'Otomatis terisi saat pekerja dipilih'}
+                </div>
+              </div>
+            </div>
+
+            {/* Section 02 */}
+            <div className="space-y-5">
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-[#0ea5e9] text-white text-[10px] font-bold">02</span>
+                <h3 className="text-xs font-bold text-[#94a3b8] uppercase tracking-widest">PROGRES AWAL</h3>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-slate-600">TAHAP SAAT INI</Label>
+                  {/* @ts-ignore */}
+                  <Select value={formData.tahap || undefined} onValueChange={(v: any) => setFormData({ ...formData, tahap: v })}>
+                    <SelectTrigger className="h-11 bg-slate-50/50 border-slate-200 focus:ring-[#0ea5e9]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="UPTD">UPTD</SelectItem>
+                      <SelectItem value="BPJS">BPJS</SelectItem>
+                      <SelectItem value="Pengadilan">Pengadilan</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-slate-600">STATUS DETAIL</Label>
+                  {/* @ts-ignore */}
+                  <Select value={formData.status_detail || undefined} onValueChange={(v: any) => setFormData({ ...formData, status_detail: v })}>
+                    <SelectTrigger className="h-11 bg-slate-50/50 border-slate-200 focus:ring-[#0ea5e9]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Verifikasi Dokumen">Verifikasi Dokumen</SelectItem>
+                      <SelectItem value="Mediasi 1">Mediasi 1</SelectItem>
+                      <SelectItem value="Mediasi 2">Mediasi 2</SelectItem>
+                      <SelectItem value="Sidang">Sidang</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
+            {/* Section 03 */}
+            <div className="space-y-5">
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-[#0ea5e9] text-white text-[10px] font-bold">03</span>
+                <h3 className="text-xs font-bold text-[#94a3b8] uppercase tracking-widest">DOKUMENTASI AWAL</h3>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs font-bold text-slate-600">TANGGAL PELAPORAN</Label>
+                <Input type="date" className="h-11 bg-slate-50/50 border-slate-200 focus-visible:ring-[#0ea5e9]"
+                  {...register('tanggal_pelaporan')} />
+                {errors.tanggal_pelaporan && <p className="text-red-500 text-[11px] font-medium">{errors.tanggal_pelaporan.message}</p>}
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs font-bold text-slate-600">CATATAN AWAL KASUS</Label>
+                <Textarea placeholder="Tuliskan ringkasan singkat kasus..." className="min-h-[100px] resize-none bg-slate-50/50 border-slate-200 focus-visible:ring-[#0ea5e9]"
+                  {...register('catatan')} />
+              </div>
+            </div>
+
+          </form>
+        </div>
+
+        <div className="border-t border-slate-100 p-6 bg-slate-50/50 flex flex-col gap-3">
+          <Button type="submit" form="advokasi-form" disabled={isSubmitting} className="w-full h-12 text-sm font-bold bg-[#0284c7] hover:bg-[#0369a1] text-white">
+            {isSubmitting ? 'Menyimpan...' : 'Simpan Kasus'}
+          </Button>
+          <Button type="button" variant="outline" onClick={() => setSheetOpen(false)} className="w-full h-12 text-sm font-bold bg-white text-slate-600 border-slate-200 hover:bg-slate-100">
+            Batal
+          </Button>
+        </div>
+      </SheetContent>
+      </Sheet >
+    </div >
   );
 }
