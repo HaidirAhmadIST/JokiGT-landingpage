@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { Toaster } from 'sonner';
+import { Providers } from "@/components/providers";
 import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({
@@ -24,7 +25,9 @@ export default function RootLayout({
       className={`${jakarta.variable} font-sans h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans bg-[#F8FAFC]">
-        {children}
+        <Providers>
+          {children}
+        </Providers>
         <Toaster position="top-center" richColors />
       </body>
     </html>

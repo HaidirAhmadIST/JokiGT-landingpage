@@ -379,8 +379,8 @@ export default function PerusahaanPage() {
     switch (status) {
       case 'Berkasus':
         return (
-          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-600 border border-emerald-100">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5"></span>
+          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-600 border border-rose-100">
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 mr-1.5"></span>
             Berkasus
           </span>
         );
@@ -394,8 +394,8 @@ export default function PerusahaanPage() {
       case 'Selesai':
       default:
         return (
-          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-50 text-slate-600 border border-slate-100">
-            <span className="w-1.5 h-1.5 rounded-full bg-slate-500 mr-1.5"></span>
+          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-600 border border-emerald-100">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5"></span>
             Selesai
           </span>
         );
