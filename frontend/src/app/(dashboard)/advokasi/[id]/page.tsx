@@ -1,11 +1,11 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
-import api from '@/lib/axios';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import api from '@/lib/axios';
 import {
   CheckCircle2,
   ClipboardList,
@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import SheetEditKasus from '@/components/SheetEditKasus';
+import { useGetAdvokasiDetail } from '@/hooks/useAdvokasi';
 
 const caseTypeLabels: Record<string, string> = {
   PAK: 'PAK (Penyakit Akibat Kerja)',
@@ -50,7 +51,7 @@ const normalizeStatus = (s: string) => {
   return map[s] || s;
 };
 
-const getStatusLabel = (s: string) => {
+const getStatusLabel = (s?: string) => {
   if (!s) return 'Sehat';
   const normalized = normalizeStatus(s);
   if (normalized === 'sehat') return 'Sehat';
@@ -59,7 +60,7 @@ const getStatusLabel = (s: string) => {
   return s.replace(/_/g, ' ');
 };
 
-const getStatusColor = (s: string) => {
+const getStatusColor = (s?: string) => {
   if (!s) return 'text-emerald-600';
   const normalized = normalizeStatus(s);
   if (normalized === 'sehat') return 'text-emerald-600';
@@ -73,27 +74,10 @@ export default function AdvokasiDetailPage() {
   const router = useRouter();
   const id = params.id as string;
   
-  const [loading, setLoading] = useState(true);
-  const [data, setData] = useState<any>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const resp = await api.get(`/advokasi/${id}`);
-      if (resp.data.status === 'success') {
-        setData(resp.data.data);
-      }
-    } catch (err) {
-      toast.error('Gagal memuat detail kasus.');
-    } finally {
-      setLoading(false);
-    }
-  }, [id]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  const { data, isLoading: loading, refetch } = useGetAdvokasiDetail(id);
 
   if (loading) {
     return (
@@ -116,7 +100,8 @@ export default function AdvokasiDetailPage() {
   // Map backend data to UI structure
   const code = `ADV-${data.id.toString().padStart(5, '0')}`;
   const statusLabel = data.rehabilitasi_bpjskes ? 'SELESAI' : (data.status_detail || 'DALAM PROSES');
-  const title = caseTypeLabels[data.jenis_kasus] || data.jenis_kasus || 'Penyakit Akibat Kerja';
+  const normalizedType = data.jenis_kasus?.toUpperCase();
+  const title = caseTypeLabels[normalizedType] || normalizedType || 'Penyakit Akibat Kerja';
   
   const currentStages = [
     { name: 'Pajanan', status: data?.riwayat_pajanan ? 'Selesai' : 'Pending', icon: Search, done: !!data?.riwayat_pajanan, active: !data?.riwayat_pajanan },
@@ -128,7 +113,7 @@ export default function AdvokasiDetailPage() {
   ];
 
   // Derived Data
-  const currentJob = data?.pekerja?.riwayat_pekerja?.find((r: any) => !r.tgl_keluar) || data?.pekerja?.riwayat_pekerja?.[0];
+  const currentJob = data?.pekerja?.riwayat_pekerja?.find(r => !r.tgl_keluar) || data?.pekerja?.riwayat_pekerja?.[0];
 
   const documents = [
     { key: 'riwayat_pajanan', name: 'Bukti Pajanan', path: data.bukti_pajanan_path, fileName: data.bukti_pajanan_name, date: data.bukti_pajanan_at },
@@ -138,6 +123,27 @@ export default function AdvokasiDetailPage() {
     { key: 'kompensasi_bpjstk', name: 'Kompensasi BPJSTK', path: data.bukti_kompensasi_bpjstk_path, fileName: data.bukti_kompensasi_bpjstk_name, date: data.bukti_kompensasi_bpjstk_at },
     { key: 'rehabilitasi_bpjskes', name: 'Rehabilitasi BPJSKES', path: data.bukti_rehabilitasi_bpjskes_path, fileName: data.bukti_rehabilitasi_bpjskes_name, date: data.bukti_rehabilitasi_bpjskes_at },
   ].filter(d => !!d.path);
+
+  const handleExportPdf = async () => {
+    setDownloading(true);
+    try {
+      const response = await api.get(`/advokasi/${id}/pdf`, { responseType: 'blob' });
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Laporan-Advokasi-${code}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast.success('Buku PDF berhasil diunduh.');
+    } catch (err) {
+      toast.error('Gagal saat membuat PDF.');
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   // Timeline Logic
   const timelineMilestones = [
@@ -154,9 +160,11 @@ export default function AdvokasiDetailPage() {
     { label: 'Kasus Didaftarkan', at: data.created_at, icon: ClipboardList, color: 'bg-slate-400' },
     // Milestone events
     ...timelineMilestones
+      // @ts-ignore
       .filter(m => !!data[m.key] && !!m.at)
       .map(m => ({ ...m }))
   ]
+    // @ts-ignore
     .map(m => ({ ...m, date: new Date(m.at) }))
     .sort((a, b) => b.date.getTime() - a.date.getTime());
 
@@ -179,8 +187,14 @@ export default function AdvokasiDetailPage() {
           <h1 className="text-[24px] font-extrabold tracking-tight text-[#0f172a]">{title}</h1>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" className="h-10 px-5 font-bold text-slate-700 border-slate-200">
-            <Printer className="mr-2 h-4 w-4" /> Export PDF
+          <Button 
+            variant="outline" 
+            onClick={handleExportPdf}
+            disabled={downloading}
+            className="h-10 px-5 font-bold text-slate-700 border-slate-200"
+          >
+            {downloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Printer className="mr-2 h-4 w-4" />}
+            {downloading ? 'Memproses...' : 'Export PDF'}
           </Button>
           <Button 
             onClick={() => setIsEditOpen(true)}
@@ -398,7 +412,7 @@ export default function AdvokasiDetailPage() {
         open={isEditOpen} 
         onOpenChange={setIsEditOpen} 
         data={data} 
-        onSuccess={fetchData}
+        onSuccess={() => refetch()}
       />
     </div>
   );

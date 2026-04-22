@@ -64,6 +64,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('advokasi/stats', [AdvokasiController::class, 'stats']);
     Route::get('advokasi', [AdvokasiController::class, 'index']);
     Route::get('advokasi/{id}', [AdvokasiController::class, 'show']);
+    Route::get('advokasi/{id}/pdf', [AdvokasiController::class, 'exportPdf']);
 
     // File Downloads (RBAC handled in controller or by role)
     Route::group(['middleware' => ['role:admin,petugas']], function () {
