@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import api from '@/lib/axios';
+import { useState } from 'react';
+import { useGetReportSummary, useSearchCases } from '@/hooks/useReport';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,58 +33,18 @@ import { useRouter } from 'next/navigation';
 
 export default function LaporanPage() {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [searching, setSearching] = useState(false);
-
-  const [summaryData, setSummaryData] = useState<any>(null);
-  const [chartData, setChartData] = useState<any[]>([]);
-  const [sectorData, setSectorData] = useState<any[]>([]);
-  const [recentAdvocacy, setRecentAdvocacy] = useState<any[]>([]);
-  const [recentSuccesses, setRecentSuccesses] = useState<any[]>([]);
   const [isReviewOpen, setIsReviewOpen] = useState(false);
 
-  const fetchSummary = async () => {
-    setLoading(true);
-    try {
-      const res = await api.get('/reports/summary');
-      if (res.data.status === 'success') {
-        setSummaryData(res.data.data.summary);
-        setChartData(res.data.data.chart_data);
-        setSectorData(res.data.data.sector_data);
-        setRecentSuccesses(res.data.data.recent_successes || []);
-      }
-    } catch (error) {
-      toast.error('Gagal memuat ringkasan laporan');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: reportData, isLoading } = useGetReportSummary();
+  const { data: searchResults, isFetching: searching } = useSearchCases(searchQuery);
 
-  const fetchSearch = useCallback(async (query: string) => {
-    setSearching(true);
-    try {
-      const res = await api.get(`/reports/search?query=${encodeURIComponent(query)}`);
-      if (res.data.status === 'success') {
-        setRecentAdvocacy(res.data.data);
-      }
-    } catch (error) {
-      console.error('Search failed', error);
-    } finally {
-      setSearching(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchSummary();
-  }, []);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchSearch(searchQuery);
-    }, 400);
-    return () => clearTimeout(timer);
-  }, [searchQuery, fetchSearch]);
+  const loading = isLoading;
+  const summaryData = reportData?.summary;
+  const chartData = reportData?.chart_data || [];
+  const sectorData = reportData?.sector_data || [];
+  const recentSuccesses = reportData?.recent_successes || [];
+  const recentAdvocacy = searchResults || [];
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 max-w-7xl mx-auto">
@@ -209,8 +169,8 @@ export default function LaporanPage() {
             </button>
           </div>
           <div className="space-y-6">
-            {loading ? [1, 2, 3, 4].map(i => <div key={i} className="h-10 bg-slate-50 animate-pulse rounded-lg" />) : (
-              sectorData.map((item) => (
+            {loading ? [1, 2, 3, 4].map((i: number) => <div key={i} className="h-10 bg-slate-50 animate-pulse rounded-lg" />) : (
+              sectorData.map((item: any) => (
                 <div key={item.name} className="space-y-2">
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-semibold text-[#1e293b]">{item.name}</span>
@@ -259,11 +219,11 @@ export default function LaporanPage() {
               </TableHeader>
               <TableBody>
                 {searching && recentAdvocacy.length === 0 ? (
-                  [1, 2, 3].map(i => (
+                  [1, 2, 3].map((i: number) => (
                     <TableRow key={i}><TableCell colSpan={4} className="h-16 bg-slate-50/50 animate-pulse" /></TableRow>
                   ))
                 ) : (
-                  recentAdvocacy.map((row, i) => (
+                  recentAdvocacy.map((row: any, i: number) => (
                     <TableRow key={i} className="hover:bg-slate-50/50 transition-colors">
                       <TableCell className="py-3.5">
                         <div className="font-bold text-[#1e293b] text-sm">{row.worker}</div>
@@ -305,10 +265,14 @@ export default function LaporanPage() {
             <p className="text-white/70 text-sm mt-1.5">Efektivitas pendampingan dan advokasi hukum nasional</p>
           </div>
           <div className="my-6">
-            <h3 className="text-6xl font-extrabold">94%</h3>
+            <h3 className="text-6xl font-extrabold">{summaryData ? `${summaryData.sukses_advokasi.value}%` : '0%'}</h3>
           </div>
           <div>
-            <p className="text-white/70 text-sm">Melampaui target KPI tahunan (90%)</p>
+            <p className="text-white/70 text-sm">
+              {summaryData && parseFloat(summaryData.sukses_advokasi.value) >= 90 
+                ? 'Melampaui target KPI tahunan (90%)' 
+                : 'Belum mencapai target KPI tahunan (90%)'}
+            </p>
             <Button
               onClick={() => setIsReviewOpen(true)}
               className="mt-4 bg-white/10 hover:bg-white/20 text-white border-white/20 border h-11 px-6 font-bold"
@@ -341,7 +305,7 @@ export default function LaporanPage() {
               </div>
               <div className="bg-white/10 rounded-2xl p-4 backdrop-blur-sm border border-white/10">
                 <p className="text-white/60 text-[10px] font-bold tracking-widest uppercase">Pencapaian Riil</p>
-                <p className="text-2xl font-black mt-1 text-emerald-400">{summaryData?.sukses_advokasi.value || '94.0%'}</p>
+                <p className="text-2xl font-black mt-1 text-emerald-400">{summaryData ? `${summaryData.sukses_advokasi.value}%` : '0%'}</p>
               </div>
             </div>
           </div>
@@ -354,7 +318,7 @@ export default function LaporanPage() {
 
             <div className="space-y-4">
               {recentSuccesses.length > 0 ? (
-                recentSuccesses.map((item, idx) => (
+                recentSuccesses.map((item: any, idx: number) => (
                   <div key={idx} className="flex items-start gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-100 group hover:border-[#0ea5e9]/30 transition-all">
                     <div className="bg-emerald-100 text-emerald-600 p-2 rounded-xl shrink-0">
                       <CheckCircle className="h-4 w-4" />
