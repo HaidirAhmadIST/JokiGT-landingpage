@@ -33,14 +33,15 @@ class ReportController extends Controller
                 ? round((($totalKasus - $totalKasusPrev) / $totalKasusPrev) * 100, 1) 
                 : 0;
 
-            // Kepatuhan (Pekerja with at least one medical record)
-            $totalPekerja = Pekerja::count();
-            $pekerjaPatuh = Pekerja::has('detailMedis')->count();
-            $kepatuhanRate = $totalPekerja > 0 ? round(($pekerjaPatuh / $totalPekerja) * 100, 1) : 0;
+            // Advokasi dalam Proses
+            $advokasiProses = StatusAdvokasi::whereNotNull('jenis_kasus')
+                ->where('rehabilitasi_bpjskes', false)
+                ->count();
+            $kepatuhanRate = $advokasiProses;
             
-            // Success Rate
-            $suksesAdvokasi = StatusAdvokasi::where('rehabilitasi_bpjskes', true)->count();
-            $successRate = $totalKasus > 0 ? round(($suksesAdvokasi / $totalKasus) * 100, 1) : 0;
+            // Counts for Jenis PAK and Total
+            $suksesAdvokasi = StatusAdvokasi::whereNotNull('jenis_kasus')->distinct('jenis_kasus')->count('jenis_kasus');
+            $successRate = $suksesAdvokasi; // Will be displayed as a whole number now
 
             // 2. Chart Data (Last 6 Months)
             $chartData = [];
@@ -57,24 +58,23 @@ class ReportController extends Controller
                 ];
             }
 
-            // 3. Sector Compliance
-            $sectorData = DB::table('perusahaan')
-                ->join('pekerja', 'perusahaan.id', '=', 'pekerja.perusahaan_id')
-                ->leftJoin('detail_medis', 'pekerja.id', '=', 'detail_medis.pekerja_id')
-                ->select(
-                    'perusahaan.sektor_industri as name',
-                    DB::raw('COUNT(DISTINCT pekerja.id) as total_pekerja'),
-                    DB::raw('COUNT(DISTINCT detail_medis.pekerja_id) as patuh_pekerja')
-                )
-                ->where('perusahaan.deleted_at', null)
-                ->groupBy('perusahaan.sektor_industri')
+            // 3. Jenis PAK Distribution (Formerly Sector Compliance)
+            $totalCases = StatusAdvokasi::whereNotNull('jenis_kasus')->count();
+            $colors = ['bg-[#0ea5e9]', 'bg-[#10b981]', 'bg-[#f59e0b]', 'bg-[#ef4444]', 'bg-[#8b5cf6]'];
+            
+            $sectorData = StatusAdvokasi::whereNotNull('jenis_kasus')
+                ->select('jenis_kasus as name', DB::raw('COUNT(*) as total'))
+                ->groupBy('jenis_kasus')
+                ->orderByDesc('total')
                 ->limit(5)
                 ->get()
-                ->map(function ($item) {
+                ->map(function ($item, $index) use ($totalCases, $colors) {
+                    $name = strtoupper($item->name);
+                    
                     return [
-                        'name' => $item->name ?: 'Tidak Diketahui',
-                        'value' => $item->total_pekerja > 0 ? round(($item->patuh_pekerja / $item->total_pekerja) * 100) : 0,
-                        'color' => 'bg-[#0ea5e9]'
+                        'name' => $name,
+                        'value' => $totalCases > 0 ? round(($item->total / $totalCases) * 100) : 0,
+                        'color' => $colors[$index % count($colors)]
                     ];
                 });
 
@@ -87,7 +87,7 @@ class ReportController extends Controller
                 ->map(fn($adv) => [
                     'worker' => $adv->pekerja->nama_lengkap,
                     'company' => $adv->pekerja->perusahaan->nama_perusahaan ?? 'Personal',
-                    'case' => $adv->jenis_kasus,
+                    'case' => strtoupper($adv->jenis_kasus),
                     'date' => $adv->updated_at->format('d M Y')
                 ]);
 
@@ -100,12 +100,12 @@ class ReportController extends Controller
                             'trend' => $kasusTrend,
                         ],
                         'kepatuhan' => [
-                            'value' => $kepatuhanRate . '%',
-                            'trend' => -1.2,
+                            'value' => number_format($kepatuhanRate),
+                            'trend' => 0,
                         ],
                         'sukses_advokasi' => [
-                            'value' => $successRate . '%',
-                            'trend' => 2.4,
+                            'value' => number_format($successRate),
+                            'trend' => 0,
                         ]
                     ],
                     'chart_data' => $chartData,
@@ -154,7 +154,7 @@ class ReportController extends Controller
                 return [
                     'company' => $adv->pekerja->perusahaan->nama_perusahaan ?? 'Personal',
                     'worker' => $adv->pekerja->nama_lengkap,
-                    'case' => $adv->jenis_kasus,
+                    'case' => strtoupper($adv->jenis_kasus),
                     'status' => $status,
                     'statusColor' => $color,
                     'pekerja_id' => $adv->pekerja_id

@@ -34,6 +34,13 @@ class UpdateAdvokasiRequest extends FormRequest
             'step_key' => ['nullable', 'string', 'in:riwayat_pajanan,persetujuan_dokter,perusahaan_lapor,penetapan_pak,kompensasi_bpjstk,rehabilitasi_bpjskes'],
             'file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
             
+            // Metadata fields
+            'jenis_kasus' => ['nullable', 'string'],
+            'tahap' => ['nullable', 'string'],
+            'status_detail' => ['nullable', 'string'],
+            'tanggal_pelaporan' => ['nullable', 'date'],
+            'catatan' => ['nullable', 'string'],
+            
             // Legacy/Specific file upload fields
             'bukti_pajanan' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
             'bukti_persetujuan_dokter' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],

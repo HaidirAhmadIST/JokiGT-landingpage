@@ -8,10 +8,11 @@ use App\Models\StatusAdvokasi;
 use App\Models\Pekerja;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
+use App\Traits\HandlesPdfUploads;
 
 class AdvokasiController extends Controller
 {
+    use HandlesPdfUploads;
     /**
      * Return counts of workers who have completed each advokasi step.
      */
@@ -78,7 +79,7 @@ class AdvokasiController extends Controller
                     'nama'          => $s->pekerja->nama_lengkap ?? '-',
                     'nik'           => $s->pekerja->nik ?? '-',
                     'perusahaan'    => $s->pekerja->perusahaan->nama_perusahaan ?? '-',
-                    'jenis_kasus'   => $s->jenis_kasus,
+                    'jenis_kasus'   => strtoupper($s->jenis_kasus),
                     'status_detail' => $s->status_detail,
                     'progress'      => $s->progress_percentage,
                 ]);
@@ -102,12 +103,29 @@ class AdvokasiController extends Controller
     {
         $cases = StatusAdvokasi::with(['pekerja.perusahaan', 'pekerja.user'])
             ->whereNotNull('jenis_kasus')
-            ->latest()
-            ->get();
+            ->get()
+            ->map(function($case) {
+                $case->jenis_kasus = strtoupper($case->jenis_kasus);
+                return $case;
+            });
 
         return response()->json([
             'status' => 'success',
             'data' => $cases
+        ]);
+    }
+
+    public function show(string $id): JsonResponse
+    {
+        $status = StatusAdvokasi::with(['pekerja.perusahaan', 'pekerja.user', 'pekerja.riwayatPekerja'])->find($id);
+
+        if (!$status) {
+            return response()->json(['status' => 'error', 'message' => 'Status advokasi tidak ditemukan.'], 404);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $status
         ]);
     }
 
