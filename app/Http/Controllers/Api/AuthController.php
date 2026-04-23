@@ -58,40 +58,6 @@ class AuthController extends Controller
     }
 
     /**
-     * Change the authenticated user's password.
-     */
-    public function changePassword(Request $request): JsonResponse
-    {
-        $request->validate([
-            'current_password'      => 'required|string',
-            'new_password'          => 'required|string|min:8|confirmed',
-        ], [
-            'current_password.required' => 'Password saat ini wajib diisi.',
-            'new_password.required'     => 'Password baru wajib diisi.',
-            'new_password.min'          => 'Password baru minimal 8 karakter.',
-            'new_password.confirmed'    => 'Konfirmasi password tidak cocok.',
-        ]);
-
-        $user = $request->user();
-
-        if (!Hash::check($request->current_password, $user->password)) {
-            return response()->json([
-                'status'  => 'error',
-                'message' => 'Password saat ini tidak sesuai.',
-            ], 422);
-        }
-
-        $user->update(['password' => Hash::make($request->new_password)]);
-
-        // Revoke all tokens so user must re-login
-        $user->tokens()->delete();
-
-        return response()->json([
-            'status'  => 'success',
-            'message' => 'Password berhasil diubah. Silakan login kembali.',
-        ]);
-    }
-    /**
      * Revoke the user's current token.
      */
     public function logout(Request $request): JsonResponse
