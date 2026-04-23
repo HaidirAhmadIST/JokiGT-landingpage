@@ -38,26 +38,77 @@
     <div class="section-title">A. IDENTITAS PEKERJA</div>
     <table>
         <tr>
-            <th>Pekerja</th>
+            <th style="width: 30%">Pekerja</th>
             <td>
                 <strong>{{ $advokasi->pekerja->nama_lengkap ?? '-' }}</strong><br>
                 <span style="font-size: 9pt; color:#64748b;">NIK: {{ $advokasi->pekerja->nik ?? '-' }}</span>
             </td>
         </tr>
         <tr>
-            <th>Perusahaan Tempat Bekerja</th>
-            <td>{{ optional(optional($advokasi->pekerja->riwayat_pekerja)->first())->nama_perusahaan ?? optional($advokasi->pekerja->perusahaan)->nama_perusahaan ?? '-' }}</td>
+            <th>Perusahaan / Pemberi Kerja</th>
+            <td>
+                @php
+                    $job = $advokasi->pekerja->currentJob;
+                    $perusahaan = $advokasi->pekerja->perusahaan->nama_perusahaan ?? null;
+                @endphp
+                
+                @if($perusahaan)
+                    {{ $perusahaan }}
+                @elseif($job && $job->status_pekerjaan === 'Outsourcing')
+                    {{ $job->nama_agen_penyalur ?? 'Agency / Pihak Ketiga' }} (OUTSOURCING)
+                @elseif($job && in_array($job->status_pekerjaan, ['Borongan', 'Harian Lepas']))
+                    MANDIRI / INFORMAL
+                @else
+                    -
+                @endif
+            </td>
         </tr>
         <tr>
             <th>Jabatan / Area Kerja</th>
-            <td>{{ optional(optional($advokasi->pekerja->riwayat_pekerja)->first())->jabatan ?? '-' }} / {{ optional(optional($advokasi->pekerja->riwayat_pekerja)->first())->area_kerja ?? '-' }}</td>
+            <td>
+                @if($job)
+                    @if(in_array($job->status_pekerjaan, ['Borongan', 'Harian Lepas']))
+                        Pekerja Lapangan ({{ strtoupper($job->status_pekerjaan) }})
+                    @else
+                        {{ $job->jabatan ?? '-' }} / {{ $job->bagian ?? '-' }}
+                    @endif
+                @else
+                    -
+                @endif
+            </td>
+        </tr>
+        @if($job && in_array($job->status_pekerjaan, ['Borongan', 'Harian Lepas']))
+        <tr>
+            <th>Lokasi Proyek</th>
+            <td>
+                @php
+                    $info = is_string($job->informal_data) ? json_decode($job->informal_data, true) : $job->informal_data;
+                    $lokasi = is_array($info['lokasi_proyek'] ?? null) ? implode(', ', array_filter($info['lokasi_proyek'])) : ($info['lokasi_proyek'] ?? '-');
+                @endphp
+                {{ $lokasi }}
+            </td>
+        </tr>
+        @endif
+        <tr>
+            <th>Masa Kerja</th>
+            <td>
+                @if($job && in_array($job->status_pekerjaan, ['Borongan', 'Harian Lepas']))
+                    @php
+                        $info = is_string($job->informal_data) ? json_decode($job->informal_data, true) : $job->informal_data;
+                    @endphp
+                    {{ $info['lama_bekerja'] ?? '-' }} {{ $info['satuan_waktu'] ?? '' }} (Total Durasi)
+                @elseif($job && $job->tgl_masuk)
+                    {{ \Carbon\Carbon::parse($job->tgl_masuk)->diffInYears(now()) }} Tahun (Sejak {{ \Carbon\Carbon::parse($job->tgl_masuk)->format('M Y') }})
+                @else
+                    -
+                @endif
+            </td>
         </tr>
         <tr>
             <th>Status Kesehatan Terakhir</th>
             <td>
                 @php
-                    $riwayat = optional($advokasi->pekerja)->riwayat_pekerja;
-                    $statusKes = $riwayat && $riwayat->isNotEmpty() ? $riwayat->first()->status_kesehatan : 'Sehat';
+                    $statusKes = $advokasi->pekerja->status_kesehatan ?? 'sehat';
                 @endphp
                 <span class="{{ str_contains(strtolower($statusKes), 'sehat') && !str_contains(strtolower($statusKes), 'tidak') ? 'label-success' : 'label-danger' }}">
                     {{ strtoupper(str_replace('_', ' ', $statusKes)) }}

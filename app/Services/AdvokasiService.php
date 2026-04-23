@@ -117,7 +117,7 @@ class AdvokasiService
      */
     public function getCaseDetails(string $id): ?StatusAdvokasi
     {
-        return StatusAdvokasi::with(['pekerja.perusahaan', 'pekerja.user', 'pekerja.riwayatPekerja'])->find($id);
+        return StatusAdvokasi::with(['pekerja.perusahaan', 'pekerja.user', 'pekerja.riwayatPekerja', 'pekerja.currentJob'])->find($id);
     }
 
     /**
