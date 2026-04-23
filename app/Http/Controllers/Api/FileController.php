@@ -22,7 +22,7 @@ class FileController extends Controller
     public function uploadMedisFile(Request $request, string $id)
     {
         $request->validate([
-            'file_hasil' => 'required', // Can be multiple
+            'file_hasil' => 'required|array',
             'file_hasil.*' => 'file|mimes:pdf,jpg,jpeg,png,webp|max:5120',
         ]);
 
@@ -69,7 +69,7 @@ class FileController extends Controller
     public function uploadRiwayatFile(Request $request, string $id)
     {
         $request->validate([
-            'file_bukti' => 'required', // Can be multiple
+            'file_bukti' => 'required|array',
             'file_bukti.*' => 'file|mimes:pdf,jpg,jpeg,png,webp|max:5120',
         ]);
 

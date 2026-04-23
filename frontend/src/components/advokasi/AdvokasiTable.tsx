@@ -3,7 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button, buttonVariants } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { MoreVertical, Eye, RefreshCw, Archive } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, formatHealthStatus } from '@/lib/utils';
 import { StatusAdvokasi } from '@/types';
 
 const milestoneKeys = [
@@ -127,7 +127,7 @@ export default function AdvokasiTable({ loading, filteredCases, totalCount, isSt
                   </TableCell>
                   <TableCell className="py-4 px-6">
                     <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold border uppercase tracking-wide ${statusColor}`}>
-                      {c.status_detail?.replace(/_/g, ' ') || 'PROSES'}
+                      {formatHealthStatus(c.status_detail) || 'PROSES'}
                     </span>
                   </TableCell>
                   <TableCell className="py-4 px-6 text-sm text-[#475569]">{new Date(c.updated_at).toLocaleDateString('id-ID')}</TableCell>

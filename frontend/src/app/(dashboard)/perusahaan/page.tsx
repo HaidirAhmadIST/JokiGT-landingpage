@@ -121,9 +121,11 @@ const hasOpenAdvokasi = (p: PekerjaDetail) => {
 const getHealthLabel = (status: string) => {
   switch (status) {
     case 'sehat': return 'Sehat';
-    case 'sakit_ringan': return 'Sehat dengan Catatan';
-    case 'sakit_berat': return 'Tidak Sehat';
-    default: return status || '-';
+    case 'sehat_dengan_catatan': return 'Sehat dengan Catatan';
+    case 'tidak_sehat': return 'Tidak Sehat';
+    case 'sakit_ringan': return 'Sehat dengan Catatan'; // Legacy fallback
+    case 'sakit_berat': return 'Tidak Sehat';           // Legacy fallback
+    default: return status ? status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : '-';
   }
 };
 
@@ -131,6 +133,8 @@ const getHealthLabel = (status: string) => {
 const getHealthPriority = (status: string) => {
   switch (status) {
     case 'sehat': return 0;
+    case 'sehat_dengan_catatan': return 1;
+    case 'tidak_sehat': return 2;
     case 'sakit_ringan': return 1;
     case 'sakit_berat': return 2;
     case 'dalam_perawatan': return 3;
@@ -406,10 +410,17 @@ export default function PerusahaanPage() {
   const HealthIndicator = ({ status }: { status: string }) => {
     const config: Record<string, { dot: string; bg: string; text: string; label: string }> = {
       sehat: { dot: 'bg-emerald-500', bg: 'bg-emerald-50', text: 'text-emerald-700', label: 'Sehat' },
+      sehat_dengan_catatan: { dot: 'bg-amber-500', bg: 'bg-amber-50', text: 'text-amber-700', label: 'Sehat dengan Catatan' },
+      tidak_sehat: { dot: 'bg-rose-500', bg: 'bg-rose-50', text: 'text-rose-700', label: 'Tidak Sehat' },
       sakit_ringan: { dot: 'bg-amber-500', bg: 'bg-amber-50', text: 'text-amber-700', label: 'Sehat dengan Catatan' },
       sakit_berat: { dot: 'bg-rose-500', bg: 'bg-rose-50', text: 'text-rose-700', label: 'Tidak Sehat' },
     };
-    const c = config[status] || { dot: 'bg-slate-400', bg: 'bg-slate-50', text: 'text-slate-600', label: status || '-' };
+    const c = config[status] || { 
+      dot: 'bg-slate-400', 
+      bg: 'bg-slate-50', 
+      text: 'text-slate-600', 
+      label: status ? status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : '-' 
+    };
     return (
       <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold ${c.bg} ${c.text}`}>
         <span className={`w-2 h-2 rounded-full ${c.dot} animate-pulse`} />

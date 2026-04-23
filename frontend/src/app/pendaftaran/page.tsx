@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Bell, Globe, User, ShieldAlert, ArrowRight, ArrowLeft, Plus, UploadCloud, Save, CheckCircle, X, Activity, Info } from 'lucide-react';
+import { cn, formatHealthStatus } from '@/lib/utils';
 import FormPekerjaInformal from '@/components/FormPekerjaInformal';
 import FormDetailMedis, { type DataMedis } from '@/components/FormDetailMedis';
 
@@ -169,8 +170,10 @@ export default function PendaftaranPekerjaPage() {
         if (parsed.riwayatLalu) {
           setRiwayatLalu(parsed.riwayatLalu.map((r: any) => ({
             ...r,
+            file_bukti: [], // Files cannot be stored in localStorage
             riwayat_pemeriksaan: (r.riwayat_pemeriksaan || []).map((m: any) => ({
               ...m,
+              file_hasil: [], // Files cannot be stored in localStorage
               status_kesehatan: normalizeStatus(m.status_kesehatan)
             }))
           })));
@@ -379,6 +382,19 @@ export default function PendaftaranPekerjaPage() {
           deskripsi_pekerjaan: pekerjaanSaatIni.deskripsi_pekerjaan,
           tgl_masuk: pekerjaanSaatIni.tgl_masuk,
           tgl_keluar: null,
+          riwayat_pemeriksaan: (pekerjaanSaatIni.riwayat_pemeriksaan || []).filter(
+            (m: any) => m.tanggal_pemeriksaan && m.hasil_diagnosis
+          ).map((m: any) => ({
+            tanggal_pemeriksaan: m.tanggal_pemeriksaan,
+            tempat_pemeriksaan: m.tempat_pemeriksaan,
+            jenis_pemeriksaan: m.jenis_pemeriksaan,
+            dokter: m.dokter,
+            status_kesehatan: m.status_kesehatan,
+            hasil_diagnosis: m.hasil_diagnosis,
+            rekomendasi: m.rekomendasi,
+            pendamping: m.pendamping,
+          })),
+          riwayat_pemeriksaan_raw: pekerjaanSaatIni.riwayat_pemeriksaan,
           informal_data: (pekerjaanSaatIni.status_pekerjaan === 'Borongan' || pekerjaanSaatIni.status_pekerjaan === 'Harian Lepas') ? {
             tugas_spesifik: pekerjaanSaatIni.tugas_spesifik,
             lama_bekerja: pekerjaanSaatIni.lama_bekerja,
@@ -409,6 +425,7 @@ export default function PendaftaranPekerjaPage() {
         .filter(r => r.nama_perusahaan.trim() !== '')
         .map(r => ({
           ...r,
+          riwayat_pemeriksaan_raw: r.riwayat_pemeriksaan,
           riwayat_pemeriksaan: (r.riwayat_pemeriksaan || []).filter(
             (m: any) => m.tanggal_pemeriksaan && m.hasil_diagnosis
           ).map((m: any) => ({
@@ -478,9 +495,10 @@ export default function PendaftaranPekerjaPage() {
 
         // 2. Employment History Files
         for (let i = 0; i < riwayatData.length; i++) {
-          if (riwayatData[i].file_bukti && riwayatData[i].file_bukti.length > 0 && savedRiwayat[i]) {
+          const files = (riwayatData[i].file_bukti || []).filter((f: any) => f instanceof File);
+          if (files.length > 0 && savedRiwayat[i]) {
             const riwayatForm = new FormData();
-            riwayatData[i].file_bukti.forEach((f: File) => riwayatForm.append('file_bukti[]', f));
+            files.forEach((f: File) => riwayatForm.append('file_bukti[]', f));
             uploadPromises.push(api.post(`/riwayat-pekerja/${savedRiwayat[i].id}/file`, riwayatForm));
           }
 
@@ -488,9 +506,10 @@ export default function PendaftaranPekerjaPage() {
           const embeddedMedis = riwayatData[i]?.riwayat_pemeriksaan_raw || [];
           const savedEmbeddedMedis = savedRiwayat[i]?.detail_medis || [];
           for (let j = 0; j < embeddedMedis.length; j++) {
-            if (embeddedMedis[j].file_hasil && embeddedMedis[j].file_hasil.length > 0 && savedEmbeddedMedis[j]) {
+            const mFiles = (embeddedMedis[j].file_hasil || []).filter((f: any) => f instanceof File);
+            if (mFiles.length > 0 && savedEmbeddedMedis[j]) {
               const medisForm = new FormData();
-              embeddedMedis[j].file_hasil.forEach((f: File) => medisForm.append('file_hasil[]', f));
+              mFiles.forEach((f: File) => medisForm.append('file_hasil[]', f));
               uploadPromises.push(api.post(`/detail-medis/${savedEmbeddedMedis[j].id}/file`, medisForm));
             }
           }
@@ -502,9 +521,10 @@ export default function PendaftaranPekerjaPage() {
         for (let i = 0; i < finalMedis.length; i++) {
           const mData = validMedisRecords[i]; // Accessing the original with file objects
           const sMedis = savedMedis[medisStartIndex + i];
-          if (mData && mData.file_hasil && mData.file_hasil.length > 0 && sMedis) {
+          const mFiles = (mData?.file_hasil || []).filter((f: any) => f instanceof File);
+          if (mFiles.length > 0 && sMedis) {
             const mForm = new FormData();
-            mData.file_hasil.forEach((f: File) => mForm.append('file_hasil[]', f));
+            mFiles.forEach((f: File) => mForm.append('file_hasil[]', f));
             uploadPromises.push(api.post(`/detail-medis/${sMedis.id}/file`, mForm));
           }
         }
@@ -524,8 +544,9 @@ export default function PendaftaranPekerjaPage() {
               advForm.append(advSteps[i], '1');
             }
 
-            if (item.file && item.file.length > 0) {
-              item.file.forEach((f: File) => advForm.append('file[]', f));
+            const aFiles = (item.file || []).filter((f: any) => f instanceof File);
+            if (aFiles.length > 0) {
+              aFiles.forEach((f: File) => advForm.append('file[]', f));
             }
 
             uploadPromises.push(api.post(`/pekerja/${pekerjaId}/advokasi`, advForm));
@@ -1057,6 +1078,175 @@ export default function PendaftaranPekerjaPage() {
               </div>
 
               <div className="space-y-8">
+                {/* Pekerjaan Saat Ini */}
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-bold text-slate-800">Pekerjaan Saat Ini</h3>
+                    <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Aktif</span>
+                  </div>
+                  
+                  <div className="bg-white border-2 border-[#0ea5e9]/20 shadow-md rounded-xl overflow-hidden">
+                    <div className="px-5 py-3 bg-[#0ea5e9]/5 border-b border-[#0ea5e9]/10 flex items-center justify-between">
+                      <h4 className="font-bold text-slate-700 text-sm flex items-center gap-2">
+                        <Activity className="h-4 w-4 text-[#0ea5e9]" />
+                        {pekerjaanSaatIni.nama_perusahaan_baru || (perusahaanList.find(p => p.id.toString() === baseData.perusahaan_id)?.nama_perusahaan) || (['Borongan', 'Harian Lepas'].includes(pekerjaanSaatIni.status_pekerjaan) ? "Pekerja Informal / Mandiri" : "Pekerjaan Aktif")}
+                      </h4>
+                      <Button variant="ghost" size="sm" className="text-[10px] h-7 text-[#0ea5e9] font-bold" onClick={() => setStep(1)}>
+                        UBAH DETAIL PEKERJAAN
+                      </Button>
+                    </div>
+
+                    <div className="p-5">
+                      <div className="grid grid-cols-2 gap-4 text-xs mb-6">
+                        <div className="space-y-1">
+                          <p className="text-slate-400 font-medium">BAGIAN / JABATAN</p>
+                          <p className="text-slate-700 font-bold">
+                            {['Borongan', 'Harian Lepas'].includes(pekerjaanSaatIni.status_pekerjaan) 
+                              ? "Pekerja Lapangan / Informal" 
+                              : `${pekerjaanSaatIni.bagian || '-'} / ${pekerjaanSaatIni.jabatan || '-'}`}
+                          </p>
+                        </div>
+                        <div className="space-y-1 text-right">
+                          <p className="text-slate-400 font-medium">PERIODE KERJA</p>
+                          <p className="text-slate-700 font-bold">{pekerjaanSaatIni.tgl_masuk || '--'} — Sekarang</p>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-slate-400 font-medium">STATUS KARYAWAN</p>
+                          <p className="text-slate-700 font-bold">{pekerjaanSaatIni.status_pekerjaan || '-'}</p>
+                        </div>
+                      </div>
+
+                      {/* Medical History for Current Job */}
+                      <div className="mt-2 pt-4 border-t border-slate-100">
+                        <h5 className="text-sm font-bold text-blue-700 flex items-center gap-2 mb-4">
+                          <Activity className="h-4 w-4" />
+                          Riwayat Kesehatan (Pekerjaan Saat Ini)
+                        </h5>
+                        {(() => {
+                          const src = pekerjaanSaatIni.riwayat_pemeriksaan?.[0];
+                          const med = {
+                            tanggal_pemeriksaan: src?.tanggal_pemeriksaan ?? '',
+                            tempat_pemeriksaan:  src?.tempat_pemeriksaan  ?? '',
+                            jenis_pemeriksaan:   src?.jenis_pemeriksaan   ?? '',
+                            dokter:              src?.dokter              ?? '',
+                            status_kesehatan:    src?.status_kesehatan    ?? 'sehat',
+                            hasil_diagnosis:     src?.hasil_diagnosis     ?? '',
+                            rekomendasi:         src?.rekomendasi         ?? '',
+                            file_hasil:          src?.file_hasil          ?? [] as File[],
+                            pendamping:          src?.pendamping          ?? '',
+                          };
+                          const updateMed = (field: string, value: any) => {
+                            const cur = pekerjaanSaatIni.riwayat_pemeriksaan?.[0];
+                            setPekerjaanSaatIni({
+                              ...pekerjaanSaatIni,
+                              riwayat_pemeriksaan: [{
+                                tanggal_pemeriksaan: cur?.tanggal_pemeriksaan ?? '',
+                                tempat_pemeriksaan:  cur?.tempat_pemeriksaan  ?? '',
+                                jenis_pemeriksaan:   cur?.jenis_pemeriksaan   ?? '',
+                                dokter:              cur?.dokter              ?? '',
+                                status_kesehatan:    cur?.status_kesehatan    ?? 'sehat',
+                                hasil_diagnosis:     cur?.hasil_diagnosis     ?? '',
+                                rekomendasi:         cur?.rekomendasi         ?? '',
+                                file_hasil:          cur?.file_hasil          ?? [],
+                                pendamping:          cur?.pendamping          ?? '',
+                                [field]: value,
+                              }]
+                            });
+                          };
+                          return (
+                            <div className="bg-blue-50/40 border border-blue-100 rounded-lg p-4">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div className="space-y-1">
+                                  <Label className="text-xs text-slate-600">Tanggal Pemeriksaan</Label>
+                                  <Input type="date" className="h-9 bg-white text-slate-600 text-sm" value={med.tanggal_pemeriksaan} onChange={e => updateMed('tanggal_pemeriksaan', e.target.value)} />
+                                </div>
+                                <div className="space-y-1">
+                                  <Label className="text-xs text-slate-600">Tempat Pemeriksaan</Label>
+                                  <Input placeholder="Klinik/RS..." className="h-9 bg-white text-sm" value={med.tempat_pemeriksaan} onChange={e => updateMed('tempat_pemeriksaan', e.target.value)} />
+                                </div>
+                                <div className="space-y-1">
+                                  <Label className="text-xs text-slate-600">Jenis Pemeriksaan</Label>
+                                  <Select value={med.jenis_pemeriksaan} onValueChange={v => updateMed('jenis_pemeriksaan', v)}>
+                                    <SelectTrigger className="h-9 w-full bg-white text-sm"><SelectValue placeholder="Pilih Jenis" /></SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="MCU Berkala">MCU Berkala</SelectItem>
+                                      <SelectItem value="Rontgen Thorax">Rontgen Thorax</SelectItem>
+                                      <SelectItem value="Spirometri">Spirometri</SelectItem>
+                                      <SelectItem value="Audiometri">Audiometri</SelectItem>
+                                      <SelectItem value="Tes Darah/Lab">Tes Darah / Lab</SelectItem>
+                                      <SelectItem value="Lainnya">Lainnya</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <div className="space-y-1">
+                                  <Label className="text-xs text-slate-600">Status Kesehatan</Label>
+                                  <Select value={med.status_kesehatan || 'sehat'} onValueChange={v => updateMed('status_kesehatan', v)}>
+                                    <SelectTrigger className="h-9 w-full bg-white text-sm">
+                                      <SelectValue>
+                                        {formatHealthStatus(med.status_kesehatan)}
+                                      </SelectValue>
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="sehat">Sehat</SelectItem>
+                                      <SelectItem value="sehat_dengan_catatan">Sehat dengan Catatan</SelectItem>
+                                      <SelectItem value="tidak_sehat">Tidak Sehat</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <div className="space-y-1">
+                                  <Label className="text-xs text-slate-600">Dokter yang Memeriksa</Label>
+                                  <Input placeholder="Nama dokter..." className="h-9 bg-white text-sm" value={med.dokter} onChange={e => updateMed('dokter', e.target.value)} />
+                                </div>
+                                <div className="space-y-1">
+                                  <Label className="text-xs text-slate-600">Pendamping Lapangan</Label>
+                                  <Select value={med.pendamping} onValueChange={v => updateMed('pendamping', v)}>
+                                    <SelectTrigger className="h-9 w-full bg-white text-sm"><SelectValue placeholder="Pilih Pendamping" /></SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="Klinik Internal">Klinik Internal Perusahaan</SelectItem>
+                                      <SelectItem value="Faskes BPJSKes">Faskes Pertama (BPJS)</SelectItem>
+                                      <SelectItem value="Dokter Okupasi">Dokter Spesialis Okupasi</SelectItem>
+                                      <SelectItem value="Mandiri">Berangkat Mandiri</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <div className="space-y-1 col-span-1 sm:col-span-2">
+                                  <Label className="text-xs text-slate-600">Hasil Diagnosis</Label>
+                                  <Textarea placeholder="Ringkasan hasil diagnosis..." className="min-h-[70px] bg-white resize-none text-sm" value={med.hasil_diagnosis} onChange={e => updateMed('hasil_diagnosis', e.target.value)} />
+                                </div>
+                                <div className="space-y-1 col-span-1 sm:col-span-2">
+                                  <Label className="text-xs text-slate-600">Rekomendasi Dokter <span className="text-slate-400 font-normal">(Opsional)</span></Label>
+                                  <Textarea placeholder="Saran dari dokter..." className="min-h-[60px] bg-white resize-none text-sm" value={med.rekomendasi} onChange={e => updateMed('rekomendasi', e.target.value)} />
+                                </div>
+                                <div className="space-y-1 col-span-1 sm:col-span-2">
+                                  <Label className="text-xs text-slate-600">Unggah Hasil Pemeriksaan (Multiple) <span className="text-slate-400 font-normal">(Opsional)</span></Label>
+                                  <label className="flex items-center gap-3 bg-white border border-slate-200 hover:border-[#0ea5e9] rounded-lg px-3 py-2 cursor-pointer transition-colors h-9">
+                                    <UploadCloud className="w-3.5 h-3.5 text-[#0ea5e9]" />
+                                    <span className="text-xs text-slate-500 flex-1 truncate">
+                                      {med.file_hasil?.length > 0 
+                                        ? `${med.file_hasil.length} file dipilih: ${med.file_hasil.map((f: any) => f.name).join(', ')}` 
+                                        : 'Pilih file PDF/JPG'}
+                                    </span>
+                                    <input 
+                                      type="file" 
+                                      multiple
+                                      accept=".pdf,.jpg,.jpeg,.png" 
+                                      className="hidden" 
+                                      onChange={e => { 
+                                        const files = e.target.files ? Array.from(e.target.files) : [];
+                                        updateMed('file_hasil', files); 
+                                      }} 
+                                    />
+                                  </label>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Riwayat Sebelumnya */}
                 <div>
                   <div className="flex items-center justify-between mb-4">
@@ -1272,13 +1462,13 @@ export default function PendaftaranPekerjaPage() {
                                         <Label className="text-xs text-slate-600">Status Kesehatan</Label>
                                         <Select value={med.status_kesehatan || 'sehat'} onValueChange={v => updateMed('status_kesehatan', v)}>
                                           <SelectTrigger className="h-9 w-full bg-white text-sm">
-                                            <SelectValue placeholder="Pilih Status">
-                                              {med.status_kesehatan ? med.status_kesehatan.replace(/_/g, ' ').replace(/\b\w/g, (l: any) => l.toUpperCase()) : undefined}
+                                            <SelectValue>
+                                              {formatHealthStatus(med.status_kesehatan)}
                                             </SelectValue>
                                           </SelectTrigger>
                                           <SelectContent>
                                             <SelectItem value="sehat">Sehat</SelectItem>
-                                            <SelectItem value="sehat_dengan_catatan">Sehat Dengan Catatan</SelectItem>
+                                            <SelectItem value="sehat_dengan_catatan">Sehat dengan Catatan</SelectItem>
                                             <SelectItem value="tidak_sehat">Tidak Sehat</SelectItem>
                                           </SelectContent>
                                         </Select>
@@ -1435,8 +1625,8 @@ export default function PendaftaranPekerjaPage() {
                                 <Label className="text-slate-700">Status Kesehatan</Label>
                                 <Select value={item.status_kesehatan || 'sehat'} onValueChange={v => updateItem('status_kesehatan', v)}>
                                   <SelectTrigger className="h-11 w-full bg-white">
-                                    <SelectValue placeholder="Pilih Status">
-                                      {item.status_kesehatan ? item.status_kesehatan.replace(/_/g, ' ').replace(/\b\w/g, (l: any) => l.toUpperCase()) : undefined}
+                                    <SelectValue>
+                                      {formatHealthStatus(item.status_kesehatan)}
                                     </SelectValue>
                                   </SelectTrigger>
                                   <SelectContent>

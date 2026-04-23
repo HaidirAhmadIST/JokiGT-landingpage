@@ -32,13 +32,13 @@ class UpdateAdvokasiRequest extends FormRequest
 
             // Shared file upload fields (used in the registration loop)
             'step_key' => ['nullable', 'string', 'in:riwayat_pajanan,persetujuan_dokter,perusahaan_lapor,penetapan_pak,kompensasi_bpjstk,rehabilitasi_bpjskes'],
-            'file' => ['nullable'],
+            'file' => ['nullable', 'array'],
             'file.*' => ['file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
             
             // Metadata fields
-            'jenis_kasus' => ['nullable', 'string'],
-            'tahap' => ['nullable', 'string'],
-            'status_detail' => ['nullable', 'string'],
+            'jenis_kasus' => ['nullable', 'string', 'in:pak,k3,phk,jht'],
+            'tahap' => ['nullable', 'string', 'in:UPTD,BPJS,Pengadilan'],
+            'status_detail' => ['nullable', 'string', 'max:255'],
             'tanggal_pelaporan' => ['nullable', 'date'],
             'catatan' => ['nullable', 'string'],
             

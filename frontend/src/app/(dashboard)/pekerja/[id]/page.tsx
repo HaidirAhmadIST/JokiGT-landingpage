@@ -22,6 +22,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
+import { cn, formatHealthStatus } from '@/lib/utils';
 
 export default function PekerjaDetailPage() {
   const { id } = useParams();
@@ -214,11 +215,7 @@ export default function PekerjaDetailPage() {
   };
 
   const getStatusLabel = (s: string) => {
-    const normalized = normalizeStatus(s);
-    if (normalized === 'sehat') return 'Sehat';
-    if (normalized === 'sehat_dengan_catatan') return 'Sehat dengan Catatan';
-    if (normalized === 'tidak_sehat') return 'Tidak Sehat';
-    return s.replace(/_/g, ' ');
+    return formatHealthStatus(s);
   };
 
   const getStatusColor = (s: string) => {
@@ -454,9 +451,39 @@ export default function PekerjaDetailPage() {
                   <span className="text-amber-500 font-medium text-xs">Data pribadi belum lengkap</span>
                 )}
               </p>
-              <div className="flex gap-2 mt-3 text-[10px] font-bold">
-                <span className="px-3 py-1 bg-[#0ea5e9]/10 text-[#0ea5e9] rounded-md tracking-wider uppercase">{currentJob?.bagian || currentJob?.jabatan || (['Borongan', 'Harian Lepas'].includes(currentJob?.status_pekerjaan) ? 'PEKERJA LAPANGAN' : 'PRODUKSI')}</span>
-                <span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-md tracking-wider uppercase">{currentJob?.status_pekerjaan || 'TETAP'}</span>
+              <div className="flex flex-wrap gap-2 mt-3 text-[10px] font-bold">
+                <span className="px-3 py-1 bg-[#0ea5e9]/10 text-[#0ea5e9] rounded-md tracking-wider uppercase">
+                  {['Borongan', 'Harian Lepas'].includes(currentJob?.status_pekerjaan) 
+                    ? 'PEKERJA LAPANGAN' 
+                    : (currentJob?.bagian || currentJob?.jabatan || 'PEKERJA')}
+                </span>
+                
+                {/* Hanya tampilkan status jika tidak sama dengan label pertama */}
+                {currentJob?.status_pekerjaan && currentJob?.status_pekerjaan !== currentJob?.bagian && currentJob?.status_pekerjaan !== currentJob?.jabatan && (
+                  <span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-md tracking-wider uppercase">{currentJob?.status_pekerjaan}</span>
+                )}
+                
+                {/* Informal Metadata Badges */}
+                {['harian lepas', 'borongan'].includes(data.status_pekerja?.toLowerCase()) && currentJob?.informal_data && (
+                  <>
+                    <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-md tracking-wider uppercase flex items-center">
+                      <MapPin className="h-2.5 w-2.5 mr-1" /> {(() => {
+                        try {
+                          const info = typeof currentJob.informal_data === 'string' ? JSON.parse(currentJob.informal_data) : currentJob.informal_data;
+                          return Array.isArray(info?.lokasi_proyek) ? info.lokasi_proyek.join(', ') : info?.lokasi_proyek || '-';
+                        } catch(e) { return '-'; }
+                      })()}
+                    </span>
+                    <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-md tracking-wider uppercase flex items-center">
+                      <ClipboardList className="h-2.5 w-2.5 mr-1" /> {(() => {
+                        try {
+                          const info = typeof currentJob.informal_data === 'string' ? JSON.parse(currentJob.informal_data) : currentJob.informal_data;
+                          return info?.lama_bekerja ? `${info.lama_bekerja} ${info.satuan_waktu || ''}` : '-';
+                        } catch(e) { return '-'; }
+                      })()}
+                    </span>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -721,7 +748,7 @@ export default function PekerjaDetailPage() {
                                     <p className="text-sm font-semibold text-slate-700">
                                       {['Borongan', 'Harian Lepas'].includes(r.status_pekerjaan) 
                                         ? 'Pekerja Lapangan / Informal'
-                                        : `${r.bagian || 'Produksi'} / ${r.jabatan || 'Kepala Regu'}`
+                                        : `${r.bagian || '-'} / ${r.jabatan || '-'}`
                                       }
                                     </p>
                                   </div>
@@ -733,7 +760,7 @@ export default function PekerjaDetailPage() {
                                   </div>
                                   <div>
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Status Karyawan</p>
-                                    <p className="text-sm font-semibold text-slate-700">{r.status_pekerjaan || 'TETAP'}</p>
+                                    <p className="text-sm font-semibold text-slate-700">{r.status_pekerjaan || '-'}</p>
                                   </div>
                                   {r.nama_agen_penyalur && (
                                     <div>
@@ -748,7 +775,7 @@ export default function PekerjaDetailPage() {
                                         {(() => {
                                           try {
                                             const info = typeof r.informal_data === 'string' ? JSON.parse(r.informal_data) : r.informal_data;
-                                            return info?.lokasi_proyek?.join(', ') || '-';
+                                            return Array.isArray(info?.lokasi_proyek) ? info.lokasi_proyek.join(', ') : info?.lokasi_proyek || '-';
                                           } catch(e) { return '-'; }
                                         })()}
                                       </p>

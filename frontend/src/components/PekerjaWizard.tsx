@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import api from '@/lib/axios';
+import { cn, formatHealthStatus } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -79,7 +80,8 @@ export default function PekerjaWizard({ onSuccess, onCancel, perusahaanList }: P
           const riwayatId = savedRiwayat[i]?.id;
           if (riwayatId) {
             const formData = new FormData();
-            filteredRiwayat[i].file_bukti.forEach((file: File) => {
+            const files = (filteredRiwayat[i].file_bukti || []).filter((file: any) => file instanceof File);
+            files.forEach((file: File) => {
               formData.append('file_bukti[]', file);
             });
             uploadPromises.push(api.post(`/riwayat-pekerja/${riwayatId}/file`, formData));
@@ -94,7 +96,8 @@ export default function PekerjaWizard({ onSuccess, onCancel, perusahaanList }: P
           const medisId = savedMedis[i]?.id;
           if (medisId) {
             const formData = new FormData();
-            filteredMedis[i].file_hasil.forEach((file: File) => {
+            const files = (filteredMedis[i].file_hasil || []).filter((file: any) => file instanceof File);
+            files.forEach((file: File) => {
               formData.append('file_hasil[]', file);
             });
             uploadPromises.push(api.post(`/detail-medis/${medisId}/file`, formData));
@@ -173,13 +176,13 @@ export default function PekerjaWizard({ onSuccess, onCancel, perusahaanList }: P
                 <Select value={baseData.status_kesehatan} onValueChange={(v: any) => setBaseData({...baseData, status_kesehatan: v})}>
                   <SelectTrigger>
                     <SelectValue>
-                      {baseData.status_kesehatan ? baseData.status_kesehatan.replace(/_/g, ' ').replace(/\b\w/g, (l: any) => l.toUpperCase()) : undefined}
+                      {formatHealthStatus(baseData.status_kesehatan)}
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="sehat">Sehat</SelectItem>
-                    <SelectItem value="sakit_ringan">Sehat dengan Catatan</SelectItem>
-                    <SelectItem value="sakit_berat">Tidak Sehat</SelectItem>
+                    <SelectItem value="sehat_dengan_catatan">Sehat dengan Catatan</SelectItem>
+                    <SelectItem value="tidak_sehat">Tidak Sehat</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

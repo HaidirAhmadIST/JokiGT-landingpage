@@ -27,7 +27,7 @@ import {
   Coins,
   Loader2,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, formatHealthStatus } from '@/lib/utils';
 import SheetEditKasus from '@/components/SheetEditKasus';
 import { useGetAdvokasiDetail } from '@/hooks/useAdvokasi';
 
@@ -52,12 +52,7 @@ const normalizeStatus = (s: string) => {
 };
 
 const getStatusLabel = (s?: string) => {
-  if (!s) return 'Sehat';
-  const normalized = normalizeStatus(s);
-  if (normalized === 'sehat') return 'Sehat';
-  if (normalized === 'sehat_dengan_catatan') return 'Sehat dengan Catatan';
-  if (normalized === 'tidak_sehat') return 'Tidak Sehat';
-  return s.replace(/_/g, ' ');
+  return formatHealthStatus(s);
 };
 
 const getStatusColor = (s?: string) => {
@@ -275,10 +270,10 @@ export default function AdvokasiDetailPage() {
                   <p className="text-sm font-bold text-[#1e293b] mt-0.5">{currentJob?.jabatan || 'OPERATOR'}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold text-[#94a3b8] tracking-wider">BAGIAN</p>
+                  <p className="text-[10px] font-bold text-[#94a3b8] tracking-wider">BAGIAN / JABATAN</p>
                   <div className="mt-1">
                     <span className="px-2 py-1 bg-sky-50 text-[#0284c7] text-[10px] font-bold rounded-md uppercase tracking-wide">
-                      {currentJob?.bagian || 'PRODUKSI'}
+                      {currentJob?.bagian || currentJob?.jabatan || currentJob?.status_pekerjaan || 'PEKERJA'}
                     </span>
                   </div>
                 </div>
@@ -286,7 +281,7 @@ export default function AdvokasiDetailPage() {
                   <p className="text-[10px] font-bold text-[#94a3b8] tracking-wider">STATUS PEKERJAAN</p>
                   <div className="mt-1">
                     <span className="px-2 py-1 bg-slate-100 text-slate-600 text-[10px] font-bold rounded-md uppercase tracking-wide">
-                      {currentJob?.status_pekerjaan || 'TETAP'}
+                      {currentJob?.status_pekerjaan || '-'}
                     </span>
                   </div>
                 </div>
