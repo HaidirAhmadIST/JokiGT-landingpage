@@ -148,12 +148,12 @@ export default function PekerjaPage() {
           <Table>
             <TableHeader>
               <TableRow className="border-b border-slate-100 hover:bg-transparent">
-                <TableHead className="text-xs font-bold text-slate-400 tracking-wider uppercase bg-transparent">NAMA PEKERJA</TableHead>
-                <TableHead className="text-xs font-bold text-slate-400 tracking-wider uppercase bg-transparent">NIK</TableHead>
-                <TableHead className="text-xs font-bold text-slate-400 tracking-wider uppercase bg-transparent">PERUSAHAAN SAAT INI</TableHead>
-                <TableHead className="text-xs font-bold text-slate-400 tracking-wider uppercase bg-transparent">LOKASI / UNIT</TableHead>
-                <TableHead className="text-xs font-bold text-slate-400 tracking-wider uppercase bg-transparent w-[180px]">STATUS KESEHATAN</TableHead>
-                <TableHead className="text-xs font-bold text-slate-400 tracking-wider uppercase bg-transparent text-right">AKSI</TableHead>
+                <TableHead className="text-xs font-bold text-slate-400 tracking-widest uppercase bg-transparent">NAMA PEKERJA</TableHead>
+                <TableHead className="text-xs font-bold text-slate-400 tracking-widest uppercase bg-transparent">NIK</TableHead>
+                <TableHead className="text-xs font-bold text-slate-400 tracking-widest uppercase bg-transparent">PERUSAHAAN SAAT INI</TableHead>
+                <TableHead className="text-xs font-bold text-slate-400 tracking-widest uppercase bg-transparent">LOKASI / UNIT</TableHead>
+                <TableHead className="text-xs font-bold text-slate-400 tracking-widest uppercase bg-transparent w-[180px]">STATUS KESEHATAN</TableHead>
+                <TableHead className="text-xs font-bold text-slate-400 tracking-widest uppercase bg-transparent text-right">AKSI</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -201,7 +201,7 @@ export default function PekerjaPage() {
                         if (job.status_pekerjaan === 'Outsourcing') {
                           return (
                             <div className="flex flex-col">
-                              <span className="text-[10px] font-bold text-blue-500 uppercase tracking-tighter">Agency</span>
+                              <span className="text-[10px] font-bold text-blue-500 uppercase tracking-widest">Agency</span>
                               <span className="truncate">{job.nama_agen_penyalur || 'Pihak Ketiga'}</span>
                             </div>
                           );
@@ -210,7 +210,7 @@ export default function PekerjaPage() {
                         if (job.status_pekerjaan === 'Borongan' || job.status_pekerjaan === 'Harian Lepas') {
                           return (
                             <div className="flex flex-col">
-                              <span className="text-[10px] font-bold text-orange-500 uppercase tracking-tighter">Pekerja Lapangan</span>
+                              <span className="text-[10px] font-bold text-orange-500 uppercase tracking-widest">Pekerja Lapangan</span>
                               <span className="truncate">{job.status_pekerjaan}</span>
                             </div>
                           );

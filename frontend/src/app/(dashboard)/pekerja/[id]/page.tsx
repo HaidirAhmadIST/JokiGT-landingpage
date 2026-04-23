@@ -10,7 +10,7 @@ import {
   Briefcase, ShieldAlert, CheckCircle2, Circle, Edit3,
   Download, Image as ImageIcon, Activity, FileText, FileCheck, ClipboardList, HeartPulse, HardHat
 } from 'lucide-react';
-import { format, differenceInYears, parseISO } from 'date-fns';
+import { format, differenceInYears, differenceInMonths, parseISO } from 'date-fns';
 import { id as localeID } from 'date-fns/locale';
 import { useRole } from '@/hooks/useRole';
 import {
@@ -249,27 +249,65 @@ export default function PekerjaDetailPage() {
   if (!data) return <div className="p-8 text-center text-red-500 font-medium">Data pekerja tidak ditemukan.</div>;
 
   // Derived Data Calculations
-  const currentJob = data.riwayat_pekerja?.find((r: any) => !r.tgl_keluar) || data.riwayat_pekerja?.[0];
+  const allRiwayat = data.riwayat_pekerja || [];
+  const currentJob = allRiwayat.find((r: any) => !r.tgl_keluar) || allRiwayat[0];
   let masaKerjaText = '-';
   let sejakText = '-';
-  if (['Borongan', 'Harian Lepas'].includes(currentJob?.status_pekerjaan)) {
+  
+  const statusPekerjaan = currentJob?.status_pekerjaan?.toLowerCase() || '';
+  const isInformalJob = ['borongan', 'harian lepas'].includes(statusPekerjaan);
+
+  if (isInformalJob) {
     let info: any = {};
     if (currentJob?.informal_data) {
       try {
         info = typeof currentJob.informal_data === 'string' ? JSON.parse(currentJob.informal_data) : currentJob.informal_data;
       } catch(e) {}
     }
-    if (info?.lama_bekerja && info?.satuan_waktu) {
-      masaKerjaText = `${info.lama_bekerja} ${info.satuan_waktu}`;
+
+    if (info?.lama_bekerja) {
+      masaKerjaText = `${info.lama_bekerja} ${info.satuan_waktu || 'Bulan'}`;
       sejakText = 'Total Durasi';
     } else {
-      sejakText = 'Pekerja Informal';
+      // Cari tgl_masuk paling awal dari semua riwayat
+      const earliestRiwayat = allRiwayat
+        .filter((r: any) => r.tgl_masuk)
+        .sort((a: any, b: any) => new Date(a.tgl_masuk).getTime() - new Date(b.tgl_masuk).getTime())[0];
+
+      if (earliestRiwayat?.tgl_masuk) {
+        const masukDate = parseISO(earliestRiwayat.tgl_masuk);
+        const years = differenceInYears(new Date(), masukDate);
+        const months = differenceInMonths(new Date(), masukDate) % 12;
+        
+        if (years > 0) {
+          masaKerjaText = `${years} Tahun${months > 0 ? ` ${months} Bulan` : ''}`;
+        } else {
+          masaKerjaText = months > 0 ? `${months} Bulan` : '< 1 Bulan';
+        }
+        sejakText = `Sejak ${format(masukDate, 'MMM yyyy', { locale: localeID })}`;
+      } else {
+        sejakText = 'Pekerja Informal';
+      }
     }
-  } else if (currentJob?.tgl_masuk) {
-    const masukDate = parseISO(currentJob.tgl_masuk);
-    const years = differenceInYears(new Date(), masukDate);
-    masaKerjaText = years > 0 ? `${years} Tahun` : '< 1 Tahun';
-    sejakText = `Sejak ${format(masukDate, 'MMM yyyy', { locale: localeID })}`;
+  } else {
+    // Pekerja Formal (PKWT/PKWTT/Outsourcing)
+    // Cari tgl_masuk paling awal
+    const earliestRiwayat = allRiwayat
+      .filter((r: any) => r.tgl_masuk)
+      .sort((a: any, b: any) => new Date(a.tgl_masuk).getTime() - new Date(b.tgl_masuk).getTime())[0];
+
+    if (earliestRiwayat?.tgl_masuk) {
+      const masukDate = parseISO(earliestRiwayat.tgl_masuk);
+      const years = differenceInYears(new Date(), masukDate);
+      const months = differenceInMonths(new Date(), masukDate) % 12;
+      
+      if (years > 0) {
+        masaKerjaText = `${years} Tahun${months > 0 ? ` ${months} Bulan` : ''}`;
+      } else {
+        masaKerjaText = months > 0 ? `${months} Bulan` : '< 1 Bulan';
+      }
+      sejakText = `Sejak ${format(masukDate, 'MMM yyyy', { locale: localeID })}`;
+    }
   }
 
   const adv = data.status_advokasi;
@@ -452,21 +490,21 @@ export default function PekerjaDetailPage() {
                 )}
               </p>
               <div className="flex flex-wrap gap-2 mt-3 text-[10px] font-bold">
-                <span className="px-3 py-1 bg-[#0ea5e9]/10 text-[#0ea5e9] rounded-md tracking-wider uppercase">
-                  {['Borongan', 'Harian Lepas'].includes(currentJob?.status_pekerjaan) 
+                <span className="px-3 py-1 bg-[#0ea5e9]/10 text-[#0ea5e9] rounded-md tracking-widest uppercase">
+                  {['borongan', 'harian lepas'].includes(currentJob?.status_pekerjaan?.toLowerCase()) 
                     ? 'PEKERJA LAPANGAN' 
                     : (currentJob?.bagian || currentJob?.jabatan || 'PEKERJA')}
                 </span>
                 
                 {/* Hanya tampilkan status jika tidak sama dengan label pertama */}
                 {currentJob?.status_pekerjaan && currentJob?.status_pekerjaan !== currentJob?.bagian && currentJob?.status_pekerjaan !== currentJob?.jabatan && (
-                  <span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-md tracking-wider uppercase">{currentJob?.status_pekerjaan}</span>
+                  <span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-md tracking-widest uppercase">{currentJob?.status_pekerjaan}</span>
                 )}
                 
                 {/* Informal Metadata Badges */}
-                {['harian lepas', 'borongan'].includes(data.status_pekerja?.toLowerCase()) && currentJob?.informal_data && (
+                {['harian lepas', 'borongan'].includes(currentJob?.status_pekerjaan?.toLowerCase()) && currentJob?.informal_data && (
                   <>
-                    <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-md tracking-wider uppercase flex items-center">
+                    <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-md tracking-widest uppercase flex items-center">
                       <MapPin className="h-2.5 w-2.5 mr-1" /> {(() => {
                         try {
                           const info = typeof currentJob.informal_data === 'string' ? JSON.parse(currentJob.informal_data) : currentJob.informal_data;
@@ -474,7 +512,7 @@ export default function PekerjaDetailPage() {
                         } catch(e) { return '-'; }
                       })()}
                     </span>
-                    <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-md tracking-wider uppercase flex items-center">
+                    <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-md tracking-widest uppercase flex items-center">
                       <ClipboardList className="h-2.5 w-2.5 mr-1" /> {(() => {
                         try {
                           const info = typeof currentJob.informal_data === 'string' ? JSON.parse(currentJob.informal_data) : currentJob.informal_data;
@@ -746,7 +784,7 @@ export default function PekerjaDetailPage() {
                                   <div>
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Bagian / Jabatan</p>
                                     <p className="text-sm font-semibold text-slate-700">
-                                      {['Borongan', 'Harian Lepas'].includes(r.status_pekerjaan) 
+                                      {['borongan', 'harian lepas'].includes(r.status_pekerjaan?.toLowerCase()) 
                                         ? 'Pekerja Lapangan / Informal'
                                         : `${r.bagian || '-'} / ${r.jabatan || '-'}`
                                       }
