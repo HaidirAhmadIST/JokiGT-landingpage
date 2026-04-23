@@ -207,7 +207,6 @@ export default function AdvokasiPage() {
           </div>
         </div>
 
-<<<<<<< HEAD
   {/* Table Content */ }
   <AdvokasiTable
     loading={loading}
@@ -215,100 +214,6 @@ export default function AdvokasiPage() {
     totalCount={summaryStats.total.count}
     isStaffOrAbove={isStaffOrAbove}
   />
-=======
-        {/* Table */}
-        <div className="overflow-x-auto mt-4">
-          <Table>
-            <TableHeader>
-              <TableRow className="hover:bg-transparent border-b border-slate-100">
-                <TableHead className="py-4 px-6 font-bold text-[10px] tracking-widest text-[#94a3b8]">NAMA PEKERJA</TableHead>
-                <TableHead className="py-4 px-6 font-bold text-[10px] tracking-widest text-[#94a3b8]">PERUSAHAAN</TableHead>
-                <TableHead className="py-4 px-6 font-bold text-[10px] tracking-widest text-[#94a3b8]">JENIS KASUS</TableHead>
-                <TableHead className="py-4 px-6 font-bold text-[10px] tracking-widest text-[#94a3b8]">PROGRES ALUR</TableHead>
-                <TableHead className="py-4 px-6 font-bold text-[10px] tracking-widest text-[#94a3b8]">STATUS TERAKHIR</TableHead>
-                <TableHead className="py-4 px-6 font-bold text-[10px] tracking-widest text-[#94a3b8]">TANGGAL UPDATE</TableHead>
-                <TableHead className="py-4 px-6 font-bold text-[10px] tracking-widest text-[#94a3b8]">AKSI</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="py-20 text-center text-slate-400">Memuat data...</TableCell>
-                </TableRow>
-              ) : cases.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="py-20 text-center text-slate-400 font-medium italic">Belum ada kasus advokasi terdaftar.</TableCell>
-                </TableRow>
-              ) : cases.map((c) => {
-                const stageData = stages.find(s => s.id === c.tahap) || stages[0];
-                const worker = c.pekerja;
-                const initials = worker?.nama_lengkap 
-                  ? worker.nama_lengkap.split(' ').map((n: string) => n[0]).join('').substring(0, 2) 
-                  : '??';
-                const progressLevel = c.tahap === 'UPTD' ? 1 : (c.tahap === 'BPJS' ? 2 : 3);
-
-                return (
-                  <TableRow key={c.id} className="hover:bg-slate-50/50 transition-colors group">
-                    <TableCell className="py-4 px-6">
-                      <div className="flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-xs font-bold shrink-0 border border-slate-200">
-                          {initials}
-                        </div>
-                        <span className="font-bold text-[#1e293b] text-sm">{worker?.nama_lengkap}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="py-4 px-6 text-sm text-[#475569]">{worker?.perusahaan?.nama_perusahaan}</TableCell>
-                    <TableCell className="py-4 px-6 text-sm text-[#475569]">{caseTypeLabels[c.jenis_kasus]}</TableCell>
-                    <TableCell className="py-4 px-6">
-                      <div className="flex flex-col gap-1">
-                        <ProgressDots level={progressLevel} />
-                        <span className="text-[10px] font-semibold text-[#94a3b8]">{stageData.label}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="py-4 px-6">
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-bold border ${stageData.color}`}>
-                        {c.status_detail.replace(/_/g, ' ')}
-                      </span>
-                    </TableCell>
-                    <TableCell className="py-4 px-6 text-sm text-[#475569]">{new Date(c.updated_at).toLocaleDateString('id-ID')}</TableCell>
-                    <TableCell className="py-4 px-6">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "h-8 w-8 text-slate-400 hover:text-slate-700")}>
-                          <MoreVertical className="h-4 w-4" />
-                        </DropdownMenuTrigger>
-                        {/* @ts-ignore */}
-                        <DropdownMenuContent align="end" className="w-48">
-                          <DropdownMenuItem className="cursor-pointer" onClick={() => router.push(`/advokasi/${c.id}`)}><Eye className="mr-2 h-4 w-4" /> Lihat Detail</DropdownMenuItem>
-                          {isStaffOrAbove && (
-                            <>
-                              <DropdownMenuItem className="cursor-pointer"><RefreshCw className="mr-2 h-4 w-4" /> Update Status</DropdownMenuItem>
-                              <DropdownMenuItem className="cursor-pointer"><Archive className="mr-2 h-4 w-4" /> Tutup/Arsip Kasus</DropdownMenuItem>
-                            </>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
-        </div>
-
-        {/* Pagination Footer */}
-        <div className="border-t border-slate-100 p-4 px-6 flex items-center justify-between text-sm text-slate-500 font-medium">
-          <p className="text-xs font-bold text-[#94a3b8] tracking-wider uppercase">
-            MENAMPILKAN {cases.length} DARI {summaryStats.total.count} KASUS
-          </p>
-          <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400" disabled suppressHydrationWarning>&lt;</Button>
-            <Button variant="ghost" className="h-8 w-8 bg-[#0284c7] hover:bg-[#0369a1] text-white rounded-full text-xs font-bold" suppressHydrationWarning>1</Button>
-            <Button variant="ghost" className="h-8 w-8 rounded-full hover:bg-slate-100 text-xs font-bold" suppressHydrationWarning>2</Button>
-            <Button variant="ghost" className="h-8 w-8 rounded-full hover:bg-slate-100 text-xs font-bold" suppressHydrationWarning>3</Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-600 hover:bg-slate-100" suppressHydrationWarning>&gt;</Button>
-          </div>
-        </div>
->>>>>>> 6752ea5 (fix: resolve conflicts after pull and apply advocacy dashboard fixes)
       </Card >
 
     {/* ===== Add New Case Sheet ===== */ }
