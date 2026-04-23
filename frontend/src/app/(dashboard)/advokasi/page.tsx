@@ -354,7 +354,7 @@ export default function AdvokasiPage() {
                   <div className="space-y-2">
                     <Label className="text-xs font-bold text-slate-600">TAHAP SAAT INI</Label>
                     {/* @ts-ignore */}
-                    <Select value={formData.tahap || undefined} onValueChange={(v: any) => setFormData({ ...formData, tahap: v })}>
+                    <Select value={formData.tahap || undefined} onValueChange={(v: any) => setValue('tahap', v)}>
                       <SelectTrigger className="h-11 bg-slate-50/50 border-slate-200 focus:ring-[#0ea5e9]">
                         <SelectValue />
                       </SelectTrigger>
@@ -368,7 +368,7 @@ export default function AdvokasiPage() {
                   <div className="space-y-2">
                     <Label className="text-xs font-bold text-slate-600">STATUS DETAIL</Label>
                     {/* @ts-ignore */}
-                    <Select value={formData.status_detail || undefined} onValueChange={(v: any) => setFormData({ ...formData, status_detail: v })}>
+                    <Select value={formData.status_detail || undefined} onValueChange={(v: any) => setValue('status_detail', v)}>
                       <SelectTrigger className="h-11 bg-slate-50/50 border-slate-200 focus:ring-[#0ea5e9]">
                         <SelectValue />
                       </SelectTrigger>
