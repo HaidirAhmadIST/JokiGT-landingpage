@@ -14,6 +14,8 @@ export const metadata: Metadata = {
   description: "Sistem Informasi Rekam Jejak Penyakit Akibat Kerja Terpadu",
 };
 
+import { ThemeProvider } from "@/components/theme-provider";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -25,13 +27,19 @@ export default function RootLayout({
       className={`${jakarta.variable} font-sans h-full antialiased`}
       suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col font-sans bg-[#F8FAFC]">
+      <body className="min-h-full flex flex-col font-sans transition-colors duration-300">
         <Providers>
-          {children}
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="dark"
+            enableSystem={false}
+            disableTransitionOnChange
+          >
+            {children}
+            <Toaster position="top-center" richColors />
+          </ThemeProvider>
         </Providers>
-        <Toaster position="top-center" richColors />
       </body>
     </html>
   );
 }
-

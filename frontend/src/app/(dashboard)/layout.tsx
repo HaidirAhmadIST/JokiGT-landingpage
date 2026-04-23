@@ -19,11 +19,13 @@ import {
   Loader2,
   User as UserIcon
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -126,10 +128,10 @@ export default function DashboardLayout({
   };
 
   return (
-    <div className="flex flex-col h-screen bg-[#f8fafc] font-sans">
+    <div className="flex flex-col h-screen bg-background font-sans transition-colors duration-300">
       
       {/* FULL-WIDTH TOP HEADER */}
-      <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 z-20 shrink-0 shadow-sm">
+      <header className="h-16 bg-card border-b border-border flex items-center justify-between px-6 z-20 shrink-0 shadow-sm transition-colors">
         
         {/* Logo Text Area */}
         <div className="flex items-center gap-4 w-60 shrink-0">
@@ -168,11 +170,11 @@ export default function DashboardLayout({
                       onClick={() => setSidebarOpen(false)}
                       className={`group flex items-center px-6 py-3.5 text-sm font-semibold transition-all duration-200 border-l-[3px] ${
                         isActive 
-                          ? 'bg-[#E0F2FE] text-[#0284c7] border-[#0ea5e9]' 
-                          : 'text-slate-500 hover:bg-slate-50 border-transparent hover:text-slate-800'
+                          ? 'bg-primary/10 text-primary border-primary' 
+                          : 'text-muted-foreground hover:bg-accent border-transparent hover:text-foreground'
                       }`}
                     >
-                      <item.icon className={`mr-4 shrink-0 h-[18px] w-[18px] ${isActive ? 'text-[#0ea5e9]' : 'text-slate-400 group-hover:text-slate-600'}`} />
+                      <item.icon className={`mr-4 shrink-0 h-[18px] w-[18px] ${isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'}`} />
                       {item.name}
                     </Link>
                   );
@@ -180,7 +182,7 @@ export default function DashboardLayout({
               </nav>
             </SheetContent>
           </Sheet>
-          <h1 className="font-extrabold text-xl text-[#0f172a] tracking-tight hidden md:block">Azure Sentinel</h1>
+          <h1 className="font-extrabold text-xl text-foreground tracking-tight hidden md:block">Azure Sentinel</h1>
         </div>
 
         {/* Center Search Bar */}
@@ -198,7 +200,7 @@ export default function DashboardLayout({
               onChange={(e) => handleSearch(e.target.value)}
               onFocus={() => { if (searchQuery.trim().length >= 2) setSearchOpen(true); }}
               onKeyDown={(e) => { if (e.key === 'Escape') setSearchOpen(false); }}
-              className="w-full h-10 pl-11 pr-4 rounded-lg border-none bg-slate-100 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#0ea5e9]/20 focus:bg-white transition-all text-slate-700 placeholder:text-slate-400"
+              className="w-full h-10 pl-11 pr-4 rounded-lg border border-border bg-muted/50 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-background transition-all text-foreground placeholder:text-muted-foreground"
               suppressHydrationWarning
             />
           </div>
@@ -265,37 +267,45 @@ export default function DashboardLayout({
 
         {/* Right Actions */}
         <div className="flex items-center gap-x-5 shrink-0">
-          <button suppressHydrationWarning className="relative text-slate-400 hover:text-slate-700 transition-colors">
-            <Bell className="h-[22px] w-[22px]" />
-          </button>
-          
-          <button suppressHydrationWarning className="text-slate-400 hover:text-slate-700 transition-colors">
+          <Link 
+            href="/settings"
+            suppressHydrationWarning 
+            className="text-slate-400 hover:text-[#0ea5e9] transition-all hover:scale-110 active:scale-95"
+          >
             <Settings className="h-[22px] w-[22px]" />
-          </button>
+          </Link>
 
           <DropdownMenu>
             <DropdownMenuTrigger 
-              className="h-9 w-9 rounded-full bg-orange-100 text-orange-700 flex items-center justify-center font-bold text-sm border-2 border-orange-200 outline-none hover:ring-2 hover:ring-orange-300 hover:ring-offset-1 transition-all"
+              className="h-9 w-9 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center font-bold text-sm border border-orange-100 outline-none hover:ring-2 hover:ring-orange-200 hover:ring-offset-1 transition-all shadow-sm cursor-pointer"
               suppressHydrationWarning
             >
-               {/* Mockup uses a small avatar, I will use a simple initials trick */}
-               {mounted && user?.nama ? user.nama.charAt(0).toUpperCase() : 'A'}
+               <span>{mounted && user?.nama ? user.nama.charAt(0).toUpperCase() : 'A'}</span>
             </DropdownMenuTrigger>
-            {/* @ts-ignore */}
-            <DropdownMenuContent className="w-56" align="end" forceMount>
-              <DropdownMenuLabel className="font-normal">
-                {mounted && (
-                  <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{user?.nama}</p>
-                    <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
-                    <p className="text-xs leading-none text-muted-foreground mt-1 capitalize font-semibold text-[#0ea5e9]">
-                      Role: {user?.role}
-                    </p>
-                  </div>
-                )}
-              </DropdownMenuLabel>
+            <DropdownMenuContent className="w-56" align="end">
+              <DropdownMenuGroup>
+                <DropdownMenuLabel className="font-normal">
+                  {mounted && (
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-semibold leading-none text-slate-900">{user?.nama || 'Administrator'}</p>
+                      <p className="text-xs leading-none text-slate-400">{user?.email || 'admin@sentinel.id'}</p>
+                      <div className="flex items-center gap-1.5 mt-2">
+                        <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                        <p className="text-[10px] leading-none uppercase font-bold text-slate-500 tracking-wider">
+                          {user?.role || 'Super Admin'}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </DropdownMenuLabel>
+              </DropdownMenuGroup>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout} className="text-red-600 cursor-pointer">
+              <DropdownMenuItem onClick={() => router.push('/profile')} className="cursor-pointer">
+                <UserIcon className="mr-2 h-4 w-4" />
+                <span>Profil Saya</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout} className="text-red-600 cursor-pointer focus:bg-red-50 focus:text-red-600">
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Keluar</span>
               </DropdownMenuItem>
@@ -308,18 +318,18 @@ export default function DashboardLayout({
       <div className="flex flex-1 overflow-hidden">
         
         {/* DESKTOP SIDEBAR */}
-        <aside className="hidden md:flex w-[260px] flex-col bg-white border-r border-slate-200 z-10 justify-between py-6 shrink-0">
+        <aside className="hidden md:flex w-[260px] flex-col bg-card border-r border-border z-10 justify-between py-6 shrink-0 transition-colors duration-300">
            
            <div className="w-full">
              {/* Admin Panel Token */}
              <div className="px-6 mb-8">
-               <div className="bg-blue-50/50 border border-blue-100/50 rounded-xl p-3 flex items-center gap-3">
-                  <div className="bg-blue-100 p-2 rounded-lg text-[#0ea5e9]">
+               <div className="bg-primary/5 border border-primary/10 rounded-xl p-3 flex items-center gap-3">
+                  <div className="bg-primary/20 p-2 rounded-lg text-primary">
                     <Shield className="h-[18px] w-[18px]" />
                   </div>
                   <div>
-                    <p className="text-[11px] font-extrabold text-[#1e293b] tracking-wider">ADMIN PANEL</p>
-                    <p className="text-[10px] text-slate-500 font-medium mt-0.5">Mode Manajemen</p>
+                    <p className="text-[11px] font-extrabold text-foreground tracking-wider">ADMIN PANEL</p>
+                    <p className="text-[10px] text-muted-foreground font-medium mt-0.5">Mode Manajemen</p>
                   </div>
                </div>
              </div>
@@ -335,11 +345,11 @@ export default function DashboardLayout({
                     href={item.href}
                     className={`group flex items-center px-8 py-3.5 text-sm font-semibold transition-all duration-200 border-l-4 ${
                       isActive 
-                        ? 'bg-[#E0F2FE] text-[#0284c7] border-[#0ea5e9]' 
-                        : 'text-slate-500 hover:bg-slate-50 border-transparent hover:text-slate-800'
+                        ? 'bg-primary/10 text-primary border-primary' 
+                        : 'text-muted-foreground hover:bg-accent border-transparent hover:text-foreground'
                     }`}
                   >
-                    <item.icon className={`mr-4 shrink-0 h-[18px] w-[18px] ${isActive ? 'text-[#0ea5e9]' : 'text-slate-400 group-hover:text-slate-600'}`} />
+                    <item.icon className={`mr-4 shrink-0 h-[18px] w-[18px] ${isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'}`} />
                     {item.name}
                   </Link>
                 );
@@ -347,6 +357,7 @@ export default function DashboardLayout({
              </nav>
            </div>
            
+           {/* Bottom Settings Link */}
            {/* Bottom Settings Link */}
            <div className="px-8 flex flex-col space-y-1 pb-2">
               <Link
