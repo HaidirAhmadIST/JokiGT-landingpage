@@ -111,7 +111,7 @@ export default function LaporanPage() {
         {/* Sukses Advokasi */}
         <Card className="rounded-[20px] shadow-sm border-slate-100 p-6 flex flex-col justify-between h-36 hover:shadow-md transition-all">
           <div className="flex justify-between items-start">
-            <p className="text-xs font-bold text-[#94a3b8] tracking-widest uppercase">jenis PAK</p>
+            <p className="text-xs font-bold text-[#94a3b8] tracking-widest uppercase">jenis Kasus</p>
             <div className="bg-emerald-50 text-emerald-500 p-2 rounded-xl">
               <CheckCircle2 className="h-5 w-5" />
             </div>
