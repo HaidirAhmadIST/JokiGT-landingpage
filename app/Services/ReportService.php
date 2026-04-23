@@ -33,9 +33,8 @@ class ReportService
             ->where('rehabilitasi_bpjskes', false)
             ->count();
         
-        // 3. Calculate Real Success Rate (Completed Cases vs Total Cases)
-        $selesaiKasus = StatusAdvokasi::whereNotNull('jenis_kasus')->where('rehabilitasi_bpjskes', true)->count();
-        $successRate = $totalKasus > 0 ? round(($selesaiKasus / $totalKasus) * 100, 1) : 0;
+        // 3. Unique Case Types Count (PAK, K3, PHK, JHT, etc.)
+        $uniqueCaseTypes = StatusAdvokasi::whereNotNull('jenis_kasus')->distinct('jenis_kasus')->count('jenis_kasus');
 
         return [
             'total_kasus' => [
@@ -47,7 +46,7 @@ class ReportService
                 'trend' => 0,
             ],
             'sukses_advokasi' => [
-                'value' => number_format($successRate),
+                'value' => number_format($uniqueCaseTypes),
                 'trend' => 0,
             ]
         ];
