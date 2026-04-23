@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import {
   ArrowLeft, Printer, Pin, Mail, Phone, MapPin,
   Briefcase, ShieldAlert, CheckCircle2, Circle, Edit3,
-  Download, Image as ImageIcon, Activity, FileText, FileCheck, ClipboardList, HeartPulse
+  Download, Image as ImageIcon, Activity, FileText, FileCheck, ClipboardList, HeartPulse, HardHat
 } from 'lucide-react';
 import { format, differenceInYears, parseISO } from 'date-fns';
 import { id as localeID } from 'date-fns/locale';
@@ -47,6 +47,35 @@ export default function PekerjaDetailPage() {
       toast.error('Gagal mengambil detail pekerja');
     } finally {
       setLoading(false);
+    }
+  };
+  
+  const handleExportPdf = async () => {
+    if (!data?.status_advokasi?.id) {
+      toast.error('Pekerja ini belum memiliki data advokasi untuk dicetak.');
+      return;
+    }
+    
+    const toastId = toast.loading('Menyiapkan dokumen PDF...');
+    try {
+      const response = await api.get(`/advokasi/${data.status_advokasi.id}/pdf`, {
+        responseType: 'blob',
+      });
+      
+      const fileUrl = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+      const link = document.createElement('a');
+      link.href = fileUrl;
+      link.setAttribute('download', `Laporan-Advokasi-${data.nama_lengkap.replace(/\s+/g, '-')}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(fileUrl);
+      
+      toast.dismiss(toastId);
+      toast.success('Laporan PDF berhasil diunduh');
+    } catch (error) {
+      toast.dismiss(toastId);
+      toast.error('Gagal mengunduh laporan PDF.');
     }
   };
 
@@ -226,7 +255,20 @@ export default function PekerjaDetailPage() {
   const currentJob = data.riwayat_pekerja?.find((r: any) => !r.tgl_keluar) || data.riwayat_pekerja?.[0];
   let masaKerjaText = '-';
   let sejakText = '-';
-  if (currentJob?.tgl_masuk) {
+  if (['Borongan', 'Harian Lepas'].includes(currentJob?.status_pekerjaan)) {
+    let info: any = {};
+    if (currentJob?.informal_data) {
+      try {
+        info = typeof currentJob.informal_data === 'string' ? JSON.parse(currentJob.informal_data) : currentJob.informal_data;
+      } catch(e) {}
+    }
+    if (info?.lama_bekerja && info?.satuan_waktu) {
+      masaKerjaText = `${info.lama_bekerja} ${info.satuan_waktu}`;
+      sejakText = 'Total Durasi';
+    } else {
+      sejakText = 'Pekerja Informal';
+    }
+  } else if (currentJob?.tgl_masuk) {
     const masukDate = parseISO(currentJob.tgl_masuk);
     const years = differenceInYears(new Date(), masukDate);
     masaKerjaText = years > 0 ? `${years} Tahun` : '< 1 Tahun';
@@ -413,7 +455,7 @@ export default function PekerjaDetailPage() {
                 )}
               </p>
               <div className="flex gap-2 mt-3 text-[10px] font-bold">
-                <span className="px-3 py-1 bg-[#0ea5e9]/10 text-[#0ea5e9] rounded-md tracking-wider uppercase">{currentJob?.bagian || 'PRODUKSI'}</span>
+                <span className="px-3 py-1 bg-[#0ea5e9]/10 text-[#0ea5e9] rounded-md tracking-wider uppercase">{currentJob?.bagian || currentJob?.jabatan || (['Borongan', 'Harian Lepas'].includes(currentJob?.status_pekerjaan) ? 'PEKERJA LAPANGAN' : 'PRODUKSI')}</span>
                 <span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-md tracking-wider uppercase">{currentJob?.status_pekerjaan || 'TETAP'}</span>
               </div>
             </div>
@@ -665,14 +707,23 @@ export default function PekerjaDetailPage() {
                                         <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-[10px] font-extrabold rounded-md uppercase tracking-wider">SELESAI</span>
                                       )}
                                     </div>
-                                    <p className="text-[#0ea5e9] text-xs font-bold uppercase tracking-tight">{r.deskripsi_usaha || 'Bidang Industri'}</p>
+                                    {r.deskripsi_usaha && (
+                                      <p className="text-[#0ea5e9] text-xs font-bold uppercase tracking-tight flex items-center gap-1 mt-1">
+                                        <ShieldAlert className="h-3 w-3" /> PAJANAN: {r.deskripsi_usaha}
+                                      </p>
+                                    )}
                                   </div>
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4 mb-4">
                                   <div>
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Bagian / Jabatan</p>
-                                    <p className="text-sm font-semibold text-slate-700">{r.bagian || 'Produksi'} / {r.jabatan || 'Kepala Regu'}</p>
+                                    <p className="text-sm font-semibold text-slate-700">
+                                      {['Borongan', 'Harian Lepas'].includes(r.status_pekerjaan) 
+                                        ? 'Pekerja Lapangan / Informal'
+                                        : `${r.bagian || 'Produksi'} / ${r.jabatan || 'Kepala Regu'}`
+                                      }
+                                    </p>
                                   </div>
                                   <div>
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Periode Kerja</p>
@@ -690,6 +741,19 @@ export default function PekerjaDetailPage() {
                                       <p className="text-sm font-semibold text-slate-700">{r.nama_agen_penyalur}</p>
                                     </div>
                                   )}
+                                  {(['Borongan', 'Harian Lepas'].includes(r.status_pekerjaan)) && (
+                                    <div>
+                                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Lokasi Proyek</p>
+                                      <p className="text-sm font-semibold text-slate-700">
+                                        {(() => {
+                                          try {
+                                            const info = typeof r.informal_data === 'string' ? JSON.parse(r.informal_data) : r.informal_data;
+                                            return info?.lokasi_proyek?.join(', ') || '-';
+                                          } catch(e) { return '-'; }
+                                        })()}
+                                      </p>
+                                    </div>
+                                  )}
                                 </div>
 
                                 {r.deskripsi_pekerjaan && (
@@ -697,6 +761,58 @@ export default function PekerjaDetailPage() {
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Deskripsi Pekerjaan</p>
                                     <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
                                       <p className="text-xs text-slate-600 leading-relaxed italic">{r.deskripsi_pekerjaan}</p>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {r.informal_data && (
+                                  <div className="mb-4 bg-orange-50/50 border border-orange-100 p-4 rounded-xl">
+                                    <p className="text-[10px] font-bold text-orange-600 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                                      <HardHat className="h-3.5 w-3.5" /> Data Pekerja Informal / Lapangan
+                                    </p>
+                                    <div className="grid grid-cols-2 gap-4">
+                                      {(() => {
+                                        let info: any = {};
+                                        try {
+                                          info = typeof r.informal_data === 'string' ? JSON.parse(r.informal_data) : r.informal_data;
+                                        } catch(e) {}
+                                        return (
+                                          <>
+                                            <div className="col-span-2 sm:col-span-1">
+                                              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Tugas Spesifik</p>
+                                              <p className="text-xs font-semibold text-slate-700">{info.tugas_spesifik || '-'}</p>
+                                            </div>
+                                            <div className="col-span-2 sm:col-span-1">
+                                              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Durasi</p>
+                                              <p className="text-xs font-semibold text-slate-700">{info.lama_bekerja || '-'} {info.satuan_waktu}</p>
+                                            </div>
+                                            <div className="col-span-2 sm:col-span-1">
+                                              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Penyediaan APD</p>
+                                              <p className="text-xs font-semibold text-slate-700">{info.apd_disediakan || '-'}</p>
+                                            </div>
+                                            {info.jenis_apd_sendiri && (
+                                              <div className="col-span-2 sm:col-span-1">
+                                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">APD Mandiri</p>
+                                                <p className="text-xs font-semibold text-slate-700">{info.jenis_apd_sendiri}</p>
+                                              </div>
+                                            )}
+                                            <div className="col-span-2 sm:col-span-1">
+                                              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">BPJS Ketenagakerjaan (BPU)</p>
+                                              <p className="text-xs font-semibold text-slate-700">{info.bpjs_bpu || '-'}</p>
+                                            </div>
+                                            {info.lokasi_proyek && info.lokasi_proyek.length > 0 && (
+                                              <div className="col-span-2">
+                                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Lokasi Proyek</p>
+                                                <div className="flex flex-wrap gap-1.5">
+                                                  {info.lokasi_proyek.map((loc: string, i: number) => (
+                                                    loc ? <span key={i} className="bg-white border border-slate-200 text-slate-600 text-[10px] px-2 py-0.5 rounded-md font-medium">{loc}</span> : null
+                                                  ))}
+                                                </div>
+                                              </div>
+                                            )}
+                                          </>
+                                        );
+                                      })()}
                                     </div>
                                   </div>
                                 )}
@@ -917,9 +1033,19 @@ export default function PekerjaDetailPage() {
                                  <span className="shrink-0 w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
                                )}
                              </div>
-                             <p className="text-[11px] text-slate-400 font-medium truncate">
-                               {r.bagian || r.jabatan || 'Produksi'} • {wText}
-                             </p>
+                             <div className="flex flex-col gap-0.5 mb-1">
+                               <p className="text-[11px] text-slate-400 font-medium truncate">
+                                 {['Borongan', 'Harian Lepas'].includes(r.status_pekerjaan) 
+                                    ? 'Pekerja Lapangan / Informal'
+                                    : `${r.bagian || r.jabatan || 'Produksi'}`
+                                 } • {wText}
+                               </p>
+                               {r.deskripsi_usaha && (
+                                 <p className="text-[10px] text-amber-600 font-bold truncate flex items-center gap-1 mt-0.5">
+                                   <ShieldAlert className="h-2.5 w-2.5" /> Pajanan: {r.deskripsi_usaha}
+                                 </p>
+                               )}
+                             </div>
                              {/* Badge jumlah pemeriksaan */}
                              {medisCount > 0 && (
                                <span className="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-[#0ea5e9] text-[9px] font-bold rounded-full">
@@ -1144,7 +1270,11 @@ export default function PekerjaDetailPage() {
       </div>
 
       {/* Floating Action Button (Print) */}
-      <button className="fixed bottom-8 right-8 z-50 bg-[#0ea5e9] hover:bg-[#0284c7] text-white rounded-full w-14 h-14 shadow-lg shadow-blue-500/30 flex items-center justify-center transition-transform hover:scale-105 active:scale-95">
+      <button 
+        onClick={handleExportPdf}
+        className="fixed bottom-8 right-8 z-50 bg-[#0ea5e9] hover:bg-[#0284c7] text-white rounded-full w-14 h-14 shadow-lg shadow-blue-500/30 flex items-center justify-center transition-transform hover:scale-105 active:scale-95"
+        title="Cetak Laporan Advokasi"
+      >
         <Printer className="h-6 w-6" />
       </button>
 

@@ -98,7 +98,8 @@ export default function PendaftaranPekerjaPage() {
     bpjs_bpu: '',
     apd_disediakan: '',
     jenis_apd_sendiri: '',
-    lokasi_proyek: [] as string[]
+    lokasi_proyek: [] as string[],
+    riwayat_pemeriksaan: [] as any[]
   });
 
   const [baseData, setBaseData] = useState({
@@ -386,7 +387,20 @@ export default function PendaftaranPekerjaPage() {
             apd_disediakan: pekerjaanSaatIni.apd_disediakan,
             jenis_apd_sendiri: pekerjaanSaatIni.jenis_apd_sendiri,
             lokasi_proyek: pekerjaanSaatIni.lokasi_proyek
-          } : null
+          } : null,
+          riwayat_pemeriksaan: (pekerjaanSaatIni.riwayat_pemeriksaan || []).filter(
+            (m: any) => m.tanggal_pemeriksaan && m.hasil_diagnosis
+          ).map((m: any) => ({
+            tanggal_pemeriksaan: m.tanggal_pemeriksaan,
+            tempat_pemeriksaan: m.tempat_pemeriksaan,
+            jenis_pemeriksaan: m.jenis_pemeriksaan,
+            dokter: m.dokter,
+            status_kesehatan: m.status_kesehatan,
+            hasil_diagnosis: m.hasil_diagnosis,
+            rekomendasi: m.rekomendasi,
+            pendamping: m.pendamping
+          })),
+          riwayat_pemeriksaan_raw: pekerjaanSaatIni.riwayat_pemeriksaan || []
         });
       }
 
@@ -406,7 +420,8 @@ export default function PendaftaranPekerjaPage() {
             hasil_diagnosis: m.hasil_diagnosis,
             rekomendasi: m.rekomendasi,
             pendamping: m.pendamping,
-          }))
+          })),
+          riwayat_pemeriksaan_raw: r.riwayat_pemeriksaan || []
         }));
 
       // Pemeriksaan Mandiri (tidak terikat pekerjaan tertentu)
@@ -453,10 +468,12 @@ export default function PendaftaranPekerjaPage() {
         const savedMedis = response.data.data.detail_medis || [];
 
         // 1. Profile Photo (Single)
+        const uploadPromises: Promise<any>[] = [];
+        
         if (pasFoto) {
           const profileForm = new FormData();
           profileForm.append('pas_foto', pasFoto);
-          await api.post(`/pekerja/${pekerjaId}/foto`, profileForm);
+          uploadPromises.push(api.post(`/pekerja/${pekerjaId}/foto`, profileForm));
         }
 
         // 2. Employment History Files
@@ -464,7 +481,7 @@ export default function PendaftaranPekerjaPage() {
           if (riwayatData[i].file_bukti && riwayatData[i].file_bukti.length > 0 && savedRiwayat[i]) {
             const riwayatForm = new FormData();
             riwayatData[i].file_bukti.forEach((f: File) => riwayatForm.append('file_bukti[]', f));
-            await api.post(`/files/riwayat/${savedRiwayat[i].id}`, riwayatForm);
+            uploadPromises.push(api.post(`/riwayat-pekerja/${savedRiwayat[i].id}/file`, riwayatForm));
           }
 
           // Embedded medical records in work history
@@ -474,7 +491,7 @@ export default function PendaftaranPekerjaPage() {
             if (embeddedMedis[j].file_hasil && embeddedMedis[j].file_hasil.length > 0 && savedEmbeddedMedis[j]) {
               const medisForm = new FormData();
               embeddedMedis[j].file_hasil.forEach((f: File) => medisForm.append('file_hasil[]', f));
-              await api.post(`/files/medis/${savedEmbeddedMedis[j].id}`, medisForm);
+              uploadPromises.push(api.post(`/detail-medis/${savedEmbeddedMedis[j].id}/file`, medisForm));
             }
           }
         }
@@ -488,7 +505,7 @@ export default function PendaftaranPekerjaPage() {
           if (mData && mData.file_hasil && mData.file_hasil.length > 0 && sMedis) {
             const mForm = new FormData();
             mData.file_hasil.forEach((f: File) => mForm.append('file_hasil[]', f));
-            await api.post(`/files/medis/${sMedis.id}`, mForm);
+            uploadPromises.push(api.post(`/detail-medis/${sMedis.id}/file`, mForm));
           }
         }
 
@@ -511,8 +528,13 @@ export default function PendaftaranPekerjaPage() {
               item.file.forEach((f: File) => advForm.append('file[]', f));
             }
 
-            await api.post(`/pekerja/${pekerjaId}/advokasi`, advForm);
+            uploadPromises.push(api.post(`/pekerja/${pekerjaId}/advokasi`, advForm));
           }
+        }
+
+        // Execute all uploads concurrently
+        if (uploadPromises.length > 0) {
+          await Promise.all(uploadPromises);
         }
       };
 
@@ -805,7 +827,6 @@ export default function PendaftaranPekerjaPage() {
                             <SelectItem value="NEW" className="font-bold text-[#0ea5e9] bg-blue-50/50 mt-1 border-t border-slate-100">+ Tambah Perusahaan Baru</SelectItem>
                           </SelectContent>
                         </Select>
-
                         {baseData.perusahaan_id === 'NEW' && (
                           <div className="mt-3 p-4 bg-blue-50/50 border border-blue-100 rounded-xl space-y-4 animate-in fade-in slide-in-from-top-2">
                             <div className="space-y-2">
@@ -815,15 +836,6 @@ export default function PendaftaranPekerjaPage() {
                                 className="h-11 bg-white border-blue-200 focus-visible:ring-blue-400"
                                 value={pekerjaanSaatIni.nama_perusahaan_baru}
                                 onChange={e => setPekerjaanSaatIni({ ...pekerjaanSaatIni, nama_perusahaan_baru: e.target.value })}
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label className="text-[#0ea5e9]">Deskripsi Jenis Usaha</Label>
-                              <Input
-                                placeholder="Contoh: Industri Pengolahan Makanan"
-                                className="h-11 bg-white border-blue-200 focus-visible:ring-blue-400"
-                                value={pekerjaanSaatIni.deskripsi_usaha}
-                                onChange={e => setPekerjaanSaatIni({ ...pekerjaanSaatIni, deskripsi_usaha: e.target.value })}
                               />
                             </div>
                           </div>
@@ -880,6 +892,10 @@ export default function PendaftaranPekerjaPage() {
                             <Label htmlFor="jabatan">Jabatan / Posisi</Label>
                             <Input id="jabatan" placeholder="Contoh: Operator Produksi" className="h-11" value={pekerjaanSaatIni.jabatan} onChange={e => setPekerjaanSaatIni({ ...pekerjaanSaatIni, jabatan: e.target.value })} />
                           </div>
+                          <div className="space-y-2 col-span-1 sm:col-span-2">
+                            <Label>Pajanan / Risiko Lingkungan Kerja</Label>
+                            <Input placeholder="Contoh: Terpapar debu silika, Bising, Bahan Kimia..." className="h-11" value={pekerjaanSaatIni.deskripsi_usaha} onChange={e => setPekerjaanSaatIni({ ...pekerjaanSaatIni, deskripsi_usaha: e.target.value })} />
+                          </div>
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="tgl_masuk">Mulai Bekerja</Label>
@@ -891,6 +907,133 @@ export default function PendaftaranPekerjaPage() {
                         </div>
                       </>
                     )}
+
+                    {/* Sub-seksi: Riwayat Kesehatan Pekerjaan Saat Ini */}
+                    <div className="mt-5 pt-5 border-t border-slate-100">
+                      <h5 className="text-sm font-bold text-blue-700 flex items-center gap-2 mb-4">
+                        <Activity className="h-4 w-4" />
+                        Riwayat Kesehatan saat ini
+                      </h5>
+                      {(() => {
+                        const src = pekerjaanSaatIni.riwayat_pemeriksaan?.[0];
+                        const med = {
+                          tanggal_pemeriksaan: src?.tanggal_pemeriksaan ?? '',
+                          tempat_pemeriksaan:  src?.tempat_pemeriksaan  ?? '',
+                          jenis_pemeriksaan:   src?.jenis_pemeriksaan   ?? '',
+                          dokter:              src?.dokter              ?? '',
+                          status_kesehatan:    src?.status_kesehatan    ?? 'sehat',
+                          hasil_diagnosis:     src?.hasil_diagnosis     ?? '',
+                          rekomendasi:         src?.rekomendasi         ?? '',
+                          file_hasil:          src?.file_hasil          ?? [] as File[],
+                          pendamping:          src?.pendamping          ?? '',
+                        };
+                        const updateMed = (field: string, value: any) => {
+                          const cur = pekerjaanSaatIni.riwayat_pemeriksaan?.[0];
+                          const newVal = [{
+                            tanggal_pemeriksaan: cur?.tanggal_pemeriksaan ?? '',
+                            tempat_pemeriksaan:  cur?.tempat_pemeriksaan  ?? '',
+                            jenis_pemeriksaan:   cur?.jenis_pemeriksaan   ?? '',
+                            dokter:              cur?.dokter              ?? '',
+                            status_kesehatan:    cur?.status_kesehatan    ?? 'sehat',
+                            hasil_diagnosis:     cur?.hasil_diagnosis     ?? '',
+                            rekomendasi:         cur?.rekomendasi         ?? '',
+                            file_hasil:          cur?.file_hasil          ?? [] as File[],
+                            pendamping:          cur?.pendamping          ?? '',
+                            [field]: value
+                          }];
+                          setPekerjaanSaatIni({ ...pekerjaanSaatIni, riwayat_pemeriksaan: newVal });
+                        };
+                        
+                        return (
+                          <div className="bg-blue-50/40 border border-blue-100 rounded-lg p-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              <div className="space-y-1">
+                                <Label className="text-xs text-slate-600">Tanggal Pemeriksaan</Label>
+                                <Input type="date" className="h-9 bg-white text-slate-600 text-sm" value={med.tanggal_pemeriksaan} onChange={e => updateMed('tanggal_pemeriksaan', e.target.value)} />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-xs text-slate-600">Tempat Pemeriksaan</Label>
+                                <Input placeholder="Klinik/RS..." className="h-9 bg-white text-sm" value={med.tempat_pemeriksaan} onChange={e => updateMed('tempat_pemeriksaan', e.target.value)} />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-xs text-slate-600">Jenis Pemeriksaan</Label>
+                                <Select value={med.jenis_pemeriksaan} onValueChange={v => updateMed('jenis_pemeriksaan', v)}>
+                                  <SelectTrigger className="h-9 w-full bg-white text-sm"><SelectValue placeholder="Pilih Jenis" /></SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="MCU Berkala">MCU Berkala</SelectItem>
+                                    <SelectItem value="Rontgen Thorax">Rontgen Thorax</SelectItem>
+                                    <SelectItem value="Spirometri">Spirometri</SelectItem>
+                                    <SelectItem value="Audiometri">Audiometri</SelectItem>
+                                    <SelectItem value="Tes Darah/Lab">Tes Darah / Lab</SelectItem>
+                                    <SelectItem value="Lainnya">Lainnya</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-xs text-slate-600">Status Kesehatan</Label>
+                                <Select value={med.status_kesehatan || 'sehat'} onValueChange={v => updateMed('status_kesehatan', v)}>
+                                  <SelectTrigger className="h-9 w-full bg-white text-sm">
+                                    <SelectValue placeholder="Pilih Status">
+                                      {med.status_kesehatan ? med.status_kesehatan.replace(/_/g, ' ').replace(/\b\w/g, (l: any) => l.toUpperCase()) : undefined}
+                                    </SelectValue>
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="sehat">Sehat</SelectItem>
+                                    <SelectItem value="sehat_dengan_catatan">Sehat Dengan Catatan</SelectItem>
+                                    <SelectItem value="tidak_sehat">Tidak Sehat</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-xs text-slate-600">Dokter yang Memeriksa</Label>
+                                <Input placeholder="Nama dokter..." className="h-9 bg-white text-sm" value={med.dokter} onChange={e => updateMed('dokter', e.target.value)} />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-xs text-slate-600">Pendamping Lapangan</Label>
+                                <Select value={med.pendamping} onValueChange={v => updateMed('pendamping', v)}>
+                                  <SelectTrigger className="h-9 w-full bg-white text-sm"><SelectValue placeholder="Pilih Pendamping" /></SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="Klinik Internal">Klinik Internal Perusahaan</SelectItem>
+                                    <SelectItem value="Faskes BPJSKes">Faskes Pertama (BPJS)</SelectItem>
+                                    <SelectItem value="Dokter Okupasi">Dokter Spesialis Okupasi</SelectItem>
+                                    <SelectItem value="Mandiri">Berangkat Mandiri</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="space-y-1 col-span-1 sm:col-span-2">
+                                <Label className="text-xs text-slate-600">Hasil Diagnosis</Label>
+                                <Textarea placeholder="Ringkasan hasil diagnosis..." className="min-h-[70px] bg-white resize-none text-sm" value={med.hasil_diagnosis} onChange={e => updateMed('hasil_diagnosis', e.target.value)} />
+                              </div>
+                              <div className="space-y-1 col-span-1 sm:col-span-2">
+                                <Label className="text-xs text-slate-600">Rekomendasi Dokter <span className="text-slate-400 font-normal">(Opsional)</span></Label>
+                                <Textarea placeholder="Saran dari dokter..." className="min-h-[60px] bg-white resize-none text-sm" value={med.rekomendasi} onChange={e => updateMed('rekomendasi', e.target.value)} />
+                              </div>
+                              <div className="space-y-1 col-span-1 sm:col-span-2">
+                                <Label className="text-xs text-slate-600">Unggah Hasil Pemeriksaan (Multiple) <span className="text-slate-400 font-normal">(Opsional)</span></Label>
+                                <label className="flex items-center gap-3 bg-white border border-slate-200 hover:border-[#0ea5e9] rounded-lg px-3 py-2 cursor-pointer transition-colors h-9">
+                                  <UploadCloud className="w-3.5 h-3.5 text-[#0ea5e9]" />
+                                  <span className="text-xs text-slate-500 flex-1 truncate">
+                                    {med.file_hasil?.length > 0 
+                                      ? `${med.file_hasil.length} file dipilih: ${med.file_hasil.map((f: any) => f.name).join(', ')}` 
+                                      : 'Pilih file PDF/JPG'}
+                                  </span>
+                                  <input 
+                                    type="file" 
+                                    multiple
+                                    accept=".pdf,.jpg,.jpeg,.png" 
+                                    className="hidden" 
+                                    onChange={e => { 
+                                      const files = e.target.files ? Array.from(e.target.files) : [];
+                                      updateMed('file_hasil', files); 
+                                    }} 
+                                  />
+                                </label>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
                   </div>
                 </div>
 
@@ -961,7 +1104,10 @@ export default function PendaftaranPekerjaPage() {
                               <div className="space-y-2 col-span-2 sm:col-span-1">
                                 <Label>Status Pekerjaan</Label>
                                 <Select value={item.status_pekerjaan} onValueChange={(v: any) => {
-                                  const newR = [...riwayatLalu]; newR[idx].status_pekerjaan = v; setRiwayatLalu(newR);
+                                  const newR = [...riwayatLalu]; 
+                                  newR[idx].status_pekerjaan = v;
+                                  if (v === 'Outsourcing') newR[idx].tgl_keluar = '';
+                                  setRiwayatLalu(newR);
                                 }}>
                                   <SelectTrigger className="h-11 w-full"><SelectValue placeholder="Pilih Status" /></SelectTrigger>
                                   <SelectContent>
@@ -1009,12 +1155,14 @@ export default function PendaftaranPekerjaPage() {
                                   const newR = [...riwayatLalu]; newR[idx].tgl_masuk = e.target.value; setRiwayatLalu(newR);
                                 }} />
                               </div>
-                              <div className="space-y-2">
-                                <Label>Tanggal Keluar</Label>
-                                <Input type="date" value={item.tgl_keluar} onChange={(e) => {
-                                  const newR = [...riwayatLalu]; newR[idx].tgl_keluar = e.target.value; setRiwayatLalu(newR);
-                                }} />
-                              </div>
+                              {item.status_pekerjaan !== 'Outsourcing' && (
+                                <div className="space-y-2">
+                                  <Label>Tanggal Keluar</Label>
+                                  <Input type="date" value={item.tgl_keluar} onChange={(e) => {
+                                    const newR = [...riwayatLalu]; newR[idx].tgl_keluar = e.target.value; setRiwayatLalu(newR);
+                                  }} />
+                                </div>
+                              )}
 
                               <div className="space-y-2 col-span-1 sm:col-span-2">
                                 <Label>Deskripsikan pekerjaan anda</Label>
@@ -1123,7 +1271,11 @@ export default function PendaftaranPekerjaPage() {
                                       <div className="space-y-1">
                                         <Label className="text-xs text-slate-600">Status Kesehatan</Label>
                                         <Select value={med.status_kesehatan || 'sehat'} onValueChange={v => updateMed('status_kesehatan', v)}>
-                                          <SelectTrigger className="h-9 w-full bg-white text-sm"><SelectValue placeholder="Pilih Status" /></SelectTrigger>
+                                          <SelectTrigger className="h-9 w-full bg-white text-sm">
+                                            <SelectValue placeholder="Pilih Status">
+                                              {med.status_kesehatan ? med.status_kesehatan.replace(/_/g, ' ').replace(/\b\w/g, (l: any) => l.toUpperCase()) : undefined}
+                                            </SelectValue>
+                                          </SelectTrigger>
                                           <SelectContent>
                                             <SelectItem value="sehat">Sehat</SelectItem>
                                             <SelectItem value="sehat_dengan_catatan">Sehat Dengan Catatan</SelectItem>
@@ -1282,7 +1434,11 @@ export default function PendaftaranPekerjaPage() {
                               <div className="space-y-2">
                                 <Label className="text-slate-700">Status Kesehatan</Label>
                                 <Select value={item.status_kesehatan || 'sehat'} onValueChange={v => updateItem('status_kesehatan', v)}>
-                                  <SelectTrigger className="h-11 w-full bg-white"><SelectValue placeholder="Pilih Status" /></SelectTrigger>
+                                  <SelectTrigger className="h-11 w-full bg-white">
+                                    <SelectValue placeholder="Pilih Status">
+                                      {item.status_kesehatan ? item.status_kesehatan.replace(/_/g, ' ').replace(/\b\w/g, (l: any) => l.toUpperCase()) : undefined}
+                                    </SelectValue>
+                                  </SelectTrigger>
                                   <SelectContent>
                                     <SelectItem value="sehat">Sehat</SelectItem>
                                     <SelectItem value="sehat_dengan_catatan">Sehat dengan Catatan</SelectItem>

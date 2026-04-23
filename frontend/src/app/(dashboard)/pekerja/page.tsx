@@ -151,6 +151,7 @@ export default function PekerjaPage() {
                 <TableHead className="text-xs font-bold text-slate-400 tracking-wider uppercase bg-transparent">NAMA PEKERJA</TableHead>
                 <TableHead className="text-xs font-bold text-slate-400 tracking-wider uppercase bg-transparent">NIK</TableHead>
                 <TableHead className="text-xs font-bold text-slate-400 tracking-wider uppercase bg-transparent">PERUSAHAAN SAAT INI</TableHead>
+                <TableHead className="text-xs font-bold text-slate-400 tracking-wider uppercase bg-transparent">LOKASI / UNIT</TableHead>
                 <TableHead className="text-xs font-bold text-slate-400 tracking-wider uppercase bg-transparent w-[180px]">STATUS KESEHATAN</TableHead>
                 <TableHead className="text-xs font-bold text-slate-400 tracking-wider uppercase bg-transparent text-right">AKSI</TableHead>
               </TableRow>
@@ -190,7 +191,59 @@ export default function PekerjaPage() {
                       </div>
                     </TableCell>
                     <TableCell className="font-semibold text-sm text-slate-600 tracking-wide">{p.nik}</TableCell>
-                    <TableCell className="text-slate-600 font-medium text-sm max-w-[200px] truncate">{p.perusahaan?.nama_perusahaan}</TableCell>
+                    <TableCell className="text-slate-600 font-medium text-sm max-w-[220px]">
+                      {(() => {
+                        if (p.perusahaan?.nama_perusahaan) return p.perusahaan.nama_perusahaan;
+                        
+                        const job = p.current_job;
+                        if (!job) return <span className="text-slate-300 italic">Tidak ada data</span>;
+
+                        if (job.status_pekerjaan === 'Outsourcing') {
+                          return (
+                            <div className="flex flex-col">
+                              <span className="text-[10px] font-bold text-blue-500 uppercase tracking-tighter">Agency</span>
+                              <span className="truncate">{job.nama_agen_penyalur || 'Pihak Ketiga'}</span>
+                            </div>
+                          );
+                        }
+
+                        if (job.status_pekerjaan === 'Borongan' || job.status_pekerjaan === 'Harian Lepas') {
+                          return (
+                            <div className="flex flex-col">
+                              <span className="text-[10px] font-bold text-orange-500 uppercase tracking-tighter">Pekerja Lapangan</span>
+                              <span className="truncate">{job.status_pekerjaan}</span>
+                            </div>
+                          );
+                        }
+
+                        return <span className="text-slate-400">Pekerja Mandiri</span>;
+                      })()}
+                    </TableCell>
+                    <TableCell className="text-slate-600 font-medium text-sm max-w-[200px]">
+                      {(() => {
+                        const job = p.current_job;
+                        if (!job) return '-';
+
+                        if (job.status_pekerjaan === 'Borongan' || job.status_pekerjaan === 'Harian Lepas') {
+                          let info: any = {};
+                          if (job.informal_data) {
+                            try {
+                              info = typeof job.informal_data === 'string' ? JSON.parse(job.informal_data) : job.informal_data;
+                            } catch(e) {}
+                          }
+                          const lokasi = Array.isArray(info?.lokasi_proyek) 
+                            ? info.lokasi_proyek.filter(Boolean).join(', ') 
+                            : (info?.lokasi_proyek || '-');
+                          return <span className="truncate text-orange-600 font-semibold">{lokasi}</span>;
+                        }
+
+                        if (job.status_pekerjaan === 'Outsourcing') {
+                          return <span className="truncate">{job.bagian || job.jabatan || 'Unit Luar'}</span>;
+                        }
+
+                        return <span className="truncate">{job.bagian || job.jabatan || '-'}</span>;
+                      })()}
+                    </TableCell>
                     <TableCell>
                        {/* Normalize status logic for display */}
                        {(() => {

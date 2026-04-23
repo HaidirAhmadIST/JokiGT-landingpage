@@ -536,15 +536,7 @@ export default function PerusahaanPage() {
                       </div>
 
                       <div className="space-y-2">
-                      <div className="space-y-2">
                         <Label className="text-xs font-bold text-slate-600">NAMA PIC (Perusahaan)</Label>
-                        <Input
-                          placeholder="Nama Lengkap Penanggung Jawab"
-                          className="h-11 bg-slate-50/50 border-slate-200 focus-visible:ring-[#0ea5e9]"
-                          value={formData.nama_pic}
-                          onChange={(e) => setFormData({ ...formData, nama_pic: e.target.value })}
-                        />
-                      </div>
                         <Input
                           placeholder="Nama Lengkap Penanggung Jawab"
                           className="h-11 bg-slate-50/50 border-slate-200 focus-visible:ring-[#0ea5e9]"

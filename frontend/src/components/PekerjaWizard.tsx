@@ -63,11 +63,13 @@ export default function PekerjaWizard({ onSuccess, onCancel, perusahaanList }: P
       
       const newPekerjaId = response.data.data.id;
 
+      const uploadPromises: Promise<any>[] = [];
+
       // Handle Pas Foto (Single)
       if (pasFoto) {
         const formData = new FormData();
         formData.append('pas_foto', pasFoto);
-        await api.post(`/pekerja/${newPekerjaId}/foto`, formData);
+        uploadPromises.push(api.post(`/pekerja/${newPekerjaId}/foto`, formData));
       }
 
       // Handle Riwayat Files (Multiple -> PDF)
@@ -80,7 +82,7 @@ export default function PekerjaWizard({ onSuccess, onCancel, perusahaanList }: P
             filteredRiwayat[i].file_bukti.forEach((file: File) => {
               formData.append('file_bukti[]', file);
             });
-            await api.post(`/files/riwayat/${riwayatId}`, formData);
+            uploadPromises.push(api.post(`/riwayat-pekerja/${riwayatId}/file`, formData));
           }
         }
       }
@@ -95,9 +97,14 @@ export default function PekerjaWizard({ onSuccess, onCancel, perusahaanList }: P
             filteredMedis[i].file_hasil.forEach((file: File) => {
               formData.append('file_hasil[]', file);
             });
-            await api.post(`/files/medis/${medisId}`, formData);
+            uploadPromises.push(api.post(`/detail-medis/${medisId}/file`, formData));
           }
         }
+      }
+
+      // Execute all uploads concurrently
+      if (uploadPromises.length > 0) {
+        await Promise.all(uploadPromises);
       }
 
       onSuccess();
@@ -164,7 +171,11 @@ export default function PekerjaWizard({ onSuccess, onCancel, perusahaanList }: P
               <div className="space-y-2 col-span-2">
                 <Label>Status Kesehatan Awal *</Label>
                 <Select value={baseData.status_kesehatan} onValueChange={(v: any) => setBaseData({...baseData, status_kesehatan: v})}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue>
+                      {baseData.status_kesehatan ? baseData.status_kesehatan.replace(/_/g, ' ').replace(/\b\w/g, (l: any) => l.toUpperCase()) : undefined}
+                    </SelectValue>
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="sehat">Sehat</SelectItem>
                     <SelectItem value="sakit_ringan">Sehat dengan Catatan</SelectItem>
