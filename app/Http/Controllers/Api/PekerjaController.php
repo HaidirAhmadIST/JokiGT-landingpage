@@ -186,9 +186,12 @@ class PekerjaController extends Controller
                 $pekerja->detailMedis()->createMany($allMedis);
             }
 
-            // 6. Create Riwayat Medis Baseline Data
+            // 6. Create or Update Riwayat Medis Baseline Data
             if ($request->has('riwayat_medis') && is_array($request->riwayat_medis)) {
-                $pekerja->riwayatMedis()->create($request->riwayat_medis);
+                $pekerja->riwayatMedis()->updateOrCreate(
+                    ['pekerja_id' => $pekerja->id],
+                    $request->riwayat_medis
+                );
             }
 
             DB::commit();
