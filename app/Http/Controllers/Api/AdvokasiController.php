@@ -48,7 +48,7 @@ class AdvokasiController extends Controller
         $status = $this->advokasiService->getCaseDetails($id);
 
         if (!$status) {
-            return response()->json(['status' => 'error', 'message' => 'Status advokasi tidak ditemukan.'], 404);
+            return response()->json(['status' => 'error', 'message' => 'Detail advokasi tidak ditemukan.'], 404);
         }
 
         return response()->json([
