@@ -32,7 +32,7 @@ interface Perusahaan {
   id: number;
   nama_perusahaan: string;
   sektor_industri: string;
-  status_pendamping: 'Berkasus' | 'Selesai' | 'Dalam pantauan';
+  status_pendamping: 'Berkasus' | 'Selesai' | 'Dalam Pantauan';
   alamat?: string;
   nama_pic?: string;
   kontak_pic?: string;
@@ -230,7 +230,11 @@ export default function PerusahaanPage() {
     setFormData({
       nama_perusahaan: p.nama_perusahaan,
       sektor_industri: p.sektor_industri || '',
-      status_pendamping: p.status_pendamping === 'Selesai' ? 'Dalam pantauan' : p.status_pendamping,
+      status_pendamping: 
+        (p.status_pendamping as any) === 'aktif' ? 'Berkasus' :
+        (p.status_pendamping as any) === 'pending' ? 'Dalam Pantauan' :
+        (p.status_pendamping as any) === 'tidak_aktif' ? 'Selesai' :
+        p.status_pendamping,
       alamat: p.alamat || '',
       nama_pic: p.nama_pic || '',
       kontak_pic: p.kontak_pic || '',
@@ -380,30 +384,30 @@ export default function PerusahaanPage() {
   };
 
   const getStatusDisplay = (status: string) => {
-    switch (status) {
-      case 'Berkasus':
-        return (
-          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-600 border border-rose-100">
-            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 mr-1.5"></span>
-            Berkasus
-          </span>
-        );
-      case 'Dalam Pantauan':
-        return (
-          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-600 border border-amber-100">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mr-1.5"></span>
-            Dalam Pantauan
-          </span>
-        );
-      case 'Selesai':
-      default:
-        return (
-          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-600 border border-emerald-100">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5"></span>
-            Selesai
-          </span>
-        );
+    const s = status?.toLowerCase();
+    if (s === 'berkasus' || s === 'aktif') {
+      return (
+        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-600 border border-rose-100">
+          <span className="w-1.5 h-1.5 rounded-full bg-rose-500 mr-1.5"></span>
+          Berkasus
+        </span>
+      );
     }
+    if (s === 'dalam pantauan' || s === 'pending') {
+      return (
+        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-600 border border-amber-100">
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mr-1.5"></span>
+          Dalam Pantauan
+        </span>
+      );
+    }
+    // Selesai / tidak_aktif / default
+    return (
+      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-600 border border-emerald-100">
+        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5"></span>
+        Selesai
+      </span>
+    );
   };
 
   // ---- Health indicator component ----
@@ -520,9 +524,9 @@ export default function PerusahaanPage() {
                               <SelectValue placeholder="Pilih status" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="aktif">Berkasus (Otomatis)</SelectItem>
-                              <SelectItem value="pending">Dalam Pantauan (Manual)</SelectItem>
-                              <SelectItem value="tidak_aktif">Selesai (Otomatis)</SelectItem>
+                              <SelectItem value="Berkasus">Berkasus</SelectItem>
+                              <SelectItem value="Dalam Pantauan">Dalam Pantauan</SelectItem>
+                              <SelectItem value="Selesai">Selesai</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
