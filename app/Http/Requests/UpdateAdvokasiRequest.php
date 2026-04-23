@@ -36,7 +36,7 @@ class UpdateAdvokasiRequest extends FormRequest
             'file.*' => ['file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
             
             // Metadata fields
-            'jenis_kasus' => ['nullable', 'string', 'in:pak,k3,phk,jht'],
+            'jenis_kasus' => ['nullable', 'string', 'in:pak,k3,phk,jht,PAK,K3,PHK,JHT'],
             'tahap' => ['nullable', 'string', 'in:UPTD,BPJS,Pengadilan'],
             'status_detail' => ['nullable', 'string', 'max:255'],
             'tanggal_pelaporan' => ['nullable', 'date'],
