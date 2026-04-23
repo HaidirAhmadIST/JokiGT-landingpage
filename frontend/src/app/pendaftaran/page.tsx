@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Bell, Globe, User, ShieldAlert, ArrowRight, ArrowLeft, Plus, UploadCloud, Save, CheckCircle, X, Activity, Info } from 'lucide-react';
+import { Bell, Globe, User, ShieldAlert, ArrowRight, ArrowLeft, Plus, UploadCloud, Save, CheckCircle, X, Activity, Info, Briefcase, HeartPulse } from 'lucide-react';
 import { cn, formatHealthStatus } from '@/lib/utils';
 import FormPekerjaInformal from '@/components/FormPekerjaInformal';
 import FormDetailMedis, { type DataMedis } from '@/components/FormDetailMedis';
@@ -42,6 +42,15 @@ export default function PendaftaranPekerjaPage() {
     deskripsi_pekerjaan: '',
     file_bukti: [] as File[],
     riwayat_pemeriksaan: [] as any[],
+    informal_data: {
+      tugas_spesifik: '',
+      lama_bekerja: '',
+      satuan_waktu: 'Bulan',
+      bpjs_bpu: '',
+      apd_disediakan: '',
+      jenis_apd_sendiri: '',
+      lokasi_proyek: [''],
+    }
   });
 
   // Helper: default blank medis item
@@ -267,10 +276,6 @@ export default function PendaftaranPekerjaPage() {
   };
 
   const handleSubmit = async () => {
-    const optionalCompanyStatuses = ['Borongan', 'Harian Lepas', 'Outsourcing'];
-    const isCompanyOptional = optionalCompanyStatuses.includes(pekerjaanSaatIni.status_pekerjaan);
-    const isInformal = pekerjaanSaatIni.status_pekerjaan === 'Borongan' || pekerjaanSaatIni.status_pekerjaan === 'Harian Lepas';
-
     // Explicit Validation Check with detailed feedback and scroll-to-focus
     if (!baseData.nama_lengkap) {
       toast.error("Nama Lengkap wajib diisi!");
@@ -287,101 +292,18 @@ export default function PendaftaranPekerjaPage() {
       scrollToField('email', 1);
       return;
     }
-    if (!isCompanyOptional && !baseData.perusahaan_id) {
-      toast.error("Pilih perusahaan Anda!");
-      scrollToField('perusahaan_id', 1);
-      return;
-    }
-
-    // Check Step 2 fields if not informal
-    if (!isInformal) {
-      if (!pekerjaanSaatIni.bagian) {
-        toast.error("Bagian pekerjaan wajib diisi!");
-        scrollToField('bagian', 2);
-        return;
-      }
-      if (!pekerjaanSaatIni.jabatan) {
-        toast.error("Jabatan wajib diisi!");
-        scrollToField('jabatan', 2);
-        return;
-      }
-      if (!pekerjaanSaatIni.tgl_masuk) {
-        toast.error("Tanggal masuk wajib diisi!");
-        scrollToField('tgl_masuk', 2);
-        return;
-      }
-    }
     setLoading(true);
     try {
-      const optionalCompanyStatuses = ['Borongan', 'Harian Lepas', 'Outsourcing'];
-      const isCompanyOptional = optionalCompanyStatuses.includes(pekerjaanSaatIni.status_pekerjaan);
-
-      let finalPerusahaanId = isCompanyOptional ? null : baseData.perusahaan_id;
-      let currentPerusahaanName = '';
-
-      // Handle New Perusahaan Creation
-      if (finalPerusahaanId === 'NEW') {
-        if (!pekerjaanSaatIni.nama_perusahaan_baru) {
-          toast.error("Mohon masukkan nama perusahaan baru!");
-          setLoading(false);
-          return;
-        }
-        try {
-          const res = await api.post('/perusahaan', {
-            nama_perusahaan: pekerjaanSaatIni.nama_perusahaan_baru,
-            status_pendamping: 'Dalam Pantauan',
-            sektor_industri: pekerjaanSaatIni.deskripsi_usaha
-          });
-          finalPerusahaanId = res.data.data.id.toString();
-          currentPerusahaanName = res.data.data.nama_perusahaan;
-        } catch (err: any) {
-          if (err.response?.status === 422 && err.response?.data?.errors?.nama_perusahaan) {
-            // Gracefully handle duplicate name by searching for the existing one
-            try {
-              toast.loading("Perusahaan sudah ada, mengambil data...", { id: 'fetch-perusahaan' });
-              const searchRes = await api.get(`/perusahaan?search=${encodeURIComponent(pekerjaanSaatIni.nama_perusahaan_baru)}`);
-              const existing = searchRes.data.data.data.find((p: any) =>
-                p.nama_perusahaan.trim().toLowerCase() === pekerjaanSaatIni.nama_perusahaan_baru.trim().toLowerCase()
-              );
-
-              if (existing) {
-                finalPerusahaanId = existing.id.toString();
-                currentPerusahaanName = existing.nama_perusahaan;
-                toast.success("Data perusahaan ditemukan.", { id: 'fetch-perusahaan' });
-              } else {
-                throw err;
-              }
-            } catch (searchErr) {
-              toast.error(err.response?.data?.message || "Gagal memproses data perusahaan.");
-              setLoading(false);
-              return;
-            }
-          } else {
-            toast.error(err.response?.data?.message || "Gagal menambahkan perusahaan baru.");
-            setLoading(false);
-            return;
-          }
-        }
-      } else {
-        currentPerusahaanName = perusahaanList.find(p => p.id.toString() === finalPerusahaanId)?.nama_perusahaan || '';
-      }
+      let finalPerusahaanId = baseData.perusahaan_id || null;
 
       // Build riwayat array combining current job and previous jobs
-      const allRiwayat = [];
-      const workerName = currentPerusahaanName || (isCompanyOptional ? "Pekerja Informal / Mandiri" : "");
+      const allRiwayat: any[] = [];
 
-      if (workerName || pekerjaanSaatIni.status_pekerjaan) {
+      if (pekerjaanSaatIni.nama_perusahaan || pekerjaanSaatIni.nama_perusahaan_baru) {
         allRiwayat.push({
-          nama_perusahaan: workerName || "-",
-          deskripsi_usaha: pekerjaanSaatIni.deskripsi_usaha,
-          bagian: pekerjaanSaatIni.bagian,
-          jabatan: pekerjaanSaatIni.jabatan,
-          status_pekerjaan: pekerjaanSaatIni.status_pekerjaan,
-          nama_agen_penyalur: pekerjaanSaatIni.nama_agen_penyalur,
-          tanggal_selesai_kontrak: pekerjaanSaatIni.tanggal_selesai_kontrak,
-          deskripsi_pekerjaan: pekerjaanSaatIni.deskripsi_pekerjaan,
-          tgl_masuk: pekerjaanSaatIni.tgl_masuk,
-          tgl_keluar: null,
+          ...pekerjaanSaatIni,
+          nama_perusahaan: pekerjaanSaatIni.nama_perusahaan_baru || pekerjaanSaatIni.nama_perusahaan,
+          tgl_keluar: null, // Current job
           riwayat_pemeriksaan: (pekerjaanSaatIni.riwayat_pemeriksaan || []).filter(
             (m: any) => m.tanggal_pemeriksaan && m.hasil_diagnosis
           ).map((m: any) => ({
@@ -394,28 +316,6 @@ export default function PendaftaranPekerjaPage() {
             rekomendasi: m.rekomendasi,
             pendamping: m.pendamping,
           })),
-          riwayat_pemeriksaan_raw: pekerjaanSaatIni.riwayat_pemeriksaan,
-          informal_data: (pekerjaanSaatIni.status_pekerjaan === 'Borongan' || pekerjaanSaatIni.status_pekerjaan === 'Harian Lepas') ? {
-            tugas_spesifik: pekerjaanSaatIni.tugas_spesifik,
-            lama_bekerja: pekerjaanSaatIni.lama_bekerja,
-            satuan_waktu: pekerjaanSaatIni.satuan_waktu,
-            bpjs_bpu: pekerjaanSaatIni.bpjs_bpu,
-            apd_disediakan: pekerjaanSaatIni.apd_disediakan,
-            jenis_apd_sendiri: pekerjaanSaatIni.jenis_apd_sendiri,
-            lokasi_proyek: pekerjaanSaatIni.lokasi_proyek
-          } : null,
-          riwayat_pemeriksaan: (pekerjaanSaatIni.riwayat_pemeriksaan || []).filter(
-            (m: any) => m.tanggal_pemeriksaan && m.hasil_diagnosis
-          ).map((m: any) => ({
-            tanggal_pemeriksaan: m.tanggal_pemeriksaan,
-            tempat_pemeriksaan: m.tempat_pemeriksaan,
-            jenis_pemeriksaan: m.jenis_pemeriksaan,
-            dokter: m.dokter,
-            status_kesehatan: m.status_kesehatan,
-            hasil_diagnosis: m.hasil_diagnosis,
-            rekomendasi: m.rekomendasi,
-            pendamping: m.pendamping
-          })),
           riwayat_pemeriksaan_raw: pekerjaanSaatIni.riwayat_pemeriksaan || []
         });
       }
@@ -425,7 +325,6 @@ export default function PendaftaranPekerjaPage() {
         .filter(r => r.nama_perusahaan.trim() !== '')
         .map(r => ({
           ...r,
-          riwayat_pemeriksaan_raw: r.riwayat_pemeriksaan,
           riwayat_pemeriksaan: (r.riwayat_pemeriksaan || []).filter(
             (m: any) => m.tanggal_pemeriksaan && m.hasil_diagnosis
           ).map((m: any) => ({
@@ -599,7 +498,7 @@ export default function PendaftaranPekerjaPage() {
             if (existing) {
               toast.success("Perusahaan sudah terdaftar. Menghubungkan otomatis...", { id: 'check-perusahaan' });
               const updatedRiwayat = [...allRiwayat.map(r =>
-                r.nama_perusahaan === currentPerusahaanName ? { ...r, nama_perusahaan: existing.nama_perusahaan } : r
+                r.nama_perusahaan === pekerjaanSaatIni.nama_perusahaan_baru ? { ...r, nama_perusahaan: existing.nama_perusahaan } : r
               ), ...prevRiwayat];
 
               await performSubmit(existing.id.toString(), updatedRiwayat);
@@ -751,7 +650,6 @@ export default function PendaftaranPekerjaPage() {
                     </div>
                   </div>
                 </div>
-
                 {/* Section 3 */}
                 <div>
                   <h3 className="flex items-center text-sm font-bold text-[#0ea5e9] mb-4 uppercase tracking-wider">
@@ -783,6 +681,198 @@ export default function PendaftaranPekerjaPage() {
                     <div className="space-y-2">
                       <Label>Alamat Domisili</Label>
                       <Textarea placeholder="Contoh: Jl. Merdeka No. 123, Kelurahan, Kecamatan" className="resize-none h-24" value={baseData.domisili} onChange={e => setBaseData({ ...baseData, domisili: e.target.value })} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 4: Pekerjaan & Kesehatan Saat Ini */}
+                <div className="p-6 bg-blue-50/50 border border-blue-100 rounded-xl space-y-6">
+                  <h3 className="flex items-center text-sm font-bold text-blue-700 uppercase tracking-widest">
+                    <Briefcase className="h-4 w-4 mr-2" /> Pekerjaan Saat Ini
+                  </h3>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2 col-span-1 sm:col-span-2">
+                      <Label>Nama Perusahaan / Proyek Saat Ini</Label>
+                      <div className="flex flex-col gap-2">
+                        <Select 
+                          value={pekerjaanSaatIni.nama_perusahaan} 
+                          onValueChange={(v) => setPekerjaanSaatIni({ ...pekerjaanSaatIni, nama_perusahaan: v || '', nama_perusahaan_baru: v === 'Lainnya' ? '' : pekerjaanSaatIni.nama_perusahaan_baru })}
+                        >
+                          <SelectTrigger className="h-11 bg-white">
+                            <SelectValue placeholder="Pilih Perusahaan" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {perusahaanList.map((p: any) => (
+                              <SelectItem key={p.id} value={p.nama_perusahaan}>{p.nama_perusahaan}</SelectItem>
+                            ))}
+                            <SelectItem value="Lainnya">+ Tambah Perusahaan Baru</SelectItem>
+                          </SelectContent>
+                        </Select>
+
+                        {pekerjaanSaatIni.nama_perusahaan === 'Lainnya' && (
+                          <Input 
+                            placeholder="Ketik Nama Perusahaan Baru..." 
+                            className="h-11 bg-white animate-in slide-in-from-top-2"
+                            value={pekerjaanSaatIni.nama_perusahaan_baru}
+                            onChange={e => setPekerjaanSaatIni({ ...pekerjaanSaatIni, nama_perusahaan_baru: e.target.value })}
+                          />
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Status Pekerjaan</Label>
+                      <Select 
+                        value={pekerjaanSaatIni.status_pekerjaan} 
+                        onValueChange={(v) => setPekerjaanSaatIni({ ...pekerjaanSaatIni, status_pekerjaan: v || '' })}
+                      >
+                        <SelectTrigger className="h-11 bg-white">
+                          <SelectValue placeholder="Pilih Status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="PKWT">PKWT (Kontrak)</SelectItem>
+                          <SelectItem value="PKWTT">PKWTT (Tetap)</SelectItem>
+                          <SelectItem value="Borongan">Borongan</SelectItem>
+                          <SelectItem value="Harian Lepas">Harian Lepas</SelectItem>
+                          <SelectItem value="Outsourcing">Outsourcing</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Outsourcing Data Fields (Current Job) */}
+                    {pekerjaanSaatIni.status_pekerjaan === 'Outsourcing' && (
+                      <div className="col-span-1 sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4 bg-orange-50/50 border border-orange-100 p-4 rounded-lg animate-in fade-in slide-in-from-top-2">
+                        <div className="space-y-2">
+                          <Label className="text-orange-700">Nama Agen Penyalur</Label>
+                          <Input 
+                            placeholder="Contoh: Yayasan Maju Sejahtera" 
+                            className="h-11 bg-white border-orange-200 focus:border-orange-500" 
+                            value={pekerjaanSaatIni.nama_agen_penyalur} 
+                            onChange={e => setPekerjaanSaatIni({ ...pekerjaanSaatIni, nama_agen_penyalur: e.target.value })} 
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-orange-700">Tanggal Selesai Kontrak</Label>
+                          <Input 
+                            type="date" 
+                            className="h-11 bg-white border-orange-200 focus:border-orange-500" 
+                            value={pekerjaanSaatIni.tanggal_selesai_kontrak} 
+                            onChange={e => setPekerjaanSaatIni({ ...pekerjaanSaatIni, tanggal_selesai_kontrak: e.target.value })} 
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="space-y-2">
+                      <Label>Tanggal Masuk</Label>
+                      <Input 
+                        type="date" 
+                        className="h-11 bg-white" 
+                        value={pekerjaanSaatIni.tgl_masuk} 
+                        onChange={e => setPekerjaanSaatIni({ ...pekerjaanSaatIni, tgl_masuk: e.target.value })} 
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Bagian / Unit Kerja</Label>
+                      <Input 
+                        placeholder="Contoh: Produksi, Gudang" 
+                        className="h-11 bg-white" 
+                        value={pekerjaanSaatIni.bagian} 
+                        onChange={e => setPekerjaanSaatIni({ ...pekerjaanSaatIni, bagian: e.target.value })} 
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Jabatan</Label>
+                      <Input 
+                        placeholder="Contoh: Operator, Staff" 
+                        className="h-11 bg-white" 
+                        value={pekerjaanSaatIni.jabatan} 
+                        onChange={e => setPekerjaanSaatIni({ ...pekerjaanSaatIni, jabatan: e.target.value })} 
+                      />
+                    </div>
+
+                    {/* Informal Data Fields */}
+                    {(pekerjaanSaatIni.status_pekerjaan === 'Borongan' || pekerjaanSaatIni.status_pekerjaan === 'Harian Lepas') && (
+                      <div className="col-span-1 sm:col-span-2 border-t border-blue-100 pt-4 mt-2">
+                        <FormPekerjaInformal 
+                          isInformal={true}
+                          data={{
+                            tugas_spesifik: pekerjaanSaatIni.tugas_spesifik,
+                            lama_bekerja: pekerjaanSaatIni.lama_bekerja,
+                            satuan_waktu: pekerjaanSaatIni.satuan_waktu,
+                            bpjs_bpu: pekerjaanSaatIni.bpjs_bpu,
+                            apd_disediakan: pekerjaanSaatIni.apd_disediakan,
+                            jenis_apd_sendiri: pekerjaanSaatIni.jenis_apd_sendiri,
+                            lokasi_proyek: pekerjaanSaatIni.lokasi_proyek
+                          }}
+                          onChange={(field, value) => setPekerjaanSaatIni({ ...pekerjaanSaatIni, [field]: value })}
+                        />
+                      </div>
+                    )}
+
+                    {/* Riwayat Kesehatan Saat Ini (Embedded) */}
+                    <div className="col-span-1 sm:col-span-2 border-t border-blue-100 pt-6 mt-2">
+                      <h4 className="text-xs font-bold text-blue-600 uppercase tracking-widest mb-4 flex items-center">
+                        <HeartPulse className="h-3 w-3 mr-2" /> Riwayat Kesehatan di Pekerjaan Ini
+                      </h4>
+                      {(() => {
+                        const src = pekerjaanSaatIni.riwayat_pemeriksaan?.[0];
+                        const med = {
+                          tanggal_pemeriksaan: src?.tanggal_pemeriksaan ?? '',
+                          tempat_pemeriksaan:  src?.tempat_pemeriksaan  ?? '',
+                          jenis_pemeriksaan:   src?.jenis_pemeriksaan   ?? '',
+                          dokter:              src?.dokter              ?? '',
+                          status_kesehatan:    src?.status_kesehatan    ?? 'sehat',
+                          hasil_diagnosis:     src?.hasil_diagnosis     ?? '',
+                          rekomendasi:         src?.rekomendasi         ?? '',
+                          file_hasil:          src?.file_hasil          ?? [] as File[],
+                          pendamping:          src?.pendamping          ?? '',
+                        };
+                        const updateMed = (field: string, value: any) => {
+                          const cur = pekerjaanSaatIni.riwayat_pemeriksaan?.[0];
+                          setPekerjaanSaatIni({
+                            ...pekerjaanSaatIni,
+                            riwayat_pemeriksaan: [{
+                              tanggal_pemeriksaan: cur?.tanggal_pemeriksaan ?? '',
+                              tempat_pemeriksaan:  cur?.tempat_pemeriksaan  ?? '',
+                              jenis_pemeriksaan:   cur?.jenis_pemeriksaan   ?? '',
+                              dokter:              cur?.dokter              ?? '',
+                              status_kesehatan:    cur?.status_kesehatan    ?? 'sehat',
+                              hasil_diagnosis:     cur?.hasil_diagnosis     ?? '',
+                              rekomendasi:         cur?.rekomendasi         ?? '',
+                              file_hasil:          cur?.file_hasil          ?? [],
+                              pendamping:          cur?.pendamping          ?? '',
+                              [field]: value,
+                            }]
+                          });
+                        };
+                        return (
+                          <div className="bg-white border border-blue-100 rounded-lg p-4 space-y-4 shadow-sm">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              <div className="space-y-1">
+                                <Label className="text-[10px] text-slate-500 font-bold uppercase">Tgl Pemeriksaan Terakhir</Label>
+                                <Input type="date" className="h-9 bg-slate-50/50" value={med.tanggal_pemeriksaan} onChange={e => updateMed('tanggal_pemeriksaan', e.target.value)} />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-[10px] text-slate-500 font-bold uppercase">Tempat Pemeriksaan</Label>
+                                <Input placeholder="Klinik/RS..." className="h-9 bg-slate-50/50 text-sm" value={med.tempat_pemeriksaan} onChange={e => updateMed('tempat_pemeriksaan', e.target.value)} />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-[10px] text-slate-500 font-bold uppercase">Hasil Diagnosis</Label>
+                                <Input placeholder="Contoh: Sehat / Bronkitis" className="h-9 bg-slate-50/50 text-sm" value={med.hasil_diagnosis} onChange={e => updateMed('hasil_diagnosis', e.target.value)} />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-[10px] text-slate-500 font-bold uppercase">Dokter</Label>
+                                <Input placeholder="Nama Dokter" className="h-9 bg-slate-50/50 text-sm" value={med.dokter} onChange={e => updateMed('dokter', e.target.value)} />
+                              </div>
+                            </div>
+                            <p className="text-[9px] text-slate-400 italic italic">Lengkapi detail medis lebih lanjut di Langkah 3 jika diperlukan.</p>
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 </div>
@@ -824,239 +914,7 @@ export default function PendaftaranPekerjaPage() {
                   </label>
                 </div>
 
-                {/* Pekerjaan Saat Ini */}
-                <div className="p-6 bg-white border border-slate-100 shadow-sm rounded-xl">
-                  <h3 className="flex items-center text-sm font-bold text-[#0ea5e9] mb-6 uppercase tracking-wider">
-                    <ShieldAlert className="h-4 w-4 mr-2" /> Pekerjaan Saat Ini
-                  </h3>
-                  <div className="space-y-5">
-                    {!['Borongan', 'Harian Lepas', 'Outsourcing'].includes(pekerjaanSaatIni.status_pekerjaan) && (
-                      <div className="space-y-2">
-                        <Label htmlFor="perusahaan_id">Pilih Perusahaan Saat Ini</Label>
-                        <Select value={baseData.perusahaan_id} onValueChange={(v: any) => setBaseData({ ...baseData, perusahaan_id: v })}>
-                          <SelectTrigger id="perusahaan_id" className="h-11 w-full">
-                            <SelectValue placeholder="Pilih Perusahaan">
-                              {baseData.perusahaan_id === 'NEW'
-                                ? "+ Tambah Perusahaan Baru"
-                                : baseData.perusahaan_id ? perusahaanList.find(p => p.id.toString() === baseData.perusahaan_id)?.nama_perusahaan : "Pilih Perusahaan"}
-                            </SelectValue>
-                          </SelectTrigger>
-                          <SelectContent>
-                            {perusahaanList.map((p) => (
-                              <SelectItem key={p.id} value={p.id.toString()}>{p.nama_perusahaan}</SelectItem>
-                            ))}
-                            <SelectItem value="NEW" className="font-bold text-[#0ea5e9] bg-blue-50/50 mt-1 border-t border-slate-100">+ Tambah Perusahaan Baru</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        {baseData.perusahaan_id === 'NEW' && (
-                          <div className="mt-3 p-4 bg-blue-50/50 border border-blue-100 rounded-xl space-y-4 animate-in fade-in slide-in-from-top-2">
-                            <div className="space-y-2">
-                              <Label className="text-[#0ea5e9]">Nama Perusahaan Baru</Label>
-                              <Input
-                                placeholder="Masukkan nama perusahaan lengkap..."
-                                className="h-11 bg-white border-blue-200 focus-visible:ring-blue-400"
-                                value={pekerjaanSaatIni.nama_perusahaan_baru}
-                                onChange={e => setPekerjaanSaatIni({ ...pekerjaanSaatIni, nama_perusahaan_baru: e.target.value })}
-                              />
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    <div className="space-y-2">
-                      <Label htmlFor="status_pekerjaan">Status Pekerjaan</Label>
-                      <Select value={pekerjaanSaatIni.status_pekerjaan} onValueChange={(v: any) => setPekerjaanSaatIni({ ...pekerjaanSaatIni, status_pekerjaan: v })}>
-                        <SelectTrigger id="status_pekerjaan" className="h-11 w-full"><SelectValue placeholder="Pilih Status" /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="PKWTT">1. PKWTT (Pekerja Tetap)</SelectItem>
-                          <SelectItem value="PKWT">2. PKWT (Pekerja Kontrak)</SelectItem>
-                          <SelectItem value="Borongan">3. Pekerja Borongan</SelectItem>
-                          <SelectItem value="Harian Lepas">4. Pekerja Harian Lepas</SelectItem>
-                          <SelectItem value="Outsourcing">5. Pekerja Outsourcing/Alih Daya</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
 
-                    {pekerjaanSaatIni.status_pekerjaan === 'Outsourcing' && (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 bg-orange-50/50 p-4 rounded-lg border border-orange-100">
-                        <div className="space-y-2">
-                          <Label className="text-orange-700">Nama Agen Penyalur</Label>
-                          <Input placeholder="Contoh: PT Sumber Daya Manusia" className="h-11 bg-white border-orange-200 focus-visible:ring-orange-400" value={pekerjaanSaatIni.nama_agen_penyalur} onChange={e => setPekerjaanSaatIni({ ...pekerjaanSaatIni, nama_agen_penyalur: e.target.value })} />
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="text-orange-700">Tanggal Selesai Kontrak</Label>
-                          <Input type="date" className="h-11 bg-white text-slate-500 border-orange-200 focus-visible:ring-orange-400" value={pekerjaanSaatIni.tanggal_selesai_kontrak} onChange={e => setPekerjaanSaatIni({ ...pekerjaanSaatIni, tanggal_selesai_kontrak: e.target.value })} />
-                        </div>
-                      </div>
-                    )}
-                    <FormPekerjaInformal
-                      isInformal={pekerjaanSaatIni.status_pekerjaan === 'Borongan' || pekerjaanSaatIni.status_pekerjaan === 'Harian Lepas'}
-                      data={{
-                        tugas_spesifik: pekerjaanSaatIni.tugas_spesifik,
-                        lama_bekerja: pekerjaanSaatIni.lama_bekerja,
-                        satuan_waktu: pekerjaanSaatIni.satuan_waktu,
-                        bpjs_bpu: pekerjaanSaatIni.bpjs_bpu,
-                        apd_disediakan: pekerjaanSaatIni.apd_disediakan,
-                        jenis_apd_sendiri: pekerjaanSaatIni.jenis_apd_sendiri,
-                        lokasi_proyek: pekerjaanSaatIni.lokasi_proyek,
-                      }}
-                      onChange={(field, value) => setPekerjaanSaatIni({ ...pekerjaanSaatIni, [field]: value })}
-                    />
-                    {pekerjaanSaatIni.status_pekerjaan !== 'Borongan' && pekerjaanSaatIni.status_pekerjaan !== 'Harian Lepas' && (
-                      <>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                          <div className="space-y-2">
-                            <Label htmlFor="bagian">Bagian</Label>
-                            <Input id="bagian" placeholder="Contoh: Produksi / Logistik" className="h-11" value={pekerjaanSaatIni.bagian} onChange={e => setPekerjaanSaatIni({ ...pekerjaanSaatIni, bagian: e.target.value })} />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="jabatan">Jabatan / Posisi</Label>
-                            <Input id="jabatan" placeholder="Contoh: Operator Produksi" className="h-11" value={pekerjaanSaatIni.jabatan} onChange={e => setPekerjaanSaatIni({ ...pekerjaanSaatIni, jabatan: e.target.value })} />
-                          </div>
-                          <div className="space-y-2 col-span-1 sm:col-span-2">
-                            <Label>Pajanan / Risiko Lingkungan Kerja</Label>
-                            <Input placeholder="Contoh: Terpapar debu silika, Bising, Bahan Kimia..." className="h-11" value={pekerjaanSaatIni.deskripsi_usaha} onChange={e => setPekerjaanSaatIni({ ...pekerjaanSaatIni, deskripsi_usaha: e.target.value })} />
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="tgl_masuk">Mulai Bekerja</Label>
-                          <Input id="tgl_masuk" type="date" className="h-11 text-slate-500" value={pekerjaanSaatIni.tgl_masuk} onChange={e => setPekerjaanSaatIni({ ...pekerjaanSaatIni, tgl_masuk: e.target.value })} />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Deskripsi Pekerjaan</Label>
-                          <Textarea placeholder="Jelaskan secara ringkas tugas dan tanggung jawab utama Anda..." className="resize-none h-24" value={pekerjaanSaatIni.deskripsi_pekerjaan} onChange={e => setPekerjaanSaatIni({ ...pekerjaanSaatIni, deskripsi_pekerjaan: e.target.value })} />
-                        </div>
-                      </>
-                    )}
-
-                    {/* Sub-seksi: Riwayat Kesehatan Pekerjaan Saat Ini */}
-                    <div className="mt-5 pt-5 border-t border-slate-100">
-                      <h5 className="text-sm font-bold text-blue-700 flex items-center gap-2 mb-4">
-                        <Activity className="h-4 w-4" />
-                        Riwayat Kesehatan saat ini
-                      </h5>
-                      {(() => {
-                        const src = pekerjaanSaatIni.riwayat_pemeriksaan?.[0];
-                        const med = {
-                          tanggal_pemeriksaan: src?.tanggal_pemeriksaan ?? '',
-                          tempat_pemeriksaan:  src?.tempat_pemeriksaan  ?? '',
-                          jenis_pemeriksaan:   src?.jenis_pemeriksaan   ?? '',
-                          dokter:              src?.dokter              ?? '',
-                          status_kesehatan:    src?.status_kesehatan    ?? 'sehat',
-                          hasil_diagnosis:     src?.hasil_diagnosis     ?? '',
-                          rekomendasi:         src?.rekomendasi         ?? '',
-                          file_hasil:          src?.file_hasil          ?? [] as File[],
-                          pendamping:          src?.pendamping          ?? '',
-                        };
-                        const updateMed = (field: string, value: any) => {
-                          const cur = pekerjaanSaatIni.riwayat_pemeriksaan?.[0];
-                          const newVal = [{
-                            tanggal_pemeriksaan: cur?.tanggal_pemeriksaan ?? '',
-                            tempat_pemeriksaan:  cur?.tempat_pemeriksaan  ?? '',
-                            jenis_pemeriksaan:   cur?.jenis_pemeriksaan   ?? '',
-                            dokter:              cur?.dokter              ?? '',
-                            status_kesehatan:    cur?.status_kesehatan    ?? 'sehat',
-                            hasil_diagnosis:     cur?.hasil_diagnosis     ?? '',
-                            rekomendasi:         cur?.rekomendasi         ?? '',
-                            file_hasil:          cur?.file_hasil          ?? [] as File[],
-                            pendamping:          cur?.pendamping          ?? '',
-                            [field]: value
-                          }];
-                          setPekerjaanSaatIni({ ...pekerjaanSaatIni, riwayat_pemeriksaan: newVal });
-                        };
-                        
-                        return (
-                          <div className="bg-blue-50/40 border border-blue-100 rounded-lg p-4">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                              <div className="space-y-1">
-                                <Label className="text-xs text-slate-600">Tanggal Pemeriksaan</Label>
-                                <Input type="date" className="h-9 bg-white text-slate-600 text-sm" value={med.tanggal_pemeriksaan} onChange={e => updateMed('tanggal_pemeriksaan', e.target.value)} />
-                              </div>
-                              <div className="space-y-1">
-                                <Label className="text-xs text-slate-600">Tempat Pemeriksaan</Label>
-                                <Input placeholder="Klinik/RS..." className="h-9 bg-white text-sm" value={med.tempat_pemeriksaan} onChange={e => updateMed('tempat_pemeriksaan', e.target.value)} />
-                              </div>
-                              <div className="space-y-1">
-                                <Label className="text-xs text-slate-600">Jenis Pemeriksaan</Label>
-                                <Select value={med.jenis_pemeriksaan} onValueChange={v => updateMed('jenis_pemeriksaan', v)}>
-                                  <SelectTrigger className="h-9 w-full bg-white text-sm"><SelectValue placeholder="Pilih Jenis" /></SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="MCU Berkala">MCU Berkala</SelectItem>
-                                    <SelectItem value="Rontgen Thorax">Rontgen Thorax</SelectItem>
-                                    <SelectItem value="Spirometri">Spirometri</SelectItem>
-                                    <SelectItem value="Audiometri">Audiometri</SelectItem>
-                                    <SelectItem value="Tes Darah/Lab">Tes Darah / Lab</SelectItem>
-                                    <SelectItem value="Lainnya">Lainnya</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              <div className="space-y-1">
-                                <Label className="text-xs text-slate-600">Status Kesehatan</Label>
-                                <Select value={med.status_kesehatan || 'sehat'} onValueChange={v => updateMed('status_kesehatan', v)}>
-                                  <SelectTrigger className="h-9 w-full bg-white text-sm">
-                                    <SelectValue placeholder="Pilih Status">
-                                      {med.status_kesehatan ? med.status_kesehatan.replace(/_/g, ' ').replace(/\b\w/g, (l: any) => l.toUpperCase()) : undefined}
-                                    </SelectValue>
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="sehat">Sehat</SelectItem>
-                                    <SelectItem value="sehat_dengan_catatan">Sehat Dengan Catatan</SelectItem>
-                                    <SelectItem value="tidak_sehat">Tidak Sehat</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              <div className="space-y-1">
-                                <Label className="text-xs text-slate-600">Dokter yang Memeriksa</Label>
-                                <Input placeholder="Nama dokter..." className="h-9 bg-white text-sm" value={med.dokter} onChange={e => updateMed('dokter', e.target.value)} />
-                              </div>
-                              <div className="space-y-1">
-                                <Label className="text-xs text-slate-600">Pendamping Lapangan</Label>
-                                <Select value={med.pendamping} onValueChange={v => updateMed('pendamping', v)}>
-                                  <SelectTrigger className="h-9 w-full bg-white text-sm"><SelectValue placeholder="Pilih Pendamping" /></SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="Klinik Internal">Klinik Internal Perusahaan</SelectItem>
-                                    <SelectItem value="Faskes BPJSKes">Faskes Pertama (BPJS)</SelectItem>
-                                    <SelectItem value="Dokter Okupasi">Dokter Spesialis Okupasi</SelectItem>
-                                    <SelectItem value="Mandiri">Berangkat Mandiri</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              <div className="space-y-1 col-span-1 sm:col-span-2">
-                                <Label className="text-xs text-slate-600">Hasil Diagnosis</Label>
-                                <Textarea placeholder="Ringkasan hasil diagnosis..." className="min-h-[70px] bg-white resize-none text-sm" value={med.hasil_diagnosis} onChange={e => updateMed('hasil_diagnosis', e.target.value)} />
-                              </div>
-                              <div className="space-y-1 col-span-1 sm:col-span-2">
-                                <Label className="text-xs text-slate-600">Rekomendasi Dokter <span className="text-slate-400 font-normal">(Opsional)</span></Label>
-                                <Textarea placeholder="Saran dari dokter..." className="min-h-[60px] bg-white resize-none text-sm" value={med.rekomendasi} onChange={e => updateMed('rekomendasi', e.target.value)} />
-                              </div>
-                              <div className="space-y-1 col-span-1 sm:col-span-2">
-                                <Label className="text-xs text-slate-600">Unggah Hasil Pemeriksaan (Multiple) <span className="text-slate-400 font-normal">(Opsional)</span></Label>
-                                <label className="flex items-center gap-3 bg-white border border-slate-200 hover:border-[#0ea5e9] rounded-lg px-3 py-2 cursor-pointer transition-colors h-9">
-                                  <UploadCloud className="w-3.5 h-3.5 text-[#0ea5e9]" />
-                                  <span className="text-xs text-slate-500 flex-1 truncate">
-                                    {med.file_hasil?.length > 0 
-                                      ? `${med.file_hasil.length} file dipilih: ${med.file_hasil.map((f: any) => f.name).join(', ')}` 
-                                      : 'Pilih file PDF/JPG'}
-                                  </span>
-                                  <input 
-                                    type="file" 
-                                    multiple
-                                    accept=".pdf,.jpg,.jpeg,.png" 
-                                    className="hidden" 
-                                    onChange={e => { 
-                                      const files = e.target.files ? Array.from(e.target.files) : [];
-                                      updateMed('file_hasil', files); 
-                                    }} 
-                                  />
-                                </label>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })()}
-                    </div>
-                  </div>
-                </div>
 
                 <div className="pt-4">
                   <Button className="w-full h-12 text-base bg-[#0ea5e9] hover:bg-[#0284c7]" onClick={handleLanjut}>
@@ -1078,174 +936,7 @@ export default function PendaftaranPekerjaPage() {
               </div>
 
               <div className="space-y-8">
-                {/* Pekerjaan Saat Ini */}
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-bold text-slate-800">Pekerjaan Saat Ini</h3>
-                    <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Aktif</span>
-                  </div>
-                  
-                  <div className="bg-white border-2 border-[#0ea5e9]/20 shadow-md rounded-xl overflow-hidden">
-                    <div className="px-5 py-3 bg-[#0ea5e9]/5 border-b border-[#0ea5e9]/10 flex items-center justify-between">
-                      <h4 className="font-bold text-slate-700 text-sm flex items-center gap-2">
-                        <Activity className="h-4 w-4 text-[#0ea5e9]" />
-                        {pekerjaanSaatIni.nama_perusahaan_baru || (perusahaanList.find(p => p.id.toString() === baseData.perusahaan_id)?.nama_perusahaan) || (['Borongan', 'Harian Lepas'].includes(pekerjaanSaatIni.status_pekerjaan) ? "Pekerja Informal / Mandiri" : "Pekerjaan Aktif")}
-                      </h4>
-                      <Button variant="ghost" size="sm" className="text-[10px] h-7 text-[#0ea5e9] font-bold" onClick={() => setStep(1)}>
-                        UBAH DETAIL PEKERJAAN
-                      </Button>
-                    </div>
 
-                    <div className="p-5">
-                      <div className="grid grid-cols-2 gap-4 text-xs mb-6">
-                        <div className="space-y-1">
-                          <p className="text-slate-400 font-medium">BAGIAN / JABATAN</p>
-                          <p className="text-slate-700 font-bold">
-                            {['Borongan', 'Harian Lepas'].includes(pekerjaanSaatIni.status_pekerjaan) 
-                              ? "Pekerja Lapangan / Informal" 
-                              : `${pekerjaanSaatIni.bagian || '-'} / ${pekerjaanSaatIni.jabatan || '-'}`}
-                          </p>
-                        </div>
-                        <div className="space-y-1 text-right">
-                          <p className="text-slate-400 font-medium">PERIODE KERJA</p>
-                          <p className="text-slate-700 font-bold">{pekerjaanSaatIni.tgl_masuk || '--'} — Sekarang</p>
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-slate-400 font-medium">STATUS KARYAWAN</p>
-                          <p className="text-slate-700 font-bold">{pekerjaanSaatIni.status_pekerjaan || '-'}</p>
-                        </div>
-                      </div>
-
-                      {/* Medical History for Current Job */}
-                      <div className="mt-2 pt-4 border-t border-slate-100">
-                        <h5 className="text-sm font-bold text-blue-700 flex items-center gap-2 mb-4">
-                          <Activity className="h-4 w-4" />
-                          Riwayat Kesehatan (Pekerjaan Saat Ini)
-                        </h5>
-                        {(() => {
-                          const src = pekerjaanSaatIni.riwayat_pemeriksaan?.[0];
-                          const med = {
-                            tanggal_pemeriksaan: src?.tanggal_pemeriksaan ?? '',
-                            tempat_pemeriksaan:  src?.tempat_pemeriksaan  ?? '',
-                            jenis_pemeriksaan:   src?.jenis_pemeriksaan   ?? '',
-                            dokter:              src?.dokter              ?? '',
-                            status_kesehatan:    src?.status_kesehatan    ?? 'sehat',
-                            hasil_diagnosis:     src?.hasil_diagnosis     ?? '',
-                            rekomendasi:         src?.rekomendasi         ?? '',
-                            file_hasil:          src?.file_hasil          ?? [] as File[],
-                            pendamping:          src?.pendamping          ?? '',
-                          };
-                          const updateMed = (field: string, value: any) => {
-                            const cur = pekerjaanSaatIni.riwayat_pemeriksaan?.[0];
-                            setPekerjaanSaatIni({
-                              ...pekerjaanSaatIni,
-                              riwayat_pemeriksaan: [{
-                                tanggal_pemeriksaan: cur?.tanggal_pemeriksaan ?? '',
-                                tempat_pemeriksaan:  cur?.tempat_pemeriksaan  ?? '',
-                                jenis_pemeriksaan:   cur?.jenis_pemeriksaan   ?? '',
-                                dokter:              cur?.dokter              ?? '',
-                                status_kesehatan:    cur?.status_kesehatan    ?? 'sehat',
-                                hasil_diagnosis:     cur?.hasil_diagnosis     ?? '',
-                                rekomendasi:         cur?.rekomendasi         ?? '',
-                                file_hasil:          cur?.file_hasil          ?? [],
-                                pendamping:          cur?.pendamping          ?? '',
-                                [field]: value,
-                              }]
-                            });
-                          };
-                          return (
-                            <div className="bg-blue-50/40 border border-blue-100 rounded-lg p-4">
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div className="space-y-1">
-                                  <Label className="text-xs text-slate-600">Tanggal Pemeriksaan</Label>
-                                  <Input type="date" className="h-9 bg-white text-slate-600 text-sm" value={med.tanggal_pemeriksaan} onChange={e => updateMed('tanggal_pemeriksaan', e.target.value)} />
-                                </div>
-                                <div className="space-y-1">
-                                  <Label className="text-xs text-slate-600">Tempat Pemeriksaan</Label>
-                                  <Input placeholder="Klinik/RS..." className="h-9 bg-white text-sm" value={med.tempat_pemeriksaan} onChange={e => updateMed('tempat_pemeriksaan', e.target.value)} />
-                                </div>
-                                <div className="space-y-1">
-                                  <Label className="text-xs text-slate-600">Jenis Pemeriksaan</Label>
-                                  <Select value={med.jenis_pemeriksaan} onValueChange={v => updateMed('jenis_pemeriksaan', v)}>
-                                    <SelectTrigger className="h-9 w-full bg-white text-sm"><SelectValue placeholder="Pilih Jenis" /></SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="MCU Berkala">MCU Berkala</SelectItem>
-                                      <SelectItem value="Rontgen Thorax">Rontgen Thorax</SelectItem>
-                                      <SelectItem value="Spirometri">Spirometri</SelectItem>
-                                      <SelectItem value="Audiometri">Audiometri</SelectItem>
-                                      <SelectItem value="Tes Darah/Lab">Tes Darah / Lab</SelectItem>
-                                      <SelectItem value="Lainnya">Lainnya</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                                <div className="space-y-1">
-                                  <Label className="text-xs text-slate-600">Status Kesehatan</Label>
-                                  <Select value={med.status_kesehatan || 'sehat'} onValueChange={v => updateMed('status_kesehatan', v)}>
-                                    <SelectTrigger className="h-9 w-full bg-white text-sm">
-                                      <SelectValue>
-                                        {formatHealthStatus(med.status_kesehatan)}
-                                      </SelectValue>
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="sehat">Sehat</SelectItem>
-                                      <SelectItem value="sehat_dengan_catatan">Sehat dengan Catatan</SelectItem>
-                                      <SelectItem value="tidak_sehat">Tidak Sehat</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                                <div className="space-y-1">
-                                  <Label className="text-xs text-slate-600">Dokter yang Memeriksa</Label>
-                                  <Input placeholder="Nama dokter..." className="h-9 bg-white text-sm" value={med.dokter} onChange={e => updateMed('dokter', e.target.value)} />
-                                </div>
-                                <div className="space-y-1">
-                                  <Label className="text-xs text-slate-600">Pendamping Lapangan</Label>
-                                  <Select value={med.pendamping} onValueChange={v => updateMed('pendamping', v)}>
-                                    <SelectTrigger className="h-9 w-full bg-white text-sm"><SelectValue placeholder="Pilih Pendamping" /></SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="Klinik Internal">Klinik Internal Perusahaan</SelectItem>
-                                      <SelectItem value="Faskes BPJSKes">Faskes Pertama (BPJS)</SelectItem>
-                                      <SelectItem value="Dokter Okupasi">Dokter Spesialis Okupasi</SelectItem>
-                                      <SelectItem value="Mandiri">Berangkat Mandiri</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                                <div className="space-y-1 col-span-1 sm:col-span-2">
-                                  <Label className="text-xs text-slate-600">Hasil Diagnosis</Label>
-                                  <Textarea placeholder="Ringkasan hasil diagnosis..." className="min-h-[70px] bg-white resize-none text-sm" value={med.hasil_diagnosis} onChange={e => updateMed('hasil_diagnosis', e.target.value)} />
-                                </div>
-                                <div className="space-y-1 col-span-1 sm:col-span-2">
-                                  <Label className="text-xs text-slate-600">Rekomendasi Dokter <span className="text-slate-400 font-normal">(Opsional)</span></Label>
-                                  <Textarea placeholder="Saran dari dokter..." className="min-h-[60px] bg-white resize-none text-sm" value={med.rekomendasi} onChange={e => updateMed('rekomendasi', e.target.value)} />
-                                </div>
-                                <div className="space-y-1 col-span-1 sm:col-span-2">
-                                  <Label className="text-xs text-slate-600">Unggah Hasil Pemeriksaan (Multiple) <span className="text-slate-400 font-normal">(Opsional)</span></Label>
-                                  <label className="flex items-center gap-3 bg-white border border-slate-200 hover:border-[#0ea5e9] rounded-lg px-3 py-2 cursor-pointer transition-colors h-9">
-                                    <UploadCloud className="w-3.5 h-3.5 text-[#0ea5e9]" />
-                                    <span className="text-xs text-slate-500 flex-1 truncate">
-                                      {med.file_hasil?.length > 0 
-                                        ? `${med.file_hasil.length} file dipilih: ${med.file_hasil.map((f: any) => f.name).join(', ')}` 
-                                        : 'Pilih file PDF/JPG'}
-                                    </span>
-                                    <input 
-                                      type="file" 
-                                      multiple
-                                      accept=".pdf,.jpg,.jpeg,.png" 
-                                      className="hidden" 
-                                      onChange={e => { 
-                                        const files = e.target.files ? Array.from(e.target.files) : [];
-                                        updateMed('file_hasil', files); 
-                                      }} 
-                                    />
-                                  </label>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })()}
-                      </div>
-                    </div>
-                  </div>
-                </div>
 
                 {/* Riwayat Sebelumnya */}
                 <div>
@@ -1345,11 +1036,27 @@ export default function PendaftaranPekerjaPage() {
                                   const newR = [...riwayatLalu]; newR[idx].tgl_masuk = e.target.value; setRiwayatLalu(newR);
                                 }} />
                               </div>
-                              {item.status_pekerjaan !== 'Outsourcing' && (
+                              {item.status_pekerjaan !== 'Outsourcing' ? (
                                 <div className="space-y-2">
                                   <Label>Tanggal Keluar</Label>
                                   <Input type="date" value={item.tgl_keluar} onChange={(e) => {
                                     const newR = [...riwayatLalu]; newR[idx].tgl_keluar = e.target.value; setRiwayatLalu(newR);
+                                  }} />
+                                </div>
+                              ) : (
+                                <div className="space-y-2">
+                                  <Label>Tanggal Selesai Kontrak</Label>
+                                  <Input type="date" value={item.tanggal_selesai_kontrak} onChange={(e) => {
+                                    const newR = [...riwayatLalu]; newR[idx].tanggal_selesai_kontrak = e.target.value; setRiwayatLalu(newR);
+                                  }} />
+                                </div>
+                              )}
+
+                              {item.status_pekerjaan === 'Outsourcing' && (
+                                <div className="space-y-2 col-span-1 sm:col-span-2">
+                                  <Label>Nama Agen Penyalur</Label>
+                                  <Input placeholder="Contoh: PT Sumber Daya Manusia" value={item.nama_agen_penyalur} onChange={(e) => {
+                                    const newR = [...riwayatLalu]; newR[idx].nama_agen_penyalur = e.target.value; setRiwayatLalu(newR);
                                   }} />
                                 </div>
                               )}
@@ -1395,6 +1102,32 @@ export default function PendaftaranPekerjaPage() {
                                   )}
                                 </div>
                               </div>
+
+                              {/* Form Informal untuk Borongan / Harian Lepas */}
+                              {(item.status_pekerjaan === 'Borongan' || item.status_pekerjaan === 'Harian Lepas') && (
+                                <div className="col-span-1 sm:col-span-2">
+                                  <FormPekerjaInformal 
+                                    isInformal={true}
+                                    data={item.informal_data || {
+                                      tugas_spesifik: '',
+                                      lama_bekerja: '',
+                                      satuan_waktu: 'Bulan',
+                                      bpjs_bpu: '',
+                                      apd_disediakan: '',
+                                      jenis_apd_sendiri: '',
+                                      lokasi_proyek: ['']
+                                    }}
+                                    onChange={(field, value) => {
+                                      const newR = [...riwayatLalu];
+                                      newR[idx].informal_data = {
+                                        ...(newR[idx].informal_data || {}),
+                                        [field]: value
+                                      };
+                                      setRiwayatLalu(newR);
+                                    }}
+                                  />
+                                </div>
+                              )}
                             </div>
 
                             {/* Sub-seksi: Riwayat Kesehatan saat di perusahaan ini */}
