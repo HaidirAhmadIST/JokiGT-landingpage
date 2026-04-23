@@ -97,6 +97,14 @@ class Pekerja extends Model
         return $this->hasOne(StatusAdvokasi::class);
     }
 
+    /**
+     * Get the current/latest active employment record.
+     */
+    public function currentJob(): HasOne
+    {
+        return $this->hasOne(RiwayatPekerja::class)->whereNull('tgl_keluar');
+    }
+
     // =========================================================================
     // Scopes
     // =========================================================================
@@ -166,7 +174,8 @@ class Pekerja extends Model
             'user',
             'perusahaan',
             'statusAdvokasi',
-            'latestDetailMedis', // Efficiently load only the latest medical record
+            'latestDetailMedis',
+            'currentJob', // Added for smart company info in lists
         ]);
     }
 }

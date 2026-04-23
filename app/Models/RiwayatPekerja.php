@@ -34,6 +34,7 @@ class RiwayatPekerja extends Model
         'tgl_keluar',
         'tanggal_selesai_kontrak',
         'file_bukti_path',
+        'informal_data',
     ];
 
     /**
@@ -47,6 +48,7 @@ class RiwayatPekerja extends Model
             'tgl_masuk' => 'date',
             'tgl_keluar' => 'date',
             'tanggal_selesai_kontrak' => 'date',
+            'informal_data' => 'array',
         ];
     }
 
