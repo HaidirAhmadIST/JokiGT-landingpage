@@ -12,12 +12,24 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('status_advokasi', function (Blueprint $table) {
-            $table->string('bukti_pajanan_name')->nullable();
-            $table->string('bukti_persetujuan_dokter_name')->nullable();
-            $table->string('bukti_perusahaan_lapor_name')->nullable();
-            $table->string('bukti_penetapan_pak_name')->nullable();
-            $table->string('bukti_kompensasi_bpjstk_name')->nullable();
-            $table->string('bukti_rehabilitasi_bpjskes_name')->nullable();
+            if (!Schema::hasColumn('status_advokasi', 'bukti_pajanan_name')) {
+                $table->string('bukti_pajanan_name')->nullable();
+            }
+            if (!Schema::hasColumn('status_advokasi', 'bukti_persetujuan_dokter_name')) {
+                $table->string('bukti_persetujuan_dokter_name')->nullable();
+            }
+            if (!Schema::hasColumn('status_advokasi', 'bukti_perusahaan_lapor_name')) {
+                $table->string('bukti_perusahaan_lapor_name')->nullable();
+            }
+            if (!Schema::hasColumn('status_advokasi', 'bukti_penetapan_pak_name')) {
+                $table->string('bukti_penetapan_pak_name')->nullable();
+            }
+            if (!Schema::hasColumn('status_advokasi', 'bukti_kompensasi_bpjstk_name')) {
+                $table->string('bukti_kompensasi_bpjstk_name')->nullable();
+            }
+            if (!Schema::hasColumn('status_advokasi', 'bukti_rehabilitasi_bpjskes_name')) {
+                $table->string('bukti_rehabilitasi_bpjskes_name')->nullable();
+            }
         });
     }
 

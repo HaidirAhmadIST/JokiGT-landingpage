@@ -63,7 +63,11 @@ export default function DashboardLayout({
     // Load user data from local storage
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
-      setUser(JSON.parse(storedUser));
+      const parsedUser = JSON.parse(storedUser);
+      setUser(parsedUser);
+      if (parsedUser.role === 'viewer') {
+        router.push('/dashboard-user');
+      }
     }
     setMounted(true);
   }, []);
@@ -153,7 +157,7 @@ export default function DashboardLayout({
                     </div>
                     <div>
                       <p className="text-[11px] font-extrabold text-slate-800 tracking-wider">ADMIN PANEL</p>
-                      <p className="text-[10px] text-slate-500 font-medium">Management Mode</p>
+                      <p className="text-[10px] text-slate-500 font-medium">Mode Manajemen</p>
                     </div>
                  </div>
                </div>
@@ -199,6 +203,7 @@ export default function DashboardLayout({
               onFocus={() => { if (searchQuery.trim().length >= 2) setSearchOpen(true); }}
               onKeyDown={(e) => { if (e.key === 'Escape') setSearchOpen(false); }}
               className="w-full h-10 pl-11 pr-4 rounded-lg border-none bg-slate-100 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#0ea5e9]/20 focus:bg-white transition-all text-slate-700 placeholder:text-slate-400"
+              suppressHydrationWarning
             />
           </div>
 
@@ -264,37 +269,47 @@ export default function DashboardLayout({
 
         {/* Right Actions */}
         <div className="flex items-center gap-x-5 shrink-0">
-          <button className="relative text-slate-400 hover:text-slate-700 transition-colors">
-            <Bell className="h-[22px] w-[22px]" />
-          </button>
-          
-          <button className="text-slate-400 hover:text-slate-700 transition-colors">
-            <Settings className="h-[22px] w-[22px]" />
-          </button>
-
           <DropdownMenu>
-            <DropdownMenuTrigger className="h-9 w-9 rounded-full bg-orange-100 text-orange-700 flex items-center justify-center font-bold text-sm border-2 border-orange-200 outline-none hover:ring-2 hover:ring-orange-300 hover:ring-offset-1 transition-all">
-               {/* Mockup uses a small avatar, I will use a simple initials trick */}
-               {mounted && user?.nama ? user.nama.charAt(0).toUpperCase() : 'A'}
+            <DropdownMenuTrigger 
+              className="h-9 w-9 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center font-bold text-sm border border-orange-100 outline-none hover:ring-2 hover:ring-orange-200 hover:ring-offset-1 transition-all shadow-sm cursor-pointer overflow-hidden"
+              suppressHydrationWarning
+            >
+               {mounted && user?.foto ? (
+                 <img 
+                   src={user.foto.startsWith('http') ? user.foto : `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '')}/storage/${user.foto}`} 
+                   alt={user.nama} 
+                   className="w-full h-full object-cover"
+                 />
+               ) : (
+                 <span>{mounted && user?.nama ? user.nama.charAt(0).toUpperCase() : 'A'}</span>
+               )}
             </DropdownMenuTrigger>
-            {/* @ts-ignore */}
-            <DropdownMenuContent className="w-56" align="end" forceMount>
-              <DropdownMenuLabel className="font-normal">
-                {mounted && (
-                  <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{user?.nama}</p>
-                    <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
-                    <p className="text-xs leading-none text-muted-foreground mt-1 capitalize font-semibold text-[#0ea5e9]">
-                      Role: {user?.role}
-                    </p>
-                  </div>
-                )}
-              </DropdownMenuLabel>
+            <DropdownMenuContent className="w-56" align="end">
+              <DropdownMenuGroup>
+                <DropdownMenuLabel className="font-normal">
+                  {mounted && (
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-semibold leading-none text-slate-900">{user?.nama || 'Administrator'}</p>
+                      <p className="text-xs leading-none text-slate-400">{user?.email || 'admin@sentinel.id'}</p>
+                      <div className="flex items-center gap-1.5 mt-2">
+                        <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                        <p className="text-[10px] leading-none uppercase font-bold text-slate-500 tracking-wider">
+                          {user?.role === 'admin' ? 'Super Admin' : (user?.role || 'Super Admin')}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </DropdownMenuLabel>
+              </DropdownMenuGroup>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout} className="text-red-600 cursor-pointer">
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Sign Out</span>
+              <DropdownMenuItem onClick={() => router.push('/profile')} className="cursor-pointer">
+                <UserIcon className="mr-2 h-4 w-4" />
+                <span>Profil Saya</span>
               </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout} className="text-red-600 cursor-pointer focus:bg-red-50 focus:text-red-600">
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Keluar</span>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -315,7 +330,7 @@ export default function DashboardLayout({
                   </div>
                   <div>
                     <p className="text-[11px] font-extrabold text-[#1e293b] tracking-wider">ADMIN PANEL</p>
-                    <p className="text-[10px] text-slate-500 font-medium mt-0.5">Management Mode</p>
+                    <p className="text-[10px] text-slate-500 font-medium mt-0.5">Mode Manajemen</p>
                   </div>
                </div>
              </div>
@@ -350,7 +365,7 @@ export default function DashboardLayout({
                 className="group flex items-center py-3.5 text-sm font-semibold text-slate-500 hover:text-slate-800 transition-colors"
               >
                 <Settings className="mr-4 shrink-0 h-[18px] w-[18px] text-slate-400 group-hover:text-slate-600" />
-                Settings
+                Pengaturan
               </Link>
            </div>
         </aside>

@@ -49,6 +49,13 @@ class UpdateAdvokasiRequest extends FormRequest
             'bukti_penetapan_pak' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
             'bukti_kompensasi_bpjstk' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
             'bukti_rehabilitasi_bpjskes' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
+
+            // Metadata fields for "Tambah Kasus" or updates
+            'jenis_kasus' => ['nullable', 'string', 'in:pak,k3,phk,jht,PAK,K3,PHK,JHT'],
+            'tahap' => ['nullable', 'string', 'in:UPTD,BPJS,Pengadilan,uptd,bpjs,pengadilan'],
+            'status_detail' => ['nullable', 'string', 'max:255'],
+            'tanggal_pelaporan' => ['nullable', 'date'],
+            'catatan' => ['nullable', 'string'],
         ];
     }
 }

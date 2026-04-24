@@ -66,7 +66,7 @@ class AdvokasiService
         $results = [];
         foreach ($steps as $step) {
             $col = $step['column'];
-            $workers = StatusAdvokasi::with(['pekerja:id,nama_lengkap,nik', 'pekerja.perusahaan:id,nama_perusahaan'])
+            $workers = StatusAdvokasi::with(['pekerja:id,nama_lengkap,nik,perusahaan_id', 'pekerja.perusahaan:id,nama_perusahaan'])
                 ->where($col, true)
                 ->get()
                 ->map(fn ($s) => [
@@ -89,7 +89,8 @@ class AdvokasiService
 
         return [
             'summary' => $summary,
-            'data' => $results
+            'data' => $results,
+            'total' => $totalAll
         ];
     }
 

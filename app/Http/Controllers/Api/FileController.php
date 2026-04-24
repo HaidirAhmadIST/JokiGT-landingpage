@@ -115,12 +115,17 @@ class FileController extends Controller
      */
     public function downloadRiwayatById(Request $request, string $id)
     {
-        // Only admin and petugas can access these files
-        if (!$request->user()->isAdmin() && !$request->user()->isPetugas()) {
-            return response()->json(['status' => 'error', 'message' => 'Unauthorized. Only Admin or Petugas can access employment proofs.'], 403);
+        $riwayat = RiwayatPekerja::find($id);
+
+        if (!$riwayat) {
+            return response()->json(['status' => 'error', 'message' => 'Riwayat pekerjaan tidak ditemukan.'], 404);
         }
 
-        $riwayat = RiwayatPekerja::find($id);
+        // Only admin, petugas, or owner can access these files
+        $isOwner = $request->user()->pekerja && $request->user()->pekerja->id == $riwayat->pekerja_id;
+        if (!$isOwner && !$request->user()->isAdmin() && !$request->user()->isPetugas()) {
+            return response()->json(['status' => 'error', 'message' => 'Unauthorized access.'], 403);
+        }
 
         if (!$riwayat || !$riwayat->file_bukti_path) {
             return response()->json(['status' => 'error', 'message' => 'Dokumen riwayat pekerjaan tidak ditemukan.'], 404);
@@ -140,12 +145,17 @@ class FileController extends Controller
      */
     public function downloadMedisById(Request $request, string $id)
     {
-        // Only admin and petugas can access medical files
-        if (!$request->user()->isAdmin() && !$request->user()->isPetugas()) {
-            return response()->json(['status' => 'error', 'message' => 'Unauthorized. Only Admin or Petugas can access medical records.'], 403);
+        $medis = DetailMedis::find($id);
+
+        if (!$medis) {
+            return response()->json(['status' => 'error', 'message' => 'Dokumen medis tidak ditemukan.'], 404);
         }
 
-        $medis = DetailMedis::find($id);
+        // Only admin, petugas, or owner can access medical files
+        $isOwner = $request->user()->pekerja && $request->user()->pekerja->id == $medis->pekerja_id;
+        if (!$isOwner && !$request->user()->isAdmin() && !$request->user()->isPetugas()) {
+            return response()->json(['status' => 'error', 'message' => 'Unauthorized access.'], 403);
+        }
 
         if (!$medis || !$medis->file_hasil_path) {
             return response()->json(['status' => 'error', 'message' => 'Dokumen medis tidak ditemukan.'], 404);
@@ -165,9 +175,10 @@ class FileController extends Controller
      */
     public function downloadMedis(Request $request, string $pekerja_id)
     {
-        // Only admin and petugas can access medical files
-        if (!$request->user()->isAdmin() && !$request->user()->isPetugas()) {
-            return response()->json(['status' => 'error', 'message' => 'Unauthorized. Only Admin or Petugas can access medical records.'], 403);
+        // Only admin, petugas, or owner can access medical files
+        $isOwner = $request->user()->pekerja && $request->user()->pekerja->id == $pekerja_id;
+        if (!$isOwner && !$request->user()->isAdmin() && !$request->user()->isPetugas()) {
+            return response()->json(['status' => 'error', 'message' => 'Unauthorized access.'], 403);
         }
 
         $pekerja = Pekerja::with('detailMedis')->find($pekerja_id);

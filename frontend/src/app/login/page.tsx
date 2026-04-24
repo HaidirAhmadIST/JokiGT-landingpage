@@ -27,10 +27,14 @@ export default function LoginPage() {
         // Store token in cookie
         Cookies.set('auth_token', response.data.data.token, { expires: 7, path: '/' }); // 7 days
         // Store basic user data in localStorage (optional)
-        localStorage.setItem('user', JSON.stringify(response.data.data.user));
-        
+        const user = response.data.data.user;
         toast.success(response.data.message);
-        window.location.href = '/';
+        
+        if (user.role === 'viewer') {
+          window.location.href = '/dashboard-user';
+        } else {
+          window.location.href = '/';
+        }
       }
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Gagal login. Periksa email dan password.');
