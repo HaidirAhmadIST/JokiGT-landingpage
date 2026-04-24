@@ -310,6 +310,7 @@ export default function DashboardLayout({
               <DropdownMenuItem onClick={handleLogout} className="text-red-600 cursor-pointer focus:bg-red-50 focus:text-red-600">
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Keluar</span>
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
