@@ -35,6 +35,8 @@ class RiwayatPekerja extends Model
         'tanggal_selesai_kontrak',
         'file_bukti_path',
         'informal_data',
+        'jenis_pajanan',
+        'durasi_pajanan',
     ];
 
     /**

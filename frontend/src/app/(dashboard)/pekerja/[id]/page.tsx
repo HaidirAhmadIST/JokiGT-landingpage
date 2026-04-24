@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import {
   ArrowLeft, Printer, Pin, Mail, Phone, MapPin,
   Briefcase, ShieldAlert, CheckCircle2, Circle, Edit3,
-  Download, Image as ImageIcon, Activity, FileText, FileCheck, ClipboardList, HeartPulse, HardHat
+  Download, Image as ImageIcon, Activity, FileText, FileCheck, ClipboardList, HeartPulse, HardHat, Zap
 } from 'lucide-react';
 import { format, differenceInYears, differenceInMonths, parseISO } from 'date-fns';
 import { id as localeID } from 'date-fns/locale';
@@ -121,7 +121,8 @@ export default function PekerjaDetailPage() {
     setUploadLoading(stepKey);
     const formData = new FormData();
     formData.append('step_key', stepKey);
-    formData.append('file', file);
+    // Menggunakan file[] agar backend menerimanya sebagai array sesuai validasi
+    formData.append('file[]', file);
 
     try {
       await api.post(`/pekerja/${id}/advokasi`, formData, {
@@ -777,6 +778,20 @@ export default function PekerjaDetailPage() {
                                         <ShieldAlert className="h-3 w-3" /> PAJANAN: {r.deskripsi_usaha}
                                       </p>
                                     )}
+                                    {(r.jenis_pajanan || r.durasi_pajanan) && (
+                                      <div className="flex gap-3 mt-1.5">
+                                        {r.jenis_pajanan && (
+                                          <p className="text-slate-500 text-[10px] font-bold uppercase tracking-tight flex items-center gap-1">
+                                            <Activity className="h-2.5 w-2.5 text-[#0ea5e9]" /> JENIS: {r.jenis_pajanan}
+                                          </p>
+                                        )}
+                                        {r.durasi_pajanan && (
+                                          <p className="text-slate-500 text-[10px] font-bold uppercase tracking-tight flex items-center gap-1">
+                                            <ClipboardList className="h-2.5 w-2.5 text-[#0ea5e9]" /> DURASI: {r.durasi_pajanan} TAHUN
+                                          </p>
+                                        )}
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
 
@@ -830,7 +845,7 @@ export default function PekerjaDetailPage() {
                                   </div>
                                 )}
 
-                                {r.informal_data && (
+                                {r.informal_data && ['Borongan', 'Harian Lepas', 'Outsourcing'].includes(r.status_pekerjaan) && (
                                   <div className="mb-4 bg-orange-50/50 border border-orange-100 p-4 rounded-xl">
                                     <p className="text-[10px] font-bold text-orange-600 uppercase tracking-widest mb-3 flex items-center gap-1.5">
                                       <HardHat className="h-3.5 w-3.5" /> Data Pekerja Informal / Lapangan
@@ -1106,10 +1121,24 @@ export default function PekerjaDetailPage() {
                                  } • {wText}
                                </p>
                                {r.deskripsi_usaha && (
-                                 <p className="text-[10px] text-amber-600 font-bold truncate flex items-center gap-1 mt-0.5">
-                                   <ShieldAlert className="h-2.5 w-2.5" /> Pajanan: {r.deskripsi_usaha}
-                                 </p>
-                               )}
+                                   <p className="text-[10px] text-amber-600 font-bold truncate flex items-center gap-1 mt-0.5">
+                                     <ShieldAlert className="h-2.5 w-2.5" /> Pajanan: {r.deskripsi_usaha}
+                                   </p>
+                                 )}
+                                 {(r.jenis_pajanan || r.durasi_pajanan) && (
+                                   <div className="flex gap-2 mt-1">
+                                     {r.jenis_pajanan && (
+                                       <p className="text-[9px] text-slate-500 font-bold truncate flex items-center gap-1">
+                                         <Activity className="h-2 w-2" /> {r.jenis_pajanan}
+                                       </p>
+                                     )}
+                                     {r.durasi_pajanan && (
+                                       <p className="text-[9px] text-slate-500 font-bold truncate flex items-center gap-1">
+                                         <ClipboardList className="h-2 w-2" /> {r.durasi_pajanan} Thn
+                                       </p>
+                                     )}
+                                   </div>
+                                 )}
                              </div>
                              {/* Badge jumlah pemeriksaan */}
                              {medisCount > 0 && (
@@ -1232,6 +1261,59 @@ export default function PekerjaDetailPage() {
                              </div>
                   )}
                 </div>
+              </div>
+            </div>
+
+            {/* Riwayat Pajanan Section */}
+            <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6">
+              <h3 className="text-sm font-bold text-[#1e293b] flex items-center mb-6">
+                <Zap className="h-4 w-4 text-[#0ea5e9] mr-2" /> Riwayat Pajanan (Exposure History)
+              </h3>
+              
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left">
+                  <thead className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50/50">
+                    <tr>
+                      <th className="px-4 py-3 rounded-l-lg">Perusahaan / Proyek</th>
+                      <th className="px-4 py-3">Jenis Pajanan</th>
+                      <th className="px-4 py-3">APD yang Digunakan</th>
+                      <th className="px-4 py-3 rounded-r-lg">Durasi (Tahun)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {data.riwayat_pekerja?.some((r: any) => r.jenis_pajanan || r.durasi_pajanan || r.informal_data?.apd_list) ? (
+                      data.riwayat_pekerja.map((r: any, idx: number) => (
+                        (r.jenis_pajanan || r.durasi_pajanan || r.informal_data?.apd_list) && (
+                          <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
+                            <td className="px-4 py-4 font-bold text-slate-700">{r.nama_perusahaan}</td>
+                            <td className="px-4 py-4">
+                              <span className="px-2 py-1 bg-amber-50 text-amber-600 rounded text-[11px] font-bold uppercase tracking-wide">
+                                {r.jenis_pajanan || '-'}
+                              </span>
+                            </td>
+                            <td className="px-4 py-4 text-slate-600 text-xs">
+                              {(() => {
+                                try {
+                                  const info = typeof r.informal_data === 'string' ? JSON.parse(r.informal_data) : r.informal_data;
+                                  return info?.apd_list || '-';
+                                } catch(e) { return '-'; }
+                              })()}
+                            </td>
+                            <td className="px-4 py-4 font-semibold text-slate-600">
+                              {r.durasi_pajanan ? `${r.durasi_pajanan} Tahun` : '-'}
+                            </td>
+                          </tr>
+                        )
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={4} className="px-4 py-10 text-center text-slate-400 italic">
+                          Tidak ada data riwayat pajanan yang tercatat.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>

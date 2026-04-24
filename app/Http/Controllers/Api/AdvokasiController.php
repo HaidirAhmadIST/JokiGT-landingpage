@@ -31,6 +31,7 @@ class AdvokasiController extends Controller
         return response()->json([
             'status'  => 'success',
             'summary' => $stats['summary'],
+            'total'   => $stats['summary']['total']['count'] ?? 0,
             'data'    => $stats['data'],
         ]);
     }
