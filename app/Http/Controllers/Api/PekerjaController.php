@@ -186,7 +186,7 @@ class PekerjaController extends Controller
                 $pekerja->detailMedis()->createMany($allMedis);
             }
 
-            // 6. Create or Update Riwayat Medis Baseline Data
+            // 6. Update or Create Riwayat Medis Baseline Data
             if ($request->has('riwayat_medis') && is_array($request->riwayat_medis)) {
                 $pekerja->riwayatMedis()->updateOrCreate(
                     ['pekerja_id' => $pekerja->id],
@@ -236,14 +236,18 @@ class PekerjaController extends Controller
      */
     public function update(Request $request, string $id): JsonResponse
     {
-        if (!auth()->user()->isAdmin()) {
-            return response()->json(['status' => 'error', 'message' => 'Hanya admin yang dapat mengubah data pekerja.'], 403);
-        }
-
         $pekerja = Pekerja::find($id);
 
         if (!$pekerja) {
             return response()->json(['status' => 'error', 'message' => 'Pekerja tidak ditemukan.'], 404);
+        }
+
+        // Allow Admin, Petugas, or the Owner (the worker themselves)
+        $user = auth()->user();
+        $isOwner = $user->pekerja && $user->pekerja->id == $pekerja->id;
+
+        if (!$user->isAdmin() && !$user->isPetugas() && !$isOwner) {
+            return response()->json(['status' => 'error', 'message' => 'Anda tidak memiliki izin untuk mengubah data ini.'], 403);
         }
 
         $pekerja->update($request->only([

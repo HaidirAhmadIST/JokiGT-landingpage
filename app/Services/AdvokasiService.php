@@ -66,16 +66,16 @@ class AdvokasiService
         $results = [];
         foreach ($steps as $step) {
             $col = $step['column'];
-            $workers = StatusAdvokasi::with(['pekerja:id,nama_lengkap,nik', 'pekerja.perusahaan:id,nama_perusahaan'])
+            $workers = StatusAdvokasi::with(['pekerja:id,nama_lengkap,nik,perusahaan_id', 'pekerja.perusahaan:id,nama_perusahaan'])
                 ->where($col, true)
                 ->get()
                 ->map(fn ($s) => [
-                    'id'            => $s->pekerja->id ?? null,
-                    'nama'          => $s->pekerja->nama_lengkap ?? '-',
-                    'nik'           => $s->pekerja->nik ?? '-',
-                    'perusahaan'    => $s->pekerja->perusahaan->nama_perusahaan ?? '-',
-                    'jenis_kasus'   => strtoupper($s->jenis_kasus),
-                    'status_detail' => $s->status_detail,
+                    'id'            => $s->pekerja?->id,
+                    'nama'          => $s->pekerja?->nama_lengkap ?? '-',
+                    'nik'           => $s->pekerja?->nik ?? '-',
+                    'perusahaan'    => $s->pekerja?->perusahaan?->nama_perusahaan ?? '-',
+                    'jenis_kasus'   => $s->jenis_kasus ? strtoupper($s->jenis_kasus) : '-',
+                    'status_detail' => $s->status_detail ?? '-',
                     'progress'      => $s->progress_percentage,
                 ]);
 
@@ -89,7 +89,8 @@ class AdvokasiService
 
         return [
             'summary' => $summary,
-            'data' => $results
+            'data' => $results,
+            'total' => $totalAll
         ];
     }
 

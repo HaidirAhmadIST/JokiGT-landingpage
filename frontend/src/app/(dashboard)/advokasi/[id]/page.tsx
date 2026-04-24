@@ -5,6 +5,10 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import api from '@/lib/axios';
 import {
   CheckCircle2,
@@ -77,6 +81,14 @@ export default function AdvokasiDetailPage() {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [downloading, setDownloading] = useState(false);
 
+  // Document Upload State
+  const [isDocModalOpen, setIsDocModalOpen] = useState(false);
+  const [uploadingDoc, setUploadingDoc] = useState(false);
+  const [docForm, setDocForm] = useState({
+    step_key: '',
+    file: null as File | null
+  });
+
   const { data, isLoading: loading, refetch } = useGetAdvokasiDetail(id);
 
   if (loading) {
@@ -142,6 +154,36 @@ export default function AdvokasiDetailPage() {
       toast.error('Gagal saat membuat PDF.');
     } finally {
       setDownloading(false);
+    }
+  };
+
+  const handleUploadDoc = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!docForm.step_key || !docForm.file) {
+      toast.error('Pilih jenis dokumen dan file yang akan diunggah.');
+      return;
+    }
+    setUploadingDoc(true);
+    try {
+      const formData = new FormData();
+      formData.append('step_key', docForm.step_key);
+      formData.append('file', docForm.file);
+      if (data.jenis_kasus) formData.append('jenis_kasus', data.jenis_kasus);
+      if (data.tahap) formData.append('tahap', data.tahap);
+
+      const resp = await api.post(`/pekerja/${data.pekerja_id}/advokasi`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      if (resp.data.status === 'success') {
+        toast.success('Dokumen berhasil diunggah.');
+        setIsDocModalOpen(false);
+        setDocForm({ step_key: '', file: null });
+        refetch();
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Gagal mengunggah dokumen.');
+    } finally {
+      setUploadingDoc(false);
     }
   };
 
@@ -401,7 +443,10 @@ export default function AdvokasiDetailPage() {
                 </div>
               ))}
             </div>
-            <button className="w-full mt-4 py-3 border-2 border-dashed border-slate-200 rounded-xl text-xs font-bold text-[#94a3b8] hover:border-[#0ea5e9] hover:text-[#0284c7] transition-all flex items-center justify-center gap-2">
+            <button 
+              onClick={() => setIsDocModalOpen(true)}
+              className="w-full mt-4 py-3 border-2 border-dashed border-slate-200 rounded-xl text-xs font-bold text-[#94a3b8] hover:border-[#0ea5e9] hover:text-[#0284c7] transition-all flex items-center justify-center gap-2"
+            >
               <Upload className="h-4 w-4" /> KELOLA DOKUMEN
             </button>
           </Card>
@@ -414,6 +459,54 @@ export default function AdvokasiDetailPage() {
         data={data} 
         onSuccess={() => refetch()}
       />
+
+      {/* KELOLA DOKUMEN MODAL */}
+      <Dialog open={isDocModalOpen} onOpenChange={setIsDocModalOpen}>
+        <DialogContent className="sm:max-w-md rounded-2xl bg-white border-slate-100">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-slate-900">Unggah Dokumen Bukti</DialogTitle>
+            <DialogDescription className="text-sm text-slate-500">
+              Tambahkan dokumen pendukung untuk kasus advokasi ini.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleUploadDoc} className="space-y-5 py-2">
+            <div className="space-y-2">
+              <Label className="text-xs font-bold text-slate-600">JENIS DOKUMEN</Label>
+              <Select value={docForm.step_key} onValueChange={(v) => setDocForm({ ...docForm, step_key: v })}>
+                <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-slate-200 focus:ring-[#0ea5e9]">
+                  <SelectValue placeholder="Pilih jenis dokumen" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="riwayat_pajanan">Bukti Pajanan</SelectItem>
+                  <SelectItem value="persetujuan_dokter">Diagnosis Dokter</SelectItem>
+                  <SelectItem value="perusahaan_lapor">Laporan Perusahaan</SelectItem>
+                  <SelectItem value="penetapan_pak">Penetapan PAK</SelectItem>
+                  <SelectItem value="kompensasi_bpjstk">Kompensasi BPJSTK</SelectItem>
+                  <SelectItem value="rehabilitasi_bpjskes">Rehabilitasi BPJSKES</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-bold text-slate-600">FILE DOKUMEN (PDF, JPG, PNG)</Label>
+              <Input 
+                type="file" 
+                accept=".pdf,.jpg,.jpeg,.png"
+                onChange={(e) => setDocForm({ ...docForm, file: e.target.files?.[0] || null })}
+                className="h-11 rounded-xl bg-slate-50 border-slate-200 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-[#0ea5e9] file:text-white hover:file:bg-[#0369a1] transition-colors cursor-pointer"
+              />
+            </div>
+            <div className="flex gap-2 justify-end pt-4 border-t border-slate-100 mt-6">
+              <Button type="button" variant="ghost" onClick={() => setIsDocModalOpen(false)} className="rounded-xl font-bold text-slate-500 hover:text-slate-700">
+                Batal
+              </Button>
+              <Button type="submit" disabled={uploadingDoc} className="bg-[#0284c7] hover:bg-[#0369a1] text-white rounded-xl font-bold shadow-sm">
+                {uploadingDoc ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Upload className="h-4 w-4 mr-2" />}
+                Unggah Dokumen
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

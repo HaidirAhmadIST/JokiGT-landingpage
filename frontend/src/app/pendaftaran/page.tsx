@@ -540,9 +540,8 @@ export default function PendaftaranPekerjaPage() {
 
       try {
         await performSubmit(finalPerusahaanId, [...allRiwayat, ...prevRiwayat]);
-        localStorage.removeItem(STORAGE_KEY);
-        toast.success('Pekerja berhasil didaftarkan!');
-        router.push('/pekerja');
+        toast.success('Data pekerja berhasil disimpan!');
+        router.push(`/register-password?email=${encodeURIComponent(baseData.email)}`);
       } catch (error: any) {
         if (error.response?.status === 422) {
           const errors = error.response.data.errors || {};
@@ -582,9 +581,8 @@ export default function PendaftaranPekerjaPage() {
               ), ...prevRiwayat];
 
               await performSubmit(existing.id.toString(), updatedRiwayat);
-              localStorage.removeItem(STORAGE_KEY);
-              toast.success('Pekerja berhasil didaftarkan!');
-              router.push('/pekerja');
+              toast.success('Data pekerja berhasil disimpan!');
+              router.push(`/register-password?email=${encodeURIComponent(baseData.email)}`);
               return;
             }
           } catch (searchErr) {

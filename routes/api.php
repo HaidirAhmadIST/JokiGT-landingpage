@@ -10,12 +10,16 @@ use App\Http\Controllers\Api\ActivityLogController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\FileController;
 use App\Http\Controllers\Api\ReportController;
+use App\Http\Controllers\Api\RegistrationController;
+
 
 // =========================================================================
 // Public Routes
 // =========================================================================
 
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/register/complete', [RegistrationController::class, 'completeRegistration']);
+
 
 // =========================================================================
 // Protected Routes
@@ -24,6 +28,8 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::middleware(['auth:sanctum'])->group(function () {
     // Auth & Profile
     Route::get('/me', [AuthController::class, 'me']);
+    Route::put('/profile', [AuthController::class, 'updateProfile']);
+    Route::post('/profile/foto', [AuthController::class, 'uploadFoto']);
     Route::post('/logout', [AuthController::class, 'logout']);
 
     // Dashboard

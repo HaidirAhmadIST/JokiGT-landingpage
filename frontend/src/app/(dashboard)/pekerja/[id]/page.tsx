@@ -657,10 +657,12 @@ export default function PekerjaDetailPage() {
               </div>
               
               <Dialog open={isRekamJejakOpen} onOpenChange={setIsRekamJejakOpen}>
-                <DialogTrigger asChild>
-                  <Button className="bg-white text-[#0ea5e9] hover:bg-blue-50 font-bold px-6 py-6 rounded-xl shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98]">
-                    Buka Rekam Jejak Lengkap
-                  </Button>
+                <DialogTrigger
+                  render={
+                    <Button className="bg-white text-[#0ea5e9] hover:bg-blue-50 font-bold px-6 py-6 rounded-xl shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98]" />
+                  }
+                >
+                  Buka Rekam Jejak Lengkap
                 </DialogTrigger>
                 <DialogContent className="max-w-[95vw] lg:max-w-6xl h-[90vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl bg-slate-50">
                   <DialogHeader className="p-6 bg-white border-b border-slate-100 flex flex-row items-center justify-between shrink-0">
