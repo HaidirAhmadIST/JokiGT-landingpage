@@ -24,6 +24,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -63,7 +64,11 @@ export default function DashboardLayout({
     // Load user data from local storage
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
-      setUser(JSON.parse(storedUser));
+      const parsedUser = JSON.parse(storedUser);
+      setUser(parsedUser);
+      if (parsedUser.role === 'viewer') {
+        router.push('/dashboard-user');
+      }
     }
     setMounted(true);
   }, []);
@@ -265,37 +270,45 @@ export default function DashboardLayout({
 
         {/* Right Actions */}
         <div className="flex items-center gap-x-5 shrink-0">
-          <button suppressHydrationWarning className="relative text-slate-400 hover:text-slate-700 transition-colors">
-            <Bell className="h-[22px] w-[22px]" />
-          </button>
-          
-          <button suppressHydrationWarning className="text-slate-400 hover:text-slate-700 transition-colors">
-            <Settings className="h-[22px] w-[22px]" />
-          </button>
-
           <DropdownMenu>
             <DropdownMenuTrigger 
-              className="h-9 w-9 rounded-full bg-orange-100 text-orange-700 flex items-center justify-center font-bold text-sm border-2 border-orange-200 outline-none hover:ring-2 hover:ring-orange-300 hover:ring-offset-1 transition-all"
+              className="h-9 w-9 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center font-bold text-sm border border-orange-100 outline-none hover:ring-2 hover:ring-orange-200 hover:ring-offset-1 transition-all shadow-sm cursor-pointer overflow-hidden"
               suppressHydrationWarning
             >
-               {/* Mockup uses a small avatar, I will use a simple initials trick */}
-               {mounted && user?.nama ? user.nama.charAt(0).toUpperCase() : 'A'}
+               {mounted && user?.foto ? (
+                 <img 
+                   src={user.foto.startsWith('http') ? user.foto : `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '')}/storage/${user.foto}`} 
+                   alt={user.nama} 
+                   className="w-full h-full object-cover"
+                 />
+               ) : (
+                 <span>{mounted && user?.nama ? user.nama.charAt(0).toUpperCase() : 'A'}</span>
+               )}
             </DropdownMenuTrigger>
-            {/* @ts-ignore */}
-            <DropdownMenuContent className="w-56" align="end" forceMount>
-              <DropdownMenuLabel className="font-normal">
-                {mounted && (
-                  <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{user?.nama}</p>
-                    <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
-                    <p className="text-xs leading-none text-muted-foreground mt-1 capitalize font-semibold text-[#0ea5e9]">
-                      Role: {user?.role}
-                    </p>
-                  </div>
-                )}
-              </DropdownMenuLabel>
+            <DropdownMenuContent className="w-56" align="end">
+              <DropdownMenuGroup>
+                <DropdownMenuLabel className="font-normal">
+                  {mounted && (
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-semibold leading-none text-slate-900">{user?.nama || 'Administrator'}</p>
+                      <p className="text-xs leading-none text-slate-400">{user?.email || 'admin@sentinel.id'}</p>
+                      <div className="flex items-center gap-1.5 mt-2">
+                        <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                        <p className="text-[10px] leading-none uppercase font-bold text-slate-500 tracking-wider">
+                          {user?.role === 'admin' ? 'Super Admin' : (user?.role || 'Super Admin')}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </DropdownMenuLabel>
+              </DropdownMenuGroup>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout} className="text-red-600 cursor-pointer">
+              <DropdownMenuItem onClick={() => router.push('/profile')} className="cursor-pointer">
+                <UserIcon className="mr-2 h-4 w-4" />
+                <span>Profil Saya</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout} className="text-red-600 cursor-pointer focus:bg-red-50 focus:text-red-600">
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Keluar</span>
               </DropdownMenuItem>

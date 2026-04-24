@@ -9,13 +9,15 @@ use App\Http\Controllers\Api\AdvokasiController;
 use App\Http\Controllers\Api\ActivityLogController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\FileController;
+// =========================================================================
+// Public Routes
 use App\Http\Controllers\Api\ReportController;
 
 // =========================================================================
-// Public Routes
-// =========================================================================
+
 
 Route::post('/login', [AuthController::class, 'login']);
+
 
 // =========================================================================
 // Protected Routes
@@ -24,6 +26,8 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::middleware(['auth:sanctum'])->group(function () {
     // Auth & Profile
     Route::get('/me', [AuthController::class, 'me']);
+    Route::put('/profile', [AuthController::class, 'updateProfile']);
+    Route::post('/profile/foto', [AuthController::class, 'uploadFoto']);
     Route::post('/logout', [AuthController::class, 'logout']);
 
     // Dashboard
