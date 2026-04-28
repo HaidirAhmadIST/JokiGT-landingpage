@@ -60,6 +60,14 @@ class AdvokasiController extends Controller
     public function update(UpdateAdvokasiRequest $request, string $pekerja_id): JsonResponse
     {
         try {
+            // Ownership check: viewer hanya bisa update data milik sendiri
+            $authUser = $request->user();
+            if ($authUser->role === 'viewer') {
+                $ownPekerja = $authUser->pekerja;
+                if (!$ownPekerja || (string)$ownPekerja->id !== (string)$pekerja_id) {
+                    return response()->json(['status' => 'error', 'message' => 'Akses ditolak. Anda hanya dapat mengubah data milik sendiri.'], 403);
+                }
+            }
             $status = $this->advokasiService->updateTracker($pekerja_id, $request->all(), $request->file('file'));
             return response()->json(['status' => 'success', 'data' => $status]);
         } catch (\Exception $e) {

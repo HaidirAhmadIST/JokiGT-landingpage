@@ -52,11 +52,13 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('riwayat-pekerja/{id}/file', [FileController::class, 'uploadRiwayatFile']);
     Route::post('detail-medis/{id}/file', [FileController::class, 'uploadMedisFile']);
     
+    // Advokasi upload — accessible by owner (viewer) or admin/petugas (ownership checked in controller)
+    Route::post('pekerja/{pekerja_id}/advokasi', [AdvokasiController::class, 'update']);
+
     Route::group(['middleware' => ['role:admin,petugas']], function () {
         Route::put('pekerja/{pekerja}', [PekerjaController::class, 'update']);
         Route::post('pekerja-bulk-update', [PekerjaController::class, 'bulkUpdate']);
         Route::post('pekerja/{pekerja}/foto', [PekerjaController::class, 'uploadFoto']);
-        Route::post('pekerja/{pekerja_id}/advokasi', [AdvokasiController::class, 'update']);
     });
     Route::delete('pekerja/{pekerja}', [PekerjaController::class, 'destroy'])->middleware('role:admin');
 
@@ -73,10 +75,12 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('advokasi/{id}/pdf', [AdvokasiController::class, 'exportPdf']);
 
     // File Downloads (RBAC handled in controller or by role)
+    // Advokasi download — accessible by owner or admin/petugas (ownership checked in controller)
+    Route::get('pekerja/{pekerja_id}/files/advokasi/{step_key}', [FileController::class, 'downloadAdvokasiProof']);
+
     Route::group(['middleware' => ['role:admin,petugas']], function () {
         Route::get('pekerja/{pekerja_id}/files/medis', [FileController::class, 'downloadMedis']);
         Route::get('medis/{id}/file', [FileController::class, 'downloadMedisById']);
         Route::get('riwayat/{id}/file', [FileController::class, 'downloadRiwayatById']);
-        Route::get('pekerja/{pekerja_id}/files/advokasi/{step_key}', [FileController::class, 'downloadAdvokasiProof']);
     });
 });
