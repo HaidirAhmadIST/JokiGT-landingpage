@@ -148,7 +148,7 @@ export default function SheetEditKasus({ open, onOpenChange, data, onSuccess }: 
                 <h3 className="text-xs font-bold text-[#94a3b8] uppercase tracking-widest">CHECKLIST MILESTONE</h3>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                {milestones.map((m) => {
+                {milestones.map((m, i) => {
                   const Icon = m.icon;
                   // @ts-expect-error key access on object
                   const checked = formData[m.key];
@@ -168,7 +168,12 @@ export default function SheetEditKasus({ open, onOpenChange, data, onSuccess }: 
                         className="data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500"
                       />
                       <div className="flex flex-col min-w-0">
-                        <Label htmlFor={m.key} className="text-xs font-bold text-slate-700 cursor-pointer">{m.label}</Label>
+                        <div className="flex items-center gap-1.5">
+                          <span className={cn("text-[9px] font-black px-1 rounded-sm border", checked ? "bg-emerald-100 text-emerald-600 border-emerald-200" : "bg-slate-50 text-slate-400 border-slate-100")}>
+                            0{i + 1}
+                          </span>
+                          <Label htmlFor={m.key} className="text-xs font-bold text-slate-700 cursor-pointer truncate">{m.label}</Label>
+                        </div>
                         <div className="flex items-center gap-1.5 mt-0.5">
                           <Icon className={cn("h-3 w-3", checked ? "text-emerald-500" : "text-slate-400")} />
                           <span className={cn("text-[10px] font-medium", checked ? "text-emerald-600" : "text-slate-400")}>

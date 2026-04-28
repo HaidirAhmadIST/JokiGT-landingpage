@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import api from '@/lib/axios';
 import {
   CheckCircle2,
@@ -79,9 +78,12 @@ export default function AdvokasiDetailPage() {
   // Document Upload State
   const [isDocModalOpen, setIsDocModalOpen] = useState(false);
   const [uploadingDoc, setUploadingDoc] = useState(false);
-  const [docForm, setDocForm] = useState({
+  const [docForm, setDocForm] = useState<{
+    step_key: string;
+    file: File | null;
+  }>({
     step_key: '',
-    file: null as File | null
+    file: null
   });
 
   const { data, isLoading: loading, refetch } = useGetAdvokasiDetail(id);
@@ -429,7 +431,7 @@ export default function AdvokasiDetailPage() {
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
                     <button 
-                      onClick={() => window.open(`${process.env.NEXT_PUBLIC_API_URL}/api/pekerja/${data.pekerja_id}/files/advokasi/${doc.key}`, '_blank')}
+                      onClick={() => window.open(`${process.env.NEXT_PUBLIC_API_URL}/pekerja/${data.pekerja_id}/files/advokasi/${doc.key}`, '_blank')}
                       className="p-1.5 text-slate-400 hover:text-slate-700 transition-colors"
                     >
                       <Download className="h-4 w-4" />
@@ -467,19 +469,20 @@ export default function AdvokasiDetailPage() {
           <form onSubmit={handleUploadDoc} className="space-y-5 py-2">
             <div className="space-y-2">
               <Label className="text-xs font-bold text-slate-600">JENIS DOKUMEN</Label>
-              <Select value={docForm.step_key} onValueChange={(v) => setDocForm({ ...docForm, step_key: v })}>
-                <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-slate-200 focus:ring-[#0ea5e9]">
-                  <SelectValue placeholder="Pilih jenis dokumen" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="riwayat_pajanan">Bukti Pajanan</SelectItem>
-                  <SelectItem value="persetujuan_dokter">Diagnosis Dokter</SelectItem>
-                  <SelectItem value="perusahaan_lapor">Laporan Perusahaan</SelectItem>
-                  <SelectItem value="penetapan_pak">Penetapan PAK</SelectItem>
-                  <SelectItem value="kompensasi_bpjstk">Kompensasi BPJSTK</SelectItem>
-                  <SelectItem value="rehabilitasi_bpjskes">Rehabilitasi BPJSKES</SelectItem>
-                </SelectContent>
-              </Select>
+              <select
+                value={docForm.step_key}
+                onChange={(e) => setDocForm({ ...docForm, step_key: e.target.value })}
+                className="w-full h-11 rounded-xl bg-slate-50 border border-slate-200 px-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] cursor-pointer appearance-none"
+                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
+              >
+                <option value="" disabled>Pilih jenis dokumen</option>
+                <option value="riwayat_pajanan">Bukti Pajanan</option>
+                <option value="persetujuan_dokter">Diagnosis Dokter</option>
+                <option value="perusahaan_lapor">Laporan Perusahaan</option>
+                <option value="penetapan_pak">Penetapan PAK</option>
+                <option value="kompensasi_bpjstk">Kompensasi BPJSTK</option>
+                <option value="rehabilitasi_bpjskes">Rehabilitasi BPJSKES</option>
+              </select>
             </div>
             <div className="space-y-2">
               <Label className="text-xs font-bold text-slate-600">FILE DOKUMEN (PDF, JPG, PNG)</Label>
