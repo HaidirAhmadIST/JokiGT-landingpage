@@ -74,6 +74,7 @@ export default function AdvokasiTable({ loading, filteredCases, totalCount, isSt
               <TableHead className="py-4 px-6 font-bold text-[10px] tracking-widest text-[#94a3b8]">NAMA PEKERJA</TableHead>
               <TableHead className="py-4 px-6 font-bold text-[10px] tracking-widest text-[#94a3b8]">PERUSAHAAN</TableHead>
               <TableHead className="py-4 px-6 font-bold text-[10px] tracking-widest text-[#94a3b8]">JENIS KASUS</TableHead>
+              <TableHead className="py-4 px-6 font-bold text-[10px] tracking-widest text-[#94a3b8]">INFORMASI MEDIS & PAJANAN</TableHead>
               <TableHead className="py-4 px-6 font-bold text-[10px] tracking-widest text-[#94a3b8]">PROGRES ALUR</TableHead>
               <TableHead className="py-4 px-6 font-bold text-[10px] tracking-widest text-[#94a3b8]">STATUS TERAKHIR</TableHead>
               <TableHead className="py-4 px-6 font-bold text-[10px] tracking-widest text-[#94a3b8]">TANGGAL UPDATE</TableHead>
@@ -83,11 +84,11 @@ export default function AdvokasiTable({ loading, filteredCases, totalCount, isSt
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={7} className="py-20 text-center text-slate-400">Memuat data...</TableCell>
+                <TableCell colSpan={8} className="py-20 text-center text-slate-400">Memuat data...</TableCell>
               </TableRow>
             ) : filteredCases.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="py-20 text-center text-slate-400 font-medium italic">Belum ada kasus advokasi terdaftar.</TableCell>
+                <TableCell colSpan={8} className="py-20 text-center text-slate-400 font-medium italic">Belum ada kasus advokasi terdaftar.</TableCell>
               </TableRow>
             ) : filteredCases.map((c) => {
               const worker = c.pekerja;
@@ -108,15 +109,34 @@ export default function AdvokasiTable({ loading, filteredCases, totalCount, isSt
               return (
                 <TableRow key={c.id} className="hover:bg-slate-50/50 transition-colors group">
                   <TableCell className="py-4 px-6">
-                    <div className="flex items-center gap-3">
-                      <div className="h-9 w-9 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-xs font-bold shrink-0 border border-slate-200">
+                    <button 
+                      onClick={() => router.push(`/advokasi/${c.id}`)}
+                      className="flex items-center gap-3 group/name text-left outline-none"
+                    >
+                      <div className="h-9 w-9 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-xs font-bold shrink-0 border border-slate-200 group-hover/name:border-[#0ea5e9] group-hover/name:bg-blue-50 group-hover/name:text-[#0284c7] transition-all">
                         {initials}
                       </div>
-                      <span className="font-bold text-[#1e293b] text-sm">{worker?.nama_lengkap}</span>
-                    </div>
+                      <span className="font-bold text-[#1e293b] text-sm group-hover/name:text-[#0284c7] transition-colors">
+                        {worker?.nama_lengkap}
+                      </span>
+                    </button>
                   </TableCell>
                   <TableCell className="py-4 px-6 text-sm text-[#475569]">{worker?.perusahaan?.nama_perusahaan}</TableCell>
                   <TableCell className="py-4 px-6 text-sm text-[#475569]">{caseTypeLabels[c.jenis_kasus?.toUpperCase()]}</TableCell>
+                  <TableCell className="py-4 px-6 min-w-[200px]">
+                    <div className="flex flex-col gap-1">
+                      <p className="text-[11px] font-bold text-slate-700 line-clamp-1 uppercase tracking-tight">
+                        {worker?.latest_detail_medis?.hasil_diagnosis || '-'}
+                      </p>
+                      <div className="flex items-center gap-1.5">
+                        <div className="h-1 w-1 rounded-full bg-rose-400" />
+                        <p className="text-[10px] text-slate-500 font-semibold truncate">
+                          Pajanan: <span className="text-slate-700">{worker?.current_job?.jenis_pajanan || '-'}</span> 
+                          {worker?.current_job?.durasi_pajanan && ` (${worker.current_job.durasi_pajanan})`}
+                        </p>
+                      </div>
+                    </div>
+                  </TableCell>
                   <TableCell className="py-4 px-6">
                     <div className="flex flex-col gap-1">
                       <ProgressDots level={completedCount} />

@@ -28,6 +28,7 @@ export default function LoginPage() {
         Cookies.set('auth_token', response.data.data.token, { expires: 7, path: '/' }); // 7 days
         // Store basic user data in localStorage (optional)
         const user = response.data.data.user;
+        localStorage.setItem('user', JSON.stringify(user));
         toast.success(response.data.message);
         
         if (user.role === 'viewer') {

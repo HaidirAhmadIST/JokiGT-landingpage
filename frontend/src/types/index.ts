@@ -24,9 +24,12 @@ export interface Pekerja {
   no_hp?: string;
   pas_foto?: string;
   status_kesehatan?: string;
+  user_id?: number;
   perusahaan_id?: number;
   perusahaan?: Perusahaan;
   riwayat_pekerja?: RiwayatPekerja[];
+  current_job?: RiwayatPekerja;
+  latest_detail_medis?: DetailMedis;
   created_at: string;
   updated_at: string;
 }
@@ -40,6 +43,17 @@ export interface RiwayatPekerja {
   status_pekerjaan: string;
   tgl_masuk: string;
   tgl_keluar?: string;
+  jenis_pajanan?: string;
+  durasi_pajanan?: string;
+}
+
+export interface DetailMedis {
+  id: number;
+  pekerja_id: number;
+  tgl_pemeriksaan: string;
+  hasil_diagnosis?: string;
+  status_kesehatan?: string;
+  rekomendasi?: string;
 }
 
 export interface StatusAdvokasi {

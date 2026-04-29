@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\FileController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\RegistrationController;
+use App\Http\Controllers\Api\RiwayatPekerjaController;
 
 
 // =========================================================================
@@ -57,6 +58,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     Route::group(['middleware' => ['role:admin,petugas']], function () {
         Route::put('pekerja/{pekerja}', [PekerjaController::class, 'update']);
+        Route::put('riwayat-pekerja/{id}', [RiwayatPekerjaController::class, 'update']);
         Route::post('pekerja-bulk-update', [PekerjaController::class, 'bulkUpdate']);
         Route::post('pekerja/{pekerja}/foto', [PekerjaController::class, 'uploadFoto']);
     });
