@@ -101,7 +101,12 @@ class AdvokasiService
      */
     public function getAllCases(): Collection
     {
-        return StatusAdvokasi::with(['pekerja.perusahaan', 'pekerja.user'])
+        return StatusAdvokasi::with([
+            'pekerja.perusahaan', 
+            'pekerja.user', 
+            'pekerja.latestDetailMedis', 
+            'pekerja.currentJob'
+        ])
             ->whereNotNull('jenis_kasus')
             ->get()
             ->map(function($case) {
@@ -118,7 +123,13 @@ class AdvokasiService
      */
     public function getCaseDetails(string $id): ?StatusAdvokasi
     {
-        return StatusAdvokasi::with(['pekerja.perusahaan', 'pekerja.user', 'pekerja.riwayatPekerja', 'pekerja.currentJob'])->find($id);
+        return StatusAdvokasi::with([
+            'pekerja.perusahaan', 
+            'pekerja.user', 
+            'pekerja.riwayatPekerja', 
+            'pekerja.currentJob',
+            'pekerja.latestDetailMedis'
+        ])->find($id);
     }
 
     /**
@@ -199,6 +210,13 @@ class AdvokasiService
                     $status->{$dateColumns[$field]} = now();
                 }
             }
+        }
+        
+        // 4. Update author indicator
+        $user = auth()->user();
+        if ($user) {
+            // If admin/petugas updates, set to true. If viewer (owner) updates, set to false.
+            $status->is_admin_note = in_array($user->role, ['admin', 'petugas']);
         }
 
         $status->save();
