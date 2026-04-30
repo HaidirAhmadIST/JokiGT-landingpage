@@ -19,6 +19,10 @@ use App\Http\Controllers\Api\RegistrationController;
 
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register/complete', [RegistrationController::class, 'completeRegistration']);
+Route::post('/register', [AuthController::class, 'register']);
+Route::get('perusahaan', [PerusahaanController::class, 'index']);
+Route::get('pekerja', [PekerjaController::class, 'index']);
+Route::post('pekerja', [PekerjaController::class, 'store']);
 
 
 // =========================================================================
@@ -42,23 +46,21 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::patch('perusahaan/{id}/restore', [PerusahaanController::class, 'restore']);
     });
     Route::delete('perusahaan/{perusahaan}', [PerusahaanController::class, 'destroy'])->middleware('role:admin');
-    Route::get('perusahaan', [PerusahaanController::class, 'index']);
     Route::get('perusahaan/{perusahaan}', [PerusahaanController::class, 'show']);
 
     // Pekerja Management
-    Route::get('pekerja', [PekerjaController::class, 'index']);
     Route::get('pekerja/{pekerja}', [PekerjaController::class, 'show']);
-    Route::post('pekerja', [PekerjaController::class, 'store']); // All can register
     Route::post('riwayat-pekerja/{id}/file', [FileController::class, 'uploadRiwayatFile']);
     Route::post('detail-medis/{id}/file', [FileController::class, 'uploadMedisFile']);
     
     // Advokasi upload — accessible by owner (viewer) or admin/petugas (ownership checked in controller)
     Route::post('pekerja/{pekerja_id}/advokasi', [AdvokasiController::class, 'update']);
 
+    Route::post('pekerja/{pekerja}/foto', [PekerjaController::class, 'uploadFoto']);
+
     Route::group(['middleware' => ['role:admin,petugas']], function () {
         Route::put('pekerja/{pekerja}', [PekerjaController::class, 'update']);
         Route::post('pekerja-bulk-update', [PekerjaController::class, 'bulkUpdate']);
-        Route::post('pekerja/{pekerja}/foto', [PekerjaController::class, 'uploadFoto']);
     });
     Route::delete('pekerja/{pekerja}', [PekerjaController::class, 'destroy'])->middleware('role:admin');
 

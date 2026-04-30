@@ -63,7 +63,8 @@ class AdvokasiController extends Controller
             // Ownership check: viewer hanya bisa update data milik sendiri
             $authUser = $request->user();
             if ($authUser->role === 'viewer') {
-                $ownPekerja = $authUser->pekerja;
+                // Refresh relationship to ensure we have the newly created pekerja record
+                $ownPekerja = $authUser->pekerja()->first();
                 if (!$ownPekerja || (string)$ownPekerja->id !== (string)$pekerja_id) {
                     return response()->json(['status' => 'error', 'message' => 'Akses ditolak. Anda hanya dapat mengubah data milik sendiri.'], 403);
                 }
