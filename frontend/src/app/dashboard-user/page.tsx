@@ -814,7 +814,7 @@ export default function UserDashboardPage() {
               <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Kategori Kasus</Label>
               <Select 
                 value={advForm.jenis_kasus} 
-                onValueChange={(v) => setAdvForm({...advForm, jenis_kasus: v})}
+                onValueChange={(v) => setAdvForm({...advForm, jenis_kasus: v || ''})}
               >
                 <SelectTrigger className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500">
                   <SelectValue placeholder="Pilih Kategori..." />
