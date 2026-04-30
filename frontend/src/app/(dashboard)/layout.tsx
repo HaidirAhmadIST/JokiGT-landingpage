@@ -25,11 +25,11 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuGroup,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+
 
 import { FileText } from 'lucide-react';
 
@@ -61,16 +61,46 @@ export default function DashboardLayout({
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    // Load user data from local storage
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      const parsedUser = JSON.parse(storedUser);
-      setUser(parsedUser);
-      if (parsedUser.role === 'viewer') {
-        router.push('/dashboard-user');
+    const initUser = async () => {
+      // 1. Try to load from local storage first for speed
+      let storedUser = localStorage.getItem('user');
+      let userData = null;
+
+      if (storedUser) {
+        userData = JSON.parse(storedUser);
+      } else {
+        // 2. If not in local storage, try to fetch from server if token exists
+        const token = Cookies.get('auth_token');
+        if (token) {
+          try {
+            const res = await api.get('/me');
+            userData = res.data.data;
+            if (userData) {
+              // Populate pekerja_id if missing (for viewer role)
+              if (userData.role === 'viewer' && userData.pekerja?.id) {
+                userData.pekerja_id = userData.pekerja.id;
+              }
+              localStorage.setItem('user', JSON.stringify(userData));
+            }
+          } catch (err) {
+            console.error('Failed to fetch user in layout', err);
+          }
+        }
       }
-    }
-    setMounted(true);
+
+      if (userData) {
+        setUser(userData);
+
+        // Viewer can only see their own dashboard
+        if (userData.role === 'viewer') {
+          router.push('/dashboard-user');
+        }
+      }
+      
+      setMounted(true);
+    };
+
+    initUser();
   }, []);
 
   // Click outside to close search dropdown
@@ -120,7 +150,8 @@ export default function DashboardLayout({
 
   const handleLogout = async () => {
     try {
-      await api.post('/logout');
+      // Catch error silently so Next.js doesn't show an error overlay if token is already expired (401)
+      await api.post('/logout').catch(() => {});
     } catch (error) {
       console.error('Logout failed on server', error);
     } finally {
@@ -129,6 +160,17 @@ export default function DashboardLayout({
       router.push('/login');
     }
   };
+
+  if (!mounted || !user) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-[#f8fafc]">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-10 w-10 text-[#0284c7] animate-spin" />
+          <p className="text-slate-400 font-medium animate-pulse">Menyiapkan dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-screen bg-[#f8fafc] font-sans">
