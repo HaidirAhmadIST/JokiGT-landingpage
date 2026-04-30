@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('nama_perusahaan');
             $table->string('sektor_industri')->nullable();
-            $table->enum('status_pendamping', ['aktif', 'tidak_aktif', 'pending'])->default('pending');
+            $table->string('status_pendamping')->default('pending');
             $table->timestamps();
 
             $table->index('nama_perusahaan');

@@ -38,13 +38,7 @@ return new class extends Migration
             $table->date('tanggal_pemeriksaan');
             $table->string('tempat_pemeriksaan');
             
-            $table->enum('jenis_pemeriksaan', [
-                'Rawat Jalan', 
-                'Rawat Inap', 
-                'MCU', 
-                'IGD', 
-                'Lainnya'
-            ]);
+            $table->string('jenis_pemeriksaan');
             
             $table->string('nama_dokter');
             $table->text('hasil_diagnosis');

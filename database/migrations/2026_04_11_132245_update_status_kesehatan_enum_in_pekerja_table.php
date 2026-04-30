@@ -21,9 +21,9 @@ return new class extends Migration
         DB::statement("UPDATE pekerja SET status_kesehatan = 'fit_with_note' WHERE status_kesehatan = 'sakit_ringan'");
         DB::statement("UPDATE pekerja SET status_kesehatan = 'unfit' WHERE status_kesehatan IN ('sakit_berat', 'dalam_perawatan')");
 
-        // Then change the column definition to the new enum
+        // Then change the column definition (use string instead of enum to avoid PostgreSQL constraint errors)
         Schema::table('pekerja', function (Blueprint $table) {
-            $table->enum('status_kesehatan', ['fit', 'fit_with_note', 'unfit'])->default('fit')->change();
+            $table->string('status_kesehatan')->default('fit')->change();
         });
     }
 
@@ -41,7 +41,7 @@ return new class extends Migration
         DB::statement("UPDATE pekerja SET status_kesehatan = 'sakit_berat' WHERE status_kesehatan = 'unfit'");
 
         Schema::table('pekerja', function (Blueprint $table) {
-            $table->enum('status_kesehatan', ['sehat', 'sakit_ringan', 'sakit_berat', 'dalam_perawatan'])->default('sehat')->change();
+            $table->string('status_kesehatan')->default('sehat')->change();
         });
     }
 };
