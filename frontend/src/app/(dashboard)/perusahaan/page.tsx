@@ -788,9 +788,9 @@ export default function PerusahaanPage() {
                   {isSuperAdmin && (
                     <div className="flex items-center gap-3">
                       <Button 
-                        variant="destructive" 
+                        variant="outline" 
                         size="sm" 
-                        className="rounded-xl font-bold bg-rose-500 hover:bg-rose-600 px-5"
+                        className="rounded-xl font-bold border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100 hover:text-rose-700 hover:border-rose-300 px-4 transition-all"
                         onClick={async () => {
                           if (confirm('Hapus data perusahaan ini secara PERMANEN?')) {
                             try {
