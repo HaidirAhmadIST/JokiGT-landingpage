@@ -309,14 +309,37 @@ export default function PendaftaranPekerjaPage() {
           toast.loading("Mendaftarkan perusahaan baru...", { id: 'create-perusahaan' });
           const resP = await api.post('/perusahaan', {
             nama_perusahaan: pekerjaanSaatIni.nama_perusahaan_baru,
-            status_pendamping: 'aktif'
+            status_pendamping: 'Dalam Pantauan'
           });
           finalPerusahaanId = resP.data.data.id.toString();
           toast.success("Perusahaan baru berhasil terdaftar.", { id: 'create-perusahaan' });
-        } catch (errP) {
-          toast.error("Gagal mendaftarkan perusahaan baru. Silakan pilih dari daftar atau coba lagi.", { id: 'create-perusahaan' });
-          setLoading(false);
-          return;
+        } catch (errP: any) {
+          if (errP.response?.status === 422 && errP.response?.data?.errors?.nama_perusahaan) {
+            try {
+              toast.loading("Mengecek ketersediaan data perusahaan...", { id: 'create-perusahaan' });
+              const searchRes = await api.get(`/perusahaan?search=${encodeURIComponent(pekerjaanSaatIni.nama_perusahaan_baru)}`);
+              const existing = searchRes.data.data.data.find((p: any) =>
+                p.nama_perusahaan.trim().toLowerCase() === pekerjaanSaatIni.nama_perusahaan_baru.trim().toLowerCase()
+              );
+
+              if (existing) {
+                finalPerusahaanId = existing.id.toString();
+                toast.success("Perusahaan sudah terdaftar. Menghubungkan otomatis...", { id: 'create-perusahaan' });
+              } else {
+                throw new Error("Gagal menemukan perusahaan yang ada.");
+              }
+            } catch (searchErr) {
+              toast.error("Gagal memproses data perusahaan.", { id: 'create-perusahaan' });
+              setLoading(false);
+              return;
+            }
+          } else {
+            console.error("API Error details:", errP.response?.data);
+            const errorMsg = errP.response?.data?.message || errP.message;
+            toast.error(`Gagal mendaftarkan perusahaan baru: ${errorMsg}`, { id: 'create-perusahaan' });
+            setLoading(false);
+            return;
+          }
         }
       }
 
@@ -526,30 +549,6 @@ export default function PendaftaranPekerjaPage() {
           }
         }
 
-        // Handle "taken" error for new company gracefully
-        if (error.response?.status === 422 && error.response?.data?.errors?.nama_perusahaan) {
-          try {
-            toast.loading("Mengecek ketersediaan data perusahaan...", { id: 'check-perusahaan' });
-            const searchRes = await api.get(`/perusahaan?search=${encodeURIComponent(pekerjaanSaatIni.nama_perusahaan_baru)}`);
-            const existing = searchRes.data.data.data.find((p: any) =>
-              p.nama_perusahaan.trim().toLowerCase() === pekerjaanSaatIni.nama_perusahaan_baru.trim().toLowerCase()
-            );
-
-            if (existing) {
-              toast.success("Perusahaan sudah terdaftar. Menghubungkan otomatis...", { id: 'check-perusahaan' });
-              const updatedRiwayat = [...allRiwayat.map(r =>
-                r.nama_perusahaan === pekerjaanSaatIni.nama_perusahaan_baru ? { ...r, nama_perusahaan: existing.nama_perusahaan } : r
-              ), ...prevRiwayat];
-
-              await performSubmit(existing.id.toString(), updatedRiwayat);
-              toast.success('Data pekerja berhasil disimpan!');
-              router.push(`/register-password?email=${encodeURIComponent(baseData.email)}`);
-              return;
-            }
-          } catch (searchErr) {
-            toast.error("Gagal memproses data perusahaan.", { id: 'check-perusahaan' });
-          }
-        }
         throw error; // Re-throw to the outer catch
       }
     } catch (error: any) {
@@ -909,7 +908,7 @@ export default function PendaftaranPekerjaPage() {
                                 <Input placeholder="Nama Dokter" className="h-9 bg-slate-50/50 text-sm" value={med.dokter} onChange={e => updateMed('dokter', e.target.value)} />
                               </div>
                             </div>
-                            <p className="text-[9px] text-slate-400 italic italic">Lengkapi detail medis lebih lanjut di Langkah 3 jika diperlukan.</p>
+                            <p className="text-[9px] text-slate-400 italic italic">Riwayat Medis Ini Untuk Pekerjaan Saat Ini.</p>
                           </div>
                         );
                       })()}
