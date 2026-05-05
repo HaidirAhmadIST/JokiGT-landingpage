@@ -3,14 +3,14 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/axios';
 import Cookies from 'js-cookie';
-import { cn } from '@/lib/utils';
+import { cn, formatHealthStatus } from '@/lib/utils';
 import { toast } from 'sonner';
 import { Card } from '@/components/ui/card';
 import {
   User2, Building2, Briefcase, MapPin, HeartPulse, ShieldCheck,
   Search, Stethoscope, FileText, Scale, Coins, Clock, LogOut,
   Download, CheckCircle2, AlertCircle, Loader2, FileStack, Activity, Upload,
-  Calendar, Shield, Zap, Settings,
+  Calendar, Shield, Zap, Settings, ClipboardList, User
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -83,6 +83,22 @@ export default function UserDashboardPage() {
     catatan: ''
   });
   const [advLoading, setAdvLoading] = useState(false);
+  
+  // Exposure Edit State
+  const [isExposureModalOpen, setIsExposureModalOpen] = useState(false);
+  const [exposureForm, setExposureForm] = useState({
+    id: null as number | null,
+    nama_perusahaan: '',
+    jenis_pajanan: '',
+    durasi_pajanan: '',
+    apd_disediakan: '',
+    jenis_apd_sendiri: ''
+  });
+  const [exposureLoading, setExposureLoading] = useState(false);
+  
+  // Data completeness check
+  const [incompleteData, setIncompleteData] = useState<any[]>([]);
+  const [selectedRiwayatId, setSelectedRiwayatId] = useState<number | null>(null);
 
   useEffect(() => { fetchData(); }, []);
 
@@ -95,12 +111,28 @@ export default function UserDashboardPage() {
       const pid = u?.pekerja?.id;
       if (pid) {
         const r = await api.get('/pekerja/' + pid);
-        setPekerja(r.data.data);
+        const pData = r.data.data;
+        setPekerja(pData);
+        
+        // Auto select first riwayat
+        if (pData?.riwayat_pekerja?.length > 0 && !selectedRiwayatId) {
+          setSelectedRiwayatId(pData.riwayat_pekerja[0].id);
+        }
+        
+        // Check for incomplete exposure data
+        const incomplete = (pData?.riwayat_pekerja || []).filter((r: any) => !r.jenis_pajanan || !r.durasi_pajanan);
+        setIncompleteData(incomplete);
       } else {
         const s = await api.get('/pekerja', { params: { search: u.email } });
         const items = s.data.data?.data || s.data.data || [];
         const match = items.find((p: any) => p.user?.email === u.email);
-        if (match) { const r = await api.get('/pekerja/' + match.id); setPekerja(r.data.data); }
+        if (match) { 
+          const r = await api.get('/pekerja/' + match.id); 
+          const pData = r.data.data;
+          setPekerja(pData); 
+          const incomplete = (pData?.riwayat_pekerja || []).filter((r: any) => !r.jenis_pajanan || !r.durasi_pajanan);
+          setIncompleteData(incomplete);
+        }
       }
     } catch { toast.error('Gagal memuat data dashboard.'); }
     finally { setLoading(false); }
@@ -213,11 +245,47 @@ export default function UserDashboardPage() {
   };
 
   const openAdvEdit = () => {
-    setAdvForm({
-      jenis_kasus: adv?.jenis_kasus || '',
-      catatan: adv?.catatan || ''
-    });
     setIsAdvModalOpen(true);
+  };
+
+  const openExposureEdit = (r: any) => {
+    let info: any = {};
+    try {
+      info = typeof r.informal_data === 'string' ? JSON.parse(r.informal_data) : (r.informal_data || {});
+    } catch(e) {}
+    
+    setExposureForm({
+      id: r.id,
+      nama_perusahaan: r.nama_perusahaan,
+      jenis_pajanan: r.jenis_pajanan || '',
+      durasi_pajanan: r.durasi_pajanan?.toString() || '',
+      apd_disediakan: info.apd_disediakan || '',
+      jenis_apd_sendiri: info.jenis_apd_sendiri || ''
+    });
+    setIsExposureModalOpen(true);
+  };
+
+  const handleUpdateExposure = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!exposureForm.id) return;
+    setExposureLoading(true);
+    try {
+      await api.put(`/riwayat-pekerja/${exposureForm.id}`, {
+        jenis_pajanan: exposureForm.jenis_pajanan,
+        durasi_pajanan: exposureForm.durasi_pajanan ? parseInt(exposureForm.durasi_pajanan) : null,
+        informal_data: {
+          apd_disediakan: exposureForm.apd_disediakan,
+          jenis_apd_sendiri: exposureForm.jenis_apd_sendiri
+        }
+      });
+      toast.success('Data pajanan berhasil diperbarui!');
+      setIsExposureModalOpen(false);
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Gagal memperbarui data pajanan.');
+    } finally {
+      setExposureLoading(false);
+    }
   };
 
   if (loading) return (
@@ -276,6 +344,31 @@ export default function UserDashboardPage() {
       </header>
 
       <main className="max-w-5xl mx-auto px-6 py-8 space-y-8">
+        {incompleteData.length > 0 && (
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center justify-between gap-4 animate-in slide-in-from-top-4 duration-500">
+            <div className="flex items-center gap-3">
+              <div className="bg-amber-100 p-2 rounded-xl text-amber-600">
+                <AlertCircle className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-sm font-black text-amber-900">Data Pajanan Belum Lengkap!</p>
+                <p className="text-xs text-amber-700 font-medium">Ada {incompleteData.length} riwayat pekerjaan yang belum memiliki data pajanan. Hal ini penting untuk deteksi Penyakit Akibat Kerja.</p>
+              </div>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="bg-white border-amber-200 text-amber-700 hover:bg-amber-100 font-bold text-[10px]"
+              onClick={() => {
+                const first = incompleteData[0];
+                if (first) openExposureEdit(first);
+              }}
+            >
+              Lengkapi Sekarang
+            </Button>
+          </div>
+        )}
+
         <section className="relative overflow-hidden rounded-[24px] bg-gradient-to-br from-[#0284c7] via-[#0369a1] to-[#0ea5e9] p-8 text-white shadow-xl shadow-blue-100">
           <div className="absolute top-[-20%] right-[-10%] w-64 h-64 bg-white/10 rounded-full blur-3xl" />
           <div className="absolute bottom-[-20%] left-[-10%] w-48 h-48 bg-blue-400/20 rounded-full blur-2xl" />
@@ -557,7 +650,8 @@ export default function UserDashboardPage() {
                   <th className="px-4 py-2">Perusahaan / Proyek</th>
                   <th className="px-4 py-2">Jenis Pajanan</th>
                   <th className="px-4 py-2">APD yang Digunakan</th>
-                  <th className="px-4 py-2 text-right">Durasi</th>
+                  <th className="px-4 py-2">Durasi</th>
+                  <th className="px-4 py-2 text-right">Aksi</th>
                 </tr>
               </thead>
               <tbody>
@@ -592,30 +686,49 @@ export default function UserDashboardPage() {
                                   if (!hasProvided && !hasOwn && !legacy) return <span className="text-slate-400 italic text-[11px]">-</span>;
 
                                   return (
-                                    <>
+                                    <div className="flex flex-col gap-2.5 py-1">
                                       {hasProvided && (
-                                        <div className="flex items-center gap-1.5">
-                                          <span className="text-[8px] font-black text-blue-500 bg-blue-100/50 px-1 py-0.5 rounded border border-blue-100 uppercase tracking-tighter">Perusahaan</span>
-                                          <span className="text-[11px] text-slate-600 font-bold leading-none">{provided}</span>
+                                        <div className="flex items-start gap-2">
+                                          <div className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)] shrink-0" />
+                                          <div className="flex flex-col">
+                                            <span className="text-[8px] font-black text-blue-600/80 uppercase tracking-[0.05em] leading-none mb-1">Oleh Perusahaan</span>
+                                            <span className="text-[11px] text-slate-700 font-bold leading-snug">{provided}</span>
+                                          </div>
                                         </div>
                                       )}
                                       {hasOwn && (
-                                        <div className="flex items-center gap-1.5">
-                                          <span className="text-[8px] font-black text-slate-500 bg-slate-100 px-1 py-0.5 rounded border border-slate-200 uppercase tracking-tighter">Mandiri</span>
-                                          <span className="text-[11px] text-slate-600 font-bold leading-none">{own}</span>
+                                        <div className="flex items-start gap-2">
+                                          <div className="mt-1.5 h-1.5 w-1.5 rounded-full bg-slate-400 shrink-0" />
+                                          <div className="flex flex-col">
+                                            <span className="text-[8px] font-black text-slate-500 uppercase tracking-[0.05em] leading-none mb-1">Milik Mandiri</span>
+                                            <span className="text-[11px] text-slate-700 font-bold leading-snug">{own}</span>
+                                          </div>
                                         </div>
                                       )}
                                       {!hasProvided && !hasOwn && legacy && (
-                                         <span className="text-xs text-slate-600 font-medium">{legacy}</span>
+                                         <div className="flex items-start gap-2">
+                                           <div className="mt-1.5 h-1.5 w-1.5 rounded-full bg-slate-300 shrink-0" />
+                                           <span className="text-[11px] text-slate-600 font-medium leading-snug">{legacy}</span>
+                                         </div>
                                       )}
-                                    </>
+                                    </div>
                                   );
                                 } catch(e) { return <span className="text-slate-400">-</span>; }
                              })()}
                            </div>
                         </td>
-                        <td className="px-4 py-4 bg-slate-50/50 rounded-r-2xl border-y border-r border-slate-100 group-hover:bg-blue-50/30 transition-colors text-right font-black text-slate-700 text-[11px]">
+                        <td className="px-4 py-4 bg-slate-50/50 border-y border-slate-100 group-hover:bg-blue-50/30 transition-colors text-[11px] font-black text-slate-700">
                           {r.durasi_pajanan ? `${r.durasi_pajanan} Tahun` : '-'}
+                        </td>
+                        <td className="px-4 py-4 bg-slate-50/50 rounded-r-2xl border-y border-r border-slate-100 group-hover:bg-blue-50/30 transition-colors text-right">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() => openExposureEdit(r)}
+                            className="h-8 w-8 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
+                          >
+                            <Settings className="h-4 w-4" />
+                          </Button>
                         </td>
                       </tr>
                     );
@@ -632,30 +745,36 @@ export default function UserDashboardPage() {
           </div>
         </Card>
 
-        <div className="grid md:grid-cols-2 gap-8">
+        <div className="grid lg:grid-cols-2 gap-8">
           <Card className="rounded-[24px] border-slate-100 shadow-sm p-6 bg-white">
             <div className="flex items-center gap-2 mb-6">
               <Briefcase className="h-4 w-4 text-[#0284c7]" />
-              <h2 className="text-xs font-black text-[#94a3b8] tracking-widest uppercase">Riwayat Pekerjaan</h2>
+              <h2 className="text-xs font-black text-[#94a3b8] tracking-widest uppercase">Pilih Pekerjaan</h2>
             </div>
             {pekerja?.riwayat_pekerja?.length > 0 ? (
-              <div className="space-y-4">
-                {pekerja.riwayat_pekerja.slice(0, 4).map((r: any, i: number) => (
-                  <div key={i} className={cn(
-                    "p-4 rounded-2xl border transition-all hover:shadow-md",
-                    !r.tgl_keluar ? "bg-blue-50/50 border-blue-100" : "bg-slate-50 border-slate-100"
-                  )}>
+              <div className="space-y-3">
+                {pekerja.riwayat_pekerja.map((r: any, i: number) => (
+                  <button 
+                    key={i} 
+                    onClick={() => setSelectedRiwayatId(r.id)}
+                    className={cn(
+                      "w-full text-left p-4 rounded-2xl border transition-all hover:shadow-md",
+                      selectedRiwayatId === r.id 
+                        ? "bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-100 scale-[1.02]" 
+                        : "bg-slate-50 border-slate-100 text-slate-800 hover:bg-slate-100"
+                    )}
+                  >
                     <div className="flex justify-between items-start gap-2">
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-black text-slate-800 truncate">{r.nama_perusahaan}</p>
-                        <p className="text-[11px] font-bold text-slate-500 mt-0.5">{r.jabatan}</p>
-                        <div className="flex items-center gap-2 mt-2 text-[10px] text-slate-400 font-bold">
-                          <Calendar className="h-3 w-3" /> {fmt(r.tgl_masuk)} - {r.tgl_keluar ? fmt(r.tgl_keluar) : 'Sekarang'}
+                        <p className={cn("text-xs font-black truncate", selectedRiwayatId === r.id ? "text-white" : "text-slate-800")}>{r.nama_perusahaan}</p>
+                        <p className={cn("text-[10px] font-bold mt-0.5", selectedRiwayatId === r.id ? "text-blue-100" : "text-slate-500")}>{r.jabatan}</p>
+                        <div className={cn("flex items-center gap-1 mt-2 text-[9px] font-bold", selectedRiwayatId === r.id ? "text-blue-200" : "text-slate-400")}>
+                          <Calendar className="h-2.5 w-2.5" /> {fmt(r.tgl_masuk)} - {r.tgl_keluar ? fmt(r.tgl_keluar) : 'Sekarang'}
                         </div>
                       </div>
-                      {!r.tgl_keluar && <span className="bg-blue-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full">AKTIF</span>}
+                      {!r.tgl_keluar && <span className={cn("text-[8px] font-black px-1.5 py-0.5 rounded-full", selectedRiwayatId === r.id ? "bg-white text-blue-600" : "bg-blue-600 text-white")}>AKTIF</span>}
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
             ) : (
@@ -663,7 +782,105 @@ export default function UserDashboardPage() {
             )}
           </Card>
 
-          {timeline.length > 0 && (
+          <Card className="rounded-[24px] border-slate-100 shadow-sm p-6 bg-white min-h-[400px]">
+            <div className="mb-5">
+              <div className="flex items-center gap-2 mb-2">
+                <HeartPulse className="h-4 w-4 text-[#0284c7]" />
+                <h2 className="text-xs font-black text-[#94a3b8] tracking-widest uppercase">Riwayat Kesehatan di Perusahaan Ini</h2>
+              </div>
+              {selectedRiwayatId && (
+                <div className="flex items-center gap-2 px-3 py-2 bg-blue-50/50 text-blue-700 rounded-2xl border border-blue-100/50 w-fit">
+                  <div className="h-6 w-6 rounded-lg bg-blue-600 flex items-center justify-center shadow-md shadow-blue-100">
+                    <Building2 className="h-3 w-3 text-white" />
+                  </div>
+                  <span className="text-[11px] font-black uppercase tracking-tight pr-1">
+                    {pekerja.riwayat_pekerja.find((r: any) => r.id === selectedRiwayatId)?.nama_perusahaan}
+                  </span>
+                </div>
+              )}
+            </div>
+            
+            {(() => {
+              const selectedJob = pekerja?.riwayat_pekerja?.find((r: any) => r.id === selectedRiwayatId);
+              const medicalRecords = selectedJob?.detail_medis || [];
+              
+              if (medicalRecords.length > 0) {
+                return (
+                  <div className="space-y-4">
+                    {medicalRecords.map((m: any, idx: number) => (
+                      <div key={idx} className="p-5 rounded-[20px] bg-slate-50/50 border border-slate-100 hover:border-blue-200 transition-all">
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center shadow-sm">
+                              <ClipboardList className="h-5 w-5 text-blue-500" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-black text-slate-800">{m.jenis_pemeriksa || m.jenis_pemeriksaan || '-'}</p>
+                              <p className="text-[10px] text-slate-400 font-bold flex items-center gap-1">
+                                <Calendar className="h-3 w-3" /> {fmt(m.tgl_pemeriksaan || m.tanggal_pemeriksaan)}
+                              </p>
+                            </div>
+                          </div>
+                          <span className={cn(
+                            "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border",
+                            m.status_kesehatan === 'sehat' ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
+                            m.status_kesehatan === 'tidak_sehat' ? "bg-red-50 text-red-600 border-red-100" :
+                            "bg-amber-50 text-amber-600 border-amber-100"
+                          )}>
+                            {formatHealthStatus(m.status_kesehatan)}
+                          </span>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4 mt-4">
+                          <div className="space-y-1">
+                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Diagnosis</p>
+                            <p className="text-xs text-slate-700 font-bold leading-relaxed">{m.hasil_diagnosis || '-'}</p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Rekomendasi</p>
+                            <p className="text-xs text-slate-700 font-bold leading-relaxed italic">{m.rekomendasi || '-'}</p>
+                          </div>
+                          <div className="space-y-1 col-span-2 pt-2 border-t border-slate-100">
+                             <div className="flex items-center justify-between">
+                               <div className="flex items-center gap-2">
+                                  <User className="h-3 w-3 text-slate-400" />
+                                  <p className="text-[10px] font-bold text-slate-500">Pemeriksa: <span className="text-slate-700">{m.dokter_pemeriksa || m.dokter || '-'}</span></p>
+                               </div>
+                               {m.file_hasil && (
+                                 <Button 
+                                   variant="ghost" 
+                                   size="sm" 
+                                   onClick={() => handleViewFile('/detail-medis/' + m.id + '/file')}
+                                   className="h-7 text-[9px] font-black text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                 >
+                                   <Download className="h-3 w-3 mr-1" /> Unduh Berkas
+                                 </Button>
+                               )}
+                             </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              }
+              return (
+                <div className="flex flex-col items-center justify-center py-20 text-center space-y-3">
+                  <div className="h-16 w-16 rounded-full bg-slate-50 flex items-center justify-center border-2 border-dashed border-slate-200">
+                    <HeartPulse className="h-8 w-8 text-slate-300" />
+                  </div>
+                  <div className="max-w-[200px]">
+                    <p className="text-sm font-black text-slate-800">Tidak Ada Data Medis</p>
+                    <p className="text-[10px] text-slate-400 font-medium">Belum ada catatan kesehatan yang terlampir untuk periode pekerjaan ini.</p>
+                  </div>
+                </div>
+              );
+            })()}
+          </Card>
+        </div>
+
+        {timeline.length > 0 && (
+          <div className="grid lg:grid-cols-1 gap-8">
             <Card className="rounded-[24px] border-slate-100 shadow-sm p-6 bg-white">
               <div className="flex items-center gap-2 mb-6">
                 <Clock className="h-4 w-4 text-[#0284c7]" />
@@ -697,8 +914,8 @@ export default function UserDashboardPage() {
                 })}
               </div>
             </Card>
-          )}
-        </div>
+          </div>
+        )}
       </main>
 
       {uploadModal && (
@@ -840,6 +1057,74 @@ export default function UserDashboardPage() {
               <Button type="submit" disabled={advLoading} className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black shadow-lg shadow-blue-100 transition-all">
                 {advLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <FileStack className="h-4 w-4 mr-2" />}
                 Ajukan Advokasi Sekarang
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Exposure Edit Modal */}
+      <Dialog open={isExposureModalOpen} onOpenChange={setIsExposureModalOpen}>
+        <DialogContent className="sm:max-w-[425px] rounded-[24px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-black text-slate-800">Lengkapi Data Pajanan</DialogTitle>
+            <DialogDescription className="text-xs font-medium text-slate-500">
+              Informasi pajanan di {exposureForm.nama_perusahaan} sangat penting untuk mendeteksi Penyakit Akibat Kerja (PAK).
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleUpdateExposure} className="space-y-5 py-4">
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Jenis Pajanan</Label>
+              <Select 
+                value={exposureForm.jenis_pajanan} 
+                onValueChange={(v) => setExposureForm({...exposureForm, jenis_pajanan: v || ''})}
+              >
+                <SelectTrigger className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500">
+                  <SelectValue placeholder="Pilih Jenis Pajanan..." />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border-slate-100">
+                  <SelectItem value="Kimia" className="font-bold text-slate-700">Kimia</SelectItem>
+                  <SelectItem value="Fisik" className="font-bold text-slate-700">Fisik (Bising/Getaran)</SelectItem>
+                  <SelectItem value="Biologi" className="font-bold text-slate-700">Biologi</SelectItem>
+                  <SelectItem value="Psikososial" className="font-bold text-slate-700">Psikososial</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="durasi" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Durasi Pajanan (Tahun)</Label>
+              <Input 
+                id="durasi"
+                type="number"
+                placeholder="Contoh: 3"
+                className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500"
+                value={exposureForm.durasi_pajanan}
+                onChange={(e) => setExposureForm({...exposureForm, durasi_pajanan: e.target.value})}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="apd_dist" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">APD yang Disediakan Perusahaan</Label>
+              <Input 
+                id="apd_dist"
+                placeholder="Contoh: Masker N95, Sarung Tangan..."
+                className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500"
+                value={exposureForm.apd_disediakan}
+                onChange={(e) => setExposureForm({...exposureForm, apd_disediakan: e.target.value})}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="apd_own" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">APD yang Dibawa Mandiri</Label>
+              <Input 
+                id="apd_own"
+                placeholder="Contoh: Masker Kain sendiri..."
+                className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500"
+                value={exposureForm.jenis_apd_sendiri}
+                onChange={(e) => setExposureForm({...exposureForm, jenis_apd_sendiri: e.target.value})}
+              />
+            </div>
+            <DialogFooter className="pt-2">
+              <Button type="submit" disabled={exposureLoading} className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black shadow-lg shadow-blue-100 transition-all">
+                {exposureLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
+                Simpan Data Pajanan
               </Button>
             </DialogFooter>
           </form>

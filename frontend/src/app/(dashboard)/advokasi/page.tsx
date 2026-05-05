@@ -52,7 +52,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { useRole } from '@/hooks/useRole';
-import { Pekerja } from '@/types';
+import { Pekerja, StatusAdvokasi } from '@/types';
 import StatsCards from '@/components/advokasi/StatsCards';
 import AdvokasiTable from '@/components/advokasi/AdvokasiTable';
 import { useGetAdvokasiCases, useGetAdvokasiStats, useUpdateAdvokasi } from '@/hooks/useAdvokasi';
@@ -68,12 +68,19 @@ export default function AdvokasiPage() {
   const { isStaffOrAbove } = useRole();
   const [activeTab, setActiveTab] = useState('Semua Kasus');
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [perPage] = useState(10);
 
   // Data Fetching with React Query
-  const { data: casesData, isLoading: loadingCases } = useGetAdvokasiCases();
+  const { data: casesData, isLoading: loadingCases } = useGetAdvokasiCases({
+    page: currentPage,
+    per_page: perPage
+  });
   const { data: statsData, isLoading: loadingStats } = useGetAdvokasiStats();
 
-  const cases = casesData || [];
+  const cases = casesData?.data || [];
+  const totalCases = casesData?.total || 0;
+  const lastPage = casesData?.last_page || 1;
   const summaryStats = statsData?.summary || {
     total: { count: 0, trend: 0 },
     proses: { count: 0, trend: 0 },
@@ -117,11 +124,11 @@ export default function AdvokasiPage() {
   };
 
   const filteredCases = cases
-    .filter(c => {
+    .filter((c: StatusAdvokasi) => {
       if (activeTab === 'Semua Kasus') return true;
       return c.jenis_kasus?.toUpperCase() === activeTab.toUpperCase();
     })
-    .sort((a, b) => {
+    .sort((a: StatusAdvokasi, b: StatusAdvokasi) => {
       const nameA = a.pekerja?.nama_lengkap || '';
       const nameB = b.pekerja?.nama_lengkap || '';
       return nameA.localeCompare(nameB);
@@ -217,7 +224,11 @@ export default function AdvokasiPage() {
   <AdvokasiTable
     loading={loading}
     filteredCases={filteredCases}
-    totalCount={summaryStats.total.count}
+    totalCount={totalCases}
+    currentPage={currentPage}
+    perPage={perPage}
+    lastPage={lastPage}
+    onPageChange={setCurrentPage}
     isStaffOrAbove={isStaffOrAbove}
   />
       </Card >

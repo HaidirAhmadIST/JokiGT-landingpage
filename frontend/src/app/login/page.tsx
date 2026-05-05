@@ -98,7 +98,11 @@ export default function LoginPage() {
               />
             </div>
           </CardContent>
+<<<<<<< Updated upstream
           <CardFooter className="flex flex-col">
+=======
+          <CardFooter className="flex flex-col space-y-4">
+>>>>>>> Stashed changes
             <Button className="w-full" type="submit" disabled={loading}>
               {loading ? 'Masuk...' : 'Masuk Dashboard'}
             </Button>

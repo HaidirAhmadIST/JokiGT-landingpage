@@ -99,6 +99,30 @@ class AdvokasiService
      *
      * @return Collection
      */
+    /**
+     * Get paginated active cases.
+     *
+     * @param int $perPage
+     * @return \Illuminate\Pagination\LengthAwarePaginator
+     */
+    public function getPaginatedCases(int $perPage = 10)
+    {
+        return StatusAdvokasi::with([
+            'pekerja.perusahaan', 
+            'pekerja.user', 
+            'pekerja.latestDetailMedis', 
+            'pekerja.currentJob'
+        ])
+            ->whereNotNull('jenis_kasus')
+            ->latest('updated_at')
+            ->paginate($perPage);
+    }
+
+    /**
+     * Get all active cases.
+     *
+     * @return Collection
+     */
     public function getAllCases(): Collection
     {
         return StatusAdvokasi::with([

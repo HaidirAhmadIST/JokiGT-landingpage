@@ -21,7 +21,9 @@ class RiwayatPekerjaController extends Controller
         }
 
         $user = auth()->user();
-        if (!$user->isAdmin() && !$user->isPetugas()) {
+        $isOwner = $user->pekerja && $user->pekerja->id == $riwayat->pekerja_id;
+
+        if (!$user->isAdmin() && !$user->isPetugas() && !$isOwner) {
             return response()->json(['status' => 'error', 'message' => 'Anda tidak memiliki izin untuk mengubah data ini.'], 403);
         }
 

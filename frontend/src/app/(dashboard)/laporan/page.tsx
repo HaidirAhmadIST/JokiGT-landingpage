@@ -207,14 +207,15 @@ export default function LaporanPage() {
             </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <Table>
+          <div className="p-0 w-full">
+            <Table className="table-fixed w-full">
               <TableHeader>
                 <TableRow className="hover:bg-transparent border-b border-slate-100">
-                  <TableHead className="py-3 font-bold text-[10px] tracking-widest text-[#94a3b8]">PEKERJA / PERUSAHAAN</TableHead>
-                  <TableHead className="py-3 font-bold text-[10px] tracking-widest text-[#94a3b8]">KASUS</TableHead>
-                  <TableHead className="py-3 font-bold text-[10px] tracking-widest text-[#94a3b8]">STATUS</TableHead>
-                  <TableHead className="py-3 font-bold text-[10px] tracking-widest text-[#94a3b8]">AKSI</TableHead>
+                  <TableHead className="py-3 font-bold text-[10px] tracking-widest text-[#94a3b8] w-10 pl-2 pr-1">NO.</TableHead>
+                  <TableHead className="py-3 font-bold text-[10px] tracking-widest text-[#94a3b8] w-[40%] pl-3">PEKERJA / PERUSAHAAN</TableHead>
+                  <TableHead className="py-3 font-bold text-[10px] tracking-widest text-[#94a3b8] w-[25%]">KASUS</TableHead>
+                  <TableHead className="py-3 font-bold text-[10px] tracking-widest text-[#94a3b8] w-[20%]">STATUS</TableHead>
+                  <TableHead className="py-3 font-bold text-[10px] tracking-widest text-[#94a3b8] text-right pr-4">AKSI</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -225,20 +226,32 @@ export default function LaporanPage() {
                 ) : (
                   recentAdvocacy.map((row: any, i: number) => (
                     <TableRow key={i} className="hover:bg-slate-50/50 transition-colors">
-                      <TableCell className="py-3.5">
-                        <div className="font-bold text-[#1e293b] text-sm">{row.worker}</div>
-                        <div className="text-[11px] text-[#94a3b8] font-medium">{row.company}</div>
+                      <TableCell className="pl-2 pr-1 w-10">
+                        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-slate-500 text-[10px] font-bold">
+                          {i + 1}
+                        </span>
                       </TableCell>
-                      <TableCell className="py-3.5 text-sm text-[#475569] font-medium">{row.case}</TableCell>
+                      <TableCell className="py-3.5 pl-3 truncate max-w-0">
+                        <button 
+                          onClick={() => router.push(`/pekerja/${row.pekerja_id}?tab=advokasi`)}
+                          className="flex flex-col text-left group/worker outline-none transition-transform hover:translate-x-1 w-full"
+                        >
+                          <div className="font-bold text-[#1e293b] text-sm truncate group-hover/worker:text-[#0284c7] transition-colors">{row.worker}</div>
+                          <div className="text-[11px] text-[#94a3b8] font-medium truncate">{row.company}</div>
+                        </button>
+                      </TableCell>
+                      <TableCell className="py-3.5 text-sm text-[#475569] font-medium truncate max-w-0">
+                        <span className="truncate block">{row.case}</span>
+                      </TableCell>
                       <TableCell className="py-3.5">
                         <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold border ${row.statusColor}`}>
                           {row.status}
                         </span>
                       </TableCell>
-                      <TableCell className="py-3.5">
+                      <TableCell className="py-3.5 text-right pr-4">
                         <button
                           onClick={() => router.push(`/pekerja/${row.pekerja_id}?tab=advokasi`)}
-                          className="text-sm font-bold text-[#0ea5e9] hover:text-[#0284c7] transition-colors"
+                          className="text-xs font-bold text-[#0ea5e9] hover:text-[#0284c7] transition-colors"
                         >
                           Detail
                         </button>

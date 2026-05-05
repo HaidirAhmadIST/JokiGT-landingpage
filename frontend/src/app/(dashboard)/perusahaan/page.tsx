@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/sheet';
 import { Plus, X, Building2, Briefcase, Info, CheckCircle2, ShieldAlert, CheckCircle, AtSign,
   Users, UserCheck, UserMinus, AlertTriangle, Search, Eye, ArrowUpDown, ArrowUp, ArrowDown,
-  Phone, Mail, UserCircle, Package, Loader2, ChevronDown, Trash2
+  Phone, Mail, UserCircle, Package, Loader2, ChevronDown, Trash2, Pencil
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRole } from '@/hooks/useRole';
@@ -154,6 +154,12 @@ export default function PerusahaanPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('Semua Status');
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [lastPage, setLastPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [perPage, setPerPage] = useState(15);
+
   // Sheet State (Add/Edit form)
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
@@ -186,16 +192,21 @@ export default function PerusahaanPage() {
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const currentCompanyIdRef = useRef<number | null>(null);
 
-  const fetchData = async () => {
+  const fetchData = async (page = 1) => {
     setLoading(true);
     try {
-      const params: any = { search };
+      const params: any = { search, page };
       if (statusFilter && statusFilter !== 'Semua Status') {
         params.status = statusFilter;
       }
       const response = await api.get('/perusahaan', { params });
       if (response.data.status === 'success') {
-        setData(response.data.data.data);
+        const pageData = response.data.data;
+        setData(pageData.data);
+        setCurrentPage(pageData.current_page);
+        setLastPage(pageData.last_page);
+        setTotal(pageData.total);
+        setPerPage(pageData.per_page);
       }
     } catch (error) {
       toast.error('Gagal mengambil data perusahaan');
@@ -205,7 +216,8 @@ export default function PerusahaanPage() {
   };
 
   useEffect(() => {
-    fetchData();
+    setCurrentPage(1);
+    fetchData(1);
   }, [search, statusFilter]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -219,7 +231,7 @@ export default function PerusahaanPage() {
         toast.success('Perusahaan baru berhasil ditambahkan');
       }
       setSheetOpen(false);
-      fetchData();
+      fetchData(currentPage);
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Gagal menyimpan data');
     }
@@ -624,14 +636,15 @@ export default function PerusahaanPage() {
       {/* Main Table Area */}
       <div className="bg-white rounded-[20px] shadow-sm border border-slate-100 overflow-hidden">
 
-        <Table>
+        <Table className="table-fixed w-full">
           <TableHeader>
             <TableRow className="hover:bg-transparent border-b border-slate-100">
-              <TableHead className="py-5 px-6 font-bold text-xs tracking-widest text-[#94a3b8]">NAMA PERUSAHAAN</TableHead>
-              <TableHead className="py-5 px-6 font-bold text-xs tracking-widest text-[#94a3b8]">SEKTOR INDUSTRI</TableHead>
-              <TableHead className="py-5 px-6 font-bold text-xs tracking-widest text-[#94a3b8]">JUMLAH PEKERJA</TableHead>
-              <TableHead className="py-5 px-6 font-bold text-xs tracking-widest text-[#94a3b8]">STATUS PERUSAHAAN</TableHead>
-              <TableHead className="py-5 px-6 font-bold text-xs tracking-widest text-[#94a3b8] text-right">AKSI</TableHead>
+              <TableHead className="py-4 pl-6 pr-1 font-bold text-[11px] tracking-widest text-[#94a3b8] w-12">NO.</TableHead>
+              <TableHead className="py-4 px-4 font-bold text-[11px] tracking-widest text-[#94a3b8] w-[28%]">NAMA PERUSAHAAN</TableHead>
+              <TableHead className="py-4 px-4 font-bold text-[11px] tracking-widest text-[#94a3b8] w-[22%]">SEKTOR INDUSTRI</TableHead>
+              <TableHead className="py-4 px-4 font-bold text-[11px] tracking-widest text-[#94a3b8] w-[15%]">PEKERJA</TableHead>
+              <TableHead className="py-4 px-4 font-bold text-[11px] tracking-widest text-[#94a3b8] w-[15%]">STATUS</TableHead>
+              <TableHead className="py-4 px-6 font-bold text-[11px] tracking-widest text-[#94a3b8] text-right w-24">AKSI</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -643,7 +656,7 @@ export default function PerusahaanPage() {
               </TableRow>
             ) : data.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-16 text-slate-400">
+                <TableCell colSpan={6} className="text-center py-16 text-slate-400">
                   <div className="flex flex-col items-center">
                     <Building2 className="h-10 w-10 text-slate-200 mb-3" />
                     <p className="font-semibold text-slate-600">Belum ada data perusahaan.</p>
@@ -651,39 +664,50 @@ export default function PerusahaanPage() {
                 </TableCell>
               </TableRow>
             ) : (
-              data.map((p) => {
-                // Manual mode: stats will be fetched from backend when detail is opened
-                // List view only shows the total worker count
+              data.map((p, index) => {
+                const rowNumber = (currentPage - 1) * perPage + index + 1;
 
                 return (
-                  <TableRow key={p.id} className="hover:bg-slate-50/50 transition-colors group">
-                    <TableCell className="py-4 px-6">
-                      <div className="flex items-center gap-4">
-                        {getRandomIcon(p.id)}
-                        <button
-                          onClick={() => openDetail(p)}
-                          className="font-bold text-[#1e293b] hover:text-[#0284c7] transition-colors cursor-pointer hover:underline decoration-[#0ea5e9]/40 underline-offset-2 text-left"
-                        >
+                  <TableRow key={p.id} className="hover:bg-slate-50/50 transition-colors group border-b border-slate-50">
+                    <TableCell className="py-4 pl-6 pr-1">
+                      <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-slate-100 text-slate-500 text-[11px] font-bold">
+                        {rowNumber}
+                      </span>
+                    </TableCell>
+                    <TableCell className="py-4 px-4">
+                      <button 
+                        onClick={() => openDetail(p)}
+                        className="flex items-center gap-3 w-full text-left group/company outline-none transition-transform hover:translate-x-1"
+                      >
+                        <div className="shrink-0 scale-75 origin-left transition-all group-hover/company:scale-90 group-hover/company:drop-shadow-md">
+                          {getRandomIcon(p.id)}
+                        </div>
+                        <span className="font-bold text-[#1e293b] group-hover/company:text-[#0284c7] transition-all text-[14px] truncate">
                           {p.nama_perusahaan}
-                        </button>
+                        </span>
+                      </button>
+                    </TableCell>
+                    <TableCell className="py-4 px-4 truncate max-w-0">
+                      <span className="font-medium text-[#475569] text-[13px] block truncate">{p.sektor_industri || '-'}</span>
+                    </TableCell>
+                    <TableCell className="py-4 px-4">
+                      <span className="text-[#0284c7] font-bold text-[13px]">{p.pekerja_count} Pekerja</span>
+                    </TableCell>
+                    <TableCell className="py-4 px-4">
+                      <div className="scale-95 origin-left">
+                        {getStatusDisplay(p.status_pendamping)}
                       </div>
-                    </TableCell>
-                    <TableCell className="py-4 px-6 relative">
-                      <span className="font-medium text-[#475569]">{p.sektor_industri || '-'}</span>
-                    </TableCell>
-                    <TableCell className="py-4 px-6">
-                      <div className="flex flex-col">
-                        <span className="text-[#0284c7] font-bold text-base">{p.pekerja_count} Pekerja</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="py-4 px-6">
-                      {getStatusDisplay(p.status_pendamping)}
                     </TableCell>
                     <TableCell className="py-4 px-6 text-right">
                       {isStaffOrAbove && (
-                        <button onClick={() => openEdit(p)} className="text-sm font-bold text-[#0ea5e9] hover:text-[#0284c7] transition-colors">
-                          Edit
-                        </button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => openEdit(p)} 
+                          className="h-8 w-8 text-[#0ea5e9] hover:text-[#0284c7] hover:bg-sky-50 rounded-lg transition-all hover:scale-110 active:scale-95 group/edit"
+                        >
+                          <Pencil className="h-4 w-4 transition-transform group-hover/edit:rotate-12" />
+                        </Button>
                       )}
                     </TableCell>
                   </TableRow>
@@ -694,15 +718,61 @@ export default function PerusahaanPage() {
         </Table>
 
         {/* Pagination Footer */}
-        {!loading && data.length > 0 && (
+        {!loading && lastPage > 0 && (
           <div className="border-t border-slate-100 p-4 px-6 flex items-center justify-between text-sm text-slate-500 font-medium">
-            <p>Menampilkan 1-{data.length} dari {data.length} perusahaan</p>
+            <p>
+              Menampilkan {data.length === 0 ? 0 : (currentPage - 1) * perPage + 1}–{Math.min(currentPage * perPage, total)} dari {total} perusahaan
+            </p>
             <div className="flex items-center gap-1">
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400" disabled>&lt;</Button>
-              <Button variant="ghost" className="h-8 w-8 bg-[#0284c7] hover:bg-[#0369a1] text-white rounded-full">1</Button>
-              <Button variant="ghost" className="h-8 w-8 rounded-full hover:bg-slate-100">2</Button>
-              <Button variant="ghost" className="h-8 w-8 rounded-full hover:bg-slate-100">3</Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-600 hover:bg-slate-100">&gt;</Button>
+              {/* Prev */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-slate-400 hover:bg-slate-100 disabled:opacity-30"
+                disabled={currentPage <= 1}
+                onClick={() => { const p = currentPage - 1; setCurrentPage(p); fetchData(p); }}
+              >
+                &lt;
+              </Button>
+
+              {/* Page number buttons — show up to 5 pages around current */}
+              {Array.from({ length: lastPage }, (_, i) => i + 1)
+                .filter(p => p === 1 || p === lastPage || Math.abs(p - currentPage) <= 2)
+                .reduce<(number | '...')[]>((acc, p, idx, arr) => {
+                  if (idx > 0 && p - (arr[idx - 1] as number) > 1) acc.push('...');
+                  acc.push(p);
+                  return acc;
+                }, [])
+                .map((p, idx) =>
+                  p === '...' ? (
+                    <span key={`ellipsis-${idx}`} className="px-1 text-slate-400">…</span>
+                  ) : (
+                    <Button
+                      key={p}
+                      variant="ghost"
+                      className={`h-8 w-8 rounded-full font-bold ${
+                        p === currentPage
+                          ? 'bg-[#0284c7] hover:bg-[#0369a1] text-white'
+                          : 'hover:bg-slate-100 text-slate-600'
+                      }`}
+                      onClick={() => { setCurrentPage(p as number); fetchData(p as number); }}
+                    >
+                      {p}
+                    </Button>
+                  )
+                )
+              }
+
+              {/* Next */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-slate-600 hover:bg-slate-100 disabled:opacity-30"
+                disabled={currentPage >= lastPage}
+                onClick={() => { const p = currentPage + 1; setCurrentPage(p); fetchData(p); }}
+              >
+                &gt;
+              </Button>
             </div>
           </div>
         )}

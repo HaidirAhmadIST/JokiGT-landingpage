@@ -171,8 +171,6 @@ export default function PendaftaranPekerjaPage() {
     advokasiQuestions.map(q => ({ question: q, status: 'Tidak', file: [] as File[] }))
   );
 
-<<<<<<< Updated upstream
-=======
   const [isRestored, setIsRestored] = useState(false);
 
   useEffect(() => {
@@ -188,9 +186,6 @@ export default function PendaftaranPekerjaPage() {
       }
     } catch {}
   }, []);
-
-
->>>>>>> Stashed changes
   // Persistence: Load from localStorage
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -234,7 +229,13 @@ export default function PendaftaranPekerjaPage() {
           })));
         }
 
-        toast.info("Data pendaftaran dipulihkan dari sesi sebelumnya.");
+        const hasData = parsed.baseData?.nama_lengkap || parsed.baseData?.nik || parsed.pekerjaanSaatIni?.nama_perusahaan;
+        if (hasData) {
+          toast.info("Data pendaftaran dipulihkan dari sesi sebelumnya.", {
+            description: "Silakan unggah kembali dokumen/foto jika ada.",
+            duration: 10000,
+          });
+        }
       } catch (err) {
         console.error("Failed to restore form data", err);
       }
@@ -382,12 +383,6 @@ export default function PendaftaranPekerjaPage() {
       const allRiwayat: any[] = [];
 
       if (pekerjaanSaatIni.nama_perusahaan || pekerjaanSaatIni.nama_perusahaan_baru) {
-        // Convert APD checkboxes to a readable string
-        const selectedApd = apdData
-          .filter(a => a.checked)
-          .map(a => `${a.name}${a.deskripsi ? ` (${a.deskripsi})` : ''}`)
-          .join(', ');
-
         allRiwayat.push({
           ...pekerjaanSaatIni,
           nama_perusahaan: pekerjaanSaatIni.nama_perusahaan_baru || pekerjaanSaatIni.nama_perusahaan,
@@ -401,7 +396,6 @@ export default function PendaftaranPekerjaPage() {
             apd_disediakan: pekerjaanSaatIni.apd_disediakan,
             jenis_apd_sendiri: pekerjaanSaatIni.jenis_apd_sendiri,
             lokasi_proyek: pekerjaanSaatIni.lokasi_proyek,
-            apd_list: selectedApd
           },
           riwayat_pemeriksaan: (pekerjaanSaatIni.riwayat_pemeriksaan || []).filter(
             (m: any) => m.tanggal_pemeriksaan && m.hasil_diagnosis
@@ -424,6 +418,12 @@ export default function PendaftaranPekerjaPage() {
         .filter(r => r.nama_perusahaan.trim() !== '')
         .map(r => ({
           ...r,
+          // Extract APD from informal_data if it exists
+          informal_data: {
+            ...r.informal_data,
+            apd_disediakan: r.informal_data?.apd_disediakan || '',
+            jenis_apd_sendiri: r.informal_data?.jenis_apd_sendiri || '',
+          },
           riwayat_pemeriksaan: (r.riwayat_pemeriksaan || []).filter(
             (m: any) => m.tanggal_pemeriksaan && m.hasil_diagnosis
           ).map((m: any) => ({
@@ -478,12 +478,23 @@ export default function PendaftaranPekerjaPage() {
 
         const response = await api.post('/pekerja', payload);
         
-        // If the server returns a token (e.g. for a newly created user), set it immediately
-        // This is crucial so that subsequent file uploads do not fail with 401 Unauthorized
+        // Only update token if we are a guest or not an admin/staff
+        // This prevents admin sessions from being hijacked by the newly created worker user
         if (response.data.token) {
-          Cookies.set('auth_token', response.data.token, { path: '/' });
-          // Ensure axios instance uses the new token immediately
-          api.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
+          const storedUser = localStorage.getItem('user');
+          let shouldSetToken = true;
+          if (storedUser) {
+            const user = JSON.parse(storedUser);
+            if (user.role === 'admin' || user.role === 'petugas') {
+              shouldSetToken = false;
+            }
+          }
+          
+          if (shouldSetToken) {
+            Cookies.set('auth_token', response.data.token, { path: '/' });
+            // Ensure axios instance uses the new token immediately
+            api.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
+          }
         }
 
         const pekerjaId = response.data.data.id;
@@ -987,8 +998,26 @@ export default function PendaftaranPekerjaPage() {
                                 <Input placeholder="Contoh: Sehat / Bronkitis" className="h-9 bg-slate-50/50 text-sm" value={med.hasil_diagnosis} onChange={e => updateMed('hasil_diagnosis', e.target.value)} />
                               </div>
                               <div className="space-y-1">
+                                <Label className="text-[10px] text-slate-500 font-bold uppercase">Jenis Pemeriksaan</Label>
+                                <Select value={med.jenis_pemeriksaan} onValueChange={v => updateMed('jenis_pemeriksaan', v)}>
+                                  <SelectTrigger className="h-9 w-full bg-slate-50/50 text-sm"><SelectValue placeholder="Pilih Jenis" /></SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="MCU Berkala">MCU Berkala</SelectItem>
+                                    <SelectItem value="Rontgen Thorax">Rontgen Thorax</SelectItem>
+                                    <SelectItem value="Spirometri">Spirometri</SelectItem>
+                                    <SelectItem value="Audiometri">Audiometri</SelectItem>
+                                    <SelectItem value="Tes Darah/Lab">Tes Darah / Lab</SelectItem>
+                                    <SelectItem value="Lainnya">Lainnya</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="space-y-1">
                                 <Label className="text-[10px] text-slate-500 font-bold uppercase">Dokter</Label>
                                 <Input placeholder="Nama Dokter" className="h-9 bg-slate-50/50 text-sm" value={med.dokter} onChange={e => updateMed('dokter', e.target.value)} />
+                              </div>
+                              <div className="space-y-1 col-span-1 sm:col-span-2">
+                                <Label className="text-[10px] text-slate-500 font-bold uppercase">Rekomendasi Dokter (Saran)</Label>
+                                <Input placeholder="Contoh: Istirahat cukup, hindari debu..." className="h-9 bg-slate-50/50 text-sm" value={med.rekomendasi} onChange={e => updateMed('rekomendasi', e.target.value)} />
                               </div>
                             </div>
                             <p className="text-[9px] text-slate-400 italic italic">Riwayat Medis Ini Untuk Pekerjaan Saat Ini.</p>
@@ -1185,6 +1214,41 @@ export default function PendaftaranPekerjaPage() {
                                 />
                               </div>
 
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 col-span-1 sm:col-span-2 mt-2">
+                                <div className="space-y-2">
+                                  <Label className="text-xs text-slate-600 flex items-center gap-1.5">
+                                    <div className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+                                    APD yang Disediakan Perusahaan
+                                  </Label>
+                                  <Input 
+                                    placeholder="Contoh: Masker N95, Kacamata..." 
+                                    className="h-9 bg-white text-sm"
+                                    value={item.informal_data?.apd_disediakan || ''}
+                                    onChange={(e) => {
+                                      const newR = [...riwayatLalu];
+                                      newR[idx].informal_data = { ...newR[idx].informal_data, apd_disediakan: e.target.value };
+                                      setRiwayatLalu(newR);
+                                    }}
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label className="text-xs text-slate-600 flex items-center gap-1.5">
+                                    <div className="h-1.5 w-1.5 rounded-full bg-slate-400" />
+                                    APD yang Dibawa Mandiri
+                                  </Label>
+                                  <Input 
+                                    placeholder="Contoh: Masker kain sendiri..." 
+                                    className="h-9 bg-white text-sm"
+                                    value={item.informal_data?.jenis_apd_sendiri || ''}
+                                    onChange={(e) => {
+                                      const newR = [...riwayatLalu];
+                                      newR[idx].informal_data = { ...newR[idx].informal_data, jenis_apd_sendiri: e.target.value };
+                                      setRiwayatLalu(newR);
+                                    }}
+                                  />
+                                </div>
+                              </div>
+
                               <div className="space-y-2 col-span-1 sm:col-span-2 mt-1">
                                 <Label>Upload Paklaring / Dokumen Verifikasi <span className="text-slate-400 font-normal italic ml-1">(Opsional)</span></Label>
                                 <div className="mt-1 flex items-center gap-3">
@@ -1377,32 +1441,32 @@ export default function PendaftaranPekerjaPage() {
                   </div>
 
                   <div className="space-y-3">
-                    <Label className="text-slate-700">Alat Pelindung Diri (APD) yang Digunakan</Label>
-                    <div className="bg-white p-4 rounded-lg border border-slate-100 space-y-4">
-                      {apdData.map((apd, idx) => (
-                        <div key={idx} className="space-y-2">
-                          <div className="flex items-center space-x-2">
-                            <Checkbox
-                              id={`apd${idx + 1}`}
-                              checked={apd.checked}
-                              onCheckedChange={(val) => toggleApd(idx, !!val)}
-                            />
-                            <label
-                              htmlFor={`apd${idx + 1}`}
-                              className="text-sm font-medium leading-none cursor-pointer peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                            >
-                              {apd.name}
-                            </label>
-                          </div>
-                          <Input
-                            placeholder={apd.name === 'Lainnya' ? 'Sebutkan lainnya...' : `Apa Jenis Penggunaan ${apd.name}...`}
-                            className="h-8 text-xs ml-6"
-                            value={apd.deskripsi}
-                            onChange={e => setApdDeskripsi(idx, e.target.value)}
-                          />
-                        </div>
-                      ))}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-slate-700 flex items-center gap-2">
+                        <div className="h-2 w-2 rounded-full bg-blue-500" />
+                        APD yang Disediakan Perusahaan
+                      </Label>
+                      <Textarea 
+                        placeholder="Contoh: Masker N95, Sarung Tangan Karet, Kacamata Safety..." 
+                        className="min-h-[80px] bg-white resize-none text-sm"
+                        value={pekerjaanSaatIni.apd_disediakan}
+                        onChange={e => setPekerjaanSaatIni({ ...pekerjaanSaatIni, apd_disediakan: e.target.value })}
+                      />
                     </div>
+                    <div className="space-y-2">
+                      <Label className="text-slate-700 flex items-center gap-2">
+                        <div className="h-2 w-2 rounded-full bg-slate-400" />
+                        APD yang Dibawa Mandiri (Beli Sendiri)
+                      </Label>
+                      <Textarea 
+                        placeholder="Contoh: Masker kain tambahan, Hand Sanitizer pribadi..." 
+                        className="min-h-[80px] bg-white resize-none text-sm"
+                        value={pekerjaanSaatIni.jenis_apd_sendiri}
+                        onChange={e => setPekerjaanSaatIni({ ...pekerjaanSaatIni, jenis_apd_sendiri: e.target.value })}
+                      />
+                    </div>
+                  </div>
                   </div>
                 </div>
 

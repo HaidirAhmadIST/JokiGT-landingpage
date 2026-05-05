@@ -144,16 +144,17 @@ export default function PekerjaPage() {
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-        <div className="overflow-x-auto p-4 sm:p-6 pb-2">
-          <Table>
+        <div className="p-4 sm:p-6 pb-2 w-full">
+          <Table className="w-full table-fixed">
             <TableHeader>
               <TableRow className="border-b border-slate-100 hover:bg-transparent">
-                <TableHead className="text-xs font-bold text-slate-400 tracking-widest uppercase bg-transparent">NAMA PEKERJA</TableHead>
-                <TableHead className="text-xs font-bold text-slate-400 tracking-widest uppercase bg-transparent">NIK</TableHead>
-                <TableHead className="text-xs font-bold text-slate-400 tracking-widest uppercase bg-transparent">PERUSAHAAN SAAT INI</TableHead>
-                <TableHead className="text-xs font-bold text-slate-400 tracking-widest uppercase bg-transparent">LOKASI / UNIT</TableHead>
-                <TableHead className="text-xs font-bold text-slate-400 tracking-widest uppercase bg-transparent w-[180px]">STATUS KESEHATAN</TableHead>
-                <TableHead className="text-xs font-bold text-slate-400 tracking-widest uppercase bg-transparent text-right">AKSI</TableHead>
+                <TableHead className="text-[11px] font-bold text-slate-400 tracking-widest uppercase bg-transparent w-12 pl-4 pr-1">NO.</TableHead>
+                <TableHead className="text-[11px] font-bold text-slate-400 tracking-widest uppercase bg-transparent w-[22%]">NAMA PEKERJA</TableHead>
+                <TableHead className="text-[11px] font-bold text-slate-400 tracking-widest uppercase bg-transparent w-[14%]">NIK</TableHead>
+                <TableHead className="text-[11px] font-bold text-slate-400 tracking-widest uppercase bg-transparent w-[18%]">PERUSAHAAN</TableHead>
+                <TableHead className="text-[11px] font-bold text-slate-400 tracking-widest uppercase bg-transparent w-[15%]">LOKASI / UNIT</TableHead>
+                <TableHead className="text-[11px] font-bold text-slate-400 tracking-widest uppercase bg-transparent w-[12%]">STATUS</TableHead>
+                <TableHead className="text-[11px] font-bold text-slate-400 tracking-widest uppercase bg-transparent text-right w-12 pr-4">AKSI</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -163,39 +164,41 @@ export default function PekerjaPage() {
                 </TableRow>
               ) : data.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center h-32 text-slate-500 font-medium">Data tidak ditemukan.</TableCell>
+                  <TableCell colSpan={7} className="text-center h-32 text-slate-500 font-medium">Data tidak ditemukan.</TableCell>
                 </TableRow>
               ) : (
-                data.map((p) => (
+                data.map((p, index) => {
+                const rowNumber = (currentPage - 1) * perPage + index + 1;
+                return (
                   <TableRow 
                     key={p.id} 
-                    className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors cursor-pointer"
+                    className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors cursor-pointer group"
                     onClick={() => router.push(`/pekerja/${p.id}`)}
                   >
-                    <TableCell>
-                      <div className="flex items-center gap-4 py-1">
-                        <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-100 border border-slate-200 shrink-0">
+                    <TableCell className="pl-4 pr-1 py-4 w-12">
+                      <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-slate-100 text-slate-500 text-[11px] font-bold">
+                        {rowNumber}
+                      </span>
+                    </TableCell>
+                    <TableCell className="py-4 px-3">
+                      <div className="flex items-center gap-3 w-full text-left group/worker transition-transform hover:translate-x-1">
+                        <div className="w-8 h-8 rounded-full overflow-hidden bg-slate-100 border border-slate-200 shrink-0 transition-all group-hover/worker:border-[#0ea5e9] group-hover/worker:ring-2 group-hover/worker:ring-blue-100 group-hover/worker:scale-110">
                            <img 
                              src={p.pas_foto ? `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://127.0.0.1:8000'}/storage/profil/${p.pas_foto}` : `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.nama_lengkap}`} 
                              alt="avatar" 
                              className="w-full h-full object-cover object-top" 
                            />
                         </div>
-                        <div className="flex flex-col">
-                          <span className="font-bold text-slate-900 text-[15px]">{p.nama_lengkap}</span>
-                          <span className="text-xs text-slate-500 mt-0.5">
-                            {p.jenis_kelamin === 'L' ? 'Laki-laki' : p.jenis_kelamin === 'P' ? 'Perempuan' : <span className="text-amber-500 font-medium">Belum diisi</span>}
-                            {' • '}
-                            {p.tanggal_lahir
-                              ? (new Date().getFullYear() - new Date(p.tanggal_lahir).getFullYear()) + ' Tahun'
-                              : <span className="text-amber-500 font-medium">Belum diisi</span>
-                            }
+                        <div className="flex flex-col min-w-0 transition-all group-hover/worker:translate-x-1">
+                          <span className="font-bold text-slate-900 text-[15px] truncate group-hover/worker:text-[#0284c7] transition-colors leading-tight">{p.nama_lengkap}</span>
+                          <span className="text-[11px] text-slate-500 mt-1 truncate font-medium">
+                            {p.jenis_kelamin === 'L' ? 'Laki-laki' : p.jenis_kelamin === 'P' ? 'Perempuan' : '-'} • {p.tanggal_lahir ? (new Date().getFullYear() - new Date(p.tanggal_lahir).getFullYear()) + ' Tahun' : '-'}
                           </span>
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="font-semibold text-sm text-slate-600 tracking-wide">{p.nik}</TableCell>
-                    <TableCell className="text-slate-600 font-medium text-sm max-w-[220px]">
+                    <TableCell className="py-4 px-3 text-[13px] font-medium text-slate-500 tabular-nums truncate">{p.nik}</TableCell>
+                    <TableCell className="py-4 px-3 text-[13px] text-slate-600 font-semibold truncate max-w-0">
                       {(() => {
                         if (p.perusahaan?.nama_perusahaan) return p.perusahaan.nama_perusahaan;
                         
@@ -223,7 +226,7 @@ export default function PekerjaPage() {
                         return <span className="text-slate-400">Pekerja Mandiri</span>;
                       })()}
                     </TableCell>
-                    <TableCell className="text-slate-600 font-medium text-sm max-w-[200px]">
+                    <TableCell className="py-4 px-3 text-[13px] text-slate-500 font-medium truncate max-w-0">
                       {(() => {
                         const job = p.current_job;
                         if (!job) return '-';
@@ -248,47 +251,40 @@ export default function PekerjaPage() {
                         return <span className="truncate">{job.bagian || job.jabatan || '-'}</span>;
                       })()}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="py-4 px-3">
                        {/* Normalize status logic for display */}
                        {(() => {
                          const s = p.status_kesehatan;
                          if (s === 'sehat' || s === 'fit') {
                            return (
-                             <div className="inline-flex items-center justify-center px-4 py-1.5 rounded-full border border-emerald-200 bg-emerald-100/50 text-emerald-700 font-bold text-[11px] tracking-wide shadow-[0_2px_10px_-3px_rgba(16,185,129,0.2)]">
-                               <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-2 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+                             <div className="inline-flex items-center justify-center px-2.5 py-1 rounded-md border border-emerald-200 bg-emerald-50 text-emerald-700 font-bold text-[10px] tracking-wide">
                                Sehat
                              </div>
                            );
                          }
                          if (s === 'sehat_dengan_catatan' || s === 'sakit_ringan' || s === 'fit_with_note') {
                            return (
-                             <div className="inline-flex items-center justify-center px-4 py-1.5 rounded-full border border-amber-200 bg-amber-100/50 text-amber-700 font-bold text-[11px] tracking-wide shadow-[0_2px_10px_-3px_rgba(245,158,11,0.2)]">
-                               <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mr-2 shadow-[0_0_8px_rgba(245,158,11,0.5)]"></div>
-                               Sehat dengan Catatan
+                             <div className="inline-flex items-center justify-center px-2.5 py-1 rounded-md border border-amber-200 bg-amber-50 text-amber-700 font-bold text-[10px] tracking-wide">
+                               Fit c/ Catatan
                              </div>
                            );
                          }
                          if (s === 'tidak_sehat' || s === 'sakit_berat' || s === 'unfit' || s === 'sakit') {
                            return (
-                             <div className="inline-flex items-center justify-center px-4 py-1.5 rounded-full border border-rose-200 bg-rose-100/50 text-rose-700 font-bold text-[11px] tracking-wide shadow-[0_2px_10px_-3px_rgba(244,63,94,0.2)]">
-                               <div className="w-1.5 h-1.5 rounded-full bg-rose-500 mr-2 shadow-[0_0_8px_rgba(244,63,94,0.5)]"></div>
+                             <div className="inline-flex items-center justify-center px-2.5 py-1 rounded-md border border-rose-200 bg-rose-50 text-rose-700 font-bold text-[10px] tracking-wide">
                                Tidak Sehat
                              </div>
                            );
                          }
                          return (
-                           <div className="inline-flex items-center justify-center px-4 py-1.5 rounded-full border border-slate-200 bg-slate-100/50 text-slate-500 font-bold text-[11px] tracking-wide">
-                             <div className="w-1.5 h-1.5 rounded-full bg-slate-400 mr-2"></div>
-                             Belum Diperiksa
+                           <div className="inline-flex items-center justify-center px-2.5 py-1 rounded-md border border-slate-200 bg-slate-50 text-slate-500 font-bold text-[10px] tracking-wide">
+                             Belum Dicek
                            </div>
                          );
                        })()}
                     </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button variant="ghost" className="text-[#0ea5e9] hover:text-[#0284c7] hover:bg-[#F0F9FF] font-bold text-sm h-10 px-4 rounded-xl" onClick={() => router.push(`/pekerja/${p.id}`)}>
-                          Lihat Detail <ExternalLink className="h-4 w-4 ml-2" />
-                        </Button>
+                    <TableCell className="text-right py-4 pr-4 w-12">
+                      <div className="flex justify-end">
                         {isSuperAdmin && (
                           <Button 
                             variant="ghost" 
@@ -301,7 +297,7 @@ export default function PekerjaPage() {
                       </div>
                     </TableCell>
                   </TableRow>
-                ))
+                );})
               )}
             </TableBody>
           </Table>

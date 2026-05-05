@@ -32,11 +32,12 @@ class AdvokasiController extends Controller
         ]);
     }
 
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
+        $perPage = $request->query('per_page', 10);
         return response()->json([
             'status' => 'success',
-            'data' => $this->advokasiService->getAllCases()
+            'data' => $this->advokasiService->getPaginatedCases($perPage)
         ]);
     }
 
