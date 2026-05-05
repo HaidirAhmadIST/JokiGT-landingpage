@@ -24,6 +24,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -176,7 +177,7 @@ export default function DashboardLayout({
     <div className="flex flex-col h-screen bg-[#f8fafc] font-sans">
       
       {/* FULL-WIDTH TOP HEADER */}
-      <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 z-20 shrink-0 shadow-sm">
+      <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 z-20 shrink-0 shadow-sm print:hidden">
         
         {/* Logo Text Area */}
         <div className="flex items-center gap-4 w-60 shrink-0">
@@ -360,10 +361,10 @@ export default function DashboardLayout({
       </header>
 
       {/* BODY AREA */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden print:overflow-visible">
         
         {/* DESKTOP SIDEBAR */}
-        <aside className="hidden md:flex w-[260px] flex-col bg-white border-r border-slate-200 z-10 justify-between py-6 shrink-0">
+        <aside className="hidden md:flex w-[260px] flex-col bg-white border-r border-slate-200 z-10 justify-between py-6 shrink-0 print:hidden">
            
            <div className="w-full">
              {/* Admin Panel Token */}
@@ -415,8 +416,8 @@ export default function DashboardLayout({
         </aside>
 
         {/* MAIN CONTENT AREA */}
-        <main className="flex-1 overflow-y-auto w-full relative">
-          <div className="p-4 sm:p-6 lg:p-8">
+        <main className="flex-1 overflow-y-auto w-full relative print:overflow-visible">
+          <div className="p-4 sm:p-6 lg:p-8 print:p-0">
             {children}
           </div>
         </main>
