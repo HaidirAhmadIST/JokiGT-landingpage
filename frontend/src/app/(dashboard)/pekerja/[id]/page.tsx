@@ -1051,11 +1051,21 @@ export default function PekerjaDetailPage() {
                                           </div>
                                         </div>
 
-                                        <div>
-                                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Hasil Diagnosa</p>
-                                          <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
-                                            <p className="text-xs text-slate-600 leading-relaxed italic">{m.hasil_diagnosis || '-'}</p>
+                                        <div className="space-y-3">
+                                          <div>
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Hasil Diagnosa</p>
+                                            <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                                              <p className="text-xs text-slate-600 leading-relaxed italic">{m.hasil_diagnosis || '-'}</p>
+                                            </div>
                                           </div>
+                                          {m.rekomendasi && (
+                                            <div>
+                                              <p className="text-[10px] font-bold text-[#0ea5e9] uppercase tracking-widest mb-1">Rekomendasi Dokter</p>
+                                              <div className="bg-blue-50/50 p-2.5 rounded-xl border border-blue-100">
+                                                <p className="text-xs text-slate-700 font-medium leading-relaxed">{m.rekomendasi}</p>
+                                              </div>
+                                            </div>
+                                          )}
                                         </div>
 
                                         {(m.file_bukti_path || m.file_hasil_path) && (
@@ -1107,9 +1117,17 @@ export default function PekerjaDetailPage() {
                                               {getStatusLabel(m.status_kesehatan) || 'SEHAT'}
                                             </span>
                                         </div>
-                                        <div className="mt-2">
-                                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Hasil Diagnosa</p>
-                                          <p className="text-[11px] text-slate-600 italic leading-relaxed">{m.hasil_diagnosis || '-'}</p>
+                                        <div className="mt-2 space-y-2">
+                                          <div>
+                                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Hasil Diagnosa</p>
+                                            <p className="text-[11px] text-slate-600 italic leading-relaxed">{m.hasil_diagnosis || '-'}</p>
+                                          </div>
+                                          {m.rekomendasi && (
+                                            <div>
+                                              <p className="text-[9px] font-bold text-[#0ea5e9] uppercase tracking-widest mb-1">Rekomendasi Dokter</p>
+                                              <p className="text-[11px] text-slate-700 font-medium leading-relaxed">{m.rekomendasi}</p>
+                                            </div>
+                                          )}
                                         </div>
                                       </div>
                                     ))}
@@ -1296,11 +1314,21 @@ export default function PekerjaDetailPage() {
                             </div>
                           </div>
 
-                          <div>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Hasil Diagnosa</p>
-                            <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 group-hover:border-[#0ea5e9]/20 transition-colors">
-                              <p className="text-xs text-slate-600 leading-relaxed italic">{m.hasil_diagnosis || '-'}</p>
+                          <div className="space-y-4">
+                            <div>
+                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Hasil Diagnosa</p>
+                              <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 group-hover:border-[#0ea5e9]/20 transition-colors">
+                                <p className="text-xs text-slate-600 leading-relaxed italic">{m.hasil_diagnosis || '-'}</p>
+                              </div>
                             </div>
+                            {m.rekomendasi && (
+                              <div>
+                                <p className="text-[10px] font-bold text-[#0ea5e9] uppercase tracking-widest mb-1">Rekomendasi Dokter</p>
+                                <div className="bg-blue-50/30 p-3 rounded-xl border border-blue-100 group-hover:border-[#0ea5e9]/40 transition-colors">
+                                  <p className="text-xs text-slate-700 font-medium leading-relaxed">{m.rekomendasi}</p>
+                                </div>
+                              </div>
+                            )}
                           </div>
 
                           {m.file_hasil_path && (

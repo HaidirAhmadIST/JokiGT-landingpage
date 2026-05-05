@@ -98,7 +98,7 @@ export default function LoginPage() {
               />
             </div>
           </CardContent>
-          <CardFooter>
+          <CardFooter className="flex flex-col">
             <Button className="w-full" type="submit" disabled={loading}>
               {loading ? 'Masuk...' : 'Masuk Dashboard'}
             </Button>
@@ -108,7 +108,6 @@ export default function LoginPage() {
                 Daftar di sini
               </Link>
             </p>
-
           </CardFooter>
         </form>
       </Card>

@@ -34,7 +34,6 @@ class UpdateAdvokasiRequest extends FormRequest
             'step_key' => ['nullable', 'string', 'in:riwayat_pajanan,persetujuan_dokter,perusahaan_lapor,penetapan_pak,kompensasi_bpjstk,rehabilitasi_bpjskes'],
             'file' => ['nullable', 'array', 'max:5'], // Optional: cap at 5 files per step
             'file.*' => ['file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
-
             
             // Legacy/Specific file upload fields
             'bukti_pajanan' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],

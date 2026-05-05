@@ -140,6 +140,7 @@ class AuthController extends Controller
             'message' => 'Password berhasil diubah. Silakan login kembali.',
         ]);
     }
+
     /**
      * Revoke the user's current token.
      */

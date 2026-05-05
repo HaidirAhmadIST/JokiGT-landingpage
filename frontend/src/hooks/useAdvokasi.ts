@@ -9,8 +9,8 @@ const fetchAdvokasiStats = async () => {
   return data;
 };
 
-const fetchAdvokasiCases = async (): Promise<StatusAdvokasi[]> => {
-  const { data } = await api.get('/advokasi');
+const fetchAdvokasiCases = async (params: any): Promise<any> => {
+  const { data } = await api.get('/advokasi', { params });
   if (data.status !== 'success') throw new Error('Failed to fetch cases');
   return data.data;
 };
@@ -36,10 +36,10 @@ export const useGetAdvokasiStats = () => {
   });
 };
 
-export const useGetAdvokasiCases = () => {
+export const useGetAdvokasiCases = (params: any = {}) => {
   return useQuery({
-    queryKey: ['advokasi', 'cases'],
-    queryFn: fetchAdvokasiCases,
+    queryKey: ['advokasi', 'cases', params],
+    queryFn: () => fetchAdvokasiCases(params),
   });
 };
 

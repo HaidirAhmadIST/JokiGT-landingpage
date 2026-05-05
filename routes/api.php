@@ -9,21 +9,24 @@ use App\Http\Controllers\Api\AdvokasiController;
 use App\Http\Controllers\Api\ActivityLogController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\FileController;
+// =========================================================================
+// Public Routes
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\RegistrationController;
 use App\Http\Controllers\Api\RiwayatPekerjaController;
 
 
 // =========================================================================
-// Public Routes
-// =========================================================================
+
 
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register/complete', [RegistrationController::class, 'completeRegistration']);
 Route::post('/register', [AuthController::class, 'register']);
 Route::get('perusahaan', [PerusahaanController::class, 'index']);
+Route::post('perusahaan', [PerusahaanController::class, 'store']);
 Route::get('pekerja', [PekerjaController::class, 'index']);
 Route::post('pekerja', [PekerjaController::class, 'store']);
+
 
 
 // =========================================================================
@@ -42,7 +45,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     // Perusahaan Management
     Route::group(['middleware' => ['role:admin,petugas']], function () {
-        Route::post('perusahaan', [PerusahaanController::class, 'store']);
         Route::put('perusahaan/{perusahaan}', [PerusahaanController::class, 'update']);
         Route::patch('perusahaan/{id}/restore', [PerusahaanController::class, 'restore']);
     });
@@ -53,6 +55,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('pekerja/{pekerja}', [PekerjaController::class, 'show']);
     Route::post('riwayat-pekerja/{id}/file', [FileController::class, 'uploadRiwayatFile']);
     Route::post('detail-medis/{id}/file', [FileController::class, 'uploadMedisFile']);
+    Route::put('riwayat-pekerja/{id}', [RiwayatPekerjaController::class, 'update']);
     
     // Advokasi upload — accessible by owner (viewer) or admin/petugas (ownership checked in controller)
     Route::post('pekerja/{pekerja_id}/advokasi', [AdvokasiController::class, 'update']);
@@ -61,7 +64,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     Route::group(['middleware' => ['role:admin,petugas']], function () {
         Route::put('pekerja/{pekerja}', [PekerjaController::class, 'update']);
-        Route::put('riwayat-pekerja/{id}', [RiwayatPekerjaController::class, 'update']);
         Route::post('pekerja-bulk-update', [PekerjaController::class, 'bulkUpdate']);
     });
     Route::delete('pekerja/{pekerja}', [PekerjaController::class, 'destroy'])->middleware('role:admin');
