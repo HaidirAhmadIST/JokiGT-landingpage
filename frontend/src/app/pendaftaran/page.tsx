@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/axios';
+import Cookies from 'js-cookie';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,6 +23,10 @@ export default function PendaftaranPekerjaPage() {
   const [loading, setLoading] = useState(false);
   const [perusahaanList, setPerusahaanList] = useState<any[]>([]);
   const [duplicateWarning, setDuplicateWarning] = useState<{ nik?: string; email?: string }>({});
+  // Email locked to the logged-in user's account
+  const [lockedEmail, setLockedEmail] = useState<string | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
+
 
   // Form States 
   const [pasFoto, setPasFoto] = useState<File | null>(null);
@@ -150,10 +155,42 @@ export default function PendaftaranPekerjaPage() {
     'Kompensasi JKK BPJSTK?',
     'Program Rehabilitasi BPJSKes?'
   ];
+
+  const handleLogout = async () => {
+    try {
+      await api.post('/logout');
+    } catch (err) {
+      console.error('Logout failed', err);
+    } finally {
+      Cookies.remove('auth_token', { path: '/' });
+      localStorage.removeItem('user');
+      window.location.reload();
+    }
+  };
   const [advokasiData, setAdvokasiData] = useState(
     advokasiQuestions.map(q => ({ question: q, status: 'Tidak', file: [] as File[] }))
   );
 
+<<<<<<< Updated upstream
+=======
+  const [isRestored, setIsRestored] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+    try {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        const parsedUser = JSON.parse(storedUser);
+        if (parsedUser?.email) {
+          setLockedEmail(parsedUser.email);
+          setBaseData(prev => ({ ...prev, email: parsedUser.email }));
+        }
+      }
+    } catch {}
+  }, []);
+
+
+>>>>>>> Stashed changes
   // Persistence: Load from localStorage
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -165,7 +202,7 @@ export default function PendaftaranPekerjaPage() {
         if (parsed.pekerjaanSaatIni) setPekerjaanSaatIni(prev => ({ ...prev, ...parsed.pekerjaanSaatIni }));
         if (parsed.detailMedisData) setDetailMedisData(prev => ({ ...prev, ...parsed.detailMedisData }));
 
-        // Normalize status_kesehatan values (fix old cached data with wrong format)
+        // Normalize status_kesehatan values
         const normalizeStatus = (s: string) => {
           if (!s) return 'sehat';
           const map: Record<string, string> = {
@@ -180,37 +217,35 @@ export default function PendaftaranPekerjaPage() {
         if (parsed.riwayatLalu) {
           setRiwayatLalu(parsed.riwayatLalu.map((r: any) => ({
             ...r,
-            file_bukti: [], // Files cannot be stored in localStorage
+            file_bukti: [],
             riwayat_pemeriksaan: (r.riwayat_pemeriksaan || []).map((m: any) => ({
               ...m,
-              file_hasil: [], // Files cannot be stored in localStorage
+              file_hasil: [],
               status_kesehatan: normalizeStatus(m.status_kesehatan)
             }))
           })));
         }
         if (parsed.apdData) setApdData(parsed.apdData);
         if (parsed.advokasiData) {
-          // File tidak bisa disimpan di localStorage, jadi reset file DAN status ke default
-          // agar user tidak mengira bukti masih terunggah
           setAdvokasiData(parsed.advokasiData.map((d: any) => ({
             ...d,
             file: null,
-            status: 'Tidak', // reset ke Tidak karena file-nya hilang
+            status: d.status || 'Tidak',
           })));
         }
 
-        toast.info("Data pendaftaran dipulihkan dari sesi sebelumnya.", {
-          description: "Silakan unggah kembali dokumen/foto jika ada.",
-          duration: 10000,
-        });
+        toast.info("Data pendaftaran dipulihkan dari sesi sebelumnya.");
       } catch (err) {
         console.error("Failed to restore form data", err);
       }
     }
+    setIsRestored(true);
   }, []);
 
   // Persistence: Save to localStorage
   useEffect(() => {
+    if (!isRestored) return; // Tunggu sampai data lama dimuat sebelum mulai menyimpan perubahan
+
     const dataToSave = {
       step,
       baseData,
@@ -221,7 +256,7 @@ export default function PendaftaranPekerjaPage() {
       advokasiData: advokasiData.map(d => ({ question: d.question, status: d.status }))
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
-  }, [step, baseData, pekerjaanSaatIni, detailMedisData, riwayatLalu, apdData, advokasiData]);
+  }, [step, baseData, pekerjaanSaatIni, detailMedisData, riwayatLalu, apdData, advokasiData, isRestored]);
 
   useEffect(() => {
     const fetchPerusahaan = async () => {
@@ -442,6 +477,14 @@ export default function PendaftaranPekerjaPage() {
         }
 
         const response = await api.post('/pekerja', payload);
+        
+        // If the server returns a token (e.g. for a newly created user), set it immediately
+        // This is crucial so that subsequent file uploads do not fail with 401 Unauthorized
+        if (response.data.token) {
+          Cookies.set('auth_token', response.data.token, { path: '/' });
+          // Ensure axios instance uses the new token immediately
+          api.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
+        }
 
         const pekerjaId = response.data.data.id;
         const savedRiwayat = response.data.data.riwayat_pekerja || [];
@@ -520,13 +563,35 @@ export default function PendaftaranPekerjaPage() {
         if (uploadPromises.length > 0) {
           await Promise.all(uploadPromises);
         }
+
+        return response;
       };
 
       try {
-        await performSubmit(finalPerusahaanId, [...allRiwayat, ...prevRiwayat]);
+        const response = await performSubmit(finalPerusahaanId, [...allRiwayat, ...prevRiwayat]);
+        const pekerjaId = response.data.data.id;
+        
         toast.success('Data pekerja berhasil disimpan!');
-        router.push(`/register-password?email=${encodeURIComponent(baseData.email)}`);
+        
+        // Cek apakah user sudah login
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          const user = JSON.parse(storedUser);
+          
+          if (user.role === 'admin' || user.role === 'petugas') {
+            // Admin/Petugas goes to main dashboard (clean-sync)
+            router.push('/');
+          } else {
+            // Regular worker (viewer) goes to their user dashboard
+            localStorage.setItem('user', JSON.stringify({ ...user, pekerja_id: pekerjaId }));
+            router.push('/dashboard-user');
+          }
+        } else {
+          // Guest goes to set password for activation
+          router.push(`/register-password?email=${encodeURIComponent(baseData.email)}`);
+        }
       } catch (error: any) {
+
         if (error.response?.status === 422) {
           const errors = error.response.data.errors || {};
           const firstField = Object.keys(errors)[0];
@@ -558,8 +623,12 @@ export default function PendaftaranPekerjaPage() {
     }
   };
 
+  if (!isMounted) return null;
+
   return (
-    <div className="min-h-screen bg-[#F8FAFC] font-sans text-slate-900 pb-16">
+
+    <div className="min-h-screen bg-[#F8FAFC] font-sans text-slate-900 pb-16" suppressHydrationWarning={true}>
+
       {/* Navbar Custom */}
       <header className="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center">
         <div className="flex items-center gap-3">
@@ -585,6 +654,18 @@ export default function PendaftaranPekerjaPage() {
           >
             Hapus Sesi / Reset
           </Button>
+
+          {lockedEmail && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-xs font-bold border-slate-200 text-slate-600 hover:bg-slate-50"
+              onClick={handleLogout}
+            >
+              Logout ({lockedEmail})
+            </Button>
+          )}
+
           <Bell className="h-5 w-5 cursor-pointer hover:text-slate-800" />
           <Globe className="h-5 w-5 cursor-pointer hover:text-slate-800" />
         </div>
@@ -713,7 +794,9 @@ export default function PendaftaranPekerjaPage() {
                         value={baseData.email}
                         onChange={e => setBaseData({ ...baseData, email: e.target.value })}
                         onBlur={(e) => checkDuplicate('email', e.target.value)}
+                        disabled={!!lockedEmail}
                       />
+
                       {duplicateWarning.email && <p className="text-[10px] text-amber-600 font-medium">{duplicateWarning.email}</p>}
                     </div>
                     <div className="space-y-2">

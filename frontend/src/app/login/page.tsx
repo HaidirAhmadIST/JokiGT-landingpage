@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
+import Link from 'next/link';
 import api from '@/lib/axios';
 
 import { Button } from '@/components/ui/button';
@@ -20,19 +21,32 @@ export default function LoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    
     try {
       const response = await api.post('/login', formData);
       if (response.data.status === 'success') {
-        // Store token in cookie
-        Cookies.set('auth_token', response.data.data.token, { expires: 7, path: '/' }); // 7 days
-        // Store basic user data in localStorage (optional)
-        const user = response.data.data.user;
+        const { token, user } = response.data.data;
+        
+        // Store auth info
+        Cookies.set('auth_token', token, { expires: 7, path: '/' });
         localStorage.setItem('user', JSON.stringify(user));
+
         toast.success(response.data.message);
         
         if (user.role === 'viewer') {
-          window.location.href = '/dashboard-user';
+          // Check if this viewer already has a pekerja record
+          try {
+            const meRes = await api.get('/me');
+            const pekerja = meRes.data.data?.pekerja;
+            if (pekerja?.id) {
+              // Store pekerja_id so layout can redirect without extra API call
+              localStorage.setItem('user', JSON.stringify({ ...user, pekerja_id: pekerja.id }));
+              window.location.href = '/dashboard-user';
+            } else {
+              window.location.href = '/pendaftaran';
+            }
+          } catch {
+            window.location.href = '/pendaftaran';
+          }
         } else {
           window.location.href = '/';
         }
@@ -88,6 +102,13 @@ export default function LoginPage() {
             <Button className="w-full" type="submit" disabled={loading}>
               {loading ? 'Masuk...' : 'Masuk Dashboard'}
             </Button>
+            <p className="text-center text-sm text-slate-500 mt-4">
+              Belum punya akun?{' '}
+              <Link href="/pendaftaran" className="text-primary font-semibold hover:underline">
+                Daftar di sini
+              </Link>
+            </p>
+
           </CardFooter>
         </form>
       </Card>
