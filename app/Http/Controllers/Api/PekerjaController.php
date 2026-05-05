@@ -23,6 +23,31 @@ class PekerjaController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
+        $user = $request->user();
+
+        // If guest (not logged in), ONLY allow searching for specific NIK/Email
+        // This is for duplicate checking in the registration form.
+        if (!$user) {
+            if (!$request->has('search')) {
+                return response()->json([
+                    'status' => 'success',
+                    'data'   => ['data' => [], 'total' => 0]
+                ]);
+            }
+            // If searching, we proceed but with limited data if needed.
+        }
+
+        // Viewer can only see their own pekerja record
+        if ($user?->role === 'viewer') {
+            $pekerja = Pekerja::withSummary()
+                ->where('user_id', $user->id)
+                ->first();
+            return response()->json([
+                'status' => 'success',
+                'data'   => $pekerja ? ['data' => [$pekerja], 'total' => 1] : ['data' => [], 'total' => 0]
+            ]);
+        }
+
         $query = Pekerja::withSummary();
 
         // Filter by company (used by company detail modal)
@@ -85,6 +110,11 @@ class PekerjaController extends Controller
             $pekerja = Pekerja::where('nik', $request->nik)->first();
 
             if ($pekerja) {
+                // SECURITY CHECK: If this NIK already belongs to another user, and the current user is a viewer, block it.
+                if ($request->user()?->role === 'viewer' && $pekerja->user_id && $pekerja->user_id !== $user->id) {
+                    return response()->json(['status' => 'error', 'message' => 'NIK ini sudah terdaftar dengan akun lain. Silakan hubungi admin jika ini adalah kesalahan.'], 403);
+                }
+
                 // Ensure the worker is tied to this user
                 $pekerja->update([
                     'user_id' => $user->id,
@@ -196,10 +226,14 @@ class PekerjaController extends Controller
 
             DB::commit();
 
+            // Generate a token for the user so they can upload files immediately after
+            $token = $user->createToken('auth_token')->plainTextToken;
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'Data pekerja berhasil disimpan.',
-                'data' => Pekerja::withFullProfile()->find($pekerja->id)
+                'data' => Pekerja::withFullProfile()->find($pekerja->id),
+                'token' => $token
             ], 200);
 
         } catch (\Exception $e) {
@@ -333,6 +367,13 @@ class PekerjaController extends Controller
 
         if (!$pekerja) {
             return response()->json(['status' => 'error', 'message' => 'Pekerja tidak ditemukan.'], 404);
+        }
+
+        // Check ownership: Viewer can only upload for their own profile
+        $user = auth()->user();
+        $isOwner = $user->pekerja && $user->pekerja->id == $pekerja->id;
+        if (!$user->isAdmin() && !$user->isPetugas() && !$isOwner) {
+            return response()->json(['status' => 'error', 'message' => 'Anda tidak memiliki izin untuk mengunggah foto untuk pekerja ini.'], 403);
         }
 
         if ($request->hasFile('pas_foto')) {
