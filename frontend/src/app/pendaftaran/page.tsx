@@ -11,7 +11,17 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Bell, Globe, User, ShieldAlert, ArrowRight, ArrowLeft, Plus, UploadCloud, Save, CheckCircle, X, Activity, Info, Briefcase, HeartPulse, ClipboardList, Zap } from 'lucide-react';
+import { Bell, Globe, User, ShieldAlert, ArrowRight, ArrowLeft, Plus, UploadCloud, Save, CheckCircle, X, Activity, Info, Briefcase, HeartPulse, ClipboardList, Zap, Trash2, RefreshCw } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { cn, formatHealthStatus } from '@/lib/utils';
 import FormDetailMedis, { type DataMedis } from '@/components/FormDetailMedis';
 
@@ -26,6 +36,7 @@ export default function PendaftaranPekerjaPage() {
   // Email locked to the logged-in user's account
   const [lockedEmail, setLockedEmail] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
+  const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
 
 
   // Form States 
@@ -656,12 +667,7 @@ export default function PendaftaranPekerjaPage() {
             variant="ghost"
             size="sm"
             className="text-xs font-bold text-red-500 hover:text-red-600 hover:bg-red-50 px-3"
-            onClick={() => {
-              if (confirm("Anda yakin ingin menghapus seluruh progres pendaftaran ini? Data yang sudah diisi akan hilang.")) {
-                localStorage.removeItem(STORAGE_KEY);
-                window.location.reload();
-              }
-            }}
+            onClick={() => setIsResetDialogOpen(true)}
           >
             Hapus Sesi / Reset
           </Button>
@@ -1611,6 +1617,34 @@ export default function PendaftaranPekerjaPage() {
           © {new Date().getFullYear()} ADVOKASI PENYAKIT AKIBAT KERJA (PAK) — HAK CIPTA DILINDUNGI
         </p>
       </main>
+      {/* Reset Confirmation Dialog */}
+      <AlertDialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
+        <AlertDialogContent className="rounded-2xl border-none shadow-2xl">
+          <AlertDialogHeader>
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-rose-50 mb-2">
+              <RefreshCw className="h-7 w-7 text-rose-500" />
+            </div>
+            <AlertDialogTitle className="text-xl font-black text-slate-900 text-center">Reset Pendaftaran?</AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-500 text-center text-sm px-2">
+              Tindakan ini akan menghapus <span className="text-rose-600 font-bold">seluruh progres</span> pendaftaran Anda. Data yang sudah diisi akan hilang permanen.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="sm:justify-center gap-3 mt-4">
+            <AlertDialogCancel className="rounded-xl border-slate-200 text-slate-500 font-bold hover:bg-slate-50 px-6">
+              Lanjutkan Mengisi
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => {
+                localStorage.removeItem(STORAGE_KEY);
+                window.location.reload();
+              }}
+              className="rounded-xl bg-rose-600 text-white font-bold hover:bg-rose-700 shadow-lg shadow-rose-200 border-none px-6"
+            >
+              Ya, Reset Data
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

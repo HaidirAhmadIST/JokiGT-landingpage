@@ -13,6 +13,16 @@ import {
 import { Plus, ExternalLink, ChevronLeft, ChevronRight, AlertTriangle, Save, Users, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRole } from '@/hooks/useRole';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function PekerjaPage() {
   const router = useRouter();
@@ -30,6 +40,10 @@ export default function PekerjaPage() {
   const [bulkOpen, setBulkOpen] = useState(false);
   const [bulkEdits, setBulkEdits] = useState<Record<number, { jenis_kelamin: string, tanggal_lahir: string }>>({});
 
+  // Delete Dialog State
+  const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -46,8 +60,10 @@ export default function PekerjaPage() {
         setTotal(result.total || 0);
         setLastPage(result.last_page || 1);
       }
-    } catch (error) {
-      toast.error('Gagal mengambil data pekerja. Cek koneksi server.');
+    } catch (error: any) {
+      if (error.response?.status !== 401) {
+        toast.error('Gagal mengambil data pekerja. Cek koneksi server.');
+      }
       console.error(error);
     } finally {
       setLoading(false);
@@ -104,15 +120,22 @@ export default function PekerjaPage() {
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('Hapus pekerja ini secara PERMANEN?')) return;
+  const handleDelete = async () => {
+    if (!deleteId) return;
     try {
-      await api.delete(`/pekerja/${id}`);
+      await api.delete(`/pekerja/${deleteId}`);
       toast.success('Pekerja dihapus secara permanen');
+      setIsDeleteDialogOpen(false);
+      setDeleteId(null);
       fetchData();
     } catch (e) {
       toast.error('Gagal menghapus');
     }
+  };
+
+  const confirmDelete = (id: number) => {
+    setDeleteId(id);
+    setIsDeleteDialogOpen(true);
   };
 
   return (
@@ -285,15 +308,15 @@ export default function PekerjaPage() {
                     </TableCell>
                     <TableCell className="text-right py-4 pr-4 w-12">
                       <div className="flex justify-end">
-                        {isSuperAdmin && (
                           <Button 
                             variant="ghost" 
-                            className="text-rose-500 hover:text-rose-700 hover:bg-rose-50 font-bold text-sm h-10 w-10 p-0 rounded-xl" 
-                            onClick={(e) => { e.stopPropagation(); handleDelete(p.id); }}
+                            size="icon" 
+                            className="h-8 w-8 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                            onClick={(e) => { e.stopPropagation(); confirmDelete(p.id); }}
+                            title="Hapus Permanen"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
-                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -459,6 +482,31 @@ export default function PekerjaPage() {
           </div>
         </SheetContent>
       </Sheet>
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent className="rounded-2xl border-none shadow-2xl">
+          <AlertDialogHeader>
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-rose-50 mb-2">
+              <Trash2 className="h-7 w-7 text-rose-500" />
+            </div>
+            <AlertDialogTitle className="text-xl font-black text-slate-900 text-center">Hapus Data Pekerja?</AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-500 text-center text-sm px-2">
+              Tindakan ini <span className="text-rose-600 font-bold">tidak dapat dibatalkan</span>. Semua riwayat kesehatan dan pajanan pekerja ini akan dihapus permanen dari sistem.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="sm:justify-center gap-3 mt-4">
+            <AlertDialogCancel className="rounded-xl border-slate-200 text-slate-500 font-bold hover:bg-slate-50 px-6">
+              Batalkan
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDelete}
+              className="rounded-xl bg-rose-600 text-white font-bold hover:bg-rose-700 shadow-lg shadow-rose-200 border-none px-6"
+            >
+              Ya, Hapus Permanen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

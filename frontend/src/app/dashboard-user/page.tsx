@@ -134,7 +134,11 @@ export default function UserDashboardPage() {
           setIncompleteData(incomplete);
         }
       }
-    } catch { toast.error('Gagal memuat data dashboard.'); }
+    } catch (err: any) { 
+      if (err.response?.status !== 401) {
+        toast.error('Gagal memuat data dashboard.'); 
+      }
+    }
     finally { setLoading(false); }
   };
 
@@ -686,28 +690,22 @@ export default function UserDashboardPage() {
                                   if (!hasProvided && !hasOwn && !legacy) return <span className="text-slate-400 italic text-[11px]">-</span>;
 
                                   return (
-                                    <div className="flex flex-col gap-2.5 py-1">
+                                    <div className="flex flex-col gap-2 py-1">
                                       {hasProvided && (
-                                        <div className="flex items-start gap-2">
-                                          <div className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)] shrink-0" />
-                                          <div className="flex flex-col">
-                                            <span className="text-[8px] font-black text-blue-600/80 uppercase tracking-[0.05em] leading-none mb-1">Oleh Perusahaan</span>
-                                            <span className="text-[11px] text-slate-700 font-bold leading-snug">{provided}</span>
-                                          </div>
+                                        <div className="flex flex-col">
+                                          <span className="text-[8px] font-black text-blue-500 uppercase tracking-tighter mb-0.5">Disediakan Perusahaan:</span>
+                                          <span className="text-[11px] text-slate-700 font-bold leading-snug">{provided}</span>
                                         </div>
                                       )}
                                       {hasOwn && (
-                                        <div className="flex items-start gap-2">
-                                          <div className="mt-1.5 h-1.5 w-1.5 rounded-full bg-slate-400 shrink-0" />
-                                          <div className="flex flex-col">
-                                            <span className="text-[8px] font-black text-slate-500 uppercase tracking-[0.05em] leading-none mb-1">Milik Mandiri</span>
-                                            <span className="text-[11px] text-slate-700 font-bold leading-snug">{own}</span>
-                                          </div>
+                                        <div className="flex flex-col">
+                                          <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter mb-0.5">Milik Mandiri:</span>
+                                          <span className="text-[11px] text-slate-700 font-bold leading-snug">{own}</span>
                                         </div>
                                       )}
                                       {!hasProvided && !hasOwn && legacy && (
-                                         <div className="flex items-start gap-2">
-                                           <div className="mt-1.5 h-1.5 w-1.5 rounded-full bg-slate-300 shrink-0" />
+                                         <div className="flex flex-col">
+                                           <span className="text-[8px] font-black text-blue-400 uppercase tracking-tighter mb-0.5">Riwayat APD:</span>
                                            <span className="text-[11px] text-slate-600 font-medium leading-snug">{legacy}</span>
                                          </div>
                                       )}
@@ -717,9 +715,11 @@ export default function UserDashboardPage() {
                              })()}
                            </div>
                         </td>
-                        <td className="px-4 py-4 bg-slate-50/50 border-y border-slate-100 group-hover:bg-blue-50/30 transition-colors text-[11px] font-black text-slate-700">
-                          {r.durasi_pajanan ? `${r.durasi_pajanan} Tahun` : '-'}
-                        </td>
+                         <td className="px-4 py-4 bg-slate-50/50 border-y border-slate-100 group-hover:bg-blue-50/30 transition-colors text-right whitespace-nowrap">
+                           <span className="inline-flex items-center px-2.5 py-1 bg-white text-slate-700 rounded-full border border-slate-200 text-[11px] font-black shadow-sm">
+                             {r.durasi_pajanan ? `${r.durasi_pajanan} Tahun` : '-'}
+                           </span>
+                         </td>
                         <td className="px-4 py-4 bg-slate-50/50 rounded-r-2xl border-y border-r border-slate-100 group-hover:bg-blue-50/30 transition-colors text-right">
                           <Button 
                             variant="ghost" 

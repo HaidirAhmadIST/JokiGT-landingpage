@@ -17,6 +17,16 @@ import {
 import {
   Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger,
 } from '@/components/ui/sheet';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Plus, X, Building2, Briefcase, Info, CheckCircle2, ShieldAlert, CheckCircle, AtSign,
   Users, UserCheck, UserMinus, AlertTriangle, Search, Eye, ArrowUpDown, ArrowUp, ArrowDown,
   Phone, Mail, UserCircle, Package, Loader2, ChevronDown, Trash2, Pencil
@@ -191,6 +201,7 @@ export default function PerusahaanPage() {
   const [workersTotal, setWorkersTotal] = useState(0);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const currentCompanyIdRef = useRef<number | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const fetchData = async (page = 1) => {
     setLoading(true);
@@ -208,8 +219,10 @@ export default function PerusahaanPage() {
         setTotal(pageData.total);
         setPerPage(pageData.per_page);
       }
-    } catch (error) {
-      toast.error('Gagal mengambil data perusahaan');
+    } catch (error: any) {
+      if (error.response?.status !== 401) {
+        toast.error('Gagal mengambil data perusahaan');
+      }
     } finally {
       setLoading(false);
     }
@@ -293,8 +306,10 @@ export default function PerusahaanPage() {
         setWorkersLastPage(pageData.last_page);
         setWorkersTotal(pageData.total);
       }
-    } catch (error) {
-      toast.error('Gagal mengambil data pekerja');
+    } catch (error: any) {
+      if (error.response?.status !== 401) {
+        toast.error('Gagal mengambil data pekerja');
+      }
     } finally {
       setWorkersLoading(false);
       setWorkersLoadingMore(false);
@@ -862,18 +877,7 @@ export default function PerusahaanPage() {
                         variant="outline" 
                         size="sm" 
                         className="rounded-xl font-bold border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100 hover:text-rose-700 hover:border-rose-300 px-4 transition-all"
-                        onClick={async () => {
-                          if (confirm('Hapus data perusahaan ini secara PERMANEN?')) {
-                            try {
-                              await api.delete(`/perusahaan/${detailData.id}`);
-                              toast.success('Perusahaan dihapus secara permanen');
-                              setDetailOpen(false);
-                              fetchData();
-                            } catch (e: any) {
-                              toast.error(e.response?.data?.message || 'Gagal menghapus perusahaan');
-                            }
-                          }
-                        }}
+                        onClick={() => setIsDeleteDialogOpen(true)}
                       >
                         <Trash2 className="h-4 w-4 mr-2" />
                         Hapus (S.Admin)
@@ -1149,6 +1153,41 @@ export default function PerusahaanPage() {
           ) : null}
         </SheetContent>
       </Sheet>
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent className="rounded-2xl border-none shadow-2xl">
+          <AlertDialogHeader>
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-rose-50 mb-2">
+              <Trash2 className="h-7 w-7 text-rose-500" />
+            </div>
+            <AlertDialogTitle className="text-xl font-black text-slate-900 text-center">Hapus Data Perusahaan?</AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-500 text-center text-sm px-2">
+              Tindakan ini <span className="text-rose-600 font-bold">tidak dapat dibatalkan</span>. Semua data perusahaan dan riwayat pekerja terkait akan dihapus permanen dari sistem.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="sm:justify-center gap-3 mt-4">
+            <AlertDialogCancel className="rounded-xl border-slate-200 text-slate-500 font-bold hover:bg-slate-50 px-6">
+              Batalkan
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={async () => {
+                if (!detailData) return;
+                try {
+                  await api.delete(`/perusahaan/${detailData.id}`);
+                  toast.success('Perusahaan dihapus secara permanen');
+                  setIsDeleteDialogOpen(false);
+                  setDetailOpen(false);
+                  fetchData();
+                } catch (e: any) {
+                  toast.error(e.response?.data?.message || 'Gagal menghapus perusahaan');
+                }
+              }}
+              className="rounded-xl bg-rose-600 text-white font-bold hover:bg-rose-700 shadow-lg shadow-rose-200 border-none px-6"
+            >
+              Ya, Hapus Permanen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

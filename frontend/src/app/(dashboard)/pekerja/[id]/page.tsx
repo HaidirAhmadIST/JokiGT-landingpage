@@ -8,11 +8,22 @@ import { Button } from '@/components/ui/button';
 import {
   ArrowLeft, Printer, Pin, Mail, Phone, MapPin,
   Briefcase, ShieldAlert, CheckCircle2, Circle, Edit3,
-  Download, Image as ImageIcon, Activity, FileText, FileCheck, ClipboardList, HeartPulse, HardHat, Zap
+  Download, Image as ImageIcon, Activity, FileText, FileCheck, ClipboardList, HeartPulse, HardHat, Zap, Building2, User
 } from 'lucide-react';
 import { format, differenceInYears, differenceInMonths, parseISO } from 'date-fns';
 import { id as localeID } from 'date-fns/locale';
 import { useRole } from '@/hooks/useRole';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Trash2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -46,6 +57,7 @@ export default function PekerjaDetailPage() {
     jenis_apd_sendiri: '',
   });
   const [savingRiwayat, setSavingRiwayat] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const { isSuperAdmin, isStaffOrAbove, loading: roleLoading } = useRole();
 
   const openEditRiwayat = (riwayat: any) => {
@@ -94,13 +106,25 @@ export default function PekerjaDetailPage() {
     }
   };
 
+  const handleDelete = async () => {
+    try {
+      await api.delete(`/pekerja/${id}`);
+      toast.success('Pekerja dihapus secara permanen');
+      router.push('/pekerja');
+    } catch (e) {
+      toast.error('Gagal menghapus pekerja');
+    }
+  };
+
   const fetchDetail = async () => {
     try {
       setLoading(true);
       const res = await api.get(`/pekerja/${id}`);
       setData(res.data.data);
-    } catch (e) {
-      toast.error('Gagal mengambil detail pekerja');
+    } catch (e: any) {
+      if (e.response?.status !== 401) {
+        toast.error('Gagal mengambil detail pekerja');
+      }
     } finally {
       setLoading(false);
     }
@@ -478,17 +502,7 @@ export default function PekerjaDetailPage() {
             variant="ghost" 
             size="sm" 
             className="rounded-xl font-semibold text-slate-400 hover:text-rose-600 hover:bg-rose-50 px-5 border border-transparent hover:border-rose-100 transition-all duration-200"
-            onClick={async () => {
-              if (confirm('Hapus data pekerja ini secara PERMANEN?')) {
-                try {
-                  await api.delete(`/pekerja/${id}`);
-                  toast.success('Pekerja dihapus secara permanen');
-                  router.push('/pekerja');
-                } catch (e) {
-                  toast.error('Gagal menghapus pekerja');
-                }
-              }
-            }}
+            onClick={() => setIsDeleteDialogOpen(true)}
           >
             Hapus Data Pekerja (S.Admin)
           </Button>
@@ -1359,80 +1373,99 @@ export default function PekerjaDetailPage() {
             </div>
 
             {/* Riwayat Pajanan Section */}
-            <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6">
-              <h3 className="text-sm font-bold text-[#1e293b] flex items-center mb-6">
-                <Zap className="h-4 w-4 text-[#0ea5e9] mr-2" /> Riwayat Pajanan (Exposure History)
-              </h3>
+            <div className="bg-white border border-slate-100 shadow-sm rounded-2xl overflow-hidden">
+              <div className="p-6 border-b border-slate-50 bg-slate-50/30">
+                <h3 className="text-sm font-bold text-[#1e293b] flex items-center">
+                  <Zap className="h-4 w-4 text-[#0ea5e9] mr-2" /> Riwayat Pajanan & APD
+                </h3>
+              </div>
               
               <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left">
-                  <thead className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50/50">
-                    <tr>
-                      <th className="px-4 py-3 rounded-l-lg">Perusahaan / Proyek</th>
-                      <th className="px-4 py-3">Jenis Pajanan</th>
-                      <th className="px-4 py-3">APD yang Digunakan</th>
-                      <th className="px-4 py-3 rounded-r-lg">Durasi (Tahun)</th>
+                <table className="w-full text-sm text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50/80 border-b border-slate-100">
+                      <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Perusahaan / Proyek</th>
+                      <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Jenis Pajanan</th>
+                      <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">APD yang Digunakan</th>
+                      <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right">Durasi</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {data.riwayat_pekerja?.some((r: any) => r.jenis_pajanan || r.durasi_pajanan || r.informal_data?.apd_list) ? (
+                  <tbody className="divide-y divide-slate-50">
+                    {data.riwayat_pekerja?.some((r: any) => r.jenis_pajanan || r.durasi_pajanan || r.informal_data?.apd_list || r.informal_data?.apd_disediakan || r.informal_data?.jenis_apd_sendiri) ? (
                       data.riwayat_pekerja.map((r: any, idx: number) => (
-                        (r.jenis_pajanan || r.durasi_pajanan || r.informal_data?.apd_list) && (
-                          <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
-                            <td className="px-4 py-4 font-bold text-slate-700">{r.nama_perusahaan}</td>
-                            <td className="px-4 py-4">
-                              <span className="px-2 py-1 bg-amber-50 text-amber-600 rounded text-[11px] font-bold uppercase tracking-wide">
-                                {r.jenis_pajanan || '-'}
-                              </span>
+                        (r.jenis_pajanan || r.durasi_pajanan || r.informal_data?.apd_list || r.informal_data?.apd_disediakan || r.informal_data?.jenis_apd_sendiri) && (
+                          <tr key={idx} className="hover:bg-slate-50/70 transition-all duration-200">
+                            <td className="px-6 py-5">
+                              <p className="font-bold text-slate-800 text-[13px]">{r.nama_perusahaan}</p>
+                              <p className="text-[10px] text-slate-400 mt-1 font-medium">{r.bagian || r.jabatan || 'Pekerja'}</p>
                             </td>
-                            <td className="px-4 py-4">
-                              <div className="flex flex-col gap-1.5">
+                            <td className="px-6 py-5">
+                              <div className="inline-flex items-center px-2.5 py-1 bg-amber-50 text-amber-600 rounded-lg border border-amber-100 text-[10px] font-bold uppercase tracking-wider">
+                                <Activity className="h-3 w-3 mr-1.5" />
+                                {r.jenis_pajanan || 'UMUM'}
+                              </div>
+                            </td>
+                            <td className="px-6 py-5">
+                              <div className="flex flex-col gap-3">
                                 {(() => {
                                   try {
-                                    const info = typeof r.informal_data === 'string' ? JSON.parse(r.informal_data) : r.informal_data;
-                                    const provided = info?.apd_disediakan;
-                                    const own = info?.jenis_apd_sendiri;
-                                    const legacy = info?.apd_list;
+                                    const info = typeof r.informal_data === 'string' ? JSON.parse(r.informal_data) : (r.informal_data || {});
                                     
-                                    if (provided || own) {
-                                      const hasProvided = provided && provided !== '-' && provided.toLowerCase() !== 'tidak ada';
-                                      const hasOwn = own && own !== '-' && own.toLowerCase() !== 'tidak ada';
+                                    const formatApd = (val: any) => {
+                                      if (!val) return "";
+                                      if (Array.isArray(val)) return val.filter(Boolean).join(", ");
+                                      return String(val);
+                                    };
 
-                                      if (!hasProvided && !hasOwn) return <span className="text-slate-400 italic">-</span>;
-
-                                      return (
-                                        <>
-                                          {hasProvided && (
-                                            <div className="flex items-center gap-1.5">
-                                              <span className="text-[9px] font-bold text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100 uppercase tracking-tighter shrink-0">🏢 PERUSAHAAN</span>
-                                              <span className="text-[11px] text-slate-600 font-bold leading-none">{provided}</span>
-                                            </div>
-                                          )}
-                                          {hasOwn && (
-                                            <div className="flex items-center gap-1.5">
-                                              <span className="text-[9px] font-bold text-slate-500 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-200 uppercase tracking-tighter shrink-0">👤 MANDIRI</span>
-                                              <span className="text-[11px] text-slate-600 font-bold leading-none">{own}</span>
-                                            </div>
-                                          )}
-                                        </>
-                                      );
-                                    }
+                                    const provided = formatApd(info.apd_disediakan);
+                                    const own = formatApd(info.jenis_apd_sendiri);
+                                    const legacy = formatApd(info.apd_list);
                                     
-                                    return <span className="text-slate-600 font-medium">{legacy || '-'}</span>;
-                                  } catch(e) { return <span className="text-slate-400">-</span>; }
+                                    const hasProvided = provided.trim().length > 0 && provided !== '-' && provided.toLowerCase() !== 'tidak ada' && provided.toLowerCase() !== 'n/a';
+                                    const hasOwn = own.trim().length > 0 && own !== '-' && own.toLowerCase() !== 'tidak ada' && own.toLowerCase() !== 'n/a';
+                                    const hasLegacy = legacy.trim().length > 0 && legacy !== '-' && legacy.toLowerCase() !== 'tidak ada';
+
+                                    if (!hasProvided && !hasOwn && !hasLegacy) return <span className="text-slate-400 italic text-[11px]">-</span>;
+
+                                    return (
+                                      <div className="space-y-2">
+                                        {hasProvided && (
+                                          <div className="flex flex-col">
+                                            <span className="text-[9px] font-black text-blue-500 uppercase tracking-tight leading-none mb-1">Disediakan Perusahaan:</span>
+                                            <p className="text-[11px] text-slate-700 font-bold leading-snug">{provided}</p>
+                                          </div>
+                                        )}
+                                        {hasOwn && (
+                                          <div className="flex flex-col">
+                                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-tight leading-none mb-1">Milik Mandiri:</span>
+                                            <p className="text-[11px] text-slate-700 font-bold leading-snug">{own}</p>
+                                          </div>
+                                        )}
+                                        {!hasProvided && !hasOwn && hasLegacy && (
+                                          <div className="flex flex-col">
+                                            <span className="text-[9px] font-black text-blue-400 uppercase tracking-tight leading-none mb-1">Riwayat APD:</span>
+                                            <p className="text-[11px] text-slate-700 font-bold leading-snug">{legacy}</p>
+                                          </div>
+                                        )}
+                                      </div>
+                                    );
+                                  } catch(e) { return <span className="text-slate-400 italic text-[11px]">-</span>; }
                                 })()}
                               </div>
                             </td>
-                            <td className="px-4 py-4 font-semibold text-slate-600">
-                              {r.durasi_pajanan ? `${r.durasi_pajanan} Tahun` : '-'}
-                            </td>
+                             <td className="px-6 py-5 text-right whitespace-nowrap">
+                               <span className="inline-flex items-center px-3 py-1 bg-slate-50 text-slate-700 rounded-full border border-slate-100 text-[12px] font-extrabold shadow-sm">
+                                 {r.durasi_pajanan ? `${r.durasi_pajanan} Tahun` : '-'}
+                               </span>
+                             </td>
                           </tr>
                         )
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={4} className="px-4 py-10 text-center text-slate-400 italic">
-                          Tidak ada data riwayat pajanan yang tercatat.
+                        <td colSpan={4} className="px-6 py-12 text-center">
+                          <Activity className="h-10 w-10 text-slate-100 mx-auto mb-3" />
+                          <p className="text-sm font-bold text-slate-300">Tidak ada data riwayat pajanan.</p>
                         </td>
                       </tr>
                     )}
@@ -1628,6 +1661,31 @@ export default function PekerjaDetailPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent className="rounded-2xl border-none shadow-2xl">
+          <AlertDialogHeader>
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-rose-50 mb-2">
+              <Trash2 className="h-7 w-7 text-rose-500" />
+            </div>
+            <AlertDialogTitle className="text-xl font-black text-slate-900 text-center">Hapus Data Pekerja?</AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-500 text-center text-sm px-2">
+              Tindakan ini <span className="text-rose-600 font-bold">tidak dapat dibatalkan</span>. Semua riwayat kesehatan dan pajanan pekerja ini akan dihapus permanen dari sistem.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="sm:justify-center gap-3 mt-4">
+            <AlertDialogCancel className="rounded-xl border-slate-200 text-slate-500 font-bold hover:bg-slate-50 px-6">
+              Batalkan
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDelete}
+              className="rounded-xl bg-rose-600 text-white font-bold hover:bg-rose-700 shadow-lg shadow-rose-200 border-none px-6"
+            >
+              Ya, Hapus Permanen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
