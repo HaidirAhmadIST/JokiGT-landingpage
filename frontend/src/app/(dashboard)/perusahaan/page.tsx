@@ -668,24 +668,25 @@ export default function PerusahaanPage() {
                 const rowNumber = (currentPage - 1) * perPage + index + 1;
 
                 return (
-                  <TableRow key={p.id} className="hover:bg-slate-50/50 transition-colors group border-b border-slate-50">
+                  <TableRow 
+                    key={p.id} 
+                    className="hover:bg-slate-50/50 transition-colors group border-b border-slate-50 cursor-pointer"
+                    onClick={() => openDetail(p)}
+                  >
                     <TableCell className="py-4 pl-6 pr-1">
                       <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-slate-100 text-slate-500 text-[11px] font-bold">
                         {rowNumber}
                       </span>
                     </TableCell>
                     <TableCell className="py-4 px-4">
-                      <button 
-                        onClick={() => openDetail(p)}
-                        className="flex items-center gap-3 w-full text-left group/company outline-none transition-transform hover:translate-x-1"
-                      >
+                      <div className="flex items-center gap-3 w-full text-left group/company transition-transform hover:translate-x-1">
                         <div className="shrink-0 scale-75 origin-left transition-all group-hover/company:scale-90 group-hover/company:drop-shadow-md">
                           {getRandomIcon(p.id)}
                         </div>
                         <span className="font-bold text-[#1e293b] group-hover/company:text-[#0284c7] transition-all text-[14px] truncate">
                           {p.nama_perusahaan}
                         </span>
-                      </button>
+                      </div>
                     </TableCell>
                     <TableCell className="py-4 px-4 truncate max-w-0">
                       <span className="font-medium text-[#475569] text-[13px] block truncate">{p.sektor_industri || '-'}</span>
@@ -703,7 +704,7 @@ export default function PerusahaanPage() {
                         <Button 
                           variant="ghost" 
                           size="icon" 
-                          onClick={() => openEdit(p)} 
+                          onClick={(e) => { e.stopPropagation(); openEdit(p); }} 
                           className="h-8 w-8 text-[#0ea5e9] hover:text-[#0284c7] hover:bg-sky-50 rounded-lg transition-all hover:scale-110 active:scale-95 group/edit"
                         >
                           <Pencil className="h-4 w-4 transition-transform group-hover/edit:rotate-12" />
