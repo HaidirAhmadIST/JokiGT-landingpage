@@ -9,14 +9,15 @@ use App\Http\Controllers\Api\AdvokasiController;
 use App\Http\Controllers\Api\ActivityLogController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\FileController;
+// =========================================================================
+// Public Routes
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\RegistrationController;
 use App\Http\Controllers\Api\RiwayatPekerjaController;
 
 
 // =========================================================================
-// Public Routes
-// =========================================================================
+
 
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register/complete', [RegistrationController::class, 'completeRegistration']);
@@ -25,6 +26,7 @@ Route::get('perusahaan', [PerusahaanController::class, 'index']);
 Route::post('perusahaan', [PerusahaanController::class, 'store']);
 Route::get('pekerja', [PekerjaController::class, 'index']);
 Route::post('pekerja', [PekerjaController::class, 'store']);
+
 
 
 // =========================================================================

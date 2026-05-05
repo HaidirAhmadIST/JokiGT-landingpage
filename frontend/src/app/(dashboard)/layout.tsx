@@ -102,7 +102,7 @@ export default function DashboardLayout({
     };
 
     initUser();
-  }, []);
+  }, [router]);
 
   // Click outside to close search dropdown
   useEffect(() => {
