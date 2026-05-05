@@ -61,11 +61,12 @@ export default function DashboardIndexPage() {
       return <div className="h-9 w-20 bg-slate-200 rounded-lg animate-pulse" />;
     }
     return (
-      <h3 className="text-3xl font-extrabold text-[#0f172a] tabular-nums transition-all duration-300">
+      <h3 className="text-4xl font-extrabold text-[#0f172a] tabular-nums transition-all duration-300">
         {value.toLocaleString('id-ID')}
       </h3>
     );
   };
+
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 max-w-7xl mx-auto">
@@ -84,82 +85,87 @@ export default function DashboardIndexPage() {
       <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
 
         {/* Card 1 — Total Pekerja */}
-        <Card className="rounded-[20px] shadow-sm border-slate-100 p-6 flex flex-col justify-between h-36 relative overflow-hidden group hover:shadow-md transition-all">
+        <Card className="rounded-[20px] shadow-sm border-slate-100 p-6 flex flex-col justify-between min-h-[152px] hover:shadow-md transition-all">
           <div className="flex justify-between items-start">
+            <p className="text-xs font-bold text-[#94a3b8] tracking-widest uppercase">Total Pekerja</p>
             <div className="bg-blue-50 text-blue-500 p-2.5 rounded-xl">
               <Users className="h-5 w-5" />
             </div>
+          </div>
+          <div className="flex items-end gap-3">
+            <StatValue value={stats?.total_pekerja ?? 0} loading={loading} />
             {stats && stats.total_pekerja > 0 && (
-              <div className="flex items-center text-emerald-500 text-xs font-bold gap-1 bg-emerald-50 px-2 py-1 rounded-full">
+              <span className="flex items-center text-xs font-bold gap-0.5 mb-1.5 text-emerald-500">
                 <TrendingUp className="h-3 w-3" />
-                Live
-              </div>
+                +0%
+              </span>
             )}
           </div>
-          <div>
-            <p className="text-[#64748b] text-sm font-semibold mb-1">Total Pekerja</p>
-            <StatValue value={stats?.total_pekerja ?? 0} loading={loading} />
-          </div>
+          <p className="text-xs font-medium text-[#94a3b8]">Live monitoring</p>
         </Card>
 
         {/* Card 2 — Kasus Aktif */}
-        <Card className="rounded-[20px] shadow-sm border-slate-100 p-6 flex flex-col justify-between h-36 relative overflow-hidden group hover:shadow-md transition-all">
+        <Card className="rounded-[20px] shadow-sm border-slate-100 p-6 flex flex-col justify-between min-h-[152px] hover:shadow-md transition-all">
           <div className="flex justify-between items-start">
+            <p className="text-xs font-bold text-[#94a3b8] tracking-widest uppercase">Kasus Aktif</p>
             <div className="bg-orange-50 text-orange-500 p-2.5 rounded-xl">
               <ClipboardList className="h-5 w-5" />
             </div>
+          </div>
+          <div className="flex items-end gap-3">
+            <StatValue value={stats?.kasus_aktif ?? 0} loading={loading} />
             {stats && stats.kasus_aktif > 0 && (
-              <div className="flex items-center text-orange-500 text-xs font-bold gap-1 bg-orange-50 px-2 py-1 rounded-full">
-                <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
-                Proses
-              </div>
+              <span className="flex items-center text-xs font-bold gap-0.5 mb-1.5 text-orange-500">
+                <TrendingUp className="h-3 w-3" />
+                +0%
+              </span>
             )}
           </div>
-          <div>
-            <p className="text-[#64748b] text-sm font-semibold mb-1">Kasus Aktif</p>
-            <StatValue value={stats?.kasus_aktif ?? 0} loading={loading} />
-          </div>
+          <p className="text-xs font-medium text-[#94a3b8]">Sedang diproses</p>
         </Card>
 
         {/* Card 3 — Advokasi Selesai */}
-        <Card className="rounded-[20px] shadow-sm border-slate-100 p-6 flex flex-col justify-between h-36 relative overflow-hidden group hover:shadow-md transition-all">
+        <Card className="rounded-[20px] shadow-sm border-slate-100 p-6 flex flex-col justify-between min-h-[152px] hover:shadow-md transition-all">
           <div className="flex justify-between items-start">
+            <p className="text-xs font-bold text-[#94a3b8] tracking-widest uppercase">Advokasi Selesai</p>
             <div className="bg-emerald-50 text-emerald-500 p-2.5 rounded-xl">
               <CheckCircle2 className="h-5 w-5" />
             </div>
+          </div>
+          <div className="flex items-end gap-3">
+            <StatValue value={stats?.advokasi_selesai ?? 0} loading={loading} />
             {stats && stats.advokasi_selesai > 0 && (
-              <div className="flex items-center text-emerald-500 text-xs font-bold gap-1 bg-emerald-50 px-2 py-1 rounded-full">
-                <CheckCircle2 className="h-3 w-3" />
-                Tuntas
-              </div>
+              <span className="flex items-center text-xs font-bold gap-0.5 mb-1.5 text-emerald-500">
+                <TrendingUp className="h-3 w-3" />
+                +0%
+              </span>
             )}
           </div>
-          <div>
-            <p className="text-[#64748b] text-sm font-semibold mb-1">Advokasi Selesai</p>
-            <StatValue value={stats?.advokasi_selesai ?? 0} loading={loading} />
-          </div>
+          <p className="text-xs font-medium text-[#94a3b8]">Kasus tuntas</p>
         </Card>
 
         {/* Card 4 — Klaim Disetujui */}
-        <Card className="rounded-[20px] shadow-sm border-slate-100 p-6 flex flex-col justify-between h-36 relative overflow-hidden group hover:shadow-md transition-all">
+        <Card className="rounded-[20px] shadow-sm border-slate-100 p-6 flex flex-col justify-between min-h-[152px] hover:shadow-md transition-all">
           <div className="flex justify-between items-start">
+            <p className="text-xs font-bold text-[#94a3b8] tracking-widest uppercase">Klaim Disetujui</p>
             <div className="bg-indigo-50 text-indigo-500 p-2.5 rounded-xl">
               <BadgeCheck className="h-5 w-5" />
             </div>
+          </div>
+          <div className="flex items-end gap-3">
+            <StatValue value={stats?.klaim_disetujui ?? 0} loading={loading} />
             {stats && stats.klaim_disetujui > 0 && (
-              <div className="flex items-center text-emerald-500 text-xs font-bold gap-1 bg-emerald-50 px-2 py-1 rounded-full">
+              <span className="flex items-center text-xs font-bold gap-0.5 mb-1.5 text-emerald-500">
                 <TrendingUp className="h-3 w-3" />
-                Approved
-              </div>
+                +0%
+              </span>
             )}
           </div>
-          <div>
-            <p className="text-[#64748b] text-sm font-semibold mb-1">Klaim Disetujui</p>
-            <StatValue value={stats?.klaim_disetujui ?? 0} loading={loading} />
-          </div>
+          <p className="text-xs font-medium text-[#94a3b8]">Approved claims</p>
         </Card>
 
       </div>
+
 
       {/* ── Middle Section: Bar Chart + ActivitySidebar ── */}
       <div className="grid gap-6 lg:grid-cols-3">

@@ -171,8 +171,6 @@ export default function PendaftaranPekerjaPage() {
     advokasiQuestions.map(q => ({ question: q, status: 'Tidak', file: [] as File[] }))
   );
 
-<<<<<<< Updated upstream
-=======
   const [isRestored, setIsRestored] = useState(false);
 
   useEffect(() => {
@@ -189,8 +187,6 @@ export default function PendaftaranPekerjaPage() {
     } catch {}
   }, []);
 
-
->>>>>>> Stashed changes
   // Persistence: Load from localStorage
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
