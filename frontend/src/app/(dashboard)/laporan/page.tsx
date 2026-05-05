@@ -173,51 +173,49 @@ export default function LaporanPage() {
       {/* Stats Cards */}
       <div className="grid gap-5 md:grid-cols-3">
         {/* Total Kasus PAK */}
-        <Card className="rounded-[20px] shadow-sm border-slate-100 p-6 flex flex-col justify-between h-36 hover:shadow-md transition-all">
+        <Card className="rounded-[20px] shadow-sm border-slate-100 p-6 flex flex-col justify-between min-h-[152px] hover:shadow-md transition-all">
           <div className="flex justify-between items-start">
             <p className="text-xs font-bold text-[#94a3b8] tracking-widest uppercase">Total Kasus PAK</p>
             <div className="bg-blue-50 text-blue-500 p-2 rounded-xl">
               <ClipboardList className="h-5 w-5" />
             </div>
           </div>
-          <div>
-            {loading ? <div className="h-8 w-24 bg-slate-100 animate-pulse rounded" /> : (
-              <>
-                <h3 className="text-3xl font-extrabold text-[#0f172a]">{summaryData?.total_kasus.value}</h3>
-                <span className={`flex items-center text-xs font-bold gap-0.5 mt-1 ${summaryData?.total_kasus.trend >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                  {summaryData?.total_kasus.trend >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                  {summaryData?.total_kasus.trend >= 0 ? '+' : ''}{summaryData?.total_kasus.trend}%
-                  <span className="text-[#94a3b8] font-medium ml-1">akumulasi total</span>
-                </span>
-              </>
+          <div className="flex items-end gap-2">
+            {loading ? <div className="h-9 w-24 bg-slate-100 animate-pulse rounded" /> : (
+              <h3 className="text-4xl font-extrabold text-[#0f172a]">{summaryData?.total_kasus.value}</h3>
+            )}
+            {!loading && summaryData?.total_kasus.new > 0 && (
+              <span className="text-xs font-bold text-emerald-500 mb-1.5 whitespace-nowrap">
+                (+{summaryData.total_kasus.new})
+              </span>
             )}
           </div>
+          <p className="text-xs font-medium text-[#94a3b8]">Akumulasi total</p>
         </Card>
 
         {/* Kepatuhan Monitoring */}
-        <Card className="rounded-[20px] shadow-sm border-slate-100 p-6 flex flex-col justify-between h-36 hover:shadow-md transition-all">
+        <Card className="rounded-[20px] shadow-sm border-slate-100 p-6 flex flex-col justify-between min-h-[152px] hover:shadow-md transition-all">
           <div className="flex justify-between items-start">
-            <p className="text-xs font-bold text-[#94a3b8] tracking-widest uppercase">total advokasi dalam proses</p>
+            <p className="text-xs font-bold text-[#94a3b8] tracking-widest uppercase">Total Advokasi Dalam Proses</p>
             <div className="bg-orange-50 text-orange-500 p-2 rounded-xl">
               <Building2 className="h-5 w-5" />
             </div>
           </div>
-          <div>
-            {loading ? <div className="h-8 w-24 bg-slate-100 animate-pulse rounded" /> : (
-              <>
-                <h3 className="text-3xl font-extrabold text-[#0f172a]">{summaryData?.kepatuhan.value}</h3>
-                <span className={`flex items-center text-xs font-bold gap-0.5 mt-1 ${summaryData?.kepatuhan.trend >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                  {summaryData?.kepatuhan.trend >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                  {summaryData?.kepatuhan.trend >= 0 ? '+' : ''}{summaryData?.kepatuhan.trend}%
-                  <span className="text-[#94a3b8] font-medium ml-1">kasus sedang berjalan</span>
-                </span>
-              </>
+          <div className="flex items-end gap-2">
+            {loading ? <div className="h-9 w-24 bg-slate-100 animate-pulse rounded" /> : (
+              <h3 className="text-4xl font-extrabold text-[#0f172a]">{summaryData?.kepatuhan.value}</h3>
+            )}
+            {!loading && summaryData?.kepatuhan.new > 0 && (
+              <span className="text-xs font-bold text-emerald-500 mb-1.5 whitespace-nowrap">
+                (+{summaryData.kepatuhan.new})
+              </span>
             )}
           </div>
+          <p className="text-xs font-medium text-[#94a3b8]">Kasus sedang berjalan</p>
         </Card>
 
         {/* Sukses Advokasi */}
-        <Card className="rounded-[20px] shadow-sm border-slate-100 p-6 flex flex-col justify-between h-36 hover:shadow-md transition-all">
+        <Card className="rounded-[20px] shadow-sm border-slate-100 p-6 flex flex-col justify-between min-h-[152px] hover:shadow-md transition-all">
           <div className="flex justify-between items-start">
             <p className="text-xs font-bold text-[#94a3b8] tracking-widest uppercase">total kasus selesai</p>
             <div className="bg-emerald-50 text-emerald-500 p-2 rounded-xl">
@@ -236,8 +234,11 @@ export default function LaporanPage() {
               </>
             )}
           </div>
+          <p className="text-xs font-medium text-[#94a3b8]">Variasi tipe penyakit</p>
         </Card>
       </div>
+
+
 
       {/* Charts Row */}
       <div className="grid gap-6 md:grid-cols-2">

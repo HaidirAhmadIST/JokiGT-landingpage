@@ -42,17 +42,18 @@ class AdvokasiService
         $summary = [
             'total' => [
                 'count' => $totalAll,
-                'trend' => $calcTrend($totalAll, $totalLastMonth)
+                'new' => $totalAll - $totalLastMonth
             ],
             'proses' => [
                 'count' => $prosesAll,
-                'trend' => $calcTrend($prosesAll, $prosesLastMonth)
+                'new' => $prosesAll - $prosesLastMonth
             ],
             'selesai' => [
                 'count' => $selesaiAll,
-                'trend' => $calcTrend($selesaiAll, $selesaiLastMonth)
+                'new' => $selesaiAll - $selesaiLastMonth
             ]
         ];
+
 
         $steps = [
             ['key' => 'riwayat_pajanan', 'label' => 'Riwayat Pajanan', 'column' => 'riwayat_pajanan'],

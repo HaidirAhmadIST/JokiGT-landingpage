@@ -197,6 +197,7 @@ export default function PendaftaranPekerjaPage() {
       }
     } catch {}
   }, []);
+
   // Persistence: Load from localStorage
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);

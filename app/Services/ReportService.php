@@ -1,12 +1,12 @@
 <?php
-
+ 
 namespace App\Services;
-
+ 
 use App\Models\StatusAdvokasi;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
-
+ 
 class ReportService
 {
     /**
@@ -17,22 +17,27 @@ class ReportService
     public function getSummaryStats(): array
     {
         $currentMonth = Carbon::now()->startOfMonth();
-
+ 
+        $calcTrend = function ($current, $previous) {
+            if ($previous == 0) return $current > 0 ? 100 : 0;
+            return round((($current - $previous) / $previous) * 100, 1);
+        };
+ 
         // 1. Total Kasus
         $totalKasus = StatusAdvokasi::whereNotNull('jenis_kasus')->count();
         $totalKasusPrev = StatusAdvokasi::whereNotNull('jenis_kasus')
             ->where('created_at', '<', $currentMonth)
             ->count();
         
-        $kasusTrend = $totalKasusPrev > 0 
-            ? round((($totalKasus - $totalKasusPrev) / $totalKasusPrev) * 100, 1) 
-            : 0;
-
         // 2. Advokasi dalam Proses
         $advokasiProses = StatusAdvokasi::whereNotNull('jenis_kasus')
             ->where('rehabilitasi_bpjskes', false)
             ->count();
-        
+        $advokasiProsesPrev = StatusAdvokasi::whereNotNull('jenis_kasus')
+            ->where('rehabilitasi_bpjskes', false)
+            ->where('created_at', '<', $currentMonth)
+            ->count();
+
         // 3. Tingkat Keberhasilan (Jumlah Kasus Selesai / Total Kasus) * 100
         $kasusSelesai = StatusAdvokasi::whereNotNull('jenis_kasus')
             ->where('rehabilitasi_bpjskes', true)
@@ -43,15 +48,15 @@ class ReportService
             : 0;
 
         $uniqueCaseTypes = StatusAdvokasi::whereNotNull('jenis_kasus')->distinct('jenis_kasus')->count('jenis_kasus');
-
+ 
         return [
             'total_kasus' => [
                 'value' => number_format($totalKasus),
-                'trend' => $kasusTrend,
+                'new' => $totalKasus - $totalKasusPrev,
             ],
             'kepatuhan' => [
                 'value' => number_format($advokasiProses),
-                'trend' => 0,
+                'new' => $advokasiProses - $advokasiProsesPrev,
             ],
             'kasus_selesai' => [
                 'value' => number_format($kasusSelesai),
@@ -63,7 +68,8 @@ class ReportService
             ]
         ];
     }
-
+ 
+ 
     /**
      * Get chart data for the last 6 months.
      *
@@ -86,7 +92,7 @@ class ReportService
         }
         return $chartData;
     }
-
+ 
     /**
      * Get distribution of case types (Jenis PAK/Kasus).
      *
@@ -111,7 +117,7 @@ class ReportService
                 ];
             });
     }
-
+ 
     /**
      * Get recent successfully completed cases.
      *
@@ -131,7 +137,7 @@ class ReportService
                 'date' => $adv->updated_at->format('d M Y')
             ]);
     }
-
+ 
     /**
      * Search advocacy cases by NIK or Name.
      *
@@ -161,7 +167,7 @@ class ReportService
                     $status = 'SELESAI';
                     $color = 'bg-emerald-50 text-emerald-700 border-emerald-200';
                 }
-
+ 
                 return [
                     'company' => $adv->pekerja->perusahaan->nama_perusahaan ?? 'Personal',
                     'worker' => $adv->pekerja->nama_lengkap ?? '-',
