@@ -72,14 +72,13 @@ export default function LaporanPage() {
               <ClipboardList className="h-5 w-5" />
             </div>
           </div>
-          <div className="flex items-end gap-3">
+          <div className="flex items-end gap-2">
             {loading ? <div className="h-9 w-24 bg-slate-100 animate-pulse rounded" /> : (
               <h3 className="text-4xl font-extrabold text-[#0f172a]">{summaryData?.total_kasus.value}</h3>
             )}
-            {!loading && (
-              <span className={`flex items-center text-xs font-bold gap-0.5 mb-1.5 ${summaryData?.total_kasus.trend >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                {summaryData?.total_kasus.trend >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                {summaryData?.total_kasus.trend >= 0 ? '+' : ''}{summaryData?.total_kasus.trend}%
+            {!loading && summaryData?.total_kasus.new > 0 && (
+              <span className="text-xs font-bold text-emerald-500 mb-1.5 whitespace-nowrap">
+                (+{summaryData.total_kasus.new})
               </span>
             )}
           </div>
@@ -94,14 +93,13 @@ export default function LaporanPage() {
               <Building2 className="h-5 w-5" />
             </div>
           </div>
-          <div className="flex items-end gap-3">
+          <div className="flex items-end gap-2">
             {loading ? <div className="h-9 w-24 bg-slate-100 animate-pulse rounded" /> : (
               <h3 className="text-4xl font-extrabold text-[#0f172a]">{summaryData?.kepatuhan.value}</h3>
             )}
-            {!loading && (
-              <span className={`flex items-center text-xs font-bold gap-0.5 mb-1.5 ${summaryData?.kepatuhan.trend >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                {summaryData?.kepatuhan.trend >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                {summaryData?.kepatuhan.trend >= 0 ? '+' : ''}{summaryData?.kepatuhan.trend}%
+            {!loading && summaryData?.kepatuhan.new > 0 && (
+              <span className="text-xs font-bold text-orange-500 mb-1.5 whitespace-nowrap">
+                (+{summaryData.kepatuhan.new})
               </span>
             )}
           </div>
@@ -116,20 +114,15 @@ export default function LaporanPage() {
               <CheckCircle2 className="h-5 w-5" />
             </div>
           </div>
-          <div className="flex items-end gap-3">
+          <div className="flex items-end gap-2">
             {loading ? <div className="h-9 w-24 bg-slate-100 animate-pulse rounded" /> : (
               <h3 className="text-4xl font-extrabold text-[#0f172a]">{summaryData?.sukses_advokasi.value}</h3>
-            )}
-            {!loading && (
-              <span className={`flex items-center text-xs font-bold gap-0.5 mb-1.5 ${summaryData?.sukses_advokasi.trend >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                {summaryData?.sukses_advokasi.trend >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                {summaryData?.sukses_advokasi.trend >= 0 ? '+' : ''}{summaryData?.sukses_advokasi.trend}%
-              </span>
             )}
           </div>
           <p className="text-xs font-medium text-[#94a3b8]">Variasi tipe penyakit</p>
         </Card>
       </div>
+
 
 
       {/* Charts Row */}

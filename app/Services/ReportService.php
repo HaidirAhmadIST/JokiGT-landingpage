@@ -18,39 +18,48 @@ class ReportService
     {
         $currentMonth = Carbon::now()->startOfMonth();
 
+        $calcTrend = function ($current, $previous) {
+            if ($previous == 0) return $current > 0 ? 100 : 0;
+            return round((($current - $previous) / $previous) * 100, 1);
+        };
+
         // 1. Total Kasus
         $totalKasus = StatusAdvokasi::whereNotNull('jenis_kasus')->count();
         $totalKasusPrev = StatusAdvokasi::whereNotNull('jenis_kasus')
             ->where('created_at', '<', $currentMonth)
             ->count();
-        
-        $kasusTrend = $totalKasusPrev > 0 
-            ? round((($totalKasus - $totalKasusPrev) / $totalKasusPrev) * 100, 1) 
-            : 0;
+        $kasusTrend = $calcTrend($totalKasus, $totalKasusPrev);
 
         // 2. Advokasi dalam Proses
         $advokasiProses = StatusAdvokasi::whereNotNull('jenis_kasus')
             ->where('rehabilitasi_bpjskes', false)
             ->count();
-        
-        // 3. Unique Case Types Count (PAK, K3, PHK, JHT, etc.)
+        $advokasiProsesPrev = StatusAdvokasi::whereNotNull('jenis_kasus')
+            ->where('rehabilitasi_bpjskes', false)
+            ->where('created_at', '<', $currentMonth)
+            ->count();
+        $prosesTrend = $calcTrend($advokasiProses, $advokasiProsesPrev);
+
+        // 3. Unique Case Types Count
         $uniqueCaseTypes = StatusAdvokasi::whereNotNull('jenis_kasus')->distinct('jenis_kasus')->count('jenis_kasus');
 
         return [
             'total_kasus' => [
                 'value' => number_format($totalKasus),
-                'trend' => $kasusTrend,
+                'new' => $totalKasus - $totalKasusPrev,
             ],
             'kepatuhan' => [
                 'value' => number_format($advokasiProses),
-                'trend' => 0,
+                'new' => $advokasiProses - $advokasiProsesPrev,
             ],
             'sukses_advokasi' => [
                 'value' => number_format($uniqueCaseTypes),
-                'trend' => 0,
+                'new' => 0,
             ]
         ];
+
     }
+
 
     /**
      * Get chart data for the last 6 months.

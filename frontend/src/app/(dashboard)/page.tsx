@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import Link from "next/link";
 import {
   Users,
+  Building2,
   ClipboardList,
   CheckCircle2,
   BadgeCheck,
@@ -19,16 +20,22 @@ import { toast } from 'sonner';
 
 interface DashboardStats {
   total_pekerja: number;
+  total_pekerja_new: number;
   total_perusahaan: number;
+  total_perusahaan_new: number;
   kasus_aktif: number;
+  kasus_aktif_new: number;
   advokasi_selesai: number;
+  advokasi_selesai_new: number;
   klaim_disetujui: number;
+  klaim_disetujui_new: number;
   kesehatan: {
     fit: number;
     note: number;
     unfit: number;
   };
 }
+
 
 export default function DashboardIndexPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -82,7 +89,7 @@ export default function DashboardIndexPage() {
       </div>
 
       {/* ── Metric Cards ── */}
-      <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
 
         {/* Card 1 — Total Pekerja */}
         <Card className="rounded-[20px] shadow-sm border-slate-100 p-6 flex flex-col justify-between min-h-[152px] hover:shadow-md transition-all">
@@ -92,12 +99,11 @@ export default function DashboardIndexPage() {
               <Users className="h-5 w-5" />
             </div>
           </div>
-          <div className="flex items-end gap-3">
+          <div className="flex items-end gap-2">
             <StatValue value={stats?.total_pekerja ?? 0} loading={loading} />
-            {stats && stats.total_pekerja > 0 && (
-              <span className="flex items-center text-xs font-bold gap-0.5 mb-1.5 text-emerald-500">
-                <TrendingUp className="h-3 w-3" />
-                +0%
+            {stats && stats.total_pekerja_new > 0 && (
+              <span className="text-xs font-bold text-emerald-500 mb-1.5 whitespace-nowrap">
+                (+{stats.total_pekerja_new})
               </span>
             )}
           </div>
@@ -112,12 +118,11 @@ export default function DashboardIndexPage() {
               <ClipboardList className="h-5 w-5" />
             </div>
           </div>
-          <div className="flex items-end gap-3">
+          <div className="flex items-end gap-2">
             <StatValue value={stats?.kasus_aktif ?? 0} loading={loading} />
-            {stats && stats.kasus_aktif > 0 && (
-              <span className="flex items-center text-xs font-bold gap-0.5 mb-1.5 text-orange-500">
-                <TrendingUp className="h-3 w-3" />
-                +0%
+            {stats && stats.kasus_aktif_new > 0 && (
+              <span className="text-xs font-bold text-orange-500 mb-1.5 whitespace-nowrap">
+                (+{stats.kasus_aktif_new})
               </span>
             )}
           </div>
@@ -132,12 +137,11 @@ export default function DashboardIndexPage() {
               <CheckCircle2 className="h-5 w-5" />
             </div>
           </div>
-          <div className="flex items-end gap-3">
+          <div className="flex items-end gap-2">
             <StatValue value={stats?.advokasi_selesai ?? 0} loading={loading} />
-            {stats && stats.advokasi_selesai > 0 && (
-              <span className="flex items-center text-xs font-bold gap-0.5 mb-1.5 text-emerald-500">
-                <TrendingUp className="h-3 w-3" />
-                +0%
+            {stats && stats.advokasi_selesai_new > 0 && (
+              <span className="text-xs font-bold text-emerald-500 mb-1.5 whitespace-nowrap">
+                (+{stats.advokasi_selesai_new})
               </span>
             )}
           </div>
@@ -152,12 +156,11 @@ export default function DashboardIndexPage() {
               <BadgeCheck className="h-5 w-5" />
             </div>
           </div>
-          <div className="flex items-end gap-3">
+          <div className="flex items-end gap-2">
             <StatValue value={stats?.klaim_disetujui ?? 0} loading={loading} />
-            {stats && stats.klaim_disetujui > 0 && (
-              <span className="flex items-center text-xs font-bold gap-0.5 mb-1.5 text-emerald-500">
-                <TrendingUp className="h-3 w-3" />
-                +0%
+            {stats && stats.klaim_disetujui_new > 0 && (
+              <span className="text-xs font-bold text-emerald-500 mb-1.5 whitespace-nowrap">
+                (+{stats.klaim_disetujui_new})
               </span>
             )}
           </div>
@@ -165,6 +168,7 @@ export default function DashboardIndexPage() {
         </Card>
 
       </div>
+
 
 
       {/* ── Middle Section: Bar Chart + ActivitySidebar ── */}
