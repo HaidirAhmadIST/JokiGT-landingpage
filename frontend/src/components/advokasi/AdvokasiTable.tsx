@@ -107,7 +107,11 @@ export default function AdvokasiTable({ loading, filteredCases, totalCount, isSt
                 : 'bg-blue-50 text-blue-700 border-blue-200';
 
               return (
-                <TableRow key={c.id} className="hover:bg-slate-50/50 transition-colors group">
+                <TableRow 
+                  key={c.id} 
+                  className="hover:bg-slate-50/50 transition-colors group cursor-pointer"
+                  onClick={() => router.push(`/advokasi/${c.id}`)}
+                >
                   <TableCell className="py-4 px-6">
                     <button 
                       onClick={() => router.push(`/advokasi/${c.id}`)}
@@ -153,7 +157,10 @@ export default function AdvokasiTable({ loading, filteredCases, totalCount, isSt
                   <TableCell className="py-4 px-6 text-sm text-[#475569]">{new Date(c.updated_at).toLocaleDateString('id-ID')}</TableCell>
                   <TableCell className="py-4 px-6">
                     <DropdownMenu>
-                      <DropdownMenuTrigger className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "h-8 w-8 text-slate-400 hover:text-slate-700")}>
+                      <DropdownMenuTrigger 
+                        onClick={(e) => e.stopPropagation()}
+                        className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "h-8 w-8 text-slate-400 hover:text-slate-700")}
+                      >
                         <MoreVertical className="h-4 w-4" />
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-48">

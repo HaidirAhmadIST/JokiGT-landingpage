@@ -167,7 +167,11 @@ export default function PekerjaPage() {
                 </TableRow>
               ) : (
                 data.map((p) => (
-                  <TableRow key={p.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
+                  <TableRow 
+                    key={p.id} 
+                    className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors cursor-pointer"
+                    onClick={() => router.push(`/pekerja/${p.id}`)}
+                  >
                     <TableCell>
                       <div className="flex items-center gap-4 py-1">
                         <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-100 border border-slate-200 shrink-0">
@@ -286,7 +290,11 @@ export default function PekerjaPage() {
                           Lihat Detail <ExternalLink className="h-4 w-4 ml-2" />
                         </Button>
                         {isSuperAdmin && (
-                          <Button variant="ghost" className="text-rose-500 hover:text-rose-700 hover:bg-rose-50 font-bold text-sm h-10 w-10 p-0 rounded-xl" onClick={() => handleDelete(p.id)}>
+                          <Button 
+                            variant="ghost" 
+                            className="text-rose-500 hover:text-rose-700 hover:bg-rose-50 font-bold text-sm h-10 w-10 p-0 rounded-xl" 
+                            onClick={(e) => { e.stopPropagation(); handleDelete(p.id); }}
+                          >
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         )}

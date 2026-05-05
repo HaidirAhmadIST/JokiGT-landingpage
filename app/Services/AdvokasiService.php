@@ -194,7 +194,9 @@ class AdvokasiService
         $metaFields = ['jenis_kasus', 'tahap', 'status_detail', 'tanggal_pelaporan', 'catatan'];
         foreach ($metaFields as $field) {
             if (isset($data[$field])) {
-                $status->{$field} = $data[$field];
+                // Convert empty strings to null for database compatibility (especially for dates)
+                $value = $data[$field];
+                $status->{$field} = ($value === '' || $value === null) ? null : $value;
             }
         }
 

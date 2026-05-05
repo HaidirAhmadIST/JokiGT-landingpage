@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
-import api from '@/lib/axios';
 import Link from 'next/link';
+import api from '@/lib/axios';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,6 +29,7 @@ export default function LoginPage() {
         // Store auth info
         Cookies.set('auth_token', token, { expires: 7, path: '/' });
         localStorage.setItem('user', JSON.stringify(user));
+
         toast.success(response.data.message);
         
         if (user.role === 'viewer') {
@@ -97,11 +98,11 @@ export default function LoginPage() {
               />
             </div>
           </CardContent>
-          <CardFooter>
+          <CardFooter className="flex flex-col">
             <Button className="w-full" type="submit" disabled={loading}>
               {loading ? 'Masuk...' : 'Masuk Dashboard'}
             </Button>
-            <p className="text-center text-sm text-slate-500">
+            <p className="text-center text-sm text-slate-500 mt-4">
               Belum punya akun?{' '}
               <Link href="/pendaftaran" className="text-primary font-semibold hover:underline">
                 Daftar di sini
