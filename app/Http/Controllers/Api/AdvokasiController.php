@@ -71,6 +71,11 @@ class AdvokasiController extends Controller
             $status = $this->advokasiService->updateTracker($pekerja_id, $request->all(), $request->file('file'));
             return response()->json(['status' => 'success', 'data' => $status]);
         } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Advokasi Update Error: ' . $e->getMessage(), [
+                'pekerja_id' => $pekerja_id,
+                'request' => $request->all(),
+                'trace' => $e->getTraceAsString()
+            ]);
             return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
         }
     }
