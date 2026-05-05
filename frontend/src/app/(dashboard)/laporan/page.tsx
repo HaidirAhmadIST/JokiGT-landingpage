@@ -173,51 +173,49 @@ export default function LaporanPage() {
       {/* Stats Cards */}
       <div className="grid gap-5 md:grid-cols-3">
         {/* Total Kasus PAK */}
-        <Card className="rounded-[20px] shadow-sm border-slate-100 p-6 flex flex-col justify-between h-36 hover:shadow-md transition-all">
+        <Card className="rounded-[20px] shadow-sm border-slate-100 p-6 flex flex-col justify-between min-h-[152px] hover:shadow-md transition-all">
           <div className="flex justify-between items-start">
             <p className="text-xs font-bold text-[#94a3b8] tracking-widest uppercase">Total Kasus PAK</p>
             <div className="bg-blue-50 text-blue-500 p-2 rounded-xl">
               <ClipboardList className="h-5 w-5" />
             </div>
           </div>
-          <div>
-            {loading ? <div className="h-8 w-24 bg-slate-100 animate-pulse rounded" /> : (
-              <>
-                <h3 className="text-3xl font-extrabold text-[#0f172a]">{summaryData?.total_kasus.value}</h3>
-                <span className={`flex items-center text-xs font-bold gap-0.5 mt-1 ${summaryData?.total_kasus.trend >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                  {summaryData?.total_kasus.trend >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                  {summaryData?.total_kasus.trend >= 0 ? '+' : ''}{summaryData?.total_kasus.trend}%
-                  <span className="text-[#94a3b8] font-medium ml-1">akumulasi total</span>
-                </span>
-              </>
+          <div className="flex items-end gap-2">
+            {loading ? <div className="h-9 w-24 bg-slate-100 animate-pulse rounded" /> : (
+              <h3 className="text-4xl font-extrabold text-[#0f172a]">{summaryData?.total_kasus.value}</h3>
+            )}
+            {!loading && summaryData?.total_kasus.new > 0 && (
+              <span className="text-xs font-bold text-emerald-500 mb-1.5 whitespace-nowrap">
+                (+{summaryData.total_kasus.new})
+              </span>
             )}
           </div>
+          <p className="text-xs font-medium text-[#94a3b8]">Akumulasi total</p>
         </Card>
 
         {/* Kepatuhan Monitoring */}
-        <Card className="rounded-[20px] shadow-sm border-slate-100 p-6 flex flex-col justify-between h-36 hover:shadow-md transition-all">
+        <Card className="rounded-[20px] shadow-sm border-slate-100 p-6 flex flex-col justify-between min-h-[152px] hover:shadow-md transition-all">
           <div className="flex justify-between items-start">
-            <p className="text-xs font-bold text-[#94a3b8] tracking-widest uppercase">total advokasi dalam proses</p>
+            <p className="text-xs font-bold text-[#94a3b8] tracking-widest uppercase">Total Advokasi Dalam Proses</p>
             <div className="bg-orange-50 text-orange-500 p-2 rounded-xl">
               <Building2 className="h-5 w-5" />
             </div>
           </div>
-          <div>
-            {loading ? <div className="h-8 w-24 bg-slate-100 animate-pulse rounded" /> : (
-              <>
-                <h3 className="text-3xl font-extrabold text-[#0f172a]">{summaryData?.kepatuhan.value}</h3>
-                <span className={`flex items-center text-xs font-bold gap-0.5 mt-1 ${summaryData?.kepatuhan.trend >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                  {summaryData?.kepatuhan.trend >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                  {summaryData?.kepatuhan.trend >= 0 ? '+' : ''}{summaryData?.kepatuhan.trend}%
-                  <span className="text-[#94a3b8] font-medium ml-1">kasus sedang berjalan</span>
-                </span>
-              </>
+          <div className="flex items-end gap-2">
+            {loading ? <div className="h-9 w-24 bg-slate-100 animate-pulse rounded" /> : (
+              <h3 className="text-4xl font-extrabold text-[#0f172a]">{summaryData?.kepatuhan.value}</h3>
+            )}
+            {!loading && summaryData?.kepatuhan.new > 0 && (
+              <span className="text-xs font-bold text-emerald-500 mb-1.5 whitespace-nowrap">
+                (+{summaryData.kepatuhan.new})
+              </span>
             )}
           </div>
+          <p className="text-xs font-medium text-[#94a3b8]">Kasus sedang berjalan</p>
         </Card>
 
         {/* Sukses Advokasi */}
-        <Card className="rounded-[20px] shadow-sm border-slate-100 p-6 flex flex-col justify-between h-36 hover:shadow-md transition-all">
+        <Card className="rounded-[20px] shadow-sm border-slate-100 p-6 flex flex-col justify-between min-h-[152px] hover:shadow-md transition-all">
           <div className="flex justify-between items-start">
             <p className="text-xs font-bold text-[#94a3b8] tracking-widest uppercase">total kasus selesai</p>
             <div className="bg-emerald-50 text-emerald-500 p-2 rounded-xl">
@@ -236,8 +234,11 @@ export default function LaporanPage() {
               </>
             )}
           </div>
+          <p className="text-xs font-medium text-[#94a3b8]">Variasi tipe penyakit</p>
         </Card>
       </div>
+
+
 
       {/* Charts Row */}
       <div className="grid gap-6 md:grid-cols-2">
@@ -315,14 +316,15 @@ export default function LaporanPage() {
             </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <Table>
+          <div className="p-0 w-full">
+            <Table className="table-fixed w-full">
               <TableHeader>
                 <TableRow className="hover:bg-transparent border-b border-slate-100">
-                  <TableHead className="py-3 font-bold text-[10px] tracking-widest text-[#94a3b8]">PEKERJA / PERUSAHAAN</TableHead>
-                  <TableHead className="py-3 font-bold text-[10px] tracking-widest text-[#94a3b8]">KASUS</TableHead>
-                  <TableHead className="py-3 font-bold text-[10px] tracking-widest text-[#94a3b8]">STATUS</TableHead>
-                  <TableHead className="py-3 font-bold text-[10px] tracking-widest text-[#94a3b8] print:hidden">AKSI</TableHead>
+                  <TableHead className="py-3 font-bold text-[10px] tracking-widest text-[#94a3b8] w-10 pl-2 pr-1">NO.</TableHead>
+                  <TableHead className="py-3 font-bold text-[10px] tracking-widest text-[#94a3b8] w-[40%] pl-3">PEKERJA / PERUSAHAAN</TableHead>
+                  <TableHead className="py-3 font-bold text-[10px] tracking-widest text-[#94a3b8] w-[25%]">KASUS</TableHead>
+                  <TableHead className="py-3 font-bold text-[10px] tracking-widest text-[#94a3b8] w-[20%]">STATUS</TableHead>
+                  <TableHead className="py-3 font-bold text-[10px] tracking-widest text-[#94a3b8] text-right pr-4 print:hidden">AKSI</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -333,20 +335,32 @@ export default function LaporanPage() {
                 ) : (
                   recentAdvocacy.map((row: any, i: number) => (
                     <TableRow key={i} className="hover:bg-slate-50/50 transition-colors">
-                      <TableCell className="py-3.5">
-                        <div className="font-bold text-[#1e293b] text-sm">{row.worker}</div>
-                        <div className="text-[11px] text-[#94a3b8] font-medium">{row.company}</div>
+                      <TableCell className="pl-2 pr-1 w-10">
+                        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-slate-500 text-[10px] font-bold">
+                          {i + 1}
+                        </span>
                       </TableCell>
-                      <TableCell className="py-3.5 text-sm text-[#475569] font-medium">{row.case}</TableCell>
+                      <TableCell className="py-3.5 pl-3 truncate max-w-0">
+                        <button 
+                          onClick={() => router.push(`/pekerja/${row.pekerja_id}?tab=advokasi`)}
+                          className="flex flex-col text-left group/worker outline-none transition-transform hover:translate-x-1 w-full"
+                        >
+                          <div className="font-bold text-[#1e293b] text-sm truncate group-hover/worker:text-[#0284c7] transition-colors">{row.worker}</div>
+                          <div className="text-[11px] text-[#94a3b8] font-medium truncate">{row.company}</div>
+                        </button>
+                      </TableCell>
+                      <TableCell className="py-3.5 text-sm text-[#475569] font-medium truncate max-w-0">
+                        <span className="truncate block">{row.case}</span>
+                      </TableCell>
                       <TableCell className="py-3.5">
                         <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold border ${row.statusColor}`}>
                           {row.status}
                         </span>
                       </TableCell>
-                      <TableCell className="py-3.5 print:hidden">
+                      <TableCell className="py-3.5 text-right pr-4 print:hidden">
                         <button
                           onClick={() => router.push(`/pekerja/${row.pekerja_id}?tab=advokasi`)}
-                          className="text-sm font-bold text-[#0ea5e9] hover:text-[#0284c7] transition-colors"
+                          className="text-xs font-bold text-[#0ea5e9] hover:text-[#0284c7] transition-colors"
                         >
                           Detail
                         </button>

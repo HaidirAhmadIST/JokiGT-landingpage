@@ -37,7 +37,62 @@ export default function PekerjaDetailPage() {
   const [selectedJobId, setSelectedJobId] = useState<number | string | null>(null);
   const [isHealthLoading, setIsHealthLoading] = useState(false);
   const [isRekamJejakOpen, setIsRekamJejakOpen] = useState(false);
+  const [isEditRiwayatOpen, setIsEditRiwayatOpen] = useState(false);
+  const [editingRiwayat, setEditingRiwayat] = useState<any>(null);
+  const [riwayatForm, setRiwayatForm] = useState({
+    jenis_pajanan: '',
+    durasi_pajanan: '',
+    apd_disediakan: '',
+    jenis_apd_sendiri: '',
+  });
+  const [savingRiwayat, setSavingRiwayat] = useState(false);
   const { isSuperAdmin, isStaffOrAbove, loading: roleLoading } = useRole();
+
+  const openEditRiwayat = (riwayat: any) => {
+    setEditingRiwayat(riwayat);
+    let info: any = {};
+    try {
+      info = typeof riwayat.informal_data === 'string' ? JSON.parse(riwayat.informal_data) : (riwayat.informal_data || {});
+    } catch (e) {}
+    
+    setRiwayatForm({
+      jenis_pajanan: riwayat.jenis_pajanan || '',
+      durasi_pajanan: riwayat.durasi_pajanan || '',
+      apd_disediakan: info.apd_disediakan || '',
+      jenis_apd_sendiri: info.jenis_apd_sendiri || '',
+    });
+    setIsEditRiwayatOpen(true);
+  };
+
+  const handleUpdateRiwayat = async () => {
+    try {
+      setSavingRiwayat(true);
+      let info: any = {};
+      try {
+        info = typeof editingRiwayat.informal_data === 'string' ? JSON.parse(editingRiwayat.informal_data) : (editingRiwayat.informal_data || {});
+      } catch (e) {}
+
+      const updatedInformal = {
+        ...info,
+        apd_disediakan: riwayatForm.apd_disediakan,
+        jenis_apd_sendiri: riwayatForm.jenis_apd_sendiri,
+      };
+
+      await api.put(`/riwayat-pekerja/${editingRiwayat.id}`, {
+        jenis_pajanan: riwayatForm.jenis_pajanan,
+        durasi_pajanan: riwayatForm.durasi_pajanan,
+        informal_data: updatedInformal,
+      });
+
+      toast.success('Riwayat pajanan berhasil diperbarui');
+      setIsEditRiwayatOpen(false);
+      fetchDetail(); 
+    } catch (e) {
+      toast.error('Gagal memperbarui riwayat');
+    } finally {
+      setSavingRiwayat(false);
+    }
+  };
 
   const fetchDetail = async () => {
     try {
@@ -780,22 +835,31 @@ export default function PekerjaDetailPage() {
                                         <ShieldAlert className="h-3 w-3" /> PAJANAN: {r.deskripsi_usaha}
                                       </p>
                                     )}
-                                    {(r.jenis_pajanan || r.durasi_pajanan) && (
-                                      <div className="flex gap-3 mt-1.5">
-                                        {r.jenis_pajanan && (
-                                          <p className="text-slate-500 text-[10px] font-bold uppercase tracking-tight flex items-center gap-1">
-                                            <Activity className="h-2.5 w-2.5 text-[#0ea5e9]" /> JENIS: {r.jenis_pajanan}
-                                          </p>
-                                        )}
-                                        {r.durasi_pajanan && (
-                                          <p className="text-slate-500 text-[10px] font-bold uppercase tracking-tight flex items-center gap-1">
-                                            <ClipboardList className="h-2.5 w-2.5 text-[#0ea5e9]" /> DURASI: {r.durasi_pajanan} TAHUN
-                                          </p>
-                                        )}
-                                      </div>
+                                  </div>
+                                  {isStaffOrAbove && (
+                                    <button 
+                                      onClick={() => openEditRiwayat(r)}
+                                      className="p-2 text-slate-400 hover:text-[#0ea5e9] hover:bg-blue-50 rounded-lg transition-all"
+                                      title="Edit Pajanan & APD"
+                                    >
+                                      <Edit3 className="h-4 w-4" />
+                                    </button>
+                                  )}
+                                </div>
+                                {(r.jenis_pajanan || r.durasi_pajanan) && (
+                                  <div className="flex gap-3 mt-1.5">
+                                    {r.jenis_pajanan && (
+                                      <p className="text-slate-500 text-[10px] font-bold uppercase tracking-tight flex items-center gap-1">
+                                        <Activity className="h-2.5 w-2.5 text-[#0ea5e9]" /> JENIS: {r.jenis_pajanan}
+                                      </p>
+                                    )}
+                                    {r.durasi_pajanan && (
+                                      <p className="text-slate-500 text-[10px] font-bold uppercase tracking-tight flex items-center gap-1">
+                                        <ClipboardList className="h-2.5 w-2.5 text-[#0ea5e9]" /> DURASI: {r.durasi_pajanan} TAHUN
+                                      </p>
                                     )}
                                   </div>
-                                </div>
+                                )}
 
                                 <div className="grid grid-cols-2 gap-4 mb-4">
                                   <div>
@@ -847,7 +911,7 @@ export default function PekerjaDetailPage() {
                                   </div>
                                 )}
 
-                                {r.informal_data && ['Borongan', 'Harian Lepas', 'Outsourcing'].includes(r.status_pekerjaan) && (
+                                {r.informal_data && ['Borongan', 'Harian Lepas'].includes(r.status_pekerjaan) && (
                                   <div className="mb-4 bg-orange-50/50 border border-orange-100 p-4 rounded-xl">
                                     <p className="text-[10px] font-bold text-orange-600 uppercase tracking-widest mb-3 flex items-center gap-1.5">
                                       <HardHat className="h-3.5 w-3.5" /> Data Pekerja Informal / Lapangan
@@ -987,11 +1051,21 @@ export default function PekerjaDetailPage() {
                                           </div>
                                         </div>
 
-                                        <div>
-                                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Hasil Diagnosa</p>
-                                          <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
-                                            <p className="text-xs text-slate-600 leading-relaxed italic">{m.hasil_diagnosis || '-'}</p>
+                                        <div className="space-y-3">
+                                          <div>
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Hasil Diagnosa</p>
+                                            <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                                              <p className="text-xs text-slate-600 leading-relaxed italic">{m.hasil_diagnosis || '-'}</p>
+                                            </div>
                                           </div>
+                                          {m.rekomendasi && (
+                                            <div>
+                                              <p className="text-[10px] font-bold text-[#0ea5e9] uppercase tracking-widest mb-1">Rekomendasi Dokter</p>
+                                              <div className="bg-blue-50/50 p-2.5 rounded-xl border border-blue-100">
+                                                <p className="text-xs text-slate-700 font-medium leading-relaxed">{m.rekomendasi}</p>
+                                              </div>
+                                            </div>
+                                          )}
                                         </div>
 
                                         {(m.file_bukti_path || m.file_hasil_path) && (
@@ -1043,9 +1117,17 @@ export default function PekerjaDetailPage() {
                                               {getStatusLabel(m.status_kesehatan) || 'SEHAT'}
                                             </span>
                                         </div>
-                                        <div className="mt-2">
-                                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Hasil Diagnosa</p>
-                                          <p className="text-[11px] text-slate-600 italic leading-relaxed">{m.hasil_diagnosis || '-'}</p>
+                                        <div className="mt-2 space-y-2">
+                                          <div>
+                                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Hasil Diagnosa</p>
+                                            <p className="text-[11px] text-slate-600 italic leading-relaxed">{m.hasil_diagnosis || '-'}</p>
+                                          </div>
+                                          {m.rekomendasi && (
+                                            <div>
+                                              <p className="text-[9px] font-bold text-[#0ea5e9] uppercase tracking-widest mb-1">Rekomendasi Dokter</p>
+                                              <p className="text-[11px] text-slate-700 font-medium leading-relaxed">{m.rekomendasi}</p>
+                                            </div>
+                                          )}
                                         </div>
                                       </div>
                                     ))}
@@ -1232,11 +1314,21 @@ export default function PekerjaDetailPage() {
                             </div>
                           </div>
 
-                          <div>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Hasil Diagnosa</p>
-                            <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 group-hover:border-[#0ea5e9]/20 transition-colors">
-                              <p className="text-xs text-slate-600 leading-relaxed italic">{m.hasil_diagnosis || '-'}</p>
+                          <div className="space-y-4">
+                            <div>
+                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Hasil Diagnosa</p>
+                              <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 group-hover:border-[#0ea5e9]/20 transition-colors">
+                                <p className="text-xs text-slate-600 leading-relaxed italic">{m.hasil_diagnosis || '-'}</p>
+                              </div>
                             </div>
+                            {m.rekomendasi && (
+                              <div>
+                                <p className="text-[10px] font-bold text-[#0ea5e9] uppercase tracking-widest mb-1">Rekomendasi Dokter</p>
+                                <div className="bg-blue-50/30 p-3 rounded-xl border border-blue-100 group-hover:border-[#0ea5e9]/40 transition-colors">
+                                  <p className="text-xs text-slate-700 font-medium leading-relaxed">{m.rekomendasi}</p>
+                                </div>
+                              </div>
+                            )}
                           </div>
 
                           {m.file_hasil_path && (
@@ -1293,13 +1385,43 @@ export default function PekerjaDetailPage() {
                                 {r.jenis_pajanan || '-'}
                               </span>
                             </td>
-                            <td className="px-4 py-4 text-slate-600 text-xs">
-                              {(() => {
-                                try {
-                                  const info = typeof r.informal_data === 'string' ? JSON.parse(r.informal_data) : r.informal_data;
-                                  return info?.apd_list || '-';
-                                } catch(e) { return '-'; }
-                              })()}
+                            <td className="px-4 py-4">
+                              <div className="flex flex-col gap-1.5">
+                                {(() => {
+                                  try {
+                                    const info = typeof r.informal_data === 'string' ? JSON.parse(r.informal_data) : r.informal_data;
+                                    const provided = info?.apd_disediakan;
+                                    const own = info?.jenis_apd_sendiri;
+                                    const legacy = info?.apd_list;
+                                    
+                                    if (provided || own) {
+                                      const hasProvided = provided && provided !== '-' && provided.toLowerCase() !== 'tidak ada';
+                                      const hasOwn = own && own !== '-' && own.toLowerCase() !== 'tidak ada';
+
+                                      if (!hasProvided && !hasOwn) return <span className="text-slate-400 italic">-</span>;
+
+                                      return (
+                                        <>
+                                          {hasProvided && (
+                                            <div className="flex items-center gap-1.5">
+                                              <span className="text-[9px] font-bold text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100 uppercase tracking-tighter shrink-0">🏢 PERUSAHAAN</span>
+                                              <span className="text-[11px] text-slate-600 font-bold leading-none">{provided}</span>
+                                            </div>
+                                          )}
+                                          {hasOwn && (
+                                            <div className="flex items-center gap-1.5">
+                                              <span className="text-[9px] font-bold text-slate-500 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-200 uppercase tracking-tighter shrink-0">👤 MANDIRI</span>
+                                              <span className="text-[11px] text-slate-600 font-bold leading-none">{own}</span>
+                                            </div>
+                                          )}
+                                        </>
+                                      );
+                                    }
+                                    
+                                    return <span className="text-slate-600 font-medium">{legacy || '-'}</span>;
+                                  } catch(e) { return <span className="text-slate-400">-</span>; }
+                                })()}
+                              </div>
                             </td>
                             <td className="px-4 py-4 font-semibold text-slate-600">
                               {r.durasi_pajanan ? `${r.durasi_pajanan} Tahun` : '-'}
@@ -1427,6 +1549,85 @@ export default function PekerjaDetailPage() {
         <Printer className="h-6 w-6" />
       </button>
 
+      {/* Edit Riwayat Pajanan Dialog */}
+      <Dialog open={isEditRiwayatOpen} onOpenChange={setIsEditRiwayatOpen}>
+        <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden rounded-2xl border-none shadow-2xl">
+          <DialogHeader className="p-6 bg-white border-b border-slate-100">
+            <div className="flex items-center gap-3">
+              <div className="bg-blue-50 p-2.5 rounded-xl">
+                <ShieldAlert className="h-5 w-5 text-[#0ea5e9]" />
+              </div>
+              <div>
+                <DialogTitle className="text-lg font-bold text-[#1e293b]">Edit Pajanan & APD</DialogTitle>
+                <p className="text-xs text-slate-500 font-medium">{editingRiwayat?.nama_perusahaan}</p>
+              </div>
+            </div>
+          </DialogHeader>
+          <div className="p-6 space-y-6">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Jenis Pajanan</label>
+                <select 
+                  className="w-full h-11 px-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-blue-100 outline-none"
+                  value={riwayatForm.jenis_pajanan}
+                  onChange={(e) => setRiwayatForm({...riwayatForm, jenis_pajanan: e.target.value})}
+                >
+                  <option value="">Pilih Pajanan</option>
+                  <option value="Kimia">Kimia</option>
+                  <option value="Fisik">Fisik</option>
+                  <option value="Biologi">Biologi</option>
+                  <option value="Psikososial">Psikososial</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Durasi (Tahun)</label>
+                <input 
+                  type="number"
+                  className="w-full h-11 px-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-blue-100 outline-none"
+                  placeholder="Cth: 5"
+                  value={riwayatForm.durasi_pajanan}
+                  onChange={(e) => setRiwayatForm({...riwayatForm, durasi_pajanan: e.target.value})}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-4 pt-2">
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                  <HardHat className="h-3 w-3" /> APD Disediakan Perusahaan
+                </label>
+                <input 
+                  className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-blue-100 outline-none"
+                  placeholder="Cth: Masker N95, Earplug"
+                  value={riwayatForm.apd_disediakan}
+                  onChange={(e) => setRiwayatForm({...riwayatForm, apd_disediakan: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                  <Zap className="h-3 w-3" /> APD Milik Sendiri / Mandiri
+                </label>
+                <input 
+                  className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-blue-100 outline-none"
+                  placeholder="Cth: Kacamata Safety, Sarung Tangan"
+                  value={riwayatForm.jenis_apd_sendiri}
+                  onChange={(e) => setRiwayatForm({...riwayatForm, jenis_apd_sendiri: e.target.value})}
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="p-6 bg-slate-50 border-t border-slate-100 gap-3">
+            <Button variant="ghost" onClick={() => setIsEditRiwayatOpen(false)} className="rounded-xl font-bold text-slate-500">Batal</Button>
+            <Button 
+              onClick={handleUpdateRiwayat} 
+              disabled={savingRiwayat}
+              className="bg-[#0ea5e9] hover:bg-[#0284c7] text-white rounded-xl font-bold px-8 shadow-lg shadow-blue-500/20"
+            >
+              {savingRiwayat ? 'Menyimpan...' : 'Simpan Perubahan'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

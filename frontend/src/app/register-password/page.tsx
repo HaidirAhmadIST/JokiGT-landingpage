@@ -8,11 +8,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ShieldCheck, Lock, Mail, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { useRole } from '@/hooks/useRole';
 
 function RegisterPasswordContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const emailParam = searchParams.get('email') || '';
+  const { isStaffOrAbove } = useRole();
 
   const [formData, setFormData] = useState({
     email: emailParam,
@@ -42,9 +44,13 @@ function RegisterPasswordContent() {
       localStorage.removeItem('REKAM_JEJAK_FORM_DATA');
       toast.success('Akun Anda telah aktif!');
       
-      // Auto redirect to login after 3 seconds
+      // Auto redirect to login or dashboard after 3 seconds
       setTimeout(() => {
-        router.push('/login');
+        if (isStaffOrAbove) {
+          router.push('/pekerja');
+        } else {
+          router.push('/login');
+        }
       }, 3000);
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Gagal menyetel password.');
@@ -64,10 +70,10 @@ function RegisterPasswordContent() {
           <p className="text-slate-500 mt-2">Password Anda telah berhasil disetel. Menuju halaman login dalam 3 detik...</p>
         </div>
         <Button 
-          onClick={() => router.push('/login')}
+          onClick={() => router.push(isStaffOrAbove ? '/pekerja' : '/login')}
           className="bg-[#0ea5e9] hover:bg-[#0284c7] rounded-xl px-8 h-12 font-bold"
         >
-          Masuk Sekarang
+          {isStaffOrAbove ? 'Kembali ke Daftar Pekerja' : 'Masuk Sekarang'}
         </Button>
       </div>
     );

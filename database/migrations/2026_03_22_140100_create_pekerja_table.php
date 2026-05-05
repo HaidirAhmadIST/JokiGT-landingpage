@@ -17,12 +17,7 @@ return new class extends Migration
             $table->foreignId('perusahaan_id')->constrained('perusahaan')->onDelete('cascade');
             $table->string('nik')->unique();
             $table->string('nama_lengkap');
-            $table->enum('status_kesehatan', [
-                'sehat',
-                'sakit_ringan',
-                'sakit_berat',
-                'dalam_perawatan',
-            ])->default('sehat');
+            $table->string('status_kesehatan')->default('sehat');
             $table->text('catatan_admin')->nullable();
             $table->timestamps();
             $table->softDeletes();

@@ -51,6 +51,7 @@ class StatusAdvokasi extends Model
         'bukti_penetapan_pak_name',
         'bukti_kompensasi_bpjstk_name',
         'bukti_rehabilitasi_bpjskes_name',
+        'is_admin_note',
     ];
 
     /**
@@ -67,6 +68,7 @@ class StatusAdvokasi extends Model
             'penetapan_pak' => 'boolean',
             'kompensasi_bpjstk' => 'boolean',
             'rehabilitasi_bpjskes' => 'boolean',
+            'is_admin_note' => 'boolean',
             'tanggal_pelaporan' => 'date',
             'bukti_pajanan_at' => 'datetime',
             'bukti_persetujuan_dokter_at' => 'datetime',

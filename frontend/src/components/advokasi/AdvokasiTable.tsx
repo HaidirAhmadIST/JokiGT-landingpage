@@ -59,40 +59,58 @@ interface AdvokasiTableProps {
   loading: boolean;
   filteredCases: StatusAdvokasi[];
   totalCount: number;
+  currentPage: number;
+  perPage: number;
+  lastPage: number;
+  onPageChange: (page: number) => void;
   isStaffOrAbove: boolean;
 }
 
-export default function AdvokasiTable({ loading, filteredCases, totalCount, isStaffOrAbove }: AdvokasiTableProps) {
+export default function AdvokasiTable({ 
+  loading, 
+  filteredCases, 
+  totalCount, 
+  currentPage,
+  perPage,
+  lastPage,
+  onPageChange,
+  isStaffOrAbove 
+}: AdvokasiTableProps) {
   const router = useRouter();
 
   return (
     <>
-      <div className="overflow-x-auto mt-4">
-        <Table>
+      <div className="mt-4 w-full">
+        <Table className="w-full table-fixed">
           <TableHeader>
             <TableRow className="hover:bg-transparent border-b border-slate-100">
-              <TableHead className="py-4 px-6 font-bold text-[10px] tracking-widest text-[#94a3b8]">NAMA PEKERJA</TableHead>
-              <TableHead className="py-4 px-6 font-bold text-[10px] tracking-widest text-[#94a3b8]">PERUSAHAAN</TableHead>
-              <TableHead className="py-4 px-6 font-bold text-[10px] tracking-widest text-[#94a3b8]">JENIS KASUS</TableHead>
-              <TableHead className="py-4 px-6 font-bold text-[10px] tracking-widest text-[#94a3b8]">PROGRES ALUR</TableHead>
-              <TableHead className="py-4 px-6 font-bold text-[10px] tracking-widest text-[#94a3b8]">STATUS TERAKHIR</TableHead>
-              <TableHead className="py-4 px-6 font-bold text-[10px] tracking-widest text-[#94a3b8]">TANGGAL UPDATE</TableHead>
-              <TableHead className="py-4 px-6 font-bold text-[10px] tracking-widest text-[#94a3b8]">AKSI</TableHead>
+              <TableHead className="py-3 pl-4 pr-1 font-bold text-[10px] tracking-widest text-[#94a3b8] w-10">NO.</TableHead>
+              <TableHead className="py-3 px-3 font-bold text-[10px] tracking-widest text-[#94a3b8] w-[15%]">NAMA PEKERJA</TableHead>
+              <TableHead className="py-3 px-3 font-bold text-[10px] tracking-widest text-[#94a3b8] w-[13%]">PERUSAHAAN</TableHead>
+              <TableHead className="py-3 px-3 font-bold text-[10px] tracking-widest text-[#94a3b8] w-[12%]">JENIS KASUS</TableHead>
+              <TableHead className="py-3 px-3 font-bold text-[10px] tracking-widest text-[#94a3b8] w-[18%]">MEDIS & PAJANAN</TableHead>
+              <TableHead className="py-3 px-3 font-bold text-[10px] tracking-widest text-[#94a3b8] w-[16%]">PROGRES ALUR</TableHead>
+              <TableHead className="py-3 px-3 font-bold text-[10px] tracking-widest text-[#94a3b8] w-[12%]">STATUS</TableHead>
+              <TableHead className="py-3 px-3 font-bold text-[10px] tracking-widest text-[#94a3b8] w-[9%]">UPDATE</TableHead>
+              <TableHead className="py-3 px-2 font-bold text-[10px] tracking-widest text-[#94a3b8] w-10">AKSI</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={7} className="py-20 text-center text-slate-400">Memuat data...</TableCell>
+                <TableCell colSpan={9} className="py-20 text-center text-slate-400">Memuat data...</TableCell>
               </TableRow>
             ) : filteredCases.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="py-20 text-center text-slate-400 font-medium italic">Belum ada kasus advokasi terdaftar.</TableCell>
+                <TableCell colSpan={9} className="py-20 text-center text-slate-400 font-medium italic">Belum ada kasus advokasi terdaftar.</TableCell>
               </TableRow>
-            ) : filteredCases.map((c) => {
+            ) : filteredCases.map((c, index) => {
               const worker = c.pekerja;
               const initials = worker?.nama_lengkap.split(' ').map((n) => n[0]).join('').substring(0, 2);
               
+              // Calculate real row number based on pagination
+              const rowNumber = (currentPage - 1) * perPage + index + 1;
+
               // Calculate progress based on milestones
               // @ts-ignore
               const completedCount = milestoneKeys.filter(key => !!c[key]).length;
@@ -106,35 +124,67 @@ export default function AdvokasiTable({ loading, filteredCases, totalCount, isSt
                 : 'bg-blue-50 text-blue-700 border-blue-200';
 
               return (
-                <TableRow key={c.id} className="hover:bg-slate-50/50 transition-colors group">
-                  <TableCell className="py-4 px-6">
-                    <div className="flex items-center gap-3">
-                      <div className="h-9 w-9 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-xs font-bold shrink-0 border border-slate-200">
+                <TableRow 
+                  key={c.id} 
+                  className="hover:bg-slate-50/50 transition-colors group cursor-pointer"
+                  onClick={() => router.push(`/advokasi/${c.id}`)}
+                >
+                  <TableCell className="py-3 pl-4 pr-1 w-10">
+                    <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-slate-500 text-[10px] font-bold">
+                      {rowNumber}
+                    </span>
+                  </TableCell>
+                  <TableCell className="py-3 px-3">
+                    <div className="flex items-center gap-2 group/name text-left outline-none w-full transition-transform hover:translate-x-1">
+                      <div className="h-7 w-7 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-[10px] font-bold shrink-0 border border-slate-200 transition-all group-hover/name:border-[#0ea5e9] group-hover/name:bg-blue-50 group-hover/name:text-[#0284c7] group-hover/name:scale-110 group-hover/name:ring-2 group-hover/name:ring-blue-100">
                         {initials}
                       </div>
-                      <span className="font-bold text-[#1e293b] text-sm">{worker?.nama_lengkap}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="py-4 px-6 text-sm text-[#475569]">{worker?.perusahaan?.nama_perusahaan}</TableCell>
-                  <TableCell className="py-4 px-6 text-sm text-[#475569]">{caseTypeLabels[c.jenis_kasus?.toUpperCase()]}</TableCell>
-                  <TableCell className="py-4 px-6">
-                    <div className="flex flex-col gap-1">
-                      <ProgressDots level={completedCount} />
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">
-                        Langkah {completedCount}/6: <span className="text-[#0284c7]">{currentStatusLabel}</span>
+                      <span className="font-bold text-[#1e293b] text-xs group-hover/name:text-[#0284c7] transition-colors truncate">
+                        {worker?.nama_lengkap}
                       </span>
                     </div>
                   </TableCell>
-                  <TableCell className="py-4 px-6">
-                    <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold border uppercase tracking-wide ${statusColor}`}>
+                  <TableCell className="py-3 px-3 text-xs text-[#475569] truncate max-w-0">
+                    <span className="block truncate">{worker?.perusahaan?.nama_perusahaan || '-'}</span>
+                  </TableCell>
+                  <TableCell className="py-3 px-3 text-xs text-[#475569]">
+                    <span className="block truncate">{caseTypeLabels[c.jenis_kasus?.toUpperCase()]}</span>
+                  </TableCell>
+                  <TableCell className="py-3 px-3">
+                    <div className="flex flex-col gap-0.5">
+                      <p className="text-[11px] font-bold text-slate-700 truncate uppercase tracking-tight">
+                        {worker?.latest_detail_medis?.hasil_diagnosis || '-'}
+                      </p>
+                      <div className="flex items-center gap-1">
+                        <div className="h-1 w-1 rounded-full bg-rose-400 shrink-0" />
+                        <p className="text-[10px] text-slate-500 font-semibold truncate">
+                          Pajanan: <span className="text-slate-700">{worker?.current_job?.jenis_pajanan || '-'}</span>
+                          {worker?.current_job?.durasi_pajanan && ` (${worker.current_job.durasi_pajanan})`}
+                        </p>
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell className="py-3 px-3">
+                    <div className="flex flex-col gap-0.5">
+                      <ProgressDots level={completedCount} />
+                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">
+                        {completedCount}/6: <span className="text-[#0284c7]">{currentStatusLabel}</span>
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="py-3 px-3">
+                    <span className={`inline-flex items-center px-2 py-1 rounded-md text-[9px] font-bold border uppercase tracking-wide ${statusColor}`}>
                       {formatHealthStatus(c.status_detail) || 'PROSES'}
                     </span>
                   </TableCell>
-                  <TableCell className="py-4 px-6 text-sm text-[#475569]">{new Date(c.updated_at).toLocaleDateString('id-ID')}</TableCell>
-                  <TableCell className="py-4 px-6">
+                  <TableCell className="py-3 px-3 text-xs text-[#475569] whitespace-nowrap">{new Date(c.updated_at).toLocaleDateString('id-ID')}</TableCell>
+                  <TableCell className="py-3 px-2">
                     <DropdownMenu>
-                      <DropdownMenuTrigger className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "h-8 w-8 text-slate-400 hover:text-slate-700")}>
-                        <MoreVertical className="h-4 w-4" />
+                      <DropdownMenuTrigger 
+                        onClick={(e) => e.stopPropagation()}
+                        className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "h-7 w-7 text-slate-400 hover:text-slate-700")}
+                      >
+                        <MoreVertical className="h-3.5 w-3.5" />
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-48">
                         <DropdownMenuItem className="cursor-pointer" onClick={() => router.push(`/advokasi/${c.id}`)}><Eye className="mr-2 h-4 w-4" /> Lihat Detail</DropdownMenuItem>
@@ -157,14 +207,33 @@ export default function AdvokasiTable({ loading, filteredCases, totalCount, isSt
       {/* Pagination Footer */}
       <div className="border-t border-slate-100 p-4 px-6 flex items-center justify-between text-sm text-slate-500 font-medium">
         <p className="text-xs font-bold text-[#94a3b8] tracking-wider uppercase">
-          MENAMPILKAN {filteredCases.length} DARI {totalCount} KASUS
+          MENAMPILKAN {totalCount > 0 ? (currentPage - 1) * perPage + 1 : 0}-{Math.min(currentPage * perPage, totalCount)} DARI {totalCount} KASUS
         </p>
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400" disabled>&lt;</Button>
-          <Button variant="ghost" className="h-8 w-8 bg-[#0284c7] hover:bg-[#0369a1] text-white rounded-full text-xs font-bold">1</Button>
-          <Button variant="ghost" className="h-8 w-8 rounded-full hover:bg-slate-100 text-xs font-bold">2</Button>
-          <Button variant="ghost" className="h-8 w-8 rounded-full hover:bg-slate-100 text-xs font-bold">3</Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-600 hover:bg-slate-100">&gt;</Button>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-8 w-8 text-slate-400" 
+            disabled={currentPage === 1}
+            onClick={() => onPageChange(currentPage - 1)}
+          >
+            &lt;
+          </Button>
+          
+          <div className="flex items-center gap-1 px-2">
+            <span className="text-xs font-bold text-[#0284c7]">Halaman {currentPage}</span>
+            <span className="text-xs text-[#94a3b8]">dari {lastPage}</span>
+          </div>
+
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-8 w-8 text-slate-600 hover:bg-slate-100"
+            disabled={currentPage === lastPage || totalCount === 0}
+            onClick={() => onPageChange(currentPage + 1)}
+          >
+            &gt;
+          </Button>
         </div>
       </div>
     </>

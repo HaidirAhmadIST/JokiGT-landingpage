@@ -32,11 +32,12 @@ class AdvokasiController extends Controller
         ]);
     }
 
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
+        $perPage = $request->query('per_page', 10);
         return response()->json([
             'status' => 'success',
-            'data' => $this->advokasiService->getAllCases()
+            'data' => $this->advokasiService->getPaginatedCases($perPage)
         ]);
     }
 
@@ -72,6 +73,11 @@ class AdvokasiController extends Controller
             $status = $this->advokasiService->updateTracker($pekerja_id, $request->all(), $request->file('file'));
             return response()->json(['status' => 'success', 'data' => $status]);
         } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Advokasi Update Error: ' . $e->getMessage(), [
+                'pekerja_id' => $pekerja_id,
+                'request' => $request->all(),
+                'trace' => $e->getTraceAsString()
+            ]);
             return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
         }
     }

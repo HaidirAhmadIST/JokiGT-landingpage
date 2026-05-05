@@ -21,7 +21,7 @@ return new class extends Migration
         DB::statement("UPDATE pekerja SET status_kesehatan = 'tidak_sehat' WHERE status_kesehatan = 'unfit'");
         
         Schema::table('pekerja', function (Blueprint $table) {
-            $table->enum('status_kesehatan', ['sehat', 'sehat_dengan_catatan', 'tidak_sehat'])->default('sehat')->change();
+            $table->string('status_kesehatan')->default('sehat')->change();
         });
 
         // Update detail_medis table
@@ -34,7 +34,7 @@ return new class extends Migration
         DB::statement("UPDATE detail_medis SET status_kesehatan = 'tidak_sehat' WHERE status_kesehatan = 'unfit'");
 
         Schema::table('detail_medis', function (Blueprint $table) {
-            $table->enum('status_kesehatan', ['sehat', 'sehat_dengan_catatan', 'tidak_sehat'])->default('sehat')->change();
+            $table->string('status_kesehatan')->default('sehat')->change();
         });
     }
 
@@ -52,7 +52,7 @@ return new class extends Migration
         DB::statement("UPDATE pekerja SET status_kesehatan = 'unfit' WHERE status_kesehatan = 'tidak_sehat'");
         
         Schema::table('pekerja', function (Blueprint $table) {
-            $table->enum('status_kesehatan', ['fit', 'fit_with_note', 'unfit'])->default('fit')->change();
+            $table->string('status_kesehatan')->default('fit')->change();
         });
 
         Schema::table('detail_medis', function (Blueprint $table) {
@@ -64,7 +64,7 @@ return new class extends Migration
         DB::statement("UPDATE detail_medis SET status_kesehatan = 'unfit' WHERE status_kesehatan = 'tidak_sehat'");
 
         Schema::table('detail_medis', function (Blueprint $table) {
-            $table->enum('status_kesehatan', ['fit', 'fit_with_note', 'unfit'])->default('fit')->change();
+            $table->string('status_kesehatan')->default('fit')->change();
         });
     }
 };

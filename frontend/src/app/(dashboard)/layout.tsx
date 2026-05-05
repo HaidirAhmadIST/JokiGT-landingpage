@@ -102,7 +102,7 @@ export default function DashboardLayout({
     };
 
     initUser();
-  }, []);
+  }, [router]);
 
   // Click outside to close search dropdown
   useEffect(() => {
@@ -180,7 +180,7 @@ export default function DashboardLayout({
       <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 z-20 shrink-0 shadow-sm print:hidden">
         
         {/* Logo Text Area */}
-        <div className="flex items-center gap-4 w-60 shrink-0">
+        <div className="flex items-center gap-4 w-48 shrink-0">
           <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
             <SheetTrigger 
               className="md:hidden -ml-2 text-slate-700 h-9 w-9 flex items-center justify-center rounded-lg hover:bg-slate-100 transition-colors"
@@ -368,14 +368,14 @@ export default function DashboardLayout({
            
            <div className="w-full">
              {/* Admin Panel Token */}
-             <div className="px-6 mb-8">
-               <div className="bg-blue-50/50 border border-blue-100/50 rounded-xl p-3 flex items-center gap-3">
-                  <div className="bg-blue-100 p-2 rounded-lg text-[#0ea5e9]">
-                    <Shield className="h-[18px] w-[18px]" />
+             <div className="px-4 mb-6">
+               <div className="bg-blue-50/50 border border-blue-100/50 rounded-xl p-3 flex items-center gap-2.5">
+                  <div className="bg-blue-100 p-1.5 rounded-lg text-[#0ea5e9] shrink-0">
+                    <Shield className="h-4 w-4" />
                   </div>
-                  <div>
-                    <p className="text-[11px] font-extrabold text-[#1e293b] tracking-wider">ADMIN PANEL</p>
-                    <p className="text-[10px] text-slate-500 font-medium mt-0.5">Mode Manajemen</p>
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-extrabold text-[#1e293b] tracking-wider truncate">ADMIN PANEL</p>
+                    <p className="text-[9px] text-slate-500 font-medium mt-0.5">Mode Manajemen</p>
                   </div>
                </div>
              </div>
@@ -389,13 +389,13 @@ export default function DashboardLayout({
                   <Link
                     key={item.name}
                     href={item.href}
-                    className={`group flex items-center px-8 py-3.5 text-sm font-semibold transition-all duration-200 border-l-4 ${
+                    className={`group flex items-center px-5 py-3 text-sm font-semibold transition-all duration-200 border-l-4 ${
                       isActive 
                         ? 'bg-[#E0F2FE] text-[#0284c7] border-[#0ea5e9]' 
                         : 'text-slate-500 hover:bg-slate-50 border-transparent hover:text-slate-800'
                     }`}
                   >
-                    <item.icon className={`mr-4 shrink-0 h-[18px] w-[18px] ${isActive ? 'text-[#0ea5e9]' : 'text-slate-400 group-hover:text-slate-600'}`} />
+                    <item.icon className={`mr-3 shrink-0 h-[18px] w-[18px] ${isActive ? 'text-[#0ea5e9]' : 'text-slate-400 group-hover:text-slate-600'}`} />
                     {item.name}
                   </Link>
                 );
@@ -404,12 +404,12 @@ export default function DashboardLayout({
            </div>
            
            {/* Bottom Settings Link */}
-           <div className="px-8 flex flex-col space-y-1 pb-2">
+           <div className="px-5 flex flex-col space-y-1 pb-2">
               <Link
                 href="/settings"
-                className="group flex items-center py-3.5 text-sm font-semibold text-slate-500 hover:text-slate-800 transition-colors"
+                className="group flex items-center py-3 text-sm font-semibold text-slate-500 hover:text-slate-800 transition-colors"
               >
-                <Settings className="mr-4 shrink-0 h-[18px] w-[18px] text-slate-400 group-hover:text-slate-600" />
+                <Settings className="mr-3 shrink-0 h-[18px] w-[18px] text-slate-400 group-hover:text-slate-600" />
                 Pengaturan
               </Link>
            </div>

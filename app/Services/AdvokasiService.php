@@ -42,17 +42,18 @@ class AdvokasiService
         $summary = [
             'total' => [
                 'count' => $totalAll,
-                'trend' => $calcTrend($totalAll, $totalLastMonth)
+                'new' => $totalAll - $totalLastMonth
             ],
             'proses' => [
                 'count' => $prosesAll,
-                'trend' => $calcTrend($prosesAll, $prosesLastMonth)
+                'new' => $prosesAll - $prosesLastMonth
             ],
             'selesai' => [
                 'count' => $selesaiAll,
-                'trend' => $calcTrend($selesaiAll, $selesaiLastMonth)
+                'new' => $selesaiAll - $selesaiLastMonth
             ]
         ];
+
 
         $steps = [
             ['key' => 'riwayat_pajanan', 'label' => 'Riwayat Pajanan', 'column' => 'riwayat_pajanan'],
@@ -99,9 +100,38 @@ class AdvokasiService
      *
      * @return Collection
      */
+    /**
+     * Get paginated active cases.
+     *
+     * @param int $perPage
+     * @return \Illuminate\Pagination\LengthAwarePaginator
+     */
+    public function getPaginatedCases(int $perPage = 10)
+    {
+        return StatusAdvokasi::with([
+            'pekerja.perusahaan', 
+            'pekerja.user', 
+            'pekerja.latestDetailMedis', 
+            'pekerja.currentJob'
+        ])
+            ->whereNotNull('jenis_kasus')
+            ->latest('updated_at')
+            ->paginate($perPage);
+    }
+
+    /**
+     * Get all active cases.
+     *
+     * @return Collection
+     */
     public function getAllCases(): Collection
     {
-        return StatusAdvokasi::with(['pekerja.perusahaan', 'pekerja.user'])
+        return StatusAdvokasi::with([
+            'pekerja.perusahaan', 
+            'pekerja.user', 
+            'pekerja.latestDetailMedis', 
+            'pekerja.currentJob'
+        ])
             ->whereNotNull('jenis_kasus')
             ->get()
             ->map(function($case) {
@@ -118,7 +148,13 @@ class AdvokasiService
      */
     public function getCaseDetails(string $id): ?StatusAdvokasi
     {
-        return StatusAdvokasi::with(['pekerja.perusahaan', 'pekerja.user', 'pekerja.riwayatPekerja', 'pekerja.currentJob'])->find($id);
+        return StatusAdvokasi::with([
+            'pekerja.perusahaan', 
+            'pekerja.user', 
+            'pekerja.riwayatPekerja', 
+            'pekerja.currentJob',
+            'pekerja.latestDetailMedis'
+        ])->find($id);
     }
 
     /**
@@ -183,7 +219,9 @@ class AdvokasiService
         $metaFields = ['jenis_kasus', 'tahap', 'status_detail', 'tanggal_pelaporan', 'catatan'];
         foreach ($metaFields as $field) {
             if (isset($data[$field])) {
-                $status->{$field} = $data[$field];
+                // Convert empty strings to null for database compatibility (especially for dates)
+                $value = $data[$field];
+                $status->{$field} = ($value === '' || $value === null) ? null : $value;
             }
         }
 
@@ -199,6 +237,13 @@ class AdvokasiService
                     $status->{$dateColumns[$field]} = now();
                 }
             }
+        }
+        
+        // 4. Update author indicator
+        $user = auth()->user();
+        if ($user) {
+            // If admin/petugas updates, set to true. If viewer (owner) updates, set to false.
+            $status->is_admin_note = in_array($user->role, ['admin', 'petugas']);
         }
 
         $status->save();

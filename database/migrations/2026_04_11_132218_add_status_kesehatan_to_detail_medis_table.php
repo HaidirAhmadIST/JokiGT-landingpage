@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('detail_medis', function (Blueprint $table) {
-            $table->enum('status_kesehatan', ['fit', 'fit_with_note', 'unfit'])->default('fit')->after('hasil_diagnosis');
+            $table->string('status_kesehatan')->default('fit')->after('hasil_diagnosis');
         });
     }
 

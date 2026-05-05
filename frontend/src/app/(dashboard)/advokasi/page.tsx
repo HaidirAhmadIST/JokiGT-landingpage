@@ -52,7 +52,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { useRole } from '@/hooks/useRole';
-import { Pekerja } from '@/types';
+import { Pekerja, StatusAdvokasi } from '@/types';
 import StatsCards from '@/components/advokasi/StatsCards';
 import AdvokasiTable from '@/components/advokasi/AdvokasiTable';
 import { useGetAdvokasiCases, useGetAdvokasiStats, useUpdateAdvokasi } from '@/hooks/useAdvokasi';
@@ -68,12 +68,19 @@ export default function AdvokasiPage() {
   const { isStaffOrAbove } = useRole();
   const [activeTab, setActiveTab] = useState('Semua Kasus');
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [perPage] = useState(10);
 
   // Data Fetching with React Query
-  const { data: casesData, isLoading: loadingCases } = useGetAdvokasiCases();
+  const { data: casesData, isLoading: loadingCases } = useGetAdvokasiCases({
+    page: currentPage,
+    per_page: perPage
+  });
   const { data: statsData, isLoading: loadingStats } = useGetAdvokasiStats();
 
-  const cases = casesData || [];
+  const cases = casesData?.data || [];
+  const totalCases = casesData?.total || 0;
+  const lastPage = casesData?.last_page || 1;
   const summaryStats = statsData?.summary || {
     total: { count: 0, trend: 0 },
     proses: { count: 0, trend: 0 },
@@ -94,7 +101,7 @@ export default function AdvokasiPage() {
       jenis_kasus: '',
       perusahaan: '',
       tahap: 'UPTD',
-      status_detail: 'DALAM PROSES',
+      status_detail: 'Dalam Proses',
       tanggal_pelaporan: new Date().toISOString().split('T')[0],
       catatan: '',
     }
@@ -116,10 +123,16 @@ export default function AdvokasiPage() {
     }
   };
 
-  const filteredCases = cases.filter(c => {
-    if (activeTab === 'Semua Kasus') return true;
-    return c.jenis_kasus?.toUpperCase() === activeTab.toUpperCase();
-  });
+  const filteredCases = cases
+    .filter((c: StatusAdvokasi) => {
+      if (activeTab === 'Semua Kasus') return true;
+      return c.jenis_kasus?.toUpperCase() === activeTab.toUpperCase();
+    })
+    .sort((a: StatusAdvokasi, b: StatusAdvokasi) => {
+      const nameA = a.pekerja?.nama_lengkap || '';
+      const nameB = b.pekerja?.nama_lengkap || '';
+      return nameA.localeCompare(nameB);
+    });
 
   const defaultNotes: Record<string, string> = {
     PAK: "Pekerja didiagnosa mengalami Penyakit Akibat Kerja (PAK) berupa [NAMA PENYAKIT]. Dilaporkan adanya pajanan [JENIS PAJANAN] di area kerja [NAMA AREA] yang berlangsung selama [DURASI]. Dibutuhkan pendampingan medis dan pelaporan ke pihak berwenang.",
@@ -211,7 +224,11 @@ export default function AdvokasiPage() {
   <AdvokasiTable
     loading={loading}
     filteredCases={filteredCases}
-    totalCount={summaryStats.total.count}
+    totalCount={totalCases}
+    currentPage={currentPage}
+    perPage={perPage}
+    lastPage={lastPage}
+    onPageChange={setCurrentPage}
     isStaffOrAbove={isStaffOrAbove}
   />
       </Card >
@@ -229,98 +246,112 @@ export default function AdvokasiPage() {
         <div className="flex-1 overflow-y-auto px-8 py-6">
           <form id="advokasi-form" onSubmit={handleSubmit(onSubmit)} className="space-y-8 pb-4">
 
-            {/* Section 01 */}
+            {/* Section 01: Identitas Pekerja & Kasus */}
             <div className="space-y-5">
               <div className="flex items-center gap-2">
                 <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-[#0ea5e9] text-white text-[10px] font-bold">01</span>
                 <h3 className="text-xs font-bold text-[#94a3b8] uppercase tracking-widest">IDENTITAS PEKERJA & KASUS</h3>
               </div>
 
-              {/* Section 02 */}
-              <div className="space-y-5">
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-[#0ea5e9] text-white text-[10px] font-bold">02</span>
-                  <h3 className="text-xs font-bold text-[#94a3b8] uppercase tracking-widest">PROGRES AWAL</h3>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-slate-600">PILIH PEKERJA</Label>
+                  <Popover open={openWorkerSearch} onOpenChange={setOpenWorkerSearch}>
+                    <PopoverTrigger
+                      className={cn(
+                        buttonVariants({ variant: "outline" }),
+                        "w-full justify-between h-11 bg-slate-50/50 border-slate-200 text-slate-700 font-medium"
+                      )}
+                    >
+                      {formData.pekerja_name || "Cari nama atau NIK pekerja..."}
+                      <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                      <Command>
+                        <CommandInput 
+                          placeholder="Ketik nama atau NIK..." 
+                          onValueChange={(v) => fetchWorkers(v)}
+                        />
+                        <CommandList>
+                          <CommandEmpty>
+                            {loadingWorkers ? (
+                              <div className="py-6 flex flex-col items-center gap-2">
+                                <RefreshCw className="h-4 w-4 animate-spin text-[#0ea5e9]" />
+                                <span className="text-xs text-slate-400">Mencari data...</span>
+                              </div>
+                            ) : "Pekerja tidak ditemukan."}
+                          </CommandEmpty>
+                          <CommandGroup>
+                            {workers.map((worker) => (
+                              <CommandItem
+                                key={worker.id}
+                                value={worker.nama_lengkap}
+                                onSelect={() => {
+                                  setValue('pekerja_id', worker.id.toString());
+                                  setValue('pekerja_name', worker.nama_lengkap);
+                                  setValue('perusahaan', worker.perusahaan?.nama_perusahaan || 'Pekerja Informal');
+                                  setOpenWorkerSearch(false);
+                                }}
+                                className="flex flex-col items-start py-3 px-4 cursor-pointer"
+                              >
+                                <div className="flex items-center w-full justify-between">
+                                  <span className="font-bold text-slate-800">{worker.nama_lengkap}</span>
+                                  {formData.pekerja_id === worker.id.toString() && <Check className="h-4 w-4 text-emerald-500" />}
+                                </div>
+                                <span className="text-[10px] text-slate-400 font-medium mt-0.5">
+                                  NIK: {worker.nik} | {worker.perusahaan?.nama_perusahaan || 'Informal'}
+                                </span>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  {errors.pekerja_id && <p className="text-red-500 text-[11px] font-medium">{errors.pekerja_id.message}</p>}
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-xs font-bold text-slate-600">TAHAP SAAT INI</Label>
-                    {/* @ts-ignore */}
-                    <Select value={formData.tahap || undefined} onValueChange={(v: any) => setValue('tahap', v)}>
-                      <SelectTrigger className="h-11 bg-slate-50/50 border-slate-200 focus:ring-[#0ea5e9]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="UPTD">UPTD</SelectItem>
-                        <SelectItem value="BPJS">BPJS</SelectItem>
-                        <SelectItem value="Pengadilan">Pengadilan</SelectItem>
-                      </SelectContent>
-                    </Select>
+                <div className="space-y-3 pt-2">
+                  <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Jenis Kasus Advokasi</Label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {caseTypes.map((type) => {
+                      const Icon = type.icon;
+                      const isActive = formData.jenis_kasus === type.id;
+                      return (
+                        <button
+                          key={type.id}
+                          type="button"
+                          onClick={() => handleCaseTypeSelect(type.id)}
+                          className={cn(
+                            "flex flex-col items-start p-4 rounded-[16px] border-2 text-left transition-all duration-200",
+                            isActive
+                              ? "border-[#0ea5e9] bg-[#f0f9ff] ring-1 ring-[#0ea5e9]/20 shadow-sm"
+                              : "border-slate-100 bg-white hover:border-slate-200 hover:bg-slate-50"
+                          )}
+                        >
+                          <div className={cn("p-2 rounded-lg mb-3", type.bg, type.color)}>
+                            <Icon className="h-5 w-5" />
+                          </div>
+                          <span className={cn("text-sm font-bold block", isActive ? "text-[#0369a1]" : "text-slate-700")}>
+                            {type.label}
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs font-bold text-slate-600">STATUS DETAIL</Label>
-                    {/* @ts-ignore */}
-                    <Select value={formData.status_detail || undefined} onValueChange={(v: any) => setValue('status_detail', v)}>
-                      <SelectTrigger className="h-11 bg-slate-50/50 border-slate-200 focus:ring-[#0ea5e9]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Verifikasi Dokumen">Verifikasi Dokumen</SelectItem>
-                        <SelectItem value="Mediasi 1">Mediasi 1</SelectItem>
-                        <SelectItem value="Mediasi 2">Mediasi 2</SelectItem>
-                        <SelectItem value="Sidang">Sidang</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  {errors.jenis_kasus && <p className="text-red-500 text-[11px] font-medium">{errors.jenis_kasus.message}</p>}
+                </div>
+
+                <div className="space-y-3">
+                  <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Perusahaan Terkait</Label>
+                  <div className="h-11 flex items-center px-4 bg-slate-50 border border-slate-200 rounded-xl text-slate-500 text-sm font-medium italic">
+                    {formData.perusahaan || 'Otomatis terisi saat pekerja dipilih'}
                   </div>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Jenis Kasus Advokasi</Label>
-                <div className="grid grid-cols-2 gap-3">
-                  {caseTypes.map((type) => {
-                    const Icon = type.icon;
-                    const isActive = formData.jenis_kasus === type.id;
-                    return (
-                      <button
-                        key={type.id}
-                        type="button"
-                        onClick={() => handleCaseTypeSelect(type.id)}
-                        className={cn(
-                          "flex flex-col items-start p-4 rounded-[16px] border-2 text-left transition-all duration-200",
-                          isActive
-                            ? "border-[#0ea5e9] bg-[#f0f9ff] ring-1 ring-[#0ea5e9]/20 shadow-sm"
-                            : "border-slate-100 bg-white hover:border-slate-200 hover:bg-slate-50"
-                        )}
-                      >
-                        <div className={cn("p-2 rounded-lg mb-3", type.bg, type.color)}>
-                          <Icon className="h-5 w-5" />
-                        </div>
-                        <span className={cn("text-sm font-bold block", isActive ? "text-[#0369a1]" : "text-slate-700")}>
-                          {type.label}
-                        </span>
-                        <span className="text-[10px] text-slate-400 font-medium mt-1">
-                          {type.desc}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-                {errors.jenis_kasus && (
-                  <p className="text-red-500 text-[11px] font-medium">{errors.jenis_kasus.message}</p>
-                )}
-              </div>
-
-              <div className="space-y-3">
-                <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Perusahaan Terkait</Label>
-                <div className="h-12 flex items-center px-4 bg-slate-50 border border-slate-200 rounded-xl text-slate-500 text-sm font-medium italic">
-                  {formData.perusahaan || 'Otomatis terisi saat pekerja dipilih'}
                 </div>
               </div>
             </div>
 
-            {/* Section 02 */}
+            {/* Section 02: Progres Awal */}
             <div className="space-y-5">
               <div className="flex items-center gap-2">
                 <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-[#0ea5e9] text-white text-[10px] font-bold">02</span>
@@ -329,9 +360,8 @@ export default function AdvokasiPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-xs font-bold text-slate-600">TAHAP SAAT INI</Label>
-                  {/* @ts-ignore */}
-                  <Select value={formData.tahap || undefined} onValueChange={(v: any) => setFormData({ ...formData, tahap: v })}>
+                  <Label className="text-xs font-bold text-slate-600">Tahap Saat Ini</Label>
+                  <Select value={formData.tahap} onValueChange={(v) => setValue('tahap', v || '')}>
                     <SelectTrigger className="h-11 bg-slate-50/50 border-slate-200 focus:ring-[#0ea5e9]">
                       <SelectValue />
                     </SelectTrigger>
@@ -343,13 +373,13 @@ export default function AdvokasiPage() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs font-bold text-slate-600">STATUS DETAIL</Label>
-                  {/* @ts-ignore */}
-                  <Select value={formData.status_detail || undefined} onValueChange={(v: any) => setFormData({ ...formData, status_detail: v })}>
+                  <Label className="text-xs font-bold text-slate-600">Status Detail</Label>
+                  <Select value={formData.status_detail} onValueChange={(v) => setValue('status_detail', v || '')}>
                     <SelectTrigger className="h-11 bg-slate-50/50 border-slate-200 focus:ring-[#0ea5e9]">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="Dalam Proses">Dalam Proses</SelectItem>
                       <SelectItem value="Verifikasi Dokumen">Verifikasi Dokumen</SelectItem>
                       <SelectItem value="Mediasi 1">Mediasi 1</SelectItem>
                       <SelectItem value="Mediasi 2">Mediasi 2</SelectItem>
@@ -360,7 +390,7 @@ export default function AdvokasiPage() {
               </div>
             </div>
 
-            {/* Section 03 */}
+            {/* Section 03: Dokumentasi Awal */}
             <div className="space-y-5">
               <div className="flex items-center gap-2">
                 <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-[#0ea5e9] text-white text-[10px] font-bold">03</span>
@@ -368,14 +398,14 @@ export default function AdvokasiPage() {
               </div>
 
               <div className="space-y-2">
-                <Label className="text-xs font-bold text-slate-600">TANGGAL PELAPORAN</Label>
+                <Label className="text-xs font-bold text-slate-600">Tanggal Pelaporan</Label>
                 <Input type="date" className="h-11 bg-slate-50/50 border-slate-200 focus-visible:ring-[#0ea5e9]"
                   {...register('tanggal_pelaporan')} />
                 {errors.tanggal_pelaporan && <p className="text-red-500 text-[11px] font-medium">{errors.tanggal_pelaporan.message}</p>}
               </div>
 
               <div className="space-y-2">
-                <Label className="text-xs font-bold text-slate-600">CATATAN AWAL KASUS</Label>
+                <Label className="text-xs font-bold text-slate-600">Catatan Awal Kasus</Label>
                 <Textarea placeholder="Tuliskan ringkasan singkat kasus..." className="min-h-[100px] resize-none bg-slate-50/50 border-slate-200 focus-visible:ring-[#0ea5e9]"
                   {...register('catatan')} />
               </div>
