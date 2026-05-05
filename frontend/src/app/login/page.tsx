@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Cookies from 'js-cookie';
 import Link from 'next/link';
+import Cookies from 'js-cookie';
 import api from '@/lib/axios';
 
 import { Button } from '@/components/ui/button';
@@ -98,11 +98,11 @@ export default function LoginPage() {
               />
             </div>
           </CardContent>
-          <CardFooter className="flex flex-col">
+          <CardFooter className="flex-col gap-4">
             <Button className="w-full" type="submit" disabled={loading}>
               {loading ? 'Masuk...' : 'Masuk Dashboard'}
             </Button>
-            <p className="text-center text-sm text-slate-500 mt-4">
+            <p className="text-center text-sm text-slate-500">
               Belum punya akun?{' '}
               <Link href="/pendaftaran" className="text-primary font-semibold hover:underline">
                 Daftar di sini

@@ -33,7 +33,15 @@ class ReportService
             ->where('rehabilitasi_bpjskes', false)
             ->count();
         
-        // 3. Unique Case Types Count (PAK, K3, PHK, JHT, etc.)
+        // 3. Tingkat Keberhasilan (Jumlah Kasus Selesai / Total Kasus) * 100
+        $kasusSelesai = StatusAdvokasi::whereNotNull('jenis_kasus')
+            ->where('rehabilitasi_bpjskes', true)
+            ->count();
+            
+        $tingkatKeberhasilan = $totalKasus > 0 
+            ? round(($kasusSelesai / $totalKasus) * 100, 1) 
+            : 0;
+
         $uniqueCaseTypes = StatusAdvokasi::whereNotNull('jenis_kasus')->distinct('jenis_kasus')->count('jenis_kasus');
 
         return [
@@ -45,8 +53,12 @@ class ReportService
                 'value' => number_format($advokasiProses),
                 'trend' => 0,
             ],
+            'kasus_selesai' => [
+                'value' => number_format($kasusSelesai),
+                'trend' => 0,
+            ],
             'sukses_advokasi' => [
-                'value' => number_format($uniqueCaseTypes),
+                'value' => number_format($tingkatKeberhasilan, 1, '.', ''),
                 'trend' => 0,
             ]
         ];
