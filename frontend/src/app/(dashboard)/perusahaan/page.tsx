@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Plus, X, Building2, Briefcase, Info, CheckCircle2, ShieldAlert, CheckCircle, AtSign,
   Users, UserCheck, UserMinus, AlertTriangle, Search, Eye, ArrowUpDown, ArrowUp, ArrowDown,
-  Phone, Mail, UserCircle, Package, Loader2, ChevronDown, Trash2, Pencil
+  Phone, Mail, UserCircle, Package, Loader2, ChevronDown, Trash2, Pencil, ArrowDownAZ, ArrowUpAZ
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRole } from '@/hooks/useRole';
@@ -163,6 +163,8 @@ export default function PerusahaanPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('Semua Status');
+  const [mainSortField, setMainSortField] = useState('nama_perusahaan');
+  const [mainSortOrder, setMainSortOrder] = useState<'asc' | 'desc'>('asc');
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -189,6 +191,7 @@ export default function PerusahaanPage() {
   const [detailData, setDetailData] = useState<PerusahaanDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [workerSearch, setWorkerSearch] = useState('');
+  const [selectedLetter, setSelectedLetter] = useState('all');
   const [sortField, setSortField] = useState<SortField>('nama_lengkap');
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
 
@@ -206,7 +209,12 @@ export default function PerusahaanPage() {
   const fetchData = async (page = 1) => {
     setLoading(true);
     try {
-      const params: any = { search, page };
+      const params: any = { 
+        search, 
+        page,
+        sort_by: mainSortField,
+        sort_dir: mainSortOrder
+      };
       if (statusFilter && statusFilter !== 'Semua Status') {
         params.status = statusFilter;
       }
@@ -231,7 +239,12 @@ export default function PerusahaanPage() {
   useEffect(() => {
     setCurrentPage(1);
     fetchData(1);
-  }, [search, statusFilter]);
+  }, [search, statusFilter, mainSortField, mainSortOrder]);
+
+  const toggleMainSort = () => {
+    setMainSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+    setMainSortField('nama_perusahaan');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -285,7 +298,7 @@ export default function PerusahaanPage() {
   };
 
   // ---- Detail Sheet Logic ----
-  const fetchWorkers = useCallback(async (companyId: number, page: number, searchQuery: string, append: boolean = false) => {
+  const fetchWorkers = useCallback(async (companyId: number, page: number, searchQuery: string, letter: string = 'all', append: boolean = false) => {
     if (append) {
       setWorkersLoadingMore(true);
     } else {
@@ -294,6 +307,8 @@ export default function PerusahaanPage() {
     try {
       const params: any = { perusahaan_id: companyId, page };
       if (searchQuery.trim()) params.search = searchQuery.trim();
+      if (letter !== 'all') params.letter = letter;
+      
       const res = await api.get('/pekerja', { params });
       if (res.data.status === 'success') {
         const pageData = res.data.data;
@@ -320,6 +335,7 @@ export default function PerusahaanPage() {
     setDetailOpen(true);
     setDetailLoading(true);
     setWorkerSearch('');
+    setSelectedLetter('all');
     setSortField('nama_lengkap');
     setSortOrder('asc');
     setWorkers([]);
@@ -331,7 +347,7 @@ export default function PerusahaanPage() {
         setDetailData(res.data.data);
       }
       // Fetch first page of workers in parallel-ish
-      await fetchWorkers(p.id, 1, '');
+      await fetchWorkers(p.id, 1, '', 'all');
     } catch (error) {
       toast.error('Gagal mengambil detail perusahaan');
       setDetailOpen(false);
@@ -342,7 +358,7 @@ export default function PerusahaanPage() {
 
   const loadMoreWorkers = () => {
     if (currentCompanyIdRef.current && workersPage < workersLastPage) {
-      fetchWorkers(currentCompanyIdRef.current, workersPage + 1, workerSearch, true);
+      fetchWorkers(currentCompanyIdRef.current, workersPage + 1, workerSearch, selectedLetter, true);
     }
   };
 
@@ -354,9 +370,18 @@ export default function PerusahaanPage() {
       if (currentCompanyIdRef.current) {
         setWorkers([]);
         setWorkersPage(1);
-        fetchWorkers(currentCompanyIdRef.current, 1, value);
+        fetchWorkers(currentCompanyIdRef.current, 1, value, selectedLetter);
       }
     }, 400);
+  };
+
+  const handleLetterSelect = (letter: string) => {
+    setSelectedLetter(letter);
+    if (currentCompanyIdRef.current) {
+      setWorkers([]);
+      setWorkersPage(1);
+      fetchWorkers(currentCompanyIdRef.current, 1, workerSearch, letter, false);
+    }
   };
 
   // Computed metrics from backend
@@ -473,17 +498,6 @@ export default function PerusahaanPage() {
           </p>
         </div>
         <div className="flex flex-col sm:flex-row items-end sm:items-center gap-3 w-full sm:w-auto">
-          <Select value={statusFilter} onValueChange={(v: any) => setStatusFilter(v || 'Semua Status')}>
-            <SelectTrigger className="w-full sm:w-[180px] bg-white h-11 border-slate-200 focus:ring-[#0ea5e9]">
-              <SelectValue placeholder="Semua Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Semua Status">Semua Status</SelectItem>
-              <SelectItem value="Berkasus">Berkasus</SelectItem>
-              <SelectItem value="Dalam Pantauan">Dalam Pantauan</SelectItem>
-              <SelectItem value="Selesai">Selesai</SelectItem>
-            </SelectContent>
-          </Select>
 
           {isStaffOrAbove && (
             <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
@@ -645,6 +659,51 @@ export default function PerusahaanPage() {
               </SheetContent>
             </Sheet>
           )}
+        </div>
+      </div>
+
+      {/* Standardized Minimalist Filter Row */}
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 flex flex-col md:flex-row items-center gap-3">
+        <div className="relative flex-1 w-full">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Cari perusahaan berdasarkan nama..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full h-11 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0ea5e9]/30 focus:border-[#0ea5e9] transition-all"
+          />
+        </div>
+
+        <div className="flex items-center gap-2 w-full md:w-auto">
+          <Select value={statusFilter} onValueChange={(v: any) => setStatusFilter(v || 'Semua Status')}>
+            <SelectTrigger className="flex-1 md:w-48 h-11 border-slate-200 rounded-xl bg-slate-50 text-sm font-semibold text-slate-600 focus:ring-[#0ea5e9]/30">
+              <SelectValue placeholder="Semua Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Semua Status">Semua Status</SelectItem>
+              <SelectItem value="Berkasus">Berkasus</SelectItem>
+              <SelectItem value="Dalam Pantauan">Dalam Pantauan</SelectItem>
+              <SelectItem value="Selesai">Selesai</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleMainSort}
+            className={cn(
+              "h-11 w-11 rounded-xl border border-slate-200 transition-all active:scale-95 shrink-0",
+              mainSortField === 'nama_perusahaan' ? "bg-slate-800 text-white hover:bg-slate-900 border-transparent shadow-sm" : "bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+            )}
+            title="Urutkan A-Z"
+          >
+            {mainSortOrder === 'desc' ? (
+              <ArrowUpAZ className="h-5 w-5" />
+            ) : (
+              <ArrowDownAZ className="h-5 w-5" />
+            )}
+          </Button>
         </div>
       </div>
 
@@ -872,7 +931,7 @@ export default function PerusahaanPage() {
                   </div>
                   
                   {isSuperAdmin && (
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 pr-8">
                       <Button 
                         variant="outline" 
                         size="sm" 
@@ -947,9 +1006,9 @@ export default function PerusahaanPage() {
 
                 {/* ---- MAIN CONTENT: WORKER TABLE ---- */}
                 <div className="flex-1 overflow-hidden flex flex-col">
-                {/* Search Bar */}
-                <div className="px-8 py-4 bg-white border-b border-slate-100">
-                  <div className="relative">
+                {/* Search Bar & Filter - Minimalist Layout */}
+                <div className="px-8 py-4 bg-white border-b border-slate-100 flex items-center gap-3">
+                  <div className="relative flex-1">
                     <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                     <input
                       type="text"
@@ -959,7 +1018,25 @@ export default function PerusahaanPage() {
                       className="w-full h-10 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0ea5e9]/30 focus:border-[#0ea5e9] transition-all"
                     />
                   </div>
+
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => toggleSort('nama_lengkap')}
+                    className={cn(
+                      "h-10 w-10 rounded-lg border border-slate-200 transition-all active:scale-95",
+                      sortField === 'nama_lengkap' ? "bg-slate-800 text-white hover:bg-slate-900 border-transparent shadow-sm" : "bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                    )}
+                    title="Urutkan A-Z"
+                  >
+                    {sortField === 'nama_lengkap' && sortOrder === 'desc' ? (
+                      <ArrowUpAZ className="h-5 w-5" />
+                    ) : (
+                      <ArrowDownAZ className="h-5 w-5" />
+                    )}
+                  </Button>
                 </div>
+
 
                 {/* Table Scroll Area */}
                 <div className="flex-1 overflow-y-auto px-8 py-2 custom-scrollbar">
@@ -996,14 +1073,33 @@ export default function PerusahaanPage() {
                         Tambah Pekerja
                       </Button>
                     </div>
-                  ) : sortedWorkers.length === 0 && workerSearch.trim() ? (
-                    /* ---- NO SEARCH RESULTS ---- */
-                    <div className="flex flex-col items-center justify-center py-16 text-center">
-                      <Search className="h-10 w-10 text-slate-200 mb-4" />
-                      <h3 className="text-base font-bold text-slate-600 mb-1">Tidak Ditemukan</h3>
-                      <p className="text-sm text-slate-400">Tidak ada pekerja yang cocok dengan pencarian "{workerSearch}"</p>
-                    </div>
-                  ) : sortedWorkers.length > 0 ? (
+                  ) : (
+                    /* ---- TABLE AREA ---- */
+                    <>
+                      {sortedWorkers.length === 0 && workerSearch.trim() ? (
+                        <div className="flex flex-col items-center justify-center py-16 text-center">
+                          <Search className="h-10 w-10 text-slate-200 mb-4" />
+                          <h3 className="text-base font-bold text-slate-600 mb-1">Tidak Ditemukan</h3>
+                          <p className="text-sm text-slate-400">Tidak ada pekerja yang cocok dengan pencarian "{workerSearch}"</p>
+                        </div>
+                      ) : sortedWorkers.length === 0 && metrics.total > 0 ? (
+                        <div className="flex flex-col items-center justify-center py-16 text-center">
+                          <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+                            <Users className="h-8 w-8 text-slate-200" />
+                          </div>
+                          <h3 className="text-base font-bold text-slate-600 mb-1">Data Pekerja Tidak Muncul?</h3>
+                          <p className="text-sm text-slate-400 mb-4">Gagal memuat daftar pekerja atau data sedang diperbarui.</p>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => fetchWorkers(currentCompanyIdRef.current!, 1, workerSearch, selectedLetter)}
+                            className="rounded-lg font-bold"
+                          >
+                            Muat Ulang Daftar
+                          </Button>
+                        </div>
+                      ) : (
+
                     <>
                       <table className="w-full text-left border-collapse">
                         <thead className="sticky top-0 bg-[#f8fafc] z-10">
@@ -1134,8 +1230,10 @@ export default function PerusahaanPage() {
                         </div>
                       )}
                     </>
-                  ) : null}
-                </div>
+                  )}
+                </>
+              )}
+            </div>
 
                 {/* Footer summary */}
                 {metrics.total > 0 && (

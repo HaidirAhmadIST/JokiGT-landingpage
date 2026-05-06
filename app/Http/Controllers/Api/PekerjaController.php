@@ -23,61 +23,87 @@ class PekerjaController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $user = $request->user();
+        try {
+            // Support identifying user even on public routes
+            $user = $request->user() ?: auth('sanctum')->user();
 
-        // If guest (not logged in), ONLY allow searching for specific NIK/Email
-        // This is for duplicate checking in the registration form.
-        if (!$user) {
-            if (!$request->has('search')) {
+            // If guest (not logged in), ONLY allow searching or filtering by company (for dashboard compatibility)
+            if (!$user) {
+                if (!$request->has('search') && !$request->has('perusahaan_id')) {
+                    return response()->json([
+                        'status' => 'success',
+                        'data'   => ['data' => [], 'total' => 0]
+                    ]);
+                }
+            }
+
+
+            // Viewer can only see their own pekerja record
+            if ($user?->role === 'viewer') {
+                $pekerja = Pekerja::withSummary()
+                    ->where('user_id', $user->id)
+                    ->first();
                 return response()->json([
                     'status' => 'success',
-                    'data'   => ['data' => [], 'total' => 0]
+                    'data'   => $pekerja ? ['data' => [$pekerja], 'total' => 1] : ['data' => [], 'total' => 0]
                 ]);
             }
-            // If searching, we proceed but with limited data if needed.
-        }
 
-        // Viewer can only see their own pekerja record
-        if ($user?->role === 'viewer') {
-            $pekerja = Pekerja::withSummary()
-                ->where('user_id', $user->id)
-                ->first();
+            $query = Pekerja::withSummary();
+
+            // Filter by company
+            if ($request->has('perusahaan_id')) {
+                $query->where('perusahaan_id', $request->input('perusahaan_id'));
+                $query->with(['riwayatPekerja', 'statusAdvokasi']);
+            }
+
+            // Search filter
+            if ($request->has('search')) {
+                $search = strtolower($request->search);
+                $query->where(function($q) use ($search) {
+                    $q->whereRaw('LOWER(nama_lengkap) LIKE ?', ["%{$search}%"])
+                      ->orWhereRaw('LOWER(nik) LIKE ?', ["%{$search}%"]);
+                });
+            }
+
+            // Alphabet filter
+            if ($request->filled('letter') && $request->input('letter') !== 'all') {
+                $query->where('nama_lengkap', 'ilike', $request->input('letter') . '%');
+            }
+
+            // Health status filter
+            if ($request->has('status')) {
+                $query->where('status_kesehatan', $request->query('status'));
+            }
+
+            $perPage = $request->input('per_page', $request->has('perusahaan_id') ? 10 : 15);
+            $sortBy = $request->input('sort_by');
+            $sortDir = $request->input('sort_dir', 'asc');
+
+            if ($sortBy) {
+                $query = $query->orderBy($sortBy, $sortDir);
+            } elseif ($request->has('perusahaan_id')) {
+                $query = $query->orderBy('nama_lengkap', 'asc');
+            } else {
+                $query = $query->latest();
+            }
+
+            $pekerja = $query->paginate($perPage);
+
             return response()->json([
                 'status' => 'success',
-                'data'   => $pekerja ? ['data' => [$pekerja], 'total' => 1] : ['data' => [], 'total' => 0]
+                'data' => $pekerja
             ]);
+        } catch (\Exception $e) {
+            Log::error('Error in PekerjaController@index: ' . $e->getMessage(), [
+                'request' => $request->all(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Internal Server Error'
+            ], 500);
         }
-
-        $query = Pekerja::withSummary();
-
-        // Filter by company (used by company detail modal)
-        if ($request->has('perusahaan_id')) {
-            $query->where('perusahaan_id', $request->query('perusahaan_id'));
-            // Load extra relations needed for company detail view
-            $query->with(['riwayatPekerja', 'statusAdvokasi']);
-        }
-
-        // Optional search filter
-        if ($request->has('search')) {
-            $search = $request->query('search');
-            $query->where(function ($q) use ($search) {
-                $q->where('nama_lengkap', 'like', "%{$search}%")
-                  ->orWhere('nik', 'like', "%{$search}%");
-            });
-        }
-
-        // Optional status kesehatan filter
-        if ($request->has('status')) {
-            $query->where('status_kesehatan', $request->query('status'));
-        }
-
-        $perPage = $request->input('per_page', $request->has('perusahaan_id') ? 10 : 15);
-        $pekerja = $query->latest()->paginate($perPage);
-
-        return response()->json([
-            'status' => 'success',
-            'data' => $pekerja
-        ]);
     }
 
     /**

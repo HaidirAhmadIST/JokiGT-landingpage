@@ -231,10 +231,10 @@ export default function AdvokasiPage() {
     onPageChange={setCurrentPage}
     isStaffOrAbove={isStaffOrAbove}
   />
-      </Card >
+      </Card>
 
     {/* ===== Add New Case Sheet ===== */ }
-    < Sheet open = { sheetOpen } onOpenChange = { setSheetOpen } >
+    <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
       <SheetContent className="sm:max-w-xl p-0 overflow-hidden flex flex-col bg-white border-l shadow-2xl">
         <SheetHeader className="px-8 py-6 border-b border-slate-100 bg-white z-10">
           <SheetTitle className="text-xl font-bold text-slate-900">Tambah Kasus Baru</SheetTitle>
@@ -423,7 +423,7 @@ export default function AdvokasiPage() {
           </Button>
         </div>
       </SheetContent>
-      </Sheet >
-    </div >
+      </Sheet>
+    </div>
   );
 }

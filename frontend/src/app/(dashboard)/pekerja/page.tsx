@@ -10,9 +10,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import {
   Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle,
 } from '@/components/ui/sheet';
-import { Plus, ExternalLink, ChevronLeft, ChevronRight, AlertTriangle, Save, Users, Trash2 } from 'lucide-react';
+import { Plus, ExternalLink, ChevronLeft, ChevronRight, AlertTriangle, Save, Users, Trash2, Search, ArrowDownAZ, ArrowUpAZ } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRole } from '@/hooks/useRole';
+import { cn } from '@/lib/utils';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,6 +36,8 @@ export default function PekerjaPage() {
   const [perPage] = useState(10);
   const [total, setTotal] = useState(0);
   const [lastPage, setLastPage] = useState(1);
+  const [sortField, setSortField] = useState('nama_lengkap');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
   // Bulk Edit Sheet State
   const [bulkOpen, setBulkOpen] = useState(false);
@@ -51,7 +54,9 @@ export default function PekerjaPage() {
         params: { 
           search,
           page: currentPage,
-          per_page: perPage 
+          per_page: perPage,
+          sort_by: sortField,
+          sort_dir: sortOrder
         } 
       });
       if (response.data.status === 'success') {
@@ -72,7 +77,12 @@ export default function PekerjaPage() {
 
   useEffect(() => {
     fetchData();
-  }, [search, currentPage]);
+  }, [search, currentPage, sortField, sortOrder]);
+
+  const toggleSort = () => {
+    setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+    setSortField('nama_lengkap');
+  };
 
   // Find workers with incomplete data
   const incompleteWorkers = useMemo(() => {
@@ -164,6 +174,37 @@ export default function PekerjaPage() {
             Tambah Pekerja
           </Button>
         </div>
+      </div>
+
+      {/* Minimalist Search & Sort Filter */}
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 flex items-center gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Cari pekerja berdasarkan nama atau NIK..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full h-11 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0ea5e9]/30 focus:border-[#0ea5e9] transition-all"
+          />
+        </div>
+
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={toggleSort}
+          className={cn(
+            "h-11 w-11 rounded-xl border border-slate-200 transition-all active:scale-95",
+            sortField === 'nama_lengkap' ? "bg-slate-800 text-white hover:bg-slate-900 border-transparent shadow-sm" : "bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+          )}
+          title="Urutkan A-Z"
+        >
+          {sortOrder === 'desc' ? (
+            <ArrowUpAZ className="h-5 w-5" />
+          ) : (
+            <ArrowDownAZ className="h-5 w-5" />
+          )}
+        </Button>
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
