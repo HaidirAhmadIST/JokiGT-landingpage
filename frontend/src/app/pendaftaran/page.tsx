@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Bell, Globe, User, ShieldAlert, ArrowRight, ArrowLeft, Plus, UploadCloud, Save, CheckCircle, X, Activity, Info, Briefcase, HeartPulse, ClipboardList, Zap, Trash2, RefreshCw } from 'lucide-react';
+import { Bell, Globe, User, ShieldAlert, ArrowRight, ArrowLeft, Plus, UploadCloud, Save, CheckCircle, X, Activity, Info, Briefcase, HeartPulse, ClipboardList, Zap, Trash2, RefreshCw, Eye, EyeOff, Lock, Mail } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -133,7 +133,7 @@ export default function PendaftaranPekerjaPage() {
     nik: '',
     nama_lengkap: '',
     email: '',
-    password: 'password123',
+    password: '',
     perusahaan_id: '',
     status_kesehatan: 'sehat',
     catatan_admin: '',
@@ -152,6 +152,8 @@ export default function PendaftaranPekerjaPage() {
     riwayat_merokok: 'Tidak Pernah',
     riwayat_pemeriksaan: []
   });
+
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleDetailMedisChange = (field: keyof DataMedis, value: any) => {
     setDetailMedisData(prev => ({ ...prev, [field]: value }));
@@ -339,6 +341,11 @@ export default function PendaftaranPekerjaPage() {
     if (!baseData.email) {
       toast.error("Email wajib diisi!");
       scrollToField('email', 1);
+      return;
+    }
+    if (!baseData.password || baseData.password.length < 8) {
+      toast.error("Password minimal 8 karakter!");
+      scrollToField('password', 1);
       return;
     }
     setLoading(true);
@@ -610,8 +617,10 @@ export default function PendaftaranPekerjaPage() {
             router.push('/dashboard-user');
           }
         } else {
-          // Guest goes to set password for activation
-          router.push(`/register-password?email=${encodeURIComponent(baseData.email)}`);
+          // Guest or new user goes to login or success page
+          localStorage.removeItem(STORAGE_KEY);
+          router.push('/login');
+          toast.success('Pendaftaran selesai! Silakan masuk menggunakan email dan password Anda.');
         }
       } catch (error: any) {
 
@@ -803,19 +812,44 @@ export default function PendaftaranPekerjaPage() {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="email">Alamat Email (Wajib untuk Login)</Label>
-                      <Input
-                        id="email"
-                        placeholder="nama@email.com"
-                        type="email"
-                        className={`h-11 ${duplicateWarning.email ? 'border-amber-400 bg-amber-50/30' : ''}`}
-                        value={baseData.email}
-                        onChange={e => setBaseData({ ...baseData, email: e.target.value })}
-                        onBlur={(e) => checkDuplicate('email', e.target.value)}
-                        disabled={!!lockedEmail}
-                      />
-
+                      <Label htmlFor="email">Alamat Email</Label>
+                      <div className="relative">
+                        <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                        <Input
+                          id="email"
+                          type="email"
+                          placeholder="contoh@email.com"
+                          className={cn("h-11 pl-10", lockedEmail ? "bg-slate-50 cursor-not-allowed" : "")}
+                          readOnly={!!lockedEmail}
+                          value={baseData.email}
+                          onChange={e => setBaseData({ ...baseData, email: e.target.value })}
+                          onBlur={(e) => checkDuplicate('email', e.target.value)}
+                        />
+                      </div>
                       {duplicateWarning.email && <p className="text-[10px] text-amber-600 font-medium">{duplicateWarning.email}</p>}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="password">Password (Minimal 8 Karakter)</Label>
+                      <div className="relative">
+                        <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                        <Input
+                          id="password"
+                          type={showPassword ? "text" : "password"}
+                          placeholder="Buat password untuk masuk"
+                          className="h-11 pl-10 pr-10"
+                          value={baseData.password}
+                          onChange={e => setBaseData({ ...baseData, password: e.target.value })}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                        >
+                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
+                      <p className="text-[10px] text-slate-400 font-medium ml-1">Gunakan password ini untuk masuk ke dashboard nanti.</p>
                     </div>
                     <div className="space-y-2">
                       <Label>Alamat Domisili</Label>
@@ -832,7 +866,11 @@ export default function PendaftaranPekerjaPage() {
                   
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2 col-span-1 sm:col-span-2">
-                      <Label>Nama Perusahaan / Proyek Saat Ini</Label>
+                      <Label>
+                        {(pekerjaanSaatIni.status_pekerjaan === 'Borongan' || pekerjaanSaatIni.status_pekerjaan === 'Harian Lepas') 
+                          ? 'Nama Perusahaan / Proyek Saat Ini' 
+                          : 'Nama Perusahaan Saat Ini'}
+                      </Label>
                       <div className="flex flex-col gap-2">
                         <Select 
                           value={pekerjaanSaatIni.nama_perusahaan} 
@@ -861,13 +899,19 @@ export default function PendaftaranPekerjaPage() {
                             {perusahaanList.map((p: any) => (
                               <SelectItem key={p.id} value={p.nama_perusahaan}>{p.nama_perusahaan}</SelectItem>
                             ))}
-                            <SelectItem value="Lainnya">+ Tambah Perusahaan Baru</SelectItem>
+                            <SelectItem value="Lainnya">
+                              {(pekerjaanSaatIni.status_pekerjaan === 'Borongan' || pekerjaanSaatIni.status_pekerjaan === 'Harian Lepas') 
+                                ? '+ Tambah Proyek / Tempat Kerja Baru' 
+                                : '+ Tambah Perusahaan Baru'}
+                            </SelectItem>
                           </SelectContent>
                         </Select>
 
                         {pekerjaanSaatIni.nama_perusahaan === 'Lainnya' && (
                           <Input 
-                            placeholder="Ketik Nama Perusahaan Baru..." 
+                            placeholder={(pekerjaanSaatIni.status_pekerjaan === 'Borongan' || pekerjaanSaatIni.status_pekerjaan === 'Harian Lepas') 
+                              ? "Ketik Nama Proyek / Tempat Kerja Baru..." 
+                              : "Ketik Nama Perusahaan Baru..."} 
                             className="h-11 bg-white animate-in slide-in-from-top-2"
                             value={pekerjaanSaatIni.nama_perusahaan_baru}
                             onChange={e => setPekerjaanSaatIni({ ...pekerjaanSaatIni, nama_perusahaan_baru: e.target.value })}
@@ -919,6 +963,50 @@ export default function PendaftaranPekerjaPage() {
                       </div>
                     )}
 
+                    {(pekerjaanSaatIni.status_pekerjaan === 'Borongan' || pekerjaanSaatIni.status_pekerjaan === 'Harian Lepas') && (
+                      <div className="col-span-1 sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4 bg-blue-50/50 border border-blue-100 p-6 rounded-xl animate-in fade-in slide-in-from-top-2">
+                        <div className="space-y-2 col-span-1 sm:col-span-2">
+                          <Label className="text-[#0ea5e9] font-bold">Tugas Spesifik / Detail Pekerjaan</Label>
+                          <Input 
+                            placeholder="Contoh: Bongkar muat besi, Las konstruksi kapal" 
+                            className="h-11 bg-white border-blue-200" 
+                            value={pekerjaanSaatIni.tugas_spesifik} 
+                            onChange={e => setPekerjaanSaatIni({ ...pekerjaanSaatIni, tugas_spesifik: e.target.value })} 
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-[#0ea5e9] font-bold">Lama Bekerja</Label>
+                          <div className="flex gap-2">
+                            <Input 
+                              type="number" 
+                              placeholder="0" 
+                              className="h-11 bg-white border-blue-200 w-24" 
+                              value={pekerjaanSaatIni.lama_bekerja} 
+                              onChange={e => setPekerjaanSaatIni({ ...pekerjaanSaatIni, lama_bekerja: e.target.value })} 
+                            />
+                            <Select value={pekerjaanSaatIni.satuan_waktu} onValueChange={v => setPekerjaanSaatIni({ ...pekerjaanSaatIni, satuan_waktu: v })}>
+                              <SelectTrigger className="h-11 bg-white border-blue-200"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Hari">Hari</SelectItem>
+                                <SelectItem value="Bulan">Bulan</SelectItem>
+                                <SelectItem value="Tahun">Tahun</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-[#0ea5e9] font-bold">Peserta BPJS BPU?</Label>
+                          <Select value={pekerjaanSaatIni.bpjs_bpu} onValueChange={v => setPekerjaanSaatIni({ ...pekerjaanSaatIni, bpjs_bpu: v })}>
+                            <SelectTrigger className="h-11 bg-white border-blue-200"><SelectValue placeholder="Pilih Status" /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Ya">Ya, Terdaftar</SelectItem>
+                              <SelectItem value="Tidak">Tidak</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="space-y-2">
                       <Label>Tanggal Masuk</Label>
                       <Input 
@@ -932,7 +1020,9 @@ export default function PendaftaranPekerjaPage() {
                     <div className="space-y-2">
                       <Label>Bagian / Unit Kerja</Label>
                       <Input 
-                        placeholder="Contoh: Produksi, Gudang" 
+                        placeholder={(pekerjaanSaatIni.status_pekerjaan === 'Borongan' || pekerjaanSaatIni.status_pekerjaan === 'Harian Lepas') 
+                          ? "Contoh: Lapangan, Konstruksi, Bongkar Muat" 
+                          : "Contoh: Produksi, Gudang"} 
                         className="h-11 bg-white" 
                         value={pekerjaanSaatIni.bagian} 
                         onChange={e => setPekerjaanSaatIni({ ...pekerjaanSaatIni, bagian: e.target.value })} 
@@ -942,7 +1032,9 @@ export default function PendaftaranPekerjaPage() {
                     <div className="space-y-2">
                       <Label>Jabatan</Label>
                       <Input 
-                        placeholder="Contoh: Operator, Staff" 
+                        placeholder={(pekerjaanSaatIni.status_pekerjaan === 'Borongan' || pekerjaanSaatIni.status_pekerjaan === 'Harian Lepas') 
+                          ? "Contoh: Tukang Las, Kuli Bangunan, Sopir" 
+                          : "Contoh: Operator, Staff"} 
                         className="h-11 bg-white" 
                         value={pekerjaanSaatIni.jabatan} 
                         onChange={e => setPekerjaanSaatIni({ ...pekerjaanSaatIni, jabatan: e.target.value })} 
@@ -1135,8 +1227,17 @@ export default function PendaftaranPekerjaPage() {
                           <div className="p-5">
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                               <div className="space-y-2 col-span-2 sm:col-span-1">
-                                <Label>Nama Perusahaan Sebelumnya</Label>
-                                <Input placeholder="Cth: PT Logam Terpadu" value={item.nama_perusahaan} onChange={(e) => {
+                                <Label>
+                                  {(item.status_pekerjaan === 'Borongan' || item.status_pekerjaan === 'Harian Lepas') 
+                                    ? 'Nama Perusahaan / Proyek Sebelumnya' 
+                                    : 'Nama Perusahaan Sebelumnya'}
+                                </Label>
+                                <Input 
+                                  placeholder={(item.status_pekerjaan === 'Borongan' || item.status_pekerjaan === 'Harian Lepas') 
+                                    ? "Contoh: Proyek Pembangunan Jalan" 
+                                    : "Contoh: PT Logam Terpadu"} 
+                                  value={item.nama_perusahaan} 
+                                  onChange={(e) => {
                                   const newR = [...riwayatLalu]; newR[idx].nama_perusahaan = e.target.value; setRiwayatLalu(newR);
                                 }} />
                               </div>
@@ -1176,17 +1277,70 @@ export default function PendaftaranPekerjaPage() {
                                 </div>
                               )}
 
+                              {(item.status_pekerjaan === 'Borongan' || item.status_pekerjaan === 'Harian Lepas') && (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 col-span-2 bg-blue-50/50 p-4 rounded-lg border border-blue-100 mt-2">
+                                  <div className="space-y-2 col-span-2">
+                                    <Label className="text-blue-700 font-bold">Tugas Spesifik / Detail Pekerjaan</Label>
+                                    <Input placeholder="Contoh: Kuli bangunan, Tukang las panggilan" className="h-11 bg-white border-blue-200" value={item.informal_data?.tugas_spesifik || ''} onChange={(e) => {
+                                      const newR = [...riwayatLalu]; newR[idx].informal_data = { ...newR[idx].informal_data, tugas_spesifik: e.target.value }; setRiwayatLalu(newR);
+                                    }} />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label className="text-blue-700 font-bold">Lama Bekerja</Label>
+                                    <div className="flex gap-2">
+                                      <Input type="number" placeholder="0" className="h-11 bg-white border-blue-200 w-24" value={item.informal_data?.lama_bekerja || ''} onChange={(e) => {
+                                        const newR = [...riwayatLalu]; newR[idx].informal_data = { ...newR[idx].informal_data, lama_bekerja: e.target.value }; setRiwayatLalu(newR);
+                                      }} />
+                                      <Select value={item.informal_data?.satuan_waktu || 'Bulan'} onValueChange={(v) => {
+                                        const newR = [...riwayatLalu]; newR[idx].informal_data = { ...newR[idx].informal_data, satuan_waktu: v }; setRiwayatLalu(newR);
+                                      }}>
+                                        <SelectTrigger className="h-11 bg-white border-blue-200"><SelectValue /></SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="Hari">Hari</SelectItem>
+                                          <SelectItem value="Bulan">Bulan</SelectItem>
+                                          <SelectItem value="Tahun">Tahun</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label className="text-blue-700 font-bold">Peserta BPJS BPU?</Label>
+                                    <Select value={item.informal_data?.bpjs_bpu || 'Tidak'} onValueChange={(v) => {
+                                      const newR = [...riwayatLalu]; newR[idx].informal_data = { ...newR[idx].informal_data, bpjs_bpu: v }; setRiwayatLalu(newR);
+                                    }}>
+                                      <SelectTrigger className="h-11 bg-white border-blue-200"><SelectValue placeholder="Pilih Status" /></SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="Ya">Ya, Terdaftar</SelectItem>
+                                        <SelectItem value="Tidak">Tidak</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                </div>
+                              )}
+
                               <div className="space-y-2 col-span-2 sm:col-span-1">
                                 <Label>Bagian / Departemen</Label>
-                                <Input placeholder="Contoh: Produksi / Logistik" value={item.bagian} onChange={(e) => {
-                                  const newR = [...riwayatLalu]; newR[idx].bagian = e.target.value; setRiwayatLalu(newR);
-                                }} />
+                                <Input 
+                                  placeholder={(item.status_pekerjaan === 'Borongan' || item.status_pekerjaan === 'Harian Lepas') 
+                                    ? "Contoh: Lapangan, Konstruksi, Bongkar Muat" 
+                                    : "Contoh: Produksi / Logistik"} 
+                                  value={item.bagian} 
+                                  onChange={(e) => {
+                                    const newR = [...riwayatLalu]; newR[idx].bagian = e.target.value; setRiwayatLalu(newR);
+                                  }} 
+                                />
                               </div>
                               <div className="space-y-2 col-span-2 sm:col-span-1">
                                 <Label>Jabatan / Posisi</Label>
-                                <Input placeholder="Contoh: Operator Produksi" value={item.jabatan} onChange={(e) => {
-                                  const newR = [...riwayatLalu]; newR[idx].jabatan = e.target.value; setRiwayatLalu(newR);
-                                }} />
+                                <Input 
+                                  placeholder={(item.status_pekerjaan === 'Borongan' || item.status_pekerjaan === 'Harian Lepas') 
+                                    ? "Contoh: Tukang Las, Kuli Bangunan, Sopir" 
+                                    : "Contoh: Operator Produksi"} 
+                                  value={item.jabatan} 
+                                  onChange={(e) => {
+                                    const newR = [...riwayatLalu]; newR[idx].jabatan = e.target.value; setRiwayatLalu(newR);
+                                  }} 
+                                />
                               </div>
                               <div className="space-y-2">
                                 <Label>Tanggal Masuk</Label>
@@ -1621,14 +1775,16 @@ export default function PendaftaranPekerjaPage() {
       {/* Reset Confirmation Dialog */}
       <AlertDialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
         <AlertDialogContent className="rounded-2xl border-none shadow-2xl">
-          <AlertDialogHeader>
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-rose-50 mb-2">
-              <RefreshCw className="h-7 w-7 text-rose-500" />
+          <AlertDialogHeader className="flex flex-col items-center justify-center text-center !text-center space-y-4">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-rose-50 border border-rose-100 shadow-sm mx-auto">
+              <RefreshCw className="h-8 w-8 text-rose-600" />
             </div>
-            <AlertDialogTitle className="text-xl font-black text-slate-900 text-center">Reset Pendaftaran?</AlertDialogTitle>
-            <AlertDialogDescription className="text-slate-500 text-center text-sm px-2">
-              Tindakan ini akan menghapus <span className="text-rose-600 font-bold">seluruh progres</span> pendaftaran Anda. Data yang sudah diisi akan hilang permanen.
-            </AlertDialogDescription>
+            <div className="space-y-2 w-full">
+              <AlertDialogTitle className="text-2xl font-extrabold text-slate-900 tracking-tight text-center w-full">Reset Pendaftaran?</AlertDialogTitle>
+              <AlertDialogDescription className="text-slate-500 text-sm leading-relaxed max-w-[300px] mx-auto px-4 text-center">
+                Tindakan ini akan menghapus <span className="text-rose-600 font-bold underline underline-offset-4 decoration-rose-200">seluruh progres</span> pendaftaran Anda secara permanen.
+              </AlertDialogDescription>
+            </div>
           </AlertDialogHeader>
           <AlertDialogFooter className="sm:justify-center gap-3 mt-4">
             <AlertDialogCancel className="rounded-xl border-slate-200 text-slate-500 font-bold hover:bg-slate-50 px-6">
