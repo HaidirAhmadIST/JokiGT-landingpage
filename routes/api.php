@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\FileController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\RegistrationController;
 use App\Http\Controllers\Api\RiwayatPekerjaController;
+use App\Http\Controllers\Api\DetailMedisController;
 
 
 // =========================================================================
@@ -56,15 +57,20 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('pekerja/{pekerja}', [PekerjaController::class, 'show']);
     Route::post('riwayat-pekerja/{id}/file', [FileController::class, 'uploadRiwayatFile']);
     Route::post('detail-medis/{id}/file', [FileController::class, 'uploadMedisFile']);
+    Route::post('riwayat-pekerja', [RiwayatPekerjaController::class, 'store']);
     Route::put('riwayat-pekerja/{id}', [RiwayatPekerjaController::class, 'update']);
+    
+    // Detail Medis Management
+    Route::post('detail-medis', [DetailMedisController::class, 'store']);
+    Route::put('detail-medis/{id}', [DetailMedisController::class, 'update']);
     
     // Advokasi upload — accessible by owner (viewer) or admin/petugas (ownership checked in controller)
     Route::post('pekerja/{pekerja_id}/advokasi', [AdvokasiController::class, 'update']);
 
     Route::post('pekerja/{pekerja}/foto', [PekerjaController::class, 'uploadFoto']);
+    Route::put('pekerja/{pekerja}', [PekerjaController::class, 'update']);
 
     Route::group(['middleware' => ['role:admin,petugas']], function () {
-        Route::put('pekerja/{pekerja}', [PekerjaController::class, 'update']);
         Route::post('pekerja-bulk-update', [PekerjaController::class, 'bulkUpdate']);
     });
     Route::delete('pekerja/{pekerja}', [PekerjaController::class, 'destroy'])->middleware('role:admin');

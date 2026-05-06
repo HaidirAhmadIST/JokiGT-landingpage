@@ -71,6 +71,15 @@ class AdvokasiController extends Controller
                 }
             }
             $status = $this->advokasiService->updateTracker($pekerja_id, $request->all(), $request->file('file'));
+            
+            // Catat log aktivitas
+            \App\Models\ActivityLog::record(
+                'update_advokasi',
+                "Memperbarui progres advokasi untuk pekerja (ID: {$pekerja_id})",
+                'admin',
+                $status
+            );
+
             return response()->json(['status' => 'success', 'data' => $status]);
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Advokasi Update Error: ' . $e->getMessage(), [

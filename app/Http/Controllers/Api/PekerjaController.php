@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StorePekerjaRequest;
 use App\Models\Pekerja;
 use App\Models\User;
+use App\Models\ActivityLog;
 use App\Policies\PekerjaPolicy;
 use App\Services\PekerjaService;
 use Illuminate\Http\JsonResponse;
@@ -13,9 +14,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class PekerjaController extends Controller
 {
+    use AuthorizesRequests;
+
     /**
      * Injeksi PekerjaService via constructor untuk memisahkan
      * logika bisnis dari lapisan HTTP Controller.
@@ -124,7 +128,7 @@ class PekerjaController extends Controller
                 && $existingPekerja->user_id
                 && $request->user()?->role === 'viewer'
             ) {
-                $newUser = \App\Models\User::where('email', $request->email)->first();
+                $newUser = User::where('email', $request->email)->first();
                 if ($newUser && $existingPekerja->user_id !== $newUser->id) {
                     return response()->json([
                         'status'  => 'error',
@@ -156,6 +160,15 @@ class PekerjaController extends Controller
                     $request->riwayat_medis
                 );
             }
+
+            // Catat log aktivitas
+            ActivityLog::record(
+                'tambah_pekerja',
+                "Menambahkan data pekerja baru: {$pekerja->nama_lengkap}",
+                'admin',
+                $pekerja,
+                ['nik' => $pekerja->nik]
+            );
 
             DB::commit();
 
@@ -223,7 +236,7 @@ class PekerjaController extends Controller
 
         // Allow Admin, Petugas, or the Owner (the worker themselves)
         $user = auth()->user();
-        $isOwner = $user->pekerja && $user->pekerja->id == $pekerja->id;
+        $isOwner = $user && ($user->id === $pekerja->user_id);
 
         if (!$user->isAdmin() && !$user->isPetugas() && !$isOwner) {
             return response()->json(['status' => 'error', 'message' => 'Anda tidak memiliki izin untuk mengubah data ini.'], 403);
@@ -233,6 +246,13 @@ class PekerjaController extends Controller
             'nama_lengkap', 'nik', 'perusahaan_id', 'status_kesehatan',
             'catatan_admin', 'tanggal_lahir', 'jenis_kelamin', 'whatsapp', 'domisili',
         ]));
+
+        ActivityLog::record(
+            'update_pekerja',
+            "Memperbarui data profil pekerja: {$pekerja->nama_lengkap}",
+            'admin',
+            $pekerja
+        );
 
         return response()->json([
             'status' => 'success',
@@ -288,10 +308,19 @@ class PekerjaController extends Controller
         if ($request->user()->role === 'admin') {
             $pekerja->forceDelete();
             $msg = 'Data pekerja berhasil dihapus secara permanen.';
+            $action = 'force_delete_pekerja';
         } else {
             $pekerja->delete();
             $msg = 'Data pekerja berhasil dihapus secara lunak (soft delete).';
+            $action = 'delete_pekerja';
         }
+
+        ActivityLog::record(
+            $action,
+            "Menghapus data pekerja: {$pekerja->nama_lengkap}",
+            'admin',
+            $pekerja
+        );
 
         return response()->json([
             'status' => 'success',
@@ -337,6 +366,13 @@ class PekerjaController extends Controller
             $file->storeAs('profil', $filename, 'public');
 
             $pekerja->update(['pas_foto' => $filename]);
+
+            ActivityLog::record(
+                'upload_foto_pekerja',
+                "Mengunggah pas foto baru untuk pekerja: {$pekerja->nama_lengkap}",
+                'admin',
+                $pekerja
+            );
 
             return response()->json([
                 'status' => 'success',
