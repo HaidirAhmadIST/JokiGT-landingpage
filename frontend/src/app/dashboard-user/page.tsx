@@ -320,7 +320,7 @@ export default function UserDashboardPage() {
   return (
     <div className="min-h-screen bg-[#f8fafc] font-sans">
       {/* HEADER */}
-      <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 sticky top-0 z-20 shadow-sm">
+      <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 sticky top-0 z-[50] shadow-sm">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-[#0284c7] rounded-lg flex items-center justify-center">
             <ShieldCheck className="h-4 w-4 text-white" />
@@ -349,7 +349,7 @@ export default function UserDashboardPage() {
 
       <main className="max-w-5xl mx-auto px-6 py-8 space-y-8">
         {incompleteData.length > 0 && (
-          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center justify-between gap-4 animate-in slide-in-from-top-4 duration-500">
+          <div className="bg-amber-50/90 backdrop-blur-md border border-amber-200 rounded-2xl p-4 flex items-center justify-between gap-4 animate-in slide-in-from-top-4 duration-500 sticky top-[80px] z-[40] shadow-lg shadow-amber-900/5 mb-6">
             <div className="flex items-center gap-3">
               <div className="bg-amber-100 p-2 rounded-xl text-amber-600">
                 <AlertCircle className="h-5 w-5" />
@@ -365,7 +365,10 @@ export default function UserDashboardPage() {
               className="bg-white border-amber-200 text-amber-700 hover:bg-amber-100 font-bold text-[10px]"
               onClick={() => {
                 const first = incompleteData[0];
-                if (first) openExposureEdit(first);
+                if (first) {
+                  document.getElementById('section-pajanan')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  setTimeout(() => openExposureEdit(first), 500);
+                }
               }}
             >
               Lengkapi Sekarang
@@ -638,7 +641,7 @@ export default function UserDashboardPage() {
           </Card>
         )}
 
-        <Card className="rounded-[24px] border-slate-100 shadow-sm p-6 bg-white overflow-hidden relative">
+        <Card id="section-pajanan" className="rounded-[24px] border-slate-100 shadow-sm p-6 bg-white overflow-hidden relative scroll-mt-32 transition-all duration-500">
           <div className="absolute top-[-20px] right-[-20px] opacity-[0.02] pointer-events-none">
              <Zap className="h-40 w-40" />
           </div>
