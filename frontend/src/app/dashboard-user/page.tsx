@@ -1,10 +1,16 @@
 'use client';
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import api from '@/lib/axios';
-import Cookies from 'js-cookie';
+
+/**
+ * Dashboard User (Pekerja)
+ *
+ * Halaman dashboard pribadi pekerja untuk melihat profil, status kesehatan,
+ * progres advokasi, riwayat pajanan, dan riwayat kesehatan per perusahaan.
+ *
+ * Semua state dan logika bisnis dikelola oleh hook `useUserDashboard`.
+ * File ini hanya berisi JSX layout dan UI rendering.
+ */
+
 import { cn, formatHealthStatus } from '@/lib/utils';
-import { toast } from 'sonner';
 import { Card } from '@/components/ui/card';
 import {
   User2, Building2, Briefcase, MapPin, HeartPulse, ShieldCheck,
@@ -14,283 +20,71 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+  Dialog, DialogContent, DialogDescription, DialogHeader,
+  DialogTitle, DialogFooter,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useUserDashboard } from '@/hooks/useUserDashboard';
+import type { StatusAdvokasi } from '@/types';
 
 const API_BASE = (process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api').replace('/api', '');
 
-const healthConfig: Record<string,{label:string;color:string;bg:string;dot:string}> = {
-  sehat: { label:'Sehat / Fit', color:'text-emerald-700', bg:'bg-emerald-50 border-emerald-200', dot:'bg-emerald-500' },
-  sehat_dengan_catatan: { label:'Sehat dengan Catatan', color:'text-amber-700', bg:'bg-amber-50 border-amber-200', dot:'bg-amber-500' },
-  tidak_sehat: { label:'Tidak Sehat / Unfit', color:'text-rose-700', bg:'bg-rose-50 border-rose-200', dot:'bg-rose-500' },
+/** Konfigurasi tampilan untuk setiap status kesehatan. */
+const healthConfig: Record<string, { label: string; color: string; bg: string; dot: string }> = {
+  sehat:                { label: 'Sehat / Fit',           color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-200',  dot: 'bg-emerald-500' },
+  sehat_dengan_catatan: { label: 'Sehat dengan Catatan',  color: 'text-amber-700',   bg: 'bg-amber-50 border-amber-200',      dot: 'bg-amber-500'   },
+  tidak_sehat:          { label: 'Tidak Sehat / Unfit',   color: 'text-rose-700',    bg: 'bg-rose-50 border-rose-200',        dot: 'bg-rose-500'    },
 };
 
+/** 6 tahapan advokasi PAK secara berurutan. */
 const STEPS = [
-  { key:'riwayat_pajanan', label:'Pajanan', icon:Search, color:'bg-blue-500' },
-  { key:'persetujuan_dokter', label:'Diagnosis', icon:Stethoscope, color:'bg-emerald-500' },
-  { key:'perusahaan_lapor', label:'Pelaporan', icon:FileText, color:'bg-amber-500' },
-  { key:'penetapan_pak', label:'Penetapan', icon:Scale, color:'bg-indigo-500' },
-  { key:'kompensasi_bpjstk', label:'Kompensasi', icon:Coins, color:'bg-rose-500' },
-  { key:'rehabilitasi_bpjskes', label:'Rehabilitasi', icon:HeartPulse, color:'bg-sky-500' },
+  { key: 'riwayat_pajanan',     label: 'Pajanan',     icon: Search,      color: 'bg-blue-500'    },
+  { key: 'persetujuan_dokter',  label: 'Diagnosis',   icon: Stethoscope, color: 'bg-emerald-500' },
+  { key: 'perusahaan_lapor',    label: 'Pelaporan',   icon: FileText,    color: 'bg-amber-500'   },
+  { key: 'penetapan_pak',       label: 'Penetapan',   icon: Scale,       color: 'bg-indigo-500'  },
+  { key: 'kompensasi_bpjstk',   label: 'Kompensasi',  icon: Coins,       color: 'bg-rose-500'    },
+  { key: 'rehabilitasi_bpjskes',label: 'Rehabilitasi',icon: HeartPulse,  color: 'bg-sky-500'     },
 ];
 
+/** Mapping key tahap ke kolom path dan tanggal dokumen di database. */
 const DOC_KEYS = [
-  { key:'riwayat_pajanan', name:'Bukti Pajanan', pathKey:'bukti_pajanan_path', dateKey:'bukti_pajanan_at' },
-  { key:'persetujuan_dokter', name:'Diagnosis Dokter', pathKey:'bukti_persetujuan_dokter_path', dateKey:'bukti_persetujuan_dokter_at' },
-  { key:'perusahaan_lapor', name:'Laporan Perusahaan', pathKey:'bukti_perusahaan_lapor_path', dateKey:'bukti_perusahaan_lapor_at' },
-  { key:'penetapan_pak', name:'Penetapan PAK', pathKey:'bukti_penetapan_pak_path', dateKey:'bukti_penetapan_pak_at' },
-  { key:'kompensasi_bpjstk', name:'Kompensasi BPJSTK', pathKey:'bukti_kompensasi_bpjstk_path', dateKey:'bukti_kompensasi_bpjstk_at' },
-  { key:'rehabilitasi_bpjskes', name:'Rehabilitasi BPJSKES', pathKey:'bukti_rehabilitasi_bpjskes_path', dateKey:'bukti_rehabilitasi_bpjskes_at' },
+  { key: 'riwayat_pajanan',     name: 'Bukti Pajanan',        pathKey: 'bukti_pajanan_path',               dateKey: 'bukti_pajanan_at'               },
+  { key: 'persetujuan_dokter',  name: 'Diagnosis Dokter',     pathKey: 'bukti_persetujuan_dokter_path',    dateKey: 'bukti_persetujuan_dokter_at'    },
+  { key: 'perusahaan_lapor',    name: 'Laporan Perusahaan',   pathKey: 'bukti_perusahaan_lapor_path',      dateKey: 'bukti_perusahaan_lapor_at'      },
+  { key: 'penetapan_pak',       name: 'Penetapan PAK',        pathKey: 'bukti_penetapan_pak_path',         dateKey: 'bukti_penetapan_pak_at'         },
+  { key: 'kompensasi_bpjstk',   name: 'Kompensasi BPJSTK',   pathKey: 'bukti_kompensasi_bpjstk_path',     dateKey: 'bukti_kompensasi_bpjstk_at'     },
+  { key: 'rehabilitasi_bpjskes',name: 'Rehabilitasi BPJSKES', pathKey: 'bukti_rehabilitasi_bpjskes_path', dateKey: 'bukti_rehabilitasi_bpjskes_at'  },
 ];
 
-const JENIS: Record<string,string> = {
-  PAK:'Penyakit Akibat Kerja (PAK)', K3:'Kecelakaan Kerja (K3)', PHK:'Pemutusan Hubungan Kerja', JHT:'Jaminan Hari Tua',
+/** Jenis kasus advokasi yang tersedia. */
+const JENIS: Record<string, string> = {
+  PAK: 'Penyakit Akibat Kerja (PAK)',
+  K3:  'Kecelakaan Kerja (K3)',
+  PHK: 'Pemutusan Hubungan Kerja',
+  JHT: 'Jaminan Hari Tua',
 };
 
-const fmt = (d: string) => d ? new Date(d).toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'}) : '-';
+/** Format tanggal ke format lokal Indonesia. */
+const fmt = (d: string) => d ? new Date(d).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
+
+// ─── Komponen Utama ────────────────────────────────────────────────────────────
 
 export default function UserDashboardPage() {
-  const router = useRouter();
-  const [user, setUser] = useState<any>(null);
-  const [pekerja, setPekerja] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [uploadModal, setUploadModal] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [uploadForm, setUploadForm] = useState({ step_key: '', file: null as File | null });
-
-  // Profile Edit State
-  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
-  const [profileForm, setProfileForm] = useState({
-    whatsapp: '',
-    domisili: '',
-    pas_foto: null as File | null
-  });
-  const [profileLoading, setProfileLoading] = useState(false);
-
-  // Advocacy Edit State
-  const [isAdvModalOpen, setIsAdvModalOpen] = useState(false);
-  const [advForm, setAdvForm] = useState({
-    jenis_kasus: '',
-    catatan: ''
-  });
-  const [advLoading, setAdvLoading] = useState(false);
-  
-  // Exposure Edit State
-  const [isExposureModalOpen, setIsExposureModalOpen] = useState(false);
-  const [exposureForm, setExposureForm] = useState({
-    id: null as number | null,
-    nama_perusahaan: '',
-    jenis_pajanan: '',
-    durasi_pajanan: '',
-    apd_disediakan: '',
-    jenis_apd_sendiri: ''
-  });
-  const [exposureLoading, setExposureLoading] = useState(false);
-  
-  // Data completeness check
-  const [incompleteData, setIncompleteData] = useState<any[]>([]);
-  const [selectedRiwayatId, setSelectedRiwayatId] = useState<number | null>(null);
-
-  useEffect(() => { fetchData(); }, []);
-
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const userRes = await api.get('/me');
-      const u = userRes.data.data;
-      setUser(u);
-      const pid = u?.pekerja?.id;
-      if (pid) {
-        const r = await api.get('/pekerja/' + pid);
-        const pData = r.data.data;
-        setPekerja(pData);
-        
-        // Auto select first riwayat
-        if (pData?.riwayat_pekerja?.length > 0 && !selectedRiwayatId) {
-          setSelectedRiwayatId(pData.riwayat_pekerja[0].id);
-        }
-        
-        // Check for incomplete exposure data
-        const incomplete = (pData?.riwayat_pekerja || []).filter((r: any) => !r.jenis_pajanan || !r.durasi_pajanan);
-        setIncompleteData(incomplete);
-      } else {
-        const s = await api.get('/pekerja', { params: { search: u.email } });
-        const items = s.data.data?.data || s.data.data || [];
-        const match = items.find((p: any) => p.user?.email === u.email);
-        if (match) { 
-          const r = await api.get('/pekerja/' + match.id); 
-          const pData = r.data.data;
-          setPekerja(pData); 
-          const incomplete = (pData?.riwayat_pekerja || []).filter((r: any) => !r.jenis_pajanan || !r.durasi_pajanan);
-          setIncompleteData(incomplete);
-        }
-      }
-    } catch (err: any) { 
-      if (err.response?.status !== 401) {
-        toast.error('Gagal memuat data dashboard.'); 
-      }
-    }
-    finally { setLoading(false); }
-  };
-
-
-  const handleViewFile = async (url: string) => {
-    try {
-      const res = await api.get(url, { responseType: 'blob' });
-      const contentType = res.headers['content-type'] || 'application/pdf';
-      const blob = new Blob([res.data], { type: contentType });
-      const blobUrl = window.URL.createObjectURL(blob);
-      window.open(blobUrl, '_blank');
-    } catch (err) {
-      toast.error('Gagal membuka dokumen.');
-    }
-  };
-
-  const handleUpload = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!uploadForm.step_key || !uploadForm.file) {
-      toast.error('Pilih jenis dokumen dan file terlebih dahulu.');
-      return;
-    }
-    setUploading(true);
-    try {
-      const fd = new FormData();
-      fd.append('step_key', uploadForm.step_key);
-      fd.append('file', uploadForm.file);
-      const res = await api.post('/pekerja/' + pekerja.id + '/advokasi', fd, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      if (res.data.status === 'success') {
-        const uploadedStep = uploadForm.step_key;
-        toast.success('Dokumen berhasil diunggah!', {
-          action: {
-            label: 'Lihat Dokumen',
-            onClick: () => handleViewFile('/pekerja/' + pekerja.id + '/files/advokasi/' + uploadedStep)
-          }
-        });
-        setUploadModal(false);
-        setUploadForm({ step_key: '', file: null });
-        fetchData();
-      }
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Gagal mengunggah dokumen.');
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const logout = async () => {
-    try { await api.post('/logout'); } catch {}
-    Cookies.remove('auth_token', { path: '/' });
-    localStorage.removeItem('user');
-    router.push('/login');
-  };
-
-  const handleUpdateProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setProfileLoading(true);
-    try {
-      // 1. Update basic info
-      await api.put(`/pekerja/${pekerja.id}`, {
-        whatsapp: profileForm.whatsapp,
-        domisili: profileForm.domisili
-      });
-
-      // 2. Update photo if provided
-      if (profileForm.pas_foto) {
-        const fd = new FormData();
-        fd.append('pas_foto', profileForm.pas_foto);
-        await api.post(`/pekerja/${pekerja.id}/foto`, fd, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        });
-      }
-
-      toast.success('Profil berhasil diperbarui!');
-      setIsProfileModalOpen(false);
-      fetchData();
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Gagal memperbarui profil.');
-    } finally {
-      setProfileLoading(false);
-    }
-  };
-
-  const handleUpdateAdvokasi = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setAdvLoading(true);
-    try {
-      await api.post(`/pekerja/${pekerja.id}/advokasi`, advForm);
-      toast.success('Detail advokasi diperbarui!');
-      setIsAdvModalOpen(false);
-      fetchData();
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Gagal memperbarui advokasi.');
-    } finally {
-      setAdvLoading(false);
-    }
-  };
-
-  const openProfileEdit = () => {
-    setProfileForm({
-      whatsapp: pekerja?.whatsapp || '',
-      domisili: pekerja?.domisili || '',
-      pas_foto: null
-    });
-    setIsProfileModalOpen(true);
-  };
-
-  const openAdvEdit = () => {
-    setIsAdvModalOpen(true);
-  };
-
-  const openExposureEdit = (r: any) => {
-    let info: any = {};
-    try {
-      info = typeof r.informal_data === 'string' ? JSON.parse(r.informal_data) : (r.informal_data || {});
-    } catch(e) {}
-    
-    setExposureForm({
-      id: r.id,
-      nama_perusahaan: r.nama_perusahaan,
-      jenis_pajanan: r.jenis_pajanan || '',
-      durasi_pajanan: r.durasi_pajanan?.toString() || '',
-      apd_disediakan: info.apd_disediakan || '',
-      jenis_apd_sendiri: info.jenis_apd_sendiri || ''
-    });
-    setIsExposureModalOpen(true);
-  };
-
-  const handleUpdateExposure = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!exposureForm.id) return;
-    setExposureLoading(true);
-    try {
-      await api.put(`/riwayat-pekerja/${exposureForm.id}`, {
-        jenis_pajanan: exposureForm.jenis_pajanan,
-        durasi_pajanan: exposureForm.durasi_pajanan ? parseInt(exposureForm.durasi_pajanan) : null,
-        informal_data: {
-          apd_disediakan: exposureForm.apd_disediakan,
-          jenis_apd_sendiri: exposureForm.jenis_apd_sendiri
-        }
-      });
-      toast.success('Data pajanan berhasil diperbarui!');
-      setIsExposureModalOpen(false);
-      fetchData();
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Gagal memperbarui data pajanan.');
-    } finally {
-      setExposureLoading(false);
-    }
-  };
+  // Semua logika dikelola oleh hook ini
+  const {
+    user, pekerja, loading, incompleteData, selectedRiwayatId, setSelectedRiwayatId,
+    uploadModal, setUploadModal, uploading, uploadForm, setUploadForm, handleUpload,
+    isProfileModalOpen, setIsProfileModalOpen, profileForm, setProfileForm,
+    profileLoading, handleUpdateProfile, openProfileEdit,
+    isAdvModalOpen, setIsAdvModalOpen, advForm, setAdvForm, advLoading,
+    handleUpdateAdvokasi, openAdvEdit,
+    isExposureModalOpen, setIsExposureModalOpen, exposureForm, setExposureForm,
+    exposureLoading, handleUpdateExposure, openExposureEdit,
+    logout, handleViewFile,
+  } = useUserDashboard();
 
   if (loading) return (
     <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center">
@@ -301,21 +95,21 @@ export default function UserDashboardPage() {
     </div>
   );
 
-  const adv = pekerja?.status_advokasi ?? pekerja?.statusAdvokasi ?? null;
-  const job = pekerja?.riwayat_pekerja?.find((r: any) => !r.tgl_keluar) ?? pekerja?.riwayat_pekerja?.[0] ?? null;
-  const medis = pekerja?.latest_detail_medis ?? pekerja?.detail_medis?.[0] ?? null;
+  // ── Derived data ────────────────────────────────────────────────────────────
+  const adv = (pekerja?.status_advokasi ?? (pekerja as any)?.statusAdvokasi ?? null) as StatusAdvokasi | null;
+  const job = pekerja?.riwayat_pekerja?.find((r) => !r.tgl_keluar) ?? pekerja?.riwayat_pekerja?.[0] ?? null;
+  const medis = pekerja?.latest_detail_medis ?? null;
   const hCfg = healthConfig[pekerja?.status_kesehatan ?? 'sehat'] ?? healthConfig.sehat;
-  const done = adv ? STEPS.filter(s => adv[s.key]).length : 0;
-  const pct = Math.round((done / 6) * 100);
-  const photo = pekerja?.pas_foto ? API_BASE + '/storage/profil/' + pekerja.pas_foto : null;
-  const docs = adv ? DOC_KEYS.filter(d => adv[d.pathKey]) : [];
+  const done = adv ? STEPS.filter(s => (adv as any)[s.key]).length : 0;
+  const pct  = Math.round((done / 6) * 100);
+  const photo = pekerja?.pas_foto ? `${API_BASE}/storage/profil/${pekerja.pas_foto}` : null;
   const timeline = [
     { label: 'Terdaftar', at: pekerja?.created_at, icon: Shield, color: 'bg-slate-400' },
-    ...STEPS.filter(s => adv && adv[s.key]).map(s => ({
+    ...STEPS.filter(s => adv && (adv as any)[s.key]).map(s => ({
       label: s.label, icon: s.icon, color: s.color,
-      at: adv['bukti_' + (s.key === 'riwayat_pajanan' ? 'pajanan' : s.key) + '_at'],
+      at: (adv as any)[`bukti_${s.key === 'riwayat_pajanan' ? 'pajanan' : s.key}_at`],
     }))
-  ].filter(t => !!t.at).sort((a,b) => new Date(a.at).getTime() - new Date(b.at).getTime());
+  ].filter(t => !!t.at).sort((a, b) => new Date(a.at!).getTime() - new Date(b.at!).getTime());
 
   return (
     <div className="min-h-screen bg-[#f8fafc] font-sans">

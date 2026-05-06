@@ -1,79 +1,28 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import api from '@/lib/axios';
-import { Card } from "@/components/ui/card";
-import Link from "next/link";
-import {
-  Users,
-  Building2,
-  ClipboardList,
-  CheckCircle2,
-  BadgeCheck,
-  TrendingUp,
-  TrendingDown,
-  FilePlus,
-} from "lucide-react";
-import ActivitySidebar from "@/components/ActivitySidebar";
-import AdvokasiBarChart from "@/components/AdvokasiBarChart";
-import { toast } from 'sonner';
+/**
+ * Halaman Dashboard Admin Utama
+ *
+ * Menampilkan statistik real-time sistem: jumlah pekerja, kasus aktif,
+ * advokasi selesai, dan klaim disetujui. Data di-refresh otomatis setiap
+ * 30 detik melalui hook `useDashboardStats`.
+ *
+ * Komponen yang digunakan:
+ * - `StatCard` — kartu metrik yang reusable
+ * - `AdvokasiBarChart` — grafik batang progres advokasi per tahap
+ * - `ActivitySidebar` — panel aktivitas admin/sistem terkini
+ */
 
-interface DashboardStats {
-  total_pekerja: number;
-  total_pekerja_new: number;
-  total_perusahaan: number;
-  total_perusahaan_new: number;
-  kasus_aktif: number;
-  kasus_aktif_new: number;
-  advokasi_selesai: number;
-  advokasi_selesai_new: number;
-  klaim_disetujui: number;
-  klaim_disetujui_new: number;
-  kesehatan: {
-    fit: number;
-    note: number;
-    unfit: number;
-  };
-}
-
+import Link from 'next/link';
+import { Users, Building2, ClipboardList, CheckCircle2, BadgeCheck, FilePlus } from 'lucide-react';
+import { Card } from '@/components/ui/card';
+import ActivitySidebar from '@/components/ActivitySidebar';
+import AdvokasiBarChart from '@/components/AdvokasiBarChart';
+import StatCard from '@/components/dashboard/StatCard';
+import { useDashboardStats } from '@/hooks/useDashboardStats';
 
 export default function DashboardIndexPage() {
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  const fetchStats = async () => {
-    try {
-      const res = await api.get('/dashboard/stats');
-      if (res.data.status === 'success') {
-        setStats(res.data.data);
-      }
-    } catch (e) {
-      console.error('Failed to fetch dashboard stats', e);
-      toast.error('Gagal mengambil statistik dashboard. Periksa koneksi database.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchStats();
-    // Auto-refresh every 30 seconds
-    const interval = setInterval(fetchStats, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Animated number display
-  const StatValue = ({ value, loading: isLoading }: { value: number; loading: boolean }) => {
-    if (isLoading) {
-      return <div className="h-9 w-20 bg-slate-200 rounded-lg animate-pulse" />;
-    }
-    return (
-      <h3 className="text-4xl font-extrabold text-[#0f172a] tabular-nums transition-all duration-300">
-        {value.toLocaleString('id-ID')}
-      </h3>
-    );
-  };
-
+  const { stats, loading } = useDashboardStats();
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 max-w-7xl mx-auto">
@@ -90,90 +39,51 @@ export default function DashboardIndexPage() {
 
       {/* ── Metric Cards ── */}
       <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-
-        {/* Card 1 — Total Pekerja */}
-        <Card className="rounded-[20px] shadow-sm border-slate-100 p-6 flex flex-col justify-between min-h-[152px] hover:shadow-md transition-all">
-          <div className="flex justify-between items-start">
-            <p className="text-xs font-bold text-[#94a3b8] tracking-widest uppercase">Total Pekerja</p>
-            <div className="bg-blue-50 text-blue-500 p-2.5 rounded-xl">
-              <Users className="h-5 w-5" />
-            </div>
-          </div>
-          <div className="flex items-end gap-2">
-            <StatValue value={stats?.total_pekerja ?? 0} loading={loading} />
-            {stats && stats.total_pekerja_new > 0 && (
-              <span className="text-xs font-bold text-emerald-500 mb-1.5 whitespace-nowrap">
-                (+{stats.total_pekerja_new})
-              </span>
-            )}
-          </div>
-          <p className="text-xs font-medium text-[#94a3b8]">Live monitoring</p>
-        </Card>
-
-        {/* Card 2 — Kasus Aktif */}
-        <Card className="rounded-[20px] shadow-sm border-slate-100 p-6 flex flex-col justify-between min-h-[152px] hover:shadow-md transition-all">
-          <div className="flex justify-between items-start">
-            <p className="text-xs font-bold text-[#94a3b8] tracking-widest uppercase">Kasus Aktif</p>
-            <div className="bg-orange-50 text-orange-500 p-2.5 rounded-xl">
-              <ClipboardList className="h-5 w-5" />
-            </div>
-          </div>
-          <div className="flex items-end gap-2">
-            <StatValue value={stats?.kasus_aktif ?? 0} loading={loading} />
-            {stats && stats.kasus_aktif_new > 0 && (
-              <span className="text-xs font-bold text-orange-500 mb-1.5 whitespace-nowrap">
-                (+{stats.kasus_aktif_new})
-              </span>
-            )}
-          </div>
-          <p className="text-xs font-medium text-[#94a3b8]">Sedang diproses</p>
-        </Card>
-
-        {/* Card 3 — Advokasi Selesai */}
-        <Card className="rounded-[20px] shadow-sm border-slate-100 p-6 flex flex-col justify-between min-h-[152px] hover:shadow-md transition-all">
-          <div className="flex justify-between items-start">
-            <p className="text-xs font-bold text-[#94a3b8] tracking-widest uppercase">Advokasi Selesai</p>
-            <div className="bg-emerald-50 text-emerald-500 p-2.5 rounded-xl">
-              <CheckCircle2 className="h-5 w-5" />
-            </div>
-          </div>
-          <div className="flex items-end gap-2">
-            <StatValue value={stats?.advokasi_selesai ?? 0} loading={loading} />
-            {stats && stats.advokasi_selesai_new > 0 && (
-              <span className="text-xs font-bold text-emerald-500 mb-1.5 whitespace-nowrap">
-                (+{stats.advokasi_selesai_new})
-              </span>
-            )}
-          </div>
-          <p className="text-xs font-medium text-[#94a3b8]">Kasus tuntas</p>
-        </Card>
-
-        {/* Card 4 — Klaim Disetujui */}
-        <Card className="rounded-[20px] shadow-sm border-slate-100 p-6 flex flex-col justify-between min-h-[152px] hover:shadow-md transition-all">
-          <div className="flex justify-between items-start">
-            <p className="text-xs font-bold text-[#94a3b8] tracking-widest uppercase">Klaim Disetujui</p>
-            <div className="bg-indigo-50 text-indigo-500 p-2.5 rounded-xl">
-              <BadgeCheck className="h-5 w-5" />
-            </div>
-          </div>
-          <div className="flex items-end gap-2">
-            <StatValue value={stats?.klaim_disetujui ?? 0} loading={loading} />
-            {stats && stats.klaim_disetujui_new > 0 && (
-              <span className="text-xs font-bold text-emerald-500 mb-1.5 whitespace-nowrap">
-                (+{stats.klaim_disetujui_new})
-              </span>
-            )}
-          </div>
-          <p className="text-xs font-medium text-[#94a3b8]">Approved claims</p>
-        </Card>
-
+        <StatCard
+          label="Total Pekerja"
+          value={stats?.total_pekerja ?? 0}
+          delta={stats?.total_pekerja_new}
+          icon={Users}
+          iconBg="bg-blue-50"
+          iconColor="text-blue-500"
+          subtitle="Live monitoring"
+          loading={loading}
+        />
+        <StatCard
+          label="Kasus Aktif"
+          value={stats?.kasus_aktif ?? 0}
+          delta={stats?.kasus_aktif_new}
+          icon={ClipboardList}
+          iconBg="bg-orange-50"
+          iconColor="text-orange-500"
+          deltaColor="text-orange-500"
+          subtitle="Sedang diproses"
+          loading={loading}
+        />
+        <StatCard
+          label="Advokasi Selesai"
+          value={stats?.advokasi_selesai ?? 0}
+          delta={stats?.advokasi_selesai_new}
+          icon={CheckCircle2}
+          iconBg="bg-emerald-50"
+          iconColor="text-emerald-500"
+          subtitle="Kasus tuntas"
+          loading={loading}
+        />
+        <StatCard
+          label="Klaim Disetujui"
+          value={stats?.klaim_disetujui ?? 0}
+          delta={stats?.klaim_disetujui_new}
+          icon={BadgeCheck}
+          iconBg="bg-indigo-50"
+          iconColor="text-indigo-500"
+          subtitle="Approved claims"
+          loading={loading}
+        />
       </div>
 
-
-
-      {/* ── Middle Section: Bar Chart + ActivitySidebar ── */}
+      {/* ── Middle Section: Bar Chart + Activity Sidebar ── */}
       <div className="grid gap-6 lg:grid-cols-3">
-
         {/* Bar Chart — 2/3 width */}
         <Card className="lg:col-span-2 rounded-[20px] shadow-sm border-slate-100 p-6 flex flex-col min-h-[400px]">
           <AdvokasiBarChart />
@@ -181,7 +91,6 @@ export default function DashboardIndexPage() {
 
         {/* Activity Sidebar — 1/3 width */}
         <ActivitySidebar />
-
       </div>
 
       {/* ── Bottom Banner ── */}
@@ -198,7 +107,6 @@ export default function DashboardIndexPage() {
               </p>
             </div>
           </div>
-
           <div className="flex items-center gap-3 shrink-0">
             <Link
               href="/laporan"

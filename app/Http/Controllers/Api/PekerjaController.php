@@ -4,23 +4,23 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StorePekerjaRequest;
-use App\Models\DetailMedis;
 use App\Models\Pekerja;
-use App\Models\RiwayatPekerja;
-use App\Models\StatusAdvokasi;
 use App\Models\User;
+use App\Services\PekerjaService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 class PekerjaController extends Controller
 {
     /**
-     * Display a listing of the workers (Pekerja).
+     * Injeksi PekerjaService via constructor untuk memisahkan
+     * logika bisnis dari lapisan HTTP Controller.
      */
+    public function __construct(private readonly PekerjaService $pekerjaService) {}
+
     public function index(Request $request): JsonResponse
     {
         try {
@@ -108,141 +108,47 @@ class PekerjaController extends Controller
 
     /**
      * Store a newly created Pekerja and related nested records.
-     * Uses DB Transaction to ensure data integrity across multiple tables.
+     *
+     * Logika bisnis (user, riwayat, medis) didelegasikan ke PekerjaService.
+     * Controller ini hanya menangani HTTP request/response dan transaksi DB.
      */
     public function store(StorePekerjaRequest $request): JsonResponse
     {
         try {
             DB::beginTransaction();
 
-            // 1. Find or create User
-            $user = User::where('email', $request->email)->first();
-            
-            if ($user) {
-                $user->update([
-                    'nama' => $request->nama_lengkap,
-                    'password' => Hash::make($request->password),
-                ]);
-            } else {
-                $user = User::create([
-                    'nama' => $request->nama_lengkap,
-                    'email' => $request->email,
-                    'password' => Hash::make($request->password),
-                    'role' => 'viewer',
-                ]);
-            }
-
-            // 2. Find or create Pekerja (Mainly by NIK)
-            $pekerja = Pekerja::where('nik', $request->nik)->first();
-
-            if ($pekerja) {
-                // SECURITY CHECK: If this NIK already belongs to another user, and the current user is a viewer, block it.
-                if ($request->user()?->role === 'viewer' && $pekerja->user_id && $pekerja->user_id !== $user->id) {
-                    return response()->json(['status' => 'error', 'message' => 'NIK ini sudah terdaftar dengan akun lain. Silakan hubungi admin jika ini adalah kesalahan.'], 403);
+            // Cek keamanan: NIK tidak boleh diklaim oleh user lain
+            $existingPekerja = Pekerja::where('nik', $request->nik)->first();
+            if ($existingPekerja
+                && $existingPekerja->user_id
+                && $request->user()?->role === 'viewer'
+            ) {
+                $newUser = \App\Models\User::where('email', $request->email)->first();
+                if ($newUser && $existingPekerja->user_id !== $newUser->id) {
+                    return response()->json([
+                        'status'  => 'error',
+                        'message' => 'NIK ini sudah terdaftar dengan akun lain. Hubungi admin jika ini kesalahan.',
+                    ], 403);
                 }
-
-                // Ensure the worker is tied to this user
-                $pekerja->update([
-                    'user_id' => $user->id,
-                    'perusahaan_id' => $request->perusahaan_id,
-                    'nama_lengkap' => $request->nama_lengkap,
-                    'status_kesehatan' => $request->status_kesehatan,
-                    'catatan_admin' => $request->catatan_admin,
-                    'tanggal_lahir' => $request->tanggal_lahir,
-                    'jenis_kelamin' => $request->jenis_kelamin,
-                    'whatsapp' => $request->whatsapp,
-                    'domisili' => $request->domisili,
-                ]);
-            } else {
-                $pekerja = Pekerja::create([
-                    'user_id' => $user->id,
-                    'perusahaan_id' => $request->perusahaan_id,
-                    'nik' => $request->nik,
-                    'nama_lengkap' => $request->nama_lengkap,
-                    'status_kesehatan' => $request->status_kesehatan,
-                    'catatan_admin' => $request->catatan_admin,
-                    'tanggal_lahir' => $request->tanggal_lahir,
-                    'jenis_kelamin' => $request->jenis_kelamin,
-                    'whatsapp' => $request->whatsapp,
-                    'domisili' => $request->domisili,
-                ]);
             }
 
-            // 3. Ensure Status Advokasi exists
-            if (!$pekerja->statusAdvokasi) {
-                StatusAdvokasi::create([
-                    'pekerja_id' => $pekerja->id
-                ]);
-            }
+            // 1. Buat atau perbarui User
+            $user = $this->pekerjaService->createOrUpdateUser($request->all());
 
-            // 4. Update Nested Riwayat Pekerja
-            // Hapus riwayat lama dan buat baru satu per satu agar mendapatkan ID
-            // untuk dihubungkan ke detail_medis yang embedded.
-            $embeddedMedisAll = []; // Kumpulkan semua medis embedded beserta riwayat_pekerja_id-nya
+            // 2. Buat atau perbarui Pekerja + inisialisasi StatusAdvokasi
+            $pekerja = $this->pekerjaService->createOrUpdatePekerja($user, $request->all());
 
+            // 3. Sinkronisasi Riwayat Pekerjaan
+            $embeddedMedis = [];
             if ($request->has('riwayat') && is_array($request->riwayat)) {
-                $pekerja->riwayatPekerja()->delete();
-
-                foreach ($request->riwayat as $riwayatItem) {
-                    // Pisahkan riwayat_pemeriksaan dari data riwayat sebelum disimpan
-                    $pemeriksaan = $riwayatItem['riwayat_pemeriksaan'] ?? [];
-                    $riwayatData = array_diff_key($riwayatItem, array_flip(['riwayat_pemeriksaan']));
-
-                    $savedRiwayat = $pekerja->riwayatPekerja()->create($riwayatData);
-
-                    // Kumpulkan detail medis embedded, tandai dengan riwayat_pekerja_id
-                    foreach ($pemeriksaan as $medisItem) {
-                        $embeddedMedisAll[] = array_merge($medisItem, [
-                            '_riwayat_pekerja_id' => $savedRiwayat->id,
-                        ]);
-                    }
-                }
+                $embeddedMedis = $this->pekerjaService->syncRiwayatPekerja($pekerja, $request->riwayat);
             }
 
-            // 5. Update Nested Detail Medis
-            // Gabungkan medis embedded (terikat ke riwayat pekerjaan tertentu)
-            // dengan medis mandiri (tidak terikat pekerjaan tertentu).
-            $allMedis = [];
+            // 4. Sinkronisasi Detail Medis (mandiri + embedded)
+            $medisMandiri = is_array($request->medis) ? $request->medis : [];
+            $this->pekerjaService->syncDetailMedis($pekerja, $medisMandiri, $embeddedMedis);
 
-            // Medis mandiri dari form Step 3 (tidak terikat pekerjaan)
-            if ($request->has('medis') && is_array($request->medis)) {
-                foreach ($request->medis as $m) {
-                    $allMedis[] = [
-                        'tgl_pemeriksaan'    => $m['tanggal_pemeriksaan'] ?? null,
-                        'tempat_pemeriksa'   => $m['tempat_pemeriksaan']  ?? null,
-                        'jenis_pemeriksa'    => $m['jenis_pemeriksaan']   ?? null,
-                        'dokter_pemeriksa'   => $m['dokter']              ?? null,
-                        'status_kesehatan'   => $m['status_kesehatan']    ?? 'sehat',
-                        'hasil_diagnosis'    => $m['hasil_diagnosis']     ?? null,
-                        'rekomendasi'        => $m['rekomendasi']         ?? null,
-                        'pendamping'         => $m['pendamping']          ?? null,
-                        'riwayat_pekerja_id' => null, // Medis mandiri, tidak terikat pekerjaan
-                    ];
-                }
-            }
-
-            // Medis embedded dari setiap riwayat pekerjaan (dengan riwayat_pekerja_id)
-            foreach ($embeddedMedisAll as $m) {
-                $riwayatPekerjaId = $m['_riwayat_pekerja_id'] ?? null;
-                $allMedis[] = [
-                    'tgl_pemeriksaan'    => $m['tanggal_pemeriksaan'] ?? null,
-                    'tempat_pemeriksa'   => $m['tempat_pemeriksaan']  ?? null,
-                    'jenis_pemeriksa'    => $m['jenis_pemeriksaan']   ?? null,
-                    'dokter_pemeriksa'   => $m['dokter']              ?? null,
-                    'status_kesehatan'   => $m['status_kesehatan']    ?? 'sehat',
-                    'hasil_diagnosis'    => $m['hasil_diagnosis']     ?? null,
-                    'rekomendasi'        => $m['rekomendasi']         ?? null,
-                    'pendamping'         => $m['pendamping']          ?? null,
-                    'riwayat_pekerja_id' => $riwayatPekerjaId,
-                ];
-            }
-
-            if (!empty($allMedis)) {
-                $pekerja->detailMedis()->delete();
-                $pekerja->detailMedis()->createMany($allMedis);
-            }
-
-            // 6. Create or Update Riwayat Medis Baseline Data
+            // 5. Sinkronisasi Riwayat Medis Baseline
             if ($request->has('riwayat_medis') && is_array($request->riwayat_medis)) {
                 $pekerja->riwayatMedis()->updateOrCreate(
                     ['pekerja_id' => $pekerja->id],
@@ -252,24 +158,26 @@ class PekerjaController extends Controller
 
             DB::commit();
 
-            // Generate a token for the user so they can upload files immediately after
+            // Buat token agar pekerja bisa langsung unggah dokumen setelah daftar
             $token = $user->createToken('auth_token')->plainTextToken;
 
             return response()->json([
-                'status' => 'success',
+                'status'  => 'success',
                 'message' => 'Data pekerja berhasil disimpan.',
-                'data' => Pekerja::withFullProfile()->find($pekerja->id),
-                'token' => $token
+                'data'    => Pekerja::withFullProfile()->find($pekerja->id),
+                'token'   => $token,
             ], 200);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Failed to store/upsert Pekerja: ' . $e->getMessage());
+            Log::error('PekerjaController@store failed: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
 
             return response()->json([
-                'status' => 'error',
+                'status'  => 'error',
                 'message' => 'Gagal menyimpan data pekerja. Terjadi kesalahan server.',
-                'error' => env('APP_DEBUG') ? $e->getMessage() : null
+                'error'   => env('APP_DEBUG') ? $e->getMessage() : null,
             ], 500);
         }
     }
