@@ -617,10 +617,20 @@ export default function PendaftaranPekerjaPage() {
             router.push('/dashboard-user');
           }
         } else {
-          // Guest or new user goes to login or success page
+          // AUTO-LOGIN: Set user session and redirect to dashboard
+          const userData = {
+            id: response.data.data.user_id,
+            email: baseData.email,
+            nama_lengkap: baseData.nama_lengkap,
+            role: 'viewer',
+            pekerja_id: response.data.data.id
+          };
+          
+          localStorage.setItem('user', JSON.stringify(userData));
           localStorage.removeItem(STORAGE_KEY);
-          router.push('/login');
-          toast.success('Pendaftaran selesai! Silakan masuk menggunakan email dan password Anda.');
+          
+          toast.success('Pendaftaran Berhasil! Menuju dashboard Anda...');
+          router.push('/dashboard-user');
         }
       } catch (error: any) {
 
