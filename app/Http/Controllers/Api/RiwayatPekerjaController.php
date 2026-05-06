@@ -10,6 +10,45 @@ use Illuminate\Http\Request;
 class RiwayatPekerjaController extends Controller
 {
     /**
+     * Store a newly created employment history.
+     */
+    public function store(Request $request): JsonResponse
+    {
+        $user = auth()->user();
+        if (!$user->pekerja) {
+            return response()->json(['status' => 'error', 'message' => 'Profil pekerja tidak ditemukan.'], 404);
+        }
+
+        $validated = $request->validate([
+            'nama_perusahaan' => 'required|string',
+            'bagian' => 'nullable|string',
+            'jabatan' => 'nullable|string',
+            'tgl_masuk' => 'nullable|date',
+            'tgl_keluar' => 'nullable|date',
+            'status_pekerjaan' => 'nullable|string',
+            'jenis_pajanan' => 'nullable|string',
+            'durasi_pajanan' => 'nullable|integer',
+            'informal_data' => 'nullable|array',
+            'deskripsi_usaha' => 'nullable|string',
+        ]);
+
+        $riwayat = $user->pekerja->riwayatPekerja()->create($validated);
+
+        \App\Models\ActivityLog::record(
+            'tambah_riwayat_pekerja',
+            "Menambahkan riwayat pekerjaan baru di {$riwayat->nama_perusahaan}",
+            'admin',
+            $riwayat
+        );
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Riwayat pekerjaan berhasil ditambahkan.',
+            'data' => $riwayat
+        ], 201);
+    }
+
+    /**
      * Update the specified employment history.
      */
     public function update(Request $request, string $id): JsonResponse
@@ -42,6 +81,13 @@ class RiwayatPekerjaController extends Controller
         ]);
 
         $riwayat->update($validated);
+
+        \App\Models\ActivityLog::record(
+            'update_riwayat_pekerja',
+            "Memperbarui riwayat pekerjaan untuk pekerja (ID: {$riwayat->pekerja_id})",
+            'admin',
+            $riwayat
+        );
 
         return response()->json([
             'status' => 'success',

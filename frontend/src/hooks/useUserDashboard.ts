@@ -13,6 +13,10 @@ export interface UploadForm {
 }
 
 export interface ProfileForm {
+  nik: string;
+  nama_lengkap: string;
+  jenis_kelamin: string;
+  tanggal_lahir: string;
   whatsapp: string;
   domisili: string;
   pas_foto: File | null;
@@ -26,10 +30,25 @@ export interface AdvForm {
 export interface ExposureForm {
   id: number | null;
   nama_perusahaan: string;
+  jabatan: string;
+  status_pekerjaan: string;
+  tgl_masuk: string;
+  tgl_keluar: string;
   jenis_pajanan: string;
   durasi_pajanan: string;
   apd_disediakan: string;
   jenis_apd_sendiri: string;
+}
+
+export interface MedisForm {
+  id: number | null;
+  riwayat_pekerja_id: number | null;
+  jenis_pemeriksaan: string;
+  tanggal_pemeriksaan: string;
+  status_kesehatan: string;
+  hasil_diagnosis: string;
+  rekomendasi: string;
+  dokter_pemeriksa: string;
 }
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
@@ -72,19 +91,31 @@ export function useUserDashboard() {
   const [uploadForm, setUploadForm] = useState<UploadForm>({ step_key: '', file: null });
 
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
-  const [profileForm, setProfileForm] = useState<ProfileForm>({ whatsapp: '', domisili: '', pas_foto: null });
+  const [profileForm, setProfileForm] = useState<ProfileForm>({
+    nik: '', nama_lengkap: '', jenis_kelamin: '', tanggal_lahir: '',
+    whatsapp: '', domisili: '', pas_foto: null
+  });
   const [profileLoading, setProfileLoading] = useState(false);
 
   const [isAdvModalOpen, setIsAdvModalOpen] = useState(false);
   const [advForm, setAdvForm] = useState<AdvForm>({ jenis_kasus: '', catatan: '' });
   const [advLoading, setAdvLoading] = useState(false);
 
+  const [exposureLoading, setExposureLoading] = useState(false);
   const [isExposureModalOpen, setIsExposureModalOpen] = useState(false);
   const [exposureForm, setExposureForm] = useState<ExposureForm>({
-    id: null, nama_perusahaan: '', jenis_pajanan: '', durasi_pajanan: '',
+    id: null, nama_perusahaan: '', jabatan: '', status_pekerjaan: '',
+    tgl_masuk: '', tgl_keluar: '', jenis_pajanan: '', durasi_pajanan: '',
     apd_disediakan: '', jenis_apd_sendiri: '',
   });
-  const [exposureLoading, setExposureLoading] = useState(false);
+
+  const [isMedisModalOpen, setIsMedisModalOpen] = useState(false);
+  const [medisForm, setMedisForm] = useState<MedisForm>({
+    id: null, riwayat_pekerja_id: null, jenis_pemeriksaan: '',
+    tanggal_pemeriksaan: '', status_kesehatan: 'sehat',
+    hasil_diagnosis: '', rekomendasi: '', dokter_pemeriksa: ''
+  });
+  const [medisLoading, setMedisLoading] = useState(false);
 
   // ── Data Fetching ──────────────────────────────────────────────────────────
 
@@ -200,6 +231,10 @@ export function useUserDashboard() {
     setProfileLoading(true);
     try {
       await api.put(`/pekerja/${pekerja!.id}`, {
+        nik: profileForm.nik,
+        nama_lengkap: profileForm.nama_lengkap,
+        jenis_kelamin: profileForm.jenis_kelamin,
+        tanggal_lahir: profileForm.tanggal_lahir,
         whatsapp: profileForm.whatsapp,
         domisili: profileForm.domisili,
       });
@@ -239,17 +274,27 @@ export function useUserDashboard() {
   /** Memperbarui data pajanan (jenis, durasi, APD) untuk satu riwayat pekerjaan. */
   const handleUpdateExposure = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!exposureForm.id) return;
     setExposureLoading(true);
     try {
-      await api.put(`/riwayat-pekerja/${exposureForm.id}`, {
+      const data = {
+        nama_perusahaan: exposureForm.nama_perusahaan,
+        jabatan: exposureForm.jabatan,
+        status_pekerjaan: exposureForm.status_pekerjaan,
+        tgl_masuk: exposureForm.tgl_masuk,
+        tgl_keluar: exposureForm.tgl_keluar,
         jenis_pajanan: exposureForm.jenis_pajanan,
         durasi_pajanan: exposureForm.durasi_pajanan ? parseInt(exposureForm.durasi_pajanan) : null,
         informal_data: {
           apd_disediakan: exposureForm.apd_disediakan,
           jenis_apd_sendiri: exposureForm.jenis_apd_sendiri,
         },
-      });
+      };
+
+      if (exposureForm.id) {
+        await api.put(`/riwayat-pekerja/${exposureForm.id}`, data);
+      } else {
+        await api.post('/riwayat-pekerja', data);
+      }
       toast.success('Data pajanan berhasil diperbarui!');
       setIsExposureModalOpen(false);
       fetchData();
@@ -260,14 +305,55 @@ export function useUserDashboard() {
     }
   }, [exposureForm, fetchData]);
 
+  /** Memperbarui atau menambah catatan medis baru. */
+  const handleUpdateMedis = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!medisForm.riwayat_pekerja_id) {
+      toast.error('Pilih riwayat pekerjaan terlebih dahulu.');
+      return;
+    }
+    setMedisLoading(true);
+    try {
+      if (medisForm.id) {
+        await api.put(`/detail-medis/${medisForm.id}`, medisForm);
+      } else {
+        await api.post('/detail-medis', medisForm);
+      }
+      toast.success('Catatan medis berhasil disimpan!');
+      setIsMedisModalOpen(false);
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Gagal menyimpan catatan medis.');
+    } finally {
+      setMedisLoading(false);
+    }
+  }, [medisForm, fetchData]);
+
   // ── Openers (shorthand untuk set form & open modal) ──────────────────────
 
   const openProfileEdit = useCallback(() => {
-    setProfileForm({ whatsapp: pekerja?.whatsapp || '', domisili: pekerja?.domisili || '', pas_foto: null });
+    setProfileForm({
+      nik: pekerja?.nik || '',
+      nama_lengkap: pekerja?.nama_lengkap || '',
+      jenis_kelamin: pekerja?.jenis_kelamin || '',
+      tanggal_lahir: pekerja?.tanggal_lahir || '',
+      whatsapp: pekerja?.whatsapp || '',
+      domisili: pekerja?.domisili || '',
+      pas_foto: null
+    });
     setIsProfileModalOpen(true);
   }, [pekerja]);
 
   const openAdvEdit = useCallback(() => setIsAdvModalOpen(true), []);
+
+  const openExposureAdd = useCallback(() => {
+    setExposureForm({
+      id: null, nama_perusahaan: '', jabatan: '', status_pekerjaan: 'Sudah Berhenti',
+      tgl_masuk: '', tgl_keluar: '', jenis_pajanan: '', durasi_pajanan: '',
+      apd_disediakan: '', jenis_apd_sendiri: '',
+    });
+    setIsExposureModalOpen(true);
+  }, []);
 
   const openExposureEdit = useCallback((r: RiwayatPekerja) => {
     let info: Record<string, string> = {};
@@ -280,12 +366,40 @@ export function useUserDashboard() {
     setExposureForm({
       id: r.id,
       nama_perusahaan: r.nama_perusahaan,
+      jabatan: r.jabatan || '',
+      status_pekerjaan: r.status_pekerjaan || '',
+      tgl_masuk: r.tgl_masuk || '',
+      tgl_keluar: r.tgl_keluar || '',
       jenis_pajanan: r.jenis_pajanan || '',
       durasi_pajanan: r.durasi_pajanan?.toString() || '',
       apd_disediakan: info.apd_disediakan || '',
       jenis_apd_sendiri: info.jenis_apd_sendiri || '',
     });
     setIsExposureModalOpen(true);
+  }, []);
+
+  const openMedisAdd = useCallback(() => {
+    setMedisForm({
+      id: null, riwayat_pekerja_id: selectedRiwayatId, jenis_pemeriksaan: '',
+      tanggal_pemeriksaan: new Date().toISOString().split('T')[0],
+      status_kesehatan: 'sehat', hasil_diagnosis: '', rekomendasi: '',
+      dokter_pemeriksa: ''
+    });
+    setIsMedisModalOpen(true);
+  }, [selectedRiwayatId]);
+
+  const openMedisEdit = useCallback((m: any) => {
+    setMedisForm({
+      id: m.id,
+      riwayat_pekerja_id: m.riwayat_pekerja_id,
+      jenis_pemeriksaan: m.jenis_pemeriksaan || m.jenis_pemeriksa || '',
+      tanggal_pemeriksaan: (m.tanggal_pemeriksaan || m.tgl_pemeriksaan || '').split('T')[0],
+      status_kesehatan: m.status_kesehatan || 'sehat',
+      hasil_diagnosis: m.hasil_diagnosis || '',
+      rekomendasi: m.rekomendasi || '',
+      dokter_pemeriksa: m.dokter_pemeriksa || m.dokter || ''
+    });
+    setIsMedisModalOpen(true);
   }, []);
 
   // ── Return ─────────────────────────────────────────────────────────────────
@@ -302,7 +416,10 @@ export function useUserDashboard() {
     handleUpdateAdvokasi, openAdvEdit,
     // Exposure
     isExposureModalOpen, setIsExposureModalOpen, exposureForm, setExposureForm,
-    exposureLoading, handleUpdateExposure, openExposureEdit,
+    exposureLoading, handleUpdateExposure, openExposureAdd, openExposureEdit,
+    // Medis
+    isMedisModalOpen, setIsMedisModalOpen, medisForm, setMedisForm,
+    medisLoading, handleUpdateMedis, openMedisAdd, openMedisEdit,
     // Utils
     logout, handleViewFile, fetchData,
   };

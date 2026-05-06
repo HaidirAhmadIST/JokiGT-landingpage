@@ -16,7 +16,7 @@ import {
   User2, Building2, Briefcase, MapPin, HeartPulse, ShieldCheck,
   Search, Stethoscope, FileText, Scale, Coins, Clock, LogOut,
   Download, CheckCircle2, AlertCircle, Loader2, FileStack, Activity, Upload,
-  Calendar, Shield, Zap, Settings, ClipboardList, User
+  Calendar, Shield, Zap, Settings, ClipboardList, User, Plus, FilePlus
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -82,7 +82,10 @@ export default function UserDashboardPage() {
     isAdvModalOpen, setIsAdvModalOpen, advForm, setAdvForm, advLoading,
     handleUpdateAdvokasi, openAdvEdit,
     isExposureModalOpen, setIsExposureModalOpen, exposureForm, setExposureForm,
-    exposureLoading, handleUpdateExposure, openExposureEdit,
+    exposureLoading, handleUpdateExposure, openExposureAdd, openExposureEdit,
+    // Medis
+    isMedisModalOpen, setIsMedisModalOpen, medisForm, setMedisForm,
+    medisLoading, handleUpdateMedis, openMedisAdd, openMedisEdit,
     logout, handleViewFile,
   } = useUserDashboard();
 
@@ -439,9 +442,18 @@ export default function UserDashboardPage() {
           <div className="absolute top-[-20px] right-[-20px] opacity-[0.02] pointer-events-none">
              <Zap className="h-40 w-40" />
           </div>
-          <div className="flex items-center gap-2 mb-6 relative z-10">
-            <Zap className="h-4 w-4 text-amber-500" />
-            <h2 className="text-xs font-black text-[#94a3b8] tracking-widest uppercase">Riwayat Pajanan (Exposure History)</h2>
+          <div className="flex items-center justify-between mb-6 relative z-10">
+            <div className="flex items-center gap-2">
+              <Zap className="h-4 w-4 text-amber-500" />
+              <h2 className="text-xs font-black text-[#94a3b8] tracking-widest uppercase">Riwayat Pekerjaan & Pajanan</h2>
+            </div>
+            <Button 
+              onClick={openExposureAdd}
+              size="sm"
+              className="h-8 px-3 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 border-none font-bold text-[10px]"
+            >
+              <FilePlus className="h-3.5 w-3.5 mr-1.5" /> Tambah Riwayat
+            </Button>
           </div>
           
           <div className="overflow-x-auto relative z-10">
@@ -544,34 +556,65 @@ export default function UserDashboardPage() {
 
         <div className="grid lg:grid-cols-2 gap-8">
           <Card className="rounded-[24px] border-slate-100 shadow-sm p-6 bg-white">
-            <div className="flex items-center gap-2 mb-6">
-              <Briefcase className="h-4 w-4 text-[#0284c7]" />
-              <h2 className="text-xs font-black text-[#94a3b8] tracking-widest uppercase">Pilih Pekerjaan</h2>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-2">
+                <Briefcase className="h-4 w-4 text-[#0284c7]" />
+                <h2 className="text-xs font-black text-[#94a3b8] tracking-widest uppercase">Pilih Pekerjaan</h2>
+              </div>
+              <Button 
+                onClick={openExposureAdd}
+                variant="ghost" 
+                size="sm" 
+                className="h-8 px-2 text-[#0284c7] hover:bg-blue-50 font-bold text-[10px] uppercase tracking-wider gap-1"
+              >
+                <Plus className="h-3 w-3" />
+                Tambah
+              </Button>
             </div>
             {(pekerja?.riwayat_pekerja?.length ?? 0) > 0 ? (
               <div className="space-y-3">
                 {pekerja!.riwayat_pekerja!.map((r, i: number) => (
-                  <button 
+                  <div 
                     key={i} 
-                    onClick={() => setSelectedRiwayatId(r.id)}
                     className={cn(
-                      "w-full text-left p-4 rounded-2xl border transition-all hover:shadow-md",
+                      "group relative w-full p-4 rounded-2xl border transition-all cursor-pointer",
                       selectedRiwayatId === r.id 
-                        ? "bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-100 scale-[1.02]" 
+                        ? "bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-100" 
                         : "bg-slate-50 border-slate-100 text-slate-800 hover:bg-slate-100"
                     )}
+                    onClick={() => setSelectedRiwayatId(r.id)}
                   >
                     <div className="flex justify-between items-start gap-2">
                       <div className="min-w-0 flex-1">
-                        <p className={cn("text-xs font-black truncate", selectedRiwayatId === r.id ? "text-white" : "text-slate-800")}>{r.nama_perusahaan}</p>
-                        <p className={cn("text-[10px] font-bold mt-0.5", selectedRiwayatId === r.id ? "text-blue-100" : "text-slate-500")}>{r.jabatan}</p>
+                        <p className={cn("text-sm font-black truncate", selectedRiwayatId === r.id ? "text-white" : "text-slate-800")}>
+                          {r.nama_perusahaan || 'Perusahaan Tidak Diketahui'}
+                        </p>
+                        <p className={cn("text-[10px] font-bold mt-0.5", selectedRiwayatId === r.id ? "text-blue-100" : "text-slate-500")}>
+                          {r.jabatan || 'Jabatan Belum Diisi'}
+                        </p>
                         <div className={cn("flex items-center gap-1 mt-2 text-[9px] font-bold", selectedRiwayatId === r.id ? "text-blue-200" : "text-slate-400")}>
                           <Calendar className="h-2.5 w-2.5" /> {fmt(r.tgl_masuk)} - {r.tgl_keluar ? fmt(r.tgl_keluar) : 'Sekarang'}
                         </div>
                       </div>
-                      {!r.tgl_keluar && <span className={cn("text-[8px] font-black px-1.5 py-0.5 rounded-full", selectedRiwayatId === r.id ? "bg-white text-blue-600" : "bg-blue-600 text-white")}>AKTIF</span>}
+                      <div className="flex flex-col items-end gap-2">
+                        {!r.tgl_keluar && <span className={cn("text-[8px] font-black px-1.5 py-0.5 rounded-full", selectedRiwayatId === r.id ? "bg-white text-blue-600" : "bg-blue-600 text-white")}>AKTIF</span>}
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className={cn(
+                            "h-7 w-7 rounded-lg transition-all opacity-0 group-hover:opacity-100",
+                            selectedRiwayatId === r.id ? "hover:bg-blue-500 text-white" : "hover:bg-white text-slate-400"
+                          )}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openExposureEdit(r);
+                          }}
+                        >
+                          <Settings className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
                     </div>
-                  </button>
+                  </div>
                 ))}
               </div>
             ) : (
@@ -581,9 +624,20 @@ export default function UserDashboardPage() {
 
           <Card className="rounded-[24px] border-slate-100 shadow-sm p-6 bg-white min-h-[400px]">
             <div className="mb-5">
-              <div className="flex items-center gap-2 mb-2">
-                <HeartPulse className="h-4 w-4 text-[#0284c7]" />
-                <h2 className="text-xs font-black text-[#94a3b8] tracking-widest uppercase">Riwayat Kesehatan di Perusahaan Ini</h2>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <HeartPulse className="h-4 w-4 text-[#0284c7]" />
+                  <h2 className="text-xs font-black text-[#94a3b8] tracking-widest uppercase">Riwayat Kesehatan</h2>
+                </div>
+                {selectedRiwayatId && (
+                  <Button 
+                    onClick={openMedisAdd}
+                    size="sm"
+                    className="h-8 px-3 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border-none font-bold text-[10px]"
+                  >
+                    <Plus className="h-3.5 w-3.5 mr-1.5" /> Tambah Catatan
+                  </Button>
+                )}
               </div>
               {selectedRiwayatId && (
                 <div className="flex items-center gap-2 px-3 py-2 bg-blue-50/50 text-blue-700 rounded-2xl border border-blue-100/50 w-fit">
@@ -626,6 +680,14 @@ export default function UserDashboardPage() {
                           )}>
                             {formatHealthStatus(m.status_kesehatan)}
                           </span>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() => openMedisEdit(m)}
+                            className="h-8 w-8 text-slate-400 hover:text-blue-600"
+                          >
+                            <Settings className="h-3.5 w-3.5" />
+                          </Button>
                         </div>
                         
                         <div className="grid grid-cols-2 gap-4 mt-4">
@@ -773,7 +835,58 @@ export default function UserDashboardPage() {
               Perbarui informasi kontak agar tim advokasi dapat menghubungi Anda dengan mudah.
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleUpdateProfile} className="space-y-5 py-4">
+          <form onSubmit={handleUpdateProfile} className="space-y-4 py-4 max-h-[70vh] overflow-y-auto px-1">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="nik" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">NIK</Label>
+                <Input 
+                  id="nik"
+                  placeholder="16 digit NIK"
+                  className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500"
+                  value={profileForm.nik}
+                  onChange={(e) => setProfileForm({...profileForm, nik: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="nama" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nama Lengkap</Label>
+                <Input 
+                  id="nama"
+                  placeholder="Nama sesuai KTP"
+                  className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500"
+                  value={profileForm.nama_lengkap}
+                  onChange={(e) => setProfileForm({...profileForm, nama_lengkap: e.target.value})}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Jenis Kelamin</Label>
+                <Select 
+                  value={profileForm.jenis_kelamin} 
+                  onValueChange={(v) => setProfileForm({...profileForm, jenis_kelamin: v || ''})}
+                >
+                  <SelectTrigger className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500">
+                    <SelectValue placeholder="Pilih..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="L">Laki-laki</SelectItem>
+                    <SelectItem value="P">Perempuan</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="dob" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tanggal Lahir</Label>
+                <Input 
+                  id="dob"
+                  type="date"
+                  className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500"
+                  value={profileForm.tanggal_lahir}
+                  onChange={(e) => setProfileForm({...profileForm, tanggal_lahir: e.target.value})}
+                />
+              </div>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="wa" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nomor WhatsApp</Label>
               <Input 
@@ -860,17 +973,81 @@ export default function UserDashboardPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Exposure Edit Modal */}
       <Dialog open={isExposureModalOpen} onOpenChange={setIsExposureModalOpen}>
-        <DialogContent className="sm:max-w-[425px] rounded-[24px]">
+        <DialogContent className="sm:max-w-[480px] rounded-[24px]">
           <DialogHeader>
-            <DialogTitle className="text-xl font-black text-slate-800">Lengkapi Data Pajanan</DialogTitle>
+            <DialogTitle className="text-xl font-black text-slate-800">Edit Riwayat & Pajanan</DialogTitle>
             <DialogDescription className="text-xs font-medium text-slate-500">
-              Informasi pajanan di {exposureForm.nama_perusahaan} sangat penting untuk mendeteksi Penyakit Akibat Kerja (PAK).
+              Perbarui detail pekerjaan dan informasi pajanan Anda untuk mempermudah deteksi PAK.
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleUpdateExposure} className="space-y-5 py-4">
+          <form onSubmit={handleUpdateExposure} className="space-y-4 py-4 max-h-[75vh] overflow-y-auto px-1">
             <div className="space-y-2">
+              <Label htmlFor="perusahaan" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nama Perusahaan / Proyek</Label>
+              <Input 
+                id="perusahaan"
+                className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500"
+                value={exposureForm.nama_perusahaan}
+                onChange={(e) => setExposureForm({...exposureForm, nama_perusahaan: e.target.value})}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="jabatan" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Jabatan</Label>
+                <Input 
+                  id="jabatan"
+                  placeholder="Contoh: Welder, Admin..."
+                  className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500"
+                  value={exposureForm.jabatan}
+                  onChange={(e) => setExposureForm({...exposureForm, jabatan: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Status Kerja</Label>
+                <Select 
+                  value={exposureForm.status_pekerjaan} 
+                  onValueChange={(v) => setExposureForm({...exposureForm, status_pekerjaan: v || ''})}
+                >
+                  <SelectTrigger className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500">
+                    <SelectValue placeholder="Pilih..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Masih Bekerja">Masih Bekerja</SelectItem>
+                    <SelectItem value="Sudah Berhenti">Sudah Berhenti</SelectItem>
+                    <SelectItem value="Kontrak Selesai">Kontrak Selesai</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="masuk" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tgl Masuk</Label>
+                <Input 
+                  id="masuk"
+                  type="date"
+                  className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500"
+                  value={exposureForm.tgl_masuk}
+                  onChange={(e) => setExposureForm({...exposureForm, tgl_masuk: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="keluar" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tgl Keluar (Opsional)</Label>
+                <Input 
+                  id="keluar"
+                  type="date"
+                  disabled={exposureForm.status_pekerjaan === 'Masih Bekerja'}
+                  className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500 disabled:opacity-50"
+                  value={exposureForm.tgl_keluar}
+                  onChange={(e) => setExposureForm({...exposureForm, tgl_keluar: e.target.value})}
+                />
+              </div>
+            </div>
+
+            <div className="h-px bg-slate-100 my-2" />
+
+            <div className="grid grid-cols-2 gap-4">
               <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Jenis Pajanan</Label>
               <Select 
                 value={exposureForm.jenis_pajanan} 
@@ -922,6 +1099,98 @@ export default function UserDashboardPage() {
               <Button type="submit" disabled={exposureLoading} className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black shadow-lg shadow-blue-100 transition-all">
                 {exposureLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
                 Simpan Data Pajanan
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Health History Modal */}
+      <Dialog open={isMedisModalOpen} onOpenChange={setIsMedisModalOpen}>
+        <DialogContent className="sm:max-w-[480px] rounded-[24px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-black text-slate-800">
+              {medisForm.id ? 'Edit Catatan Medis' : 'Tambah Catatan Medis'}
+            </DialogTitle>
+            <DialogDescription className="text-xs font-medium text-slate-500">
+              Masukkan detail pemeriksaan kesehatan Anda untuk melengkapi rekam medis di sistem.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleUpdateMedis} className="space-y-4 py-4 max-h-[75vh] overflow-y-auto px-1">
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Jenis Pemeriksaan</Label>
+              <Input 
+                placeholder="Contoh: MCU Tahunan, Pemeriksaan Klinis..."
+                className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500"
+                value={medisForm.jenis_pemeriksaan}
+                onChange={(e) => setMedisForm({...medisForm, jenis_pemeriksaan: e.target.value})}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tgl Pemeriksaan</Label>
+                <Input 
+                  type="date"
+                  className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500"
+                  value={medisForm.tanggal_pemeriksaan}
+                  onChange={(e) => setMedisForm({...medisForm, tanggal_pemeriksaan: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Status Kesehatan</Label>
+                <Select 
+                  value={medisForm.status_kesehatan} 
+                  onValueChange={(v) => setMedisForm({...medisForm, status_kesehatan: v || ''})}
+                >
+                  <SelectTrigger className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500 capitalize">
+                    <SelectValue placeholder="Pilih...">
+                      {formatHealthStatus(medisForm.status_kesehatan)}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sehat">Sehat / Fit</SelectItem>
+                    <SelectItem value="sehat_dengan_catatan">Sehat dengan Catatan</SelectItem>
+                    <SelectItem value="tidak_sehat">Tidak Sehat / Unfit</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Hasil Diagnosis</Label>
+              <Textarea 
+                placeholder="Hasil diagnosa dokter..."
+                className="rounded-xl bg-slate-50 border-slate-200 min-h-[80px] font-bold focus:ring-blue-500"
+                value={medisForm.hasil_diagnosis}
+                onChange={(e) => setMedisForm({...medisForm, hasil_diagnosis: e.target.value})}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Rekomendasi / Saran</Label>
+              <Textarea 
+                placeholder="Saran dari dokter atau tindak lanjut..."
+                className="rounded-xl bg-slate-50 border-slate-200 min-h-[80px] font-bold focus:ring-blue-500"
+                value={medisForm.rekomendasi}
+                onChange={(e) => setMedisForm({...medisForm, rekomendasi: e.target.value})}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Dokter Pemeriksa</Label>
+              <Input 
+                placeholder="Nama dokter atau klinik..."
+                className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500"
+                value={medisForm.dokter_pemeriksa}
+                onChange={(e) => setMedisForm({...medisForm, dokter_pemeriksa: e.target.value})}
+              />
+            </div>
+
+            <DialogFooter className="pt-2">
+              <Button type="submit" disabled={medisLoading} className="w-full h-11 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black shadow-lg shadow-emerald-100 transition-all">
+                {medisLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
+                {medisForm.id ? 'Simpan Perubahan' : 'Tambah Rekam Medis'}
               </Button>
             </DialogFooter>
           </form>
