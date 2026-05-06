@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import api from '@/lib/axios';
+import { useRouter } from 'next/navigation';
 import {
   Plus,
   RefreshCw,
@@ -169,6 +170,7 @@ function ActivityItem({ item }: { item: ActivityLogItem }) {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function ActivitySidebar() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<'sistem' | 'admin'>('sistem');
   const [adminLogs, setAdminLogs] = useState<ActivityLogItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -178,7 +180,7 @@ export default function ActivitySidebar() {
     try {
       const res = await api.get('/activity-logs', { params: { category: 'admin' } });
       if (res.data.status === 'success') {
-        setAdminLogs(res.data.data);
+        setAdminLogs(res.data.data.data || res.data.data);
       }
     } catch {
       // silently fail
@@ -254,7 +256,7 @@ export default function ActivitySidebar() {
           </div>
         ) : (
           <div className="space-y-4 py-2">
-            {displayItems.map((item) => (
+            {displayItems.slice(0, 5).map((item) => (
               <ActivityItem key={item.id} item={item} />
             ))}
           </div>
@@ -264,10 +266,10 @@ export default function ActivitySidebar() {
       {/* ── Footer ── */}
       <div className="px-6 py-4 border-t border-slate-100 text-center">
         <button
-          onClick={activeTab === 'admin' ? fetchAdminLogs : undefined}
+          onClick={() => router.push('/aktivitas')}
           className="text-[13px] font-bold text-[#0ea5e9] hover:text-[#0284c7] transition-colors"
         >
-          {activeTab === 'admin' ? '↻ Refresh Log Admin' : 'Lihat Semua Aktivitas'}
+          Lihat Semua Aktivitas
         </button>
       </div>
     </div>

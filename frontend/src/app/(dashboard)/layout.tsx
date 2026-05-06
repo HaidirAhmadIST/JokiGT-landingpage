@@ -17,7 +17,8 @@ import {
   Search,
   Settings,
   Loader2,
-  User as UserIcon
+  User as UserIcon,
+  History
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -40,6 +41,7 @@ const navigation = [
   { name: 'Perusahaan', href: '/perusahaan', icon: Building2 },
   { name: 'Advokasi', href: '/advokasi', icon: ShieldCheck },
   { name: 'Laporan', href: '/laporan', icon: FileText },
+  { name: 'Aktivitas', href: '/aktivitas', icon: History },
 ];
 
 export default function DashboardLayout({
