@@ -69,9 +69,11 @@ export interface RiwayatPekerja {
   tgl_keluar?: string;
   jenis_pajanan?: string;
   /** Durasi pajanan dalam satuan tahun. */
-  durasi_pajanan?: number;
+  durasi_pajanan?: number | string;
   /** Data tambahan untuk pekerja informal, disimpan sebagai JSON di DB. */
   informal_data?: InformalData | string;
+  /** Riwayat pemeriksaan kesehatan yang terkait dengan periode pekerjaan ini. */
+  detail_medis?: DetailMedis[];
 }
 
 // -----------------------------------------------------------------------------
@@ -103,8 +105,13 @@ export type HealthStatus = 'sehat' | 'sehat_dengan_catatan' | 'tidak_sehat';
 /**
  * Data status advokasi PAK (Penyakit Akibat Kerja) seorang pekerja.
  * Mencakup 6 tahapan: dari riwayat pajanan hingga rehabilitasi.
+ *
+ * Index signature `[key: string]: unknown` memungkinkan akses dinamis
+ * ke field milestone via variabel string (misal: `adv[step.key]`).
  */
 export interface StatusAdvokasi {
+  /** Memungkinkan akses key dinamis, misal: adv['riwayat_pajanan'] atau adv[step.key]. */
+  [key: string]: unknown;
   id: number;
   pekerja_id: number;
   jenis_kasus?: string;

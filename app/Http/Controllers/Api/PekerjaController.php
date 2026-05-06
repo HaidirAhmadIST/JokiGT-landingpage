@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StorePekerjaRequest;
 use App\Models\Pekerja;
 use App\Models\User;
+use App\Policies\PekerjaPolicy;
 use App\Services\PekerjaService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -184,13 +185,23 @@ class PekerjaController extends Controller
 
     /**
      * Display the specified Pekerja detail with all relationships loaded.
+     *
+     * Dilindungi oleh PekerjaPolicy::view() untuk mencegah IDOR:
+     * - Admin & Petugas → bisa melihat semua data pekerja.
+     * - Viewer (Pekerja) → hanya bisa melihat data dirinya sendiri.
      */
-    public function show(string $id): JsonResponse
+    public function show(Request $request, string $id): JsonResponse
     {
         $pekerja = Pekerja::withFullProfile()->find($id);
 
         if (!$pekerja) {
             return response()->json(['status' => 'error', 'message' => 'Pekerja tidak ditemukan.'], 404);
+        }
+
+        // Cegah IDOR: pastikan user hanya bisa mengakses data miliknya
+        // (kecuali admin/petugas yang punya akses penuh)
+        if ($request->user() && $request->user()->isViewer()) {
+            $this->authorize('view', $pekerja);
         }
 
         return response()->json([
@@ -290,6 +301,11 @@ class PekerjaController extends Controller
 
     /**
      * Upload and update Pekerja's photo.
+     *
+     * Dilindungi oleh PekerjaPolicy::updateFoto() untuk mencegah IDOR:
+     * - Admin → bisa mengganti foto siapapun.
+     * - Viewer (Pekerja) → hanya bisa mengganti foto dirinya sendiri.
+     * - Petugas → tidak diizinkan mengganti foto pribadi pekerja.
      */
     public function uploadFoto(Request $request, string $id): JsonResponse
     {
@@ -303,12 +319,9 @@ class PekerjaController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Pekerja tidak ditemukan.'], 404);
         }
 
-        // Check ownership: Viewer can only upload for their own profile
-        $user = auth()->user();
-        $isOwner = $user->pekerja && $user->pekerja->id == $pekerja->id;
-        if (!$user->isAdmin() && !$user->isPetugas() && !$isOwner) {
-            return response()->json(['status' => 'error', 'message' => 'Anda tidak memiliki izin untuk mengunggah foto untuk pekerja ini.'], 403);
-        }
+        // Cegah IDOR via PekerjaPolicy::updateFoto()
+        // Jika tidak punya izin, Laravel otomatis melempar AuthorizationException (403)
+        $this->authorize('updateFoto', $pekerja);
 
         if ($request->hasFile('pas_foto')) {
             $file = $request->file('pas_foto');

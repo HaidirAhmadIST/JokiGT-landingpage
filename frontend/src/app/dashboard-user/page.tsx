@@ -319,8 +319,8 @@ export default function UserDashboardPage() {
             </div>
             <div className="flex items-start min-w-[700px]">
               {STEPS.map((step, i) => {
-                const isDone = !!(adv[step.key]);
-                const isActive = !isDone && (i === 0 || !!(adv[STEPS[i-1]?.key]));
+                const isDone = !!(adv?.[step.key]);
+                const isActive = !isDone && (i === 0 || !!(adv?.[STEPS[i-1]?.key]));
                 const Icon = step.icon;
                 return (
                   <div key={step.key} className="flex items-start flex-1 last:flex-none">
@@ -360,11 +360,11 @@ export default function UserDashboardPage() {
             </div>
             <div className="space-y-4">
               {STEPS.map((step, i) => {
-                const isDone = !!(adv[step.key]);
-                const isActive = !isDone && (i === 0 || !!(adv[STEPS[i-1]?.key]));
+                const isDone = !!(adv?.[step.key]);
+                const isActive = !isDone && (i === 0 || !!(adv?.[STEPS[i-1]?.key]));
                 const docKey = DOC_KEYS.find(d => d.key === step.key);
-                const hasDoc = docKey && adv[docKey.pathKey];
-                const docDate = docKey && adv[docKey.dateKey];
+                const hasDoc = docKey ? (adv?.[docKey.pathKey] as string | undefined) : undefined;
+                const docDate = docKey ? (adv?.[docKey.dateKey] as string | undefined) : undefined;
                 const Icon = step.icon;
                 return (
                   <div key={step.key} className={cn(
@@ -548,9 +548,9 @@ export default function UserDashboardPage() {
               <Briefcase className="h-4 w-4 text-[#0284c7]" />
               <h2 className="text-xs font-black text-[#94a3b8] tracking-widest uppercase">Pilih Pekerjaan</h2>
             </div>
-            {pekerja?.riwayat_pekerja?.length > 0 ? (
+            {(pekerja?.riwayat_pekerja?.length ?? 0) > 0 ? (
               <div className="space-y-3">
-                {pekerja.riwayat_pekerja.map((r: any, i: number) => (
+                {pekerja!.riwayat_pekerja!.map((r, i: number) => (
                   <button 
                     key={i} 
                     onClick={() => setSelectedRiwayatId(r.id)}
@@ -591,7 +591,7 @@ export default function UserDashboardPage() {
                     <Building2 className="h-3 w-3 text-white" />
                   </div>
                   <span className="text-[11px] font-black uppercase tracking-tight pr-1">
-                    {pekerja.riwayat_pekerja.find((r: any) => r.id === selectedRiwayatId)?.nama_perusahaan}
+                    {pekerja?.riwayat_pekerja?.find((r) => r.id === selectedRiwayatId)?.nama_perusahaan}
                   </span>
                 </div>
               )}
