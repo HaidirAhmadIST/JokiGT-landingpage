@@ -15,43 +15,38 @@ class DashboardController extends Controller
      */
     public function stats(): JsonResponse
     {
-        try {
-            $now = now();
-            $startOfThisMonth = $now->copy()->startOfMonth();
+        // Gunakan cache singkat (30 detik) agar tidak membebani DB saat banyak admin login bersamaan
+        return cache()->remember('admin_dashboard_stats', 30, function () {
+            $startOfThisMonth = now()->startOfMonth();
 
-            $calcTrend = function ($current, $previous) {
-                if ($previous == 0) return $current > 0 ? 100 : 0;
-                return round((($current - $previous) / $previous) * 100, 1);
-            };
-
-            // 1. Total Pekerja
+            // 1. Pekerja Stats
             $totalPekerja = Pekerja::count();
-            $totalPekerjaLastMonth = Pekerja::where('created_at', '<', $startOfThisMonth)->count();
+            $newPekerja = Pekerja::where('created_at', '>=', $startOfThisMonth)->count();
 
-            // 2. Kasus Aktif
+            // 2. Kasus Aktif (Advokasi yang belum rehabilitasi)
             $kasusAktif = StatusAdvokasi::whereNotNull('jenis_kasus')
                 ->where('rehabilitasi_bpjskes', false)
                 ->count();
-            $kasusAktifLastMonth = StatusAdvokasi::whereNotNull('jenis_kasus')
+            $newKasus = StatusAdvokasi::whereNotNull('jenis_kasus')
                 ->where('rehabilitasi_bpjskes', false)
-                ->where('created_at', '<', $startOfThisMonth)
+                ->where('created_at', '>=', $startOfThisMonth)
                 ->count();
 
             // 3. Advokasi Selesai
             $advokasiSelesai = StatusAdvokasi::where('rehabilitasi_bpjskes', true)->count();
-            $advokasiSelesaiLastMonth = StatusAdvokasi::where('rehabilitasi_bpjskes', true)
-                ->where('created_at', '<', $startOfThisMonth)
+            $newSelesai = StatusAdvokasi::where('created_at', '>=', $startOfThisMonth)
+                ->where('rehabilitasi_bpjskes', true)
                 ->count();
 
             // 4. Klaim Disetujui
             $klaimDisetujui = StatusAdvokasi::where('kompensasi_bpjstk', true)->count();
-            $klaimDisetujuiLastMonth = StatusAdvokasi::where('kompensasi_bpjstk', true)
-                ->where('created_at', '<', $startOfThisMonth)
+            $newKlaim = StatusAdvokasi::where('created_at', '>=', $startOfThisMonth)
+                ->where('kompensasi_bpjstk', true)
                 ->count();
 
             // 5. Total Perusahaan
             $totalPerusahaan = Perusahaan::count();
-            $totalPerusahaanLastMonth = Perusahaan::where('created_at', '<', $startOfThisMonth)->count();
+            $newPerusahaan = Perusahaan::where('created_at', '>=', $startOfThisMonth)->count();
 
             // 6. Statistik Kesehatan
             $kesehatan = [
@@ -64,26 +59,18 @@ class DashboardController extends Controller
                 'status' => 'success',
                 'data' => [
                     'total_pekerja' => $totalPekerja,
-                    'total_pekerja_new' => $totalPekerja - $totalPekerjaLastMonth,
+                    'total_pekerja_new' => $newPekerja,
                     'kasus_aktif' => $kasusAktif,
-                    'kasus_aktif_new' => $kasusAktif - $kasusAktifLastMonth,
+                    'kasus_aktif_new' => $newKasus,
                     'advokasi_selesai' => $advokasiSelesai,
-                    'advokasi_selesai_new' => $advokasiSelesai - $advokasiSelesaiLastMonth,
+                    'advokasi_selesai_new' => $newSelesai,
                     'klaim_disetujui' => $klaimDisetujui,
-                    'klaim_disetujui_new' => $klaimDisetujui - $klaimDisetujuiLastMonth,
+                    'klaim_disetujui_new' => $newKlaim,
                     'total_perusahaan' => $totalPerusahaan,
-                    'total_perusahaan_new' => $totalPerusahaan - $totalPerusahaanLastMonth,
+                    'total_perusahaan_new' => $newPerusahaan,
                     'kesehatan' => $kesehatan,
                 ]
             ]);
-
-
-        } catch (\Exception $e) {
-
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Gagal mengambil statistik: ' . $e->getMessage()
-            ], 500);
-        }
+        });
     }
 }

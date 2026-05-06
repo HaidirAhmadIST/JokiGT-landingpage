@@ -98,6 +98,9 @@ export default function DashboardLayout({
         if (userData.role === 'viewer') {
           router.push('/dashboard-user');
         }
+      } else {
+        // If no user found, redirect to login instead of staying stuck
+        router.push('/login');
       }
       
       setMounted(true);
