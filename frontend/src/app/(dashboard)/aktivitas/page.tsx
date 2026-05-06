@@ -186,31 +186,31 @@ export default function AktivitasPage() {
 
       {/* Metric Highlights */}
       <div className="grid gap-5 md:grid-cols-3">
-        <Card className="rounded-[20px] shadow-sm border-slate-100 p-6 bg-white flex items-center gap-5">
-          <div className="h-12 w-12 rounded-2xl bg-blue-50 text-blue-500 flex items-center justify-center">
-            <Activity className="h-6 w-6" />
+        <Card className="rounded-[20px] shadow-sm border-slate-100 p-6 bg-white flex flex-col items-center justify-center text-center gap-4">
+          <div className="h-14 w-14 rounded-2xl bg-blue-50 text-blue-500 flex items-center justify-center">
+            <Activity className="h-7 w-7" />
           </div>
           <div>
             <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Total Aktivitas</p>
-            <h3 className="text-2xl font-black text-[#0f172a] mt-0.5">{total.toLocaleString('id-ID')}</h3>
+            <h3 className="text-3xl font-black text-[#0f172a] mt-1">{total.toLocaleString('id-ID')}</h3>
           </div>
         </Card>
-        <Card className="rounded-[20px] shadow-sm border-slate-100 p-6 bg-white flex items-center gap-5">
-          <div className="h-12 w-12 rounded-2xl bg-purple-50 text-purple-500 flex items-center justify-center">
-            <UserCog className="h-6 w-6" />
+        <Card className="rounded-[20px] shadow-sm border-slate-100 p-6 bg-white flex flex-col items-center justify-center text-center gap-4">
+          <div className="h-14 w-14 rounded-2xl bg-purple-50 text-purple-500 flex items-center justify-center">
+            <UserCog className="h-7 w-7" />
           </div>
           <div>
             <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Aktivitas Admin</p>
-            <h3 className="text-2xl font-black text-[#0f172a] mt-0.5">{logs.filter(l => l.category === 'admin').length}+</h3>
+            <h3 className="text-3xl font-black text-[#0f172a] mt-1">{logs.filter(l => l.category === 'admin').length}+</h3>
           </div>
         </Card>
-        <Card className="rounded-[20px] shadow-sm border-slate-100 p-6 bg-white flex items-center gap-5">
-          <div className="h-12 w-12 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center">
-            <FileClock className="h-6 w-6" />
+        <Card className="rounded-[20px] shadow-sm border-slate-100 p-6 bg-white flex flex-col items-center justify-center text-center gap-4">
+          <div className="h-14 w-14 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center">
+            <FileClock className="h-7 w-7" />
           </div>
           <div>
             <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Update Terakhir</p>
-            <h3 className="text-xl font-black text-[#0f172a] mt-0.5">{logs[0]?.time_ago || '-'}</h3>
+            <h3 className="text-2xl font-black text-[#0f172a] mt-1">{logs[0]?.time_ago || '-'}</h3>
           </div>
         </Card>
       </div>
