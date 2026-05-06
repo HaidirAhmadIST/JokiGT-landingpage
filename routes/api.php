@@ -28,7 +28,6 @@ Route::get('pekerja', [PekerjaController::class, 'index']);
 Route::post('pekerja', [PekerjaController::class, 'store']);
 
 
-
 // =========================================================================
 // Protected Routes
 // =========================================================================
@@ -42,6 +41,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     // Dashboard
     Route::get('dashboard/stats', [DashboardController::class, 'stats']);
+
+
 
     // Perusahaan Management
     Route::group(['middleware' => ['role:admin,petugas']], function () {
@@ -71,6 +72,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // Dashboard & Reports
     Route::get('dashboard/stats', [DashboardController::class, 'stats']);
     Route::get('activity-logs', [ActivityLogController::class, 'index']);
+    Route::get('activity-logs/export', [ActivityLogController::class, 'export']);
     Route::get('reports/summary', [ReportController::class, 'summary']);
     Route::get('reports/search', [ReportController::class, 'search']);
 
