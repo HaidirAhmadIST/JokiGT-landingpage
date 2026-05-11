@@ -126,46 +126,39 @@ export function useUserDashboard() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
+      // Backend (AuthController@me) telah diupdate untuk me-load full relasi pekerja
       const userRes = await api.get('/me');
       const u: User = userRes.data.data;
       setUser(u);
 
-      const pid = (u as any)?.pekerja?.id;
-
-      const loadPekerjaData = (pData: PekerjaFull) => {
+      if (u.pekerja) {
+        const pData = u.pekerja;
         setPekerja(pData);
+        
         // Pilih otomatis riwayat pertama jika belum ada yang dipilih
-        if (pData?.riwayat_pekerja?.length && !selectedRiwayatId) {
+        if (pData.riwayat_pekerja?.length && !selectedRiwayatId) {
           setSelectedRiwayatId(pData.riwayat_pekerja[0].id);
         }
+        
         // Tandai riwayat pekerjaan yang data pajanannya masih kosong
-        const incomplete = (pData?.riwayat_pekerja || []).filter(
+        const incomplete = (pData.riwayat_pekerja || []).filter(
           (r) => !r.jenis_pajanan || !r.durasi_pajanan
         );
         setIncompleteData(incomplete);
-      };
-
-      if (pid) {
-        const res = await api.get(`/pekerja/${pid}`);
-        loadPekerjaData(res.data.data);
-      } else {
-        // Fallback: cari pekerja berdasarkan email (untuk akun lama)
-        const s = await api.get('/pekerja', { params: { search: u.email } });
-        const items: PekerjaFull[] = s.data.data?.data || s.data.data || [];
-        const match = items.find((p) => (p as any).user?.email === u.email);
-        if (match) {
-          const res = await api.get(`/pekerja/${match.id}`);
-          loadPekerjaData(res.data.data);
-        }
       }
     } catch (err: any) {
-      if (err.response?.status !== 401) {
+      if (err.response?.status === 401) {
+        toast.error('Sesi Anda telah berakhir, silakan login kembali.');
+        Cookies.remove('auth_token', { path: '/' });
+        localStorage.removeItem('user');
+        router.push('/login');
+      } else {
         toast.error('Gagal memuat data dashboard.');
       }
     } finally {
       setLoading(false);
     }
-  }, [selectedRiwayatId]);
+  }, [selectedRiwayatId, router]);
 
   useEffect(() => { fetchData(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 

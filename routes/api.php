@@ -79,6 +79,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('dashboard/stats', [DashboardController::class, 'stats']);
     Route::get('activity-logs', [ActivityLogController::class, 'index']);
     Route::get('activity-logs/export', [ActivityLogController::class, 'export']);
+    Route::get('activity-logs/archives', [ActivityLogController::class, 'listArchives']);
+    Route::get('activity-logs/archives/download', [ActivityLogController::class, 'downloadArchive']);
     Route::get('reports/summary', [ReportController::class, 'summary']);
     Route::get('reports/search', [ReportController::class, 'search']);
 

@@ -60,15 +60,17 @@ class ActivityLog extends Model
      * @param string $category    'sistem' | 'admin'
      * @param Model|null $loggable The eloquent model being acted upon
      * @param array $metadata     Extra JSON data
+     * @param Model|null $user    The user model performing the action (optional)
      */
     public static function record(
         string $action,
         string $description,
         string $category = 'admin',
         ?Model $loggable = null,
-        array $metadata = []
+        array $metadata = [],
+        ?Model $user = null
     ): self {
-        $user = auth()->user();
+        $user = $user ?? auth()->user();
 
         return self::create([
             'user_id'       => $user?->id,

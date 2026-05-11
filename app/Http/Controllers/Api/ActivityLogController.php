@@ -18,6 +18,12 @@ class ActivityLogController extends Controller
     {
         $query = ActivityLog::query();
 
+        // Filter by user unless admin/petugas
+        $currentUser = auth()->user();
+        if ($currentUser && !$currentUser->isAdmin() && !$currentUser->isPetugas()) {
+            $query->where('user_id', $currentUser->id);
+        }
+
         // Standardized Filtering
         if ($request->filled('category') && $request->category !== 'all') {
             $query->where('category', $request->category);
@@ -71,6 +77,12 @@ class ActivityLogController extends Controller
     public function export(Request $request)
     {
         $query = ActivityLog::query();
+
+        // Filter by user unless admin/petugas
+        $currentUser = auth()->user();
+        if ($currentUser && !$currentUser->isAdmin() && !$currentUser->isPetugas()) {
+            $query->where('user_id', $currentUser->id);
+        }
 
         // Apply same filters as index
         if ($request->filled('category') && $request->category !== 'all') {
@@ -129,5 +141,47 @@ class ActivityLogController extends Controller
         };
 
         return Response::stream($callback, 200, $headers);
+    }
+    /**
+     * List all archived CSV files.
+     */
+    public function listArchives(): JsonResponse
+    {
+        $directory = 'archives/logs';
+        $files = \Illuminate\Support\Facades\Storage::files($directory);
+        
+        $archives = array_map(function($path) {
+            return [
+                'name' => basename($path),
+                'size' => round(\Illuminate\Support\Facades\Storage::size($path) / 1024, 2) . ' KB',
+                'created_at' => date('Y-m-d H:i', \Illuminate\Support\Facades\Storage::lastModified($path)),
+                'path' => $path
+            ];
+        }, $files);
+
+        // Sort by date descending
+        usort($archives, function($a, $b) {
+            return strcmp($b['created_at'], $a['created_at']);
+        });
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $archives
+        ]);
+    }
+
+    /**
+     * Download a specific archive file.
+     */
+    public function downloadArchive(Request $request): \Symfony\Component\HttpFoundation\BinaryFileResponse|JsonResponse
+    {
+        $filename = $request->query('filename');
+        $path = "archives/logs/{$filename}";
+
+        if (!\Illuminate\Support\Facades\Storage::exists($path)) {
+            return response()->json(['message' => 'File tidak ditemukan'], 404);
+        }
+
+        return response()->download(storage_path("app/{$path}"));
     }
 }

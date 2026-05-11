@@ -137,27 +137,29 @@ class PekerjaController extends Controller
                 }
             }
 
+            $validated = $request->validated();
+
             // 1. Buat atau perbarui User
-            $user = $this->pekerjaService->createOrUpdateUser($request->all());
+            $user = $this->pekerjaService->createOrUpdateUser($validated);
 
             // 2. Buat atau perbarui Pekerja + inisialisasi StatusAdvokasi
-            $pekerja = $this->pekerjaService->createOrUpdatePekerja($user, $request->all());
+            $pekerja = $this->pekerjaService->createOrUpdatePekerja($user, $validated);
 
             // 3. Sinkronisasi Riwayat Pekerjaan
             $embeddedMedis = [];
-            if ($request->has('riwayat') && is_array($request->riwayat)) {
-                $embeddedMedis = $this->pekerjaService->syncRiwayatPekerja($pekerja, $request->riwayat);
+            if (isset($validated['riwayat']) && is_array($validated['riwayat'])) {
+                $embeddedMedis = $this->pekerjaService->syncRiwayatPekerja($pekerja, $validated['riwayat']);
             }
 
             // 4. Sinkronisasi Detail Medis (mandiri + embedded)
-            $medisMandiri = is_array($request->medis) ? $request->medis : [];
+            $medisMandiri = isset($validated['medis']) && is_array($validated['medis']) ? $validated['medis'] : [];
             $this->pekerjaService->syncDetailMedis($pekerja, $medisMandiri, $embeddedMedis);
 
             // 5. Sinkronisasi Riwayat Medis Baseline
-            if ($request->has('riwayat_medis') && is_array($request->riwayat_medis)) {
+            if (isset($validated['riwayat_medis']) && is_array($validated['riwayat_medis'])) {
                 $pekerja->riwayatMedis()->updateOrCreate(
                     ['pekerja_id' => $pekerja->id],
-                    $request->riwayat_medis
+                    $validated['riwayat_medis']
                 );
             }
 
@@ -273,19 +275,24 @@ class PekerjaController extends Controller
             'updates.*.tanggal_lahir' => 'nullable|date',
         ]);
 
+        $ids = array_column($request->updates, 'id');
+        $pekerjas = Pekerja::whereIn('id', $ids)->get()->keyBy('id');
+        
         $updated = 0;
-        foreach ($request->updates as $item) {
-            $pekerja = Pekerja::find($item['id']);
-            if ($pekerja) {
-                $fields = [];
-                if (isset($item['jenis_kelamin'])) $fields['jenis_kelamin'] = $item['jenis_kelamin'];
-                if (isset($item['tanggal_lahir'])) $fields['tanggal_lahir'] = $item['tanggal_lahir'];
-                if (!empty($fields)) {
-                    $pekerja->update($fields);
-                    $updated++;
+        
+        DB::transaction(function () use ($request, $pekerjas, &$updated) {
+            foreach ($request->updates as $item) {
+                if ($pekerja = $pekerjas->get($item['id'])) {
+                    $fields = [];
+                    if (isset($item['jenis_kelamin'])) $fields['jenis_kelamin'] = $item['jenis_kelamin'];
+                    if (isset($item['tanggal_lahir'])) $fields['tanggal_lahir'] = $item['tanggal_lahir'];
+                    if (!empty($fields)) {
+                        $pekerja->update($fields);
+                        $updated++;
+                    }
                 }
             }
-        }
+        });
 
         return response()->json([
             'status' => 'success',

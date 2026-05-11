@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\LoginRequest;
 use App\Models\User;
+use App\Models\ActivityLog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -31,6 +32,16 @@ class AuthController extends Controller
         // Create new token
         $token = $user->createToken('auth_token')->plainTextToken;
 
+        // Record Activity
+        ActivityLog::record(
+            'Login',
+            "Pengguna {$user->nama} berhasil login ke dalam sistem.",
+            'sistem',
+            $user,
+            ['ip' => $request->ip(), 'agent' => $request->userAgent()],
+            $user
+        );
+
         return response()->json([
             'status' => 'success',
             'message' => 'Login berhasil.',
@@ -51,9 +62,19 @@ class AuthController extends Controller
      */
     public function me(Request $request): JsonResponse
     {
+        $user = $request->user();
+        
+        if ($user->role === 'viewer') {
+            $user->load(['pekerja' => function ($query) {
+                $query->with(['perusahaan', 'riwayatPekerja.detailMedis', 'detailMedis', 'riwayatMedis', 'statusAdvokasi']);
+            }]);
+        } else {
+            $user->load('pekerja');
+        }
+
         return response()->json([
             'status' => 'success',
-            'data' => $request->user()->load('pekerja')
+            'data' => $user
         ]);
     }
 
@@ -135,6 +156,16 @@ class AuthController extends Controller
         // But the previous implementation revoked tokens. I'll keep it.
         $user->tokens()->delete();
 
+        // Record Activity
+        ActivityLog::record(
+            'Ganti Password',
+            "Pengguna {$user->nama} memperbarui kata sandi akun.",
+            'sistem',
+            $user,
+            [],
+            $user
+        );
+
         return response()->json([
             'status'  => 'success',
             'message' => 'Password berhasil diubah. Silakan login kembali.',
@@ -146,7 +177,19 @@ class AuthController extends Controller
      */
     public function logout(Request $request): JsonResponse
     {
-        $request->user()->currentAccessToken()->delete();
+        $user = $request->user();
+        
+        // Record Activity before deleting token
+        ActivityLog::record(
+            'Logout',
+            "Pengguna {$user->nama} keluar dari sistem.",
+            'sistem',
+            $user,
+            [],
+            $user
+        );
+
+        $user->currentAccessToken()->delete();
 
         return response()->json([
             'status' => 'success',

@@ -148,7 +148,9 @@ export default function AdvokasiTable({
                     <span className="block truncate">{worker?.perusahaan?.nama_perusahaan || '-'}</span>
                   </TableCell>
                   <TableCell className="py-3 px-3 text-xs text-[#475569]">
-                    <span className="block truncate">{caseTypeLabels[c.jenis_kasus?.toUpperCase()]}</span>
+                    <span className="block truncate">
+                      {c.jenis_kasus ? (caseTypeLabels[c.jenis_kasus.toUpperCase()] || c.jenis_kasus.toUpperCase()) : '-'}
+                    </span>
                   </TableCell>
                   <TableCell className="py-3 px-3">
                     <div className="flex flex-col gap-0.5">

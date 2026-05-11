@@ -27,7 +27,7 @@ import {
   Info,
   ChevronLeft,
   ChevronRight,
-  Activity,
+  History,
   UserCog,
   ShieldCheck,
   FileClock,
@@ -64,16 +64,30 @@ export default function AktivitasPage() {
   const [category, setCategory] = useState('all');
   const [action, setAction] = useState('all');
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
   // Detail Modal
   const [selectedLog, setSelectedLog] = useState<ActivityLog | null>(null);
   
-  // Export Modal
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [exportFormat, setExportFormat] = useState<'excel' | 'pdf' | 'csv'>('excel');
   const [isExporting, setIsExporting] = useState(false);
+
+  // Archive Management
+  const [isArchiveOpen, setIsArchiveOpen] = useState(false);
+  const [archives, setArchives] = useState<any[]>([]);
+  const [loadingArchives, setLoadingArchives] = useState(false);
+
+  // Debouncing logic
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 500); // 500ms delay
+
+    return () => clearTimeout(handler);
+  }, [search]);
 
   const fetchLogs = useCallback(async (page = 1) => {
     setLoading(true);
@@ -83,7 +97,7 @@ export default function AktivitasPage() {
         per_page: perPage,
         category,
         action,
-        search,
+        search: debouncedSearch,
         start_date: startDate,
         end_date: endDate,
       };
@@ -99,7 +113,7 @@ export default function AktivitasPage() {
     } finally {
       setLoading(false);
     }
-  }, [category, action, search, startDate, endDate, perPage]);
+  }, [category, action, debouncedSearch, startDate, endDate, perPage]);
 
   useEffect(() => {
     fetchLogs(1);
@@ -162,6 +176,45 @@ export default function AktivitasPage() {
     }
   };
 
+  const fetchArchives = async () => {
+    setLoadingArchives(true);
+    try {
+      const res = await api.get('/activity-logs/archives');
+      if (res.data.status === 'success') {
+        setArchives(res.data.data);
+      }
+    } catch (err) {
+      toast.error('Gagal mengambil daftar arsip');
+    } finally {
+      setLoadingArchives(false);
+    }
+  };
+
+  const downloadArchive = async (filename: string) => {
+    try {
+      const response = await api.get(`/activity-logs/archives/download?filename=${filename}`, {
+        responseType: 'blob',
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast.success('File arsip berhasil diunduh');
+    } catch (err) {
+      toast.error('Gagal mengunduh file arsip');
+    }
+  };
+
+  useEffect(() => {
+    if (isArchiveOpen) {
+      fetchArchives();
+    }
+  }, [isArchiveOpen]);
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500 max-w-7xl mx-auto">
       {/* Header */}
@@ -175,20 +228,29 @@ export default function AktivitasPage() {
             Audit log lengkap aktivitas sistem dan staf administrator
           </p>
         </div>
-        <Button 
-          onClick={() => setIsExportOpen(true)}
-          variant="outline" 
-          className="h-11 px-6 font-bold border-slate-200 rounded-xl bg-white shadow-sm hover:bg-slate-50 transition-all active:scale-95"
-        >
-          <Download className="mr-2 h-4 w-4" /> Export Log
-        </Button>
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          <Button 
+            onClick={() => setIsArchiveOpen(true)}
+            variant="outline" 
+            className="h-11 px-6 font-bold border-blue-200 text-blue-600 rounded-xl bg-blue-50/50 shadow-sm hover:bg-blue-50 transition-all active:scale-95"
+          >
+            <History className="mr-2 h-4 w-4" /> Manajemen Arsip
+          </Button>
+          <Button 
+            onClick={() => setIsExportOpen(true)}
+            variant="outline" 
+            className="h-11 px-6 font-bold border-slate-200 rounded-xl bg-white shadow-sm hover:bg-slate-50 transition-all active:scale-95"
+          >
+            <Download className="mr-2 h-4 w-4" /> Export Log
+          </Button>
+        </div>
       </div>
 
       {/* Metric Highlights */}
       <div className="grid gap-5 md:grid-cols-3">
         <Card className="rounded-[20px] shadow-sm border-slate-100 p-6 bg-white flex flex-col items-center justify-center text-center gap-4">
           <div className="h-14 w-14 rounded-2xl bg-blue-50 text-blue-500 flex items-center justify-center">
-            <Activity className="h-7 w-7" />
+            <History className="h-7 w-7" />
           </div>
           <div>
             <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Total Aktivitas</p>
@@ -277,11 +339,11 @@ export default function AktivitasPage() {
         <Table className="w-full table-fixed">
           <TableHeader>
             <TableRow className="hover:bg-transparent border-b border-slate-100 bg-slate-50/50">
-              <TableHead className="py-4 pl-8 font-bold text-[10px] tracking-widest text-[#94a3b8] w-48">WAKTU</TableHead>
-              <TableHead className="py-4 px-4 font-bold text-[10px] tracking-widest text-[#94a3b8] w-40">ADMIN / USER</TableHead>
-              <TableHead className="py-4 px-4 font-bold text-[10px] tracking-widest text-[#94a3b8] w-32">AKSI</TableHead>
-              <TableHead className="py-4 px-4 font-bold text-[10px] tracking-widest text-[#94a3b8] flex-1">DESKRIPSI AKTIVITAS</TableHead>
-              <TableHead className="py-4 pr-8 font-bold text-[10px] tracking-widest text-[#94a3b8] text-right w-24">DETAIL</TableHead>
+              <TableHead className="py-4 pl-8 font-bold text-[10px] tracking-widest text-[#94a3b8] w-[180px]">WAKTU</TableHead>
+              <TableHead className="py-4 px-6 font-bold text-[10px] tracking-widest text-[#94a3b8] w-[200px]">ADMIN / USER</TableHead>
+              <TableHead className="py-4 px-6 font-bold text-[10px] tracking-widest text-[#94a3b8] w-[140px]">AKSI</TableHead>
+              <TableHead className="py-4 px-6 font-bold text-[10px] tracking-widest text-[#94a3b8] flex-1">DESKRIPSI AKTIVITAS</TableHead>
+              <TableHead className="py-4 pr-8 font-bold text-[10px] tracking-widest text-[#94a3b8] text-right w-[100px]">DETAIL</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -304,43 +366,43 @@ export default function AktivitasPage() {
                 const ActionIcon = config.icon;
                 return (
                   <TableRow key={log.id} className="hover:bg-slate-50/50 transition-colors border-b border-slate-50">
-                    <TableCell className="py-4 pl-8">
+                    <TableCell className="py-5 pl-8">
                       <div className="flex flex-col">
-                        <span className="text-[13px] font-bold text-slate-700">{log.created_at}</span>
+                        <span className="text-[13px] font-bold text-slate-700 whitespace-nowrap">{log.created_at}</span>
                         <span className="text-[11px] text-slate-400 font-medium mt-0.5">{log.time_ago}</span>
                       </div>
                     </TableCell>
-                    <TableCell className="py-4 px-4">
-                      <div className="flex items-center gap-2.5">
+                    <TableCell className="py-5 px-6">
+                      <div className="flex items-center gap-3">
                         <div className={cn(
-                          "h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold",
-                          log.category === 'admin' ? "bg-indigo-50 text-indigo-500" : "bg-slate-100 text-slate-500"
+                          "h-9 w-9 rounded-full flex items-center justify-center text-[13px] font-bold shrink-0 shadow-sm",
+                          log.category === 'admin' ? "bg-indigo-50 text-indigo-500 border border-indigo-100" : "bg-slate-100 text-slate-500 border border-slate-200"
                         )}>
                           {log.user_name.charAt(0)}
                         </div>
-                        <span className="text-sm font-bold text-slate-600 truncate">{log.user_name}</span>
+                        <span className="text-sm font-bold text-slate-600 truncate max-w-[140px]">{log.user_name}</span>
                       </div>
                     </TableCell>
-                    <TableCell className="py-4 px-4">
+                    <TableCell className="py-5 px-6">
                       <span className={cn(
-                        "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold border whitespace-nowrap",
+                        "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold border shadow-sm whitespace-nowrap",
                         config.color
                       )}>
                         <ActionIcon className="h-3 w-3" />
-                        {config.label}
+                        {config.label.toUpperCase()}
                       </span>
                     </TableCell>
-                    <TableCell className="py-4 px-4">
-                      <p className="text-sm text-slate-600 font-medium leading-relaxed line-clamp-2">
+                    <TableCell className="py-5 px-6">
+                      <p className="text-sm text-slate-600 font-medium leading-relaxed">
                         {log.description}
                       </p>
                     </TableCell>
-                    <TableCell className="py-4 pr-8 text-right">
+                    <TableCell className="py-5 pr-8 text-right">
                       <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => setSelectedLog(log)}
-                        className="h-8 w-8 rounded-full text-[#0ea5e9] hover:bg-blue-50"
+                        className="h-9 w-9 rounded-full text-[#0ea5e9] hover:bg-blue-50 transition-all active:scale-90"
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
@@ -529,6 +591,80 @@ export default function AktivitasPage() {
                 )}
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Archive Management Dialog */}
+      <Dialog open={isArchiveOpen} onOpenChange={setIsArchiveOpen}>
+        <DialogContent className="max-w-2xl rounded-3xl overflow-hidden p-0 gap-0">
+          <DialogHeader className="p-8 bg-blue-50/50 border-b border-blue-100">
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-12 rounded-2xl bg-blue-500 text-white flex items-center justify-center shadow-lg shadow-blue-200">
+                <FileClock className="h-6 w-6" />
+              </div>
+              <div>
+                <DialogTitle className="text-xl font-bold text-blue-900">Arsip Pemeliharaan Log</DialogTitle>
+                <DialogDescription className="text-blue-600/70">
+                  Daftar file CSV hasil pembersihan log otomatis (Data &gt; 6 Bulan)
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+          
+          <div className="p-0 max-h-[400px] overflow-y-auto">
+            {loadingArchives ? (
+              <div className="p-12 text-center flex flex-col items-center gap-4">
+                <RefreshCw className="h-8 w-8 text-blue-500 animate-spin" />
+                <p className="text-sm font-medium text-slate-500">Memuat berkas arsip...</p>
+              </div>
+            ) : archives.length === 0 ? (
+              <div className="p-12 text-center flex flex-col items-center gap-4">
+                <div className="h-16 w-16 rounded-full bg-slate-50 flex items-center justify-center">
+                  <FileSpreadsheet className="h-8 w-8 text-slate-200" />
+                </div>
+                <div>
+                  <p className="text-base font-bold text-slate-700">Belum ada arsip</p>
+                  <p className="text-sm text-slate-500 mt-1">Sistem belum melakukan pembersihan otomatis.</p>
+                </div>
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-100">
+                {archives.map((archive, idx) => (
+                  <div key={idx} className="p-6 hover:bg-slate-50 flex items-center justify-between group transition-colors">
+                    <div className="flex items-center gap-4">
+                      <div className="h-10 w-10 rounded-xl bg-white border border-slate-100 shadow-sm flex items-center justify-center text-emerald-500">
+                        <FileSpreadsheet className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-slate-800">{archive.name}</p>
+                        <div className="flex items-center gap-3 mt-0.5">
+                          <span className="text-[11px] text-slate-500 flex items-center gap-1">
+                            <Calendar className="h-3 w-3" /> {archive.created_at}
+                          </span>
+                          <span className="text-[11px] text-slate-500 flex items-center gap-1">
+                            <Info className="h-3 w-3" /> {archive.size}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <Button 
+                      size="sm" 
+                      onClick={() => downloadArchive(archive.name)}
+                      className="rounded-lg bg-[#0ea5e9] hover:bg-[#0284c7] font-bold"
+                    >
+                      <Download className="h-3.5 w-3.5 mr-2" /> Download CSV
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          
+          <div className="p-6 bg-slate-50 border-t border-slate-100 text-center">
+            <p className="text-[11px] text-slate-400">
+              Catatan: Data yang sudah diarsipkan telah dihapus dari database utama untuk performa server.
+            </p>
           </div>
         </DialogContent>
       </Dialog>

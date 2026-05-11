@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Lock,
   ShieldCheck,
@@ -8,10 +8,6 @@ import {
   EyeOff,
   CheckCircle2,
   AlertCircle,
-  ClipboardList,
-  LogIn,
-  Monitor,
-  Smartphone,
   X,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
@@ -19,9 +15,6 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import api from '@/lib/axios';
 import Cookies from 'js-cookie';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
-
 
 function PasswordField({ label, value, onChange, placeholder, show, onToggle, error }: any) {
   return (
@@ -88,31 +81,8 @@ function PasswordStrength({ password }: { password: string }) {
 }
 
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState<'security' | 'activity'>('security');
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [logs, setLogs] = useState<any[]>([]);
-  const [isLoadingLogs, setIsLoadingLogs] = useState(false);
-
-  useEffect(() => {
-    if (activeTab === 'activity') {
-      fetchLogs();
-    }
-  }, [activeTab]);
-
-  const fetchLogs = async () => {
-    setIsLoadingLogs(true);
-    try {
-      const res = await api.get('/activity-logs');
-      if (res.data.status === 'success') {
-        setLogs(res.data.data);
-      }
-    } catch (err) {
-      console.error('Error fetching logs:', err);
-    } finally {
-      setIsLoadingLogs(false);
-    }
-  };
 
   const [form, setForm] = useState({
     current_password: '',
@@ -171,218 +141,130 @@ export default function SettingsPage() {
     <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col gap-2">
         <h1 className="text-3xl font-extrabold text-foreground tracking-tight">Keamanan & Akun</h1>
-        <p className="text-muted-foreground font-medium">Kelola proteksi dan aktivitas akun Azure Sentinel Anda.</p>
+        <p className="text-muted-foreground font-medium">Kelola proteksi dan kata sandi akun Anda.</p>
       </div>
 
-      {/* Tab Navigation */}
-      <div className="flex gap-2 border-b border-border">
-        <button
-          onClick={() => setActiveTab('security')}
-          className={`pb-3 px-1 text-sm font-bold border-b-2 transition-all ${
-            activeTab === 'security' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          <ShieldCheck className="h-4 w-4 inline mr-2" />Keamanan Akun
-        </button>
-        <button
-          onClick={() => setActiveTab('activity')}
-          className={`pb-3 px-1 text-sm font-bold border-b-2 transition-all ${
-            activeTab === 'activity' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          <ClipboardList className="h-4 w-4 inline mr-2" />Log Aktivitas
-        </button>
+      <div className="space-y-6 animate-in fade-in duration-300">
+        {/* Change Password Section */}
+        <Card className="rounded-2xl border-border bg-card shadow-sm overflow-hidden">
+          <div className="p-6 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-primary/10 rounded-xl">
+                <Lock className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-foreground">Ubah Kata Sandi</p>
+                <p className="text-[11px] text-muted-foreground font-medium mt-0.5">Perbarui password Anda secara berkala untuk menjaga keamanan.</p>
+              </div>
+            </div>
+            <Button
+              variant={showChangePassword ? 'ghost' : 'outline'}
+              size="sm"
+              onClick={() => showChangePassword ? resetForm() : setShowChangePassword(true)}
+              className="rounded-xl font-bold shrink-0"
+            >
+              {showChangePassword ? <><X className="h-4 w-4 mr-1" /> Tutup</> : 'Ubah Password'}
+            </Button>
+          </div>
+
+          {/* Inline Change Password Form */}
+          {showChangePassword && (
+            <div className="border-t border-border p-6 space-y-5 bg-muted/20 animate-in fade-in slide-in-from-top-2 duration-200">
+              <PasswordField
+                label="Password Saat Ini"
+                value={form.current_password}
+                onChange={(e: any) => setForm({ ...form, current_password: e.target.value })}
+                placeholder="Masukkan password saat ini"
+                show={showFields.current}
+                onToggle={() => setShowFields(s => ({ ...s, current: !s.current }))}
+                error={errors.current_password}
+              />
+              <div className="space-y-1.5">
+                <PasswordField
+                  label="Password Baru"
+                  value={form.new_password}
+                  onChange={(e: any) => setForm({ ...form, new_password: e.target.value })}
+                  placeholder="Buat password yang kuat"
+                  show={showFields.new}
+                  onToggle={() => setShowFields(s => ({ ...s, new: !s.new }))}
+                  error={errors.new_password}
+                />
+                <PasswordStrength password={form.new_password} />
+              </div>
+              <PasswordField
+                label="Konfirmasi Password Baru"
+                value={form.new_password_confirmation}
+                onChange={(e: any) => setForm({ ...form, new_password_confirmation: e.target.value })}
+                placeholder="Ulangi password baru"
+                show={showFields.confirm}
+                onToggle={() => setShowFields(s => ({ ...s, confirm: !s.confirm }))}
+                error={errors.new_password_confirmation}
+              />
+
+              <div className="flex gap-3 pt-2">
+                <Button variant="ghost" onClick={resetForm} className="rounded-xl font-bold flex-1" disabled={isSubmitting}>
+                  Batal
+                </Button>
+                <Button
+                  onClick={handleChangePassword}
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-xl flex-1 shadow-lg shadow-primary/20 disabled:opacity-70"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? 'Memperbarui...' : 'Simpan Password Baru'}
+                </Button>
+              </div>
+            </div>
+          )}
+        </Card>
+
+        {/* 2FA Section */}
+        <Card className="rounded-2xl border-border bg-card shadow-sm">
+          <div className="p-6 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-amber-500/10 rounded-xl">
+                <ShieldCheck className="h-5 w-5 text-amber-500" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-foreground">Autentikasi Dua Faktor (2FA)</p>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-rose-500 inline-block" />
+                  <p className="text-[11px] text-rose-500 font-bold uppercase tracking-tighter">Belum Aktif</p>
+                </div>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => toast.info('Fitur 2FA akan segera hadir di pembaruan berikutnya.')}
+              className="rounded-xl font-bold shrink-0 border-amber-500/30 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-500/10"
+            >
+              Aktifkan 2FA
+            </Button>
+          </div>
+        </Card>
+
+        {/* Security Info */}
+        <Card className="p-5 rounded-2xl border-dashed border-2 border-border bg-transparent">
+          <div className="flex gap-4 items-start">
+            <AlertCircle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+            <div>
+              <h4 className="text-sm font-bold text-foreground">Tips Keamanan</h4>
+              <ul className="mt-2 space-y-1">
+                {[
+                  'Gunakan password yang unik dan minimal 8 karakter.',
+                  'Aktifkan 2FA untuk perlindungan berlapis.',
+                  'Jangan bagikan kata sandi kepada siapapun.',
+                  'Ganti password secara berkala setiap 3 bulan.',
+                ].map((tip, i) => (
+                  <li key={i} className="text-xs text-muted-foreground font-medium flex gap-2">
+                    <span className="text-primary font-bold shrink-0">•</span>{tip}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </Card>
       </div>
-
-      {/* SECURITY TAB */}
-      {activeTab === 'security' && (
-        <div className="space-y-6 animate-in fade-in duration-300">
-
-          {/* Change Password Section */}
-          <Card className="rounded-2xl border-border bg-card shadow-sm overflow-hidden">
-            <div className="p-6 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-primary/10 rounded-xl">
-                  <Lock className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-foreground">Ubah Kata Sandi</p>
-                  <p className="text-[11px] text-muted-foreground font-medium mt-0.5">Perbarui password Anda secara berkala untuk menjaga keamanan.</p>
-                </div>
-              </div>
-              <Button
-                variant={showChangePassword ? 'ghost' : 'outline'}
-                size="sm"
-                onClick={() => showChangePassword ? resetForm() : setShowChangePassword(true)}
-                className="rounded-xl font-bold shrink-0"
-              >
-                {showChangePassword ? <><X className="h-4 w-4 mr-1" /> Tutup</> : 'Ubah Password'}
-              </Button>
-            </div>
-
-            {/* Inline Change Password Form */}
-            {showChangePassword && (
-              <div className="border-t border-border p-6 space-y-5 bg-muted/20 animate-in fade-in slide-in-from-top-2 duration-200">
-                <PasswordField
-                  label="Password Saat Ini"
-                  value={form.current_password}
-                  onChange={(e: any) => setForm({ ...form, current_password: e.target.value })}
-                  placeholder="Masukkan password saat ini"
-                  show={showFields.current}
-                  onToggle={() => setShowFields(s => ({ ...s, current: !s.current }))}
-                  error={errors.current_password}
-                />
-                <div className="space-y-1.5">
-                  <PasswordField
-                    label="Password Baru"
-                    value={form.new_password}
-                    onChange={(e: any) => setForm({ ...form, new_password: e.target.value })}
-                    placeholder="Buat password yang kuat"
-                    show={showFields.new}
-                    onToggle={() => setShowFields(s => ({ ...s, new: !s.new }))}
-                    error={errors.new_password}
-                  />
-                  <PasswordStrength password={form.new_password} />
-                </div>
-                <PasswordField
-                  label="Konfirmasi Password Baru"
-                  value={form.new_password_confirmation}
-                  onChange={(e: any) => setForm({ ...form, new_password_confirmation: e.target.value })}
-                  placeholder="Ulangi password baru"
-                  show={showFields.confirm}
-                  onToggle={() => setShowFields(s => ({ ...s, confirm: !s.confirm }))}
-                  error={errors.new_password_confirmation}
-                />
-
-                <div className="flex gap-3 pt-2">
-                  <Button variant="ghost" onClick={resetForm} className="rounded-xl font-bold flex-1" disabled={isSubmitting}>
-                    Batal
-                  </Button>
-                  <Button
-                    onClick={handleChangePassword}
-                    className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-xl flex-1 shadow-lg shadow-primary/20 disabled:opacity-70"
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? 'Memperbarui...' : 'Simpan Password Baru'}
-                  </Button>
-                </div>
-              </div>
-            )}
-          </Card>
-
-          {/* 2FA Section */}
-          <Card className="rounded-2xl border-border bg-card shadow-sm">
-            <div className="p-6 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-amber-500/10 rounded-xl">
-                  <ShieldCheck className="h-5 w-5 text-amber-500" />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-foreground">Autentikasi Dua Faktor (2FA)</p>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <span className="h-1.5 w-1.5 rounded-full bg-rose-500 inline-block" />
-                    <p className="text-[11px] text-rose-500 font-bold uppercase tracking-tighter">Belum Aktif</p>
-                  </div>
-                </div>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => toast.info('Fitur 2FA akan segera hadir di pembaruan berikutnya.')}
-                className="rounded-xl font-bold shrink-0 border-amber-500/30 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-500/10"
-              >
-                Aktifkan 2FA
-              </Button>
-            </div>
-          </Card>
-
-          {/* Security Info */}
-          <Card className="p-5 rounded-2xl border-dashed border-2 border-border bg-transparent">
-            <div className="flex gap-4 items-start">
-              <AlertCircle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
-              <div>
-                <h4 className="text-sm font-bold text-foreground">Tips Keamanan</h4>
-                <ul className="mt-2 space-y-1">
-                  {[
-                    'Gunakan password yang unik dan minimal 8 karakter.',
-                    'Aktifkan 2FA untuk perlindungan berlapis.',
-                    'Jangan bagikan kata sandi kepada siapapun.',
-                    'Ganti password secara berkala setiap 3 bulan.',
-                  ].map((tip, i) => (
-                    <li key={i} className="text-xs text-muted-foreground font-medium flex gap-2">
-                      <span className="text-primary font-bold shrink-0">•</span>{tip}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          </Card>
-        </div>
-      )}
-
-      {/* ACTIVITY LOG TAB */}
-      {activeTab === 'activity' && (
-        <div className="space-y-4 animate-in fade-in duration-300">
-          <Card className="rounded-2xl border-border bg-card shadow-sm overflow-hidden">
-            <div className="p-6 border-b border-border flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-bold text-foreground">Riwayat Aktivitas Akun</h3>
-                <p className="text-[11px] text-muted-foreground font-medium mt-0.5">Aktivitas terbaru Anda</p>
-              </div>
-              <span className="text-[10px] bg-primary/10 text-primary px-2.5 py-1 rounded-full font-bold">
-                {logs.length} aktivitas
-              </span>
-            </div>
-            
-            <div className="divide-y divide-border min-h-[200px]">
-              {isLoadingLogs ? (
-                <div className="flex flex-col items-center justify-center p-12">
-                   <div className="h-8 w-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin mb-4" />
-                   <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest">Memuat log...</p>
-                </div>
-              ) : logs.length > 0 ? (
-                logs.map((item) => (
-                  <div key={item.id} className="flex items-center gap-4 p-5 hover:bg-muted/30 transition-colors">
-                    <div className="p-2.5 rounded-xl bg-muted shrink-0">
-                      {item.category === 'admin' ? (
-                        <ShieldCheck className="h-4 w-4 text-primary" />
-                      ) : item.action?.toLowerCase().includes('login') ? (
-                        <LogIn className="h-4 w-4 text-emerald-500" />
-                      ) : (
-                        <ClipboardList className="h-4 w-4 text-amber-500" />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-foreground">{item.action}</p>
-                      <p className="text-[11px] text-muted-foreground font-medium truncate">
-                        {item.description}
-                      </p>
-                    </div>
-                    <span className="text-[11px] text-muted-foreground font-medium shrink-0">{item.time_ago}</span>
-                  </div>
-                ))
-              ) : (
-                <div className="flex flex-col items-center justify-center p-12 text-center">
-                   <div className="p-4 bg-muted rounded-full mb-4">
-                      <ClipboardList className="h-8 w-8 text-muted-foreground/50" />
-                   </div>
-                   <h4 className="text-sm font-bold text-foreground">Belum ada aktivitas</h4>
-                   <p className="text-xs text-muted-foreground mt-1 max-w-[200px]">Semua aktivitas akun Anda akan muncul di sini.</p>
-                </div>
-              )}
-            </div>
-          </Card>
-
-          <Card className="p-5 rounded-2xl border-dashed border-2 border-border bg-transparent">
-            <div className="flex gap-4 items-center">
-              <AlertCircle className="h-5 w-5 text-amber-500 shrink-0" />
-              <p className="text-xs text-muted-foreground font-medium">
-                Jika Anda melihat aktivitas yang mencurigakan, segera ubah kata sandi Anda dan hubungi administrator sistem.
-              </p>
-            </div>
-          </Card>
-        </div>
-      )}
     </div>
   );
 }

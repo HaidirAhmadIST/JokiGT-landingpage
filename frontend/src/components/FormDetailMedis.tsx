@@ -28,7 +28,6 @@ export interface DataMedis {
   alergi: string;
   riwayat_operasi: string;
   obat_rutin: string;
-  riwayat_merokok: string;
   riwayat_pemeriksaan: RiwayatPemeriksaanItem[];
 }
 
@@ -113,25 +112,7 @@ export default function FormDetailMedis({ data, onChange }: FormDetailMedisProps
             </Select>
           </div>
 
-          {/* Riwayat Merokok — full width */}
-          <div className="space-y-2">
-            <Label className="text-gray-700 font-medium">
-              Riwayat Merokok <span className="text-red-500 ml-1">*</span>
-            </Label>
-            <Select
-              value={data.riwayat_merokok || ''}
-              onValueChange={v => onChange('riwayat_merokok', v)}
-            >
-              <SelectTrigger className="bg-white border-gray-300 h-11 focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                <SelectValue placeholder="Pilih Status Merokok" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Aktif">Perokok Aktif</SelectItem>
-                <SelectItem value="Pernah & Berhenti">Pernah & Sudah Berhenti</SelectItem>
-                <SelectItem value="Tidak Pernah">Tidak Pernah</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+
 
           {/* Riwayat Penyakit — full width */}
           <div className="space-y-2">
