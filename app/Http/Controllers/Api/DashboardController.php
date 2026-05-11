@@ -62,12 +62,36 @@ class DashboardController extends Controller
                 $totalPerusahaan = Perusahaan::count();
                 $newPerusahaan   = Perusahaan::where('created_at', '>=', $startOfThisMonth)->count();
 
-                // ── Status Kesehatan ─────────────────────────────────────────────
+                // ── Status Kesehatan (Optimized to 1 Query) ─────────────────────
+                $kesehatanStats = Pekerja::selectRaw("
+                    COUNT(CASE WHEN status_kesehatan = 'sehat' THEN 1 END) as fit,
+                    COUNT(CASE WHEN status_kesehatan = 'sehat_dengan_catatan' THEN 1 END) as note,
+                    COUNT(CASE WHEN status_kesehatan = 'tidak_sehat' THEN 1 END) as unfit
+                ")->first();
+
                 $kesehatan = [
-                    'fit'   => Pekerja::where('status_kesehatan', 'sehat')->count(),
-                    'note'  => Pekerja::where('status_kesehatan', 'sehat_dengan_catatan')->count(),
-                    'unfit' => Pekerja::where('status_kesehatan', 'tidak_sehat')->count(),
+                    'fit'   => (int) $kesehatanStats->fit,
+                    'note'  => (int) $kesehatanStats->note,
+                    'unfit' => (int) $kesehatanStats->unfit,
                 ];
+
+                // ── Sebaran Wilayah Kasus (PAK/dll) ──────────────────────────────
+                // Optimasi: Tidak menggunakan LOWER() di SQL untuk menghindari Full Table Scan jika ada Index.
+                // MySQL default collation (utf8mb4_unicode_ci) sudah case-insensitive untuk GROUP BY.
+                $sebaranWilayah = \Illuminate\Support\Facades\DB::table('status_advokasi')
+                    ->join('pekerja', 'status_advokasi.pekerja_id', '=', 'pekerja.id')
+                    ->whereNotNull('status_advokasi.jenis_kasus')
+                    ->select('pekerja.domisili', \Illuminate\Support\Facades\DB::raw('COUNT(*) as total'))
+                    ->groupBy('pekerja.domisili')
+                    ->get()
+                    ->filter(function($item) {
+                        return !empty($item->domisili);
+                    })
+                    ->mapWithKeys(function ($item) {
+                        // Normalisasi ke huruf kecil di level PHP (Aman & Ringan)
+                        $provinsi = strtolower(trim($item->domisili));
+                        return [$provinsi => (int) $item->total];
+                    })->toArray();
 
                 return [
                     'total_pekerja'       => $totalPekerja,
@@ -81,6 +105,7 @@ class DashboardController extends Controller
                     'total_perusahaan'    => $totalPerusahaan,
                     'total_perusahaan_new'=> $newPerusahaan,
                     'kesehatan'           => $kesehatan,
+                    'sebaran_wilayah'     => $sebaranWilayah,
                 ];
             });
 

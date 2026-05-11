@@ -11,6 +11,7 @@
  */
 
 import { cn, formatHealthStatus } from '@/lib/utils';
+import dynamic from 'next/dynamic';
 import { Card } from '@/components/ui/card';
 import {
   User2, Building2, Briefcase, MapPin, HeartPulse, ShieldCheck,
@@ -28,7 +29,19 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useUserDashboard } from '@/hooks/useUserDashboard';
+import { useDashboardStats } from '@/hooks/useDashboardStats';
+import { PROVINCES } from '@/lib/provinces';
 import type { StatusAdvokasi } from '@/types';
+
+const IndonesiaMap = dynamic(() => import('@/components/dashboard/IndonesiaMap'), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-[400px] flex flex-col items-center justify-center bg-slate-50 rounded-2xl border border-slate-100">
+      <Loader2 className="h-8 w-8 text-[#0284c7] animate-spin mb-2" />
+      <p className="text-xs font-bold text-slate-400 animate-pulse">Memuat Peta Nasional...</p>
+    </div>
+  )
+});
 
 const API_BASE = (process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api').replace('/api', '');
 
@@ -88,6 +101,8 @@ export default function UserDashboardPage() {
     medisLoading, handleUpdateMedis, openMedisAdd, openMedisEdit,
     logout, handleViewFile,
   } = useUserDashboard();
+
+  const { stats } = useDashboardStats();
 
   if (loading) return (
     <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center">
@@ -201,6 +216,29 @@ export default function UserDashboardPage() {
             )}
           </div>
         </section>
+
+        {/* Peta Sebaran Nasional (Lazy Loaded) */}
+        <Card className="rounded-[24px] border-slate-100 shadow-sm p-6 bg-white relative overflow-hidden">
+           <div className="absolute top-[-20px] right-[-20px] opacity-[0.03] pointer-events-none">
+              <MapPin className="h-40 w-40" />
+           </div>
+           <div className="flex items-center justify-between mb-6 relative z-10">
+             <div className="flex items-center gap-2">
+               <MapPin className="h-4 w-4 text-[#0284c7]" />
+               <h2 className="text-xs font-black text-[#94a3b8] tracking-widest uppercase">Sebaran Laporan Nasional</h2>
+             </div>
+             <div className="flex items-center gap-2 bg-blue-50/50 px-3 py-1.5 rounded-lg border border-blue-100">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                </span>
+                <span className="text-[10px] font-bold text-blue-700">Live Map</span>
+             </div>
+           </div>
+           <div className="relative z-10">
+             <IndonesiaMap data={stats?.sebaran_wilayah || {}} />
+           </div>
+        </Card>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[
@@ -898,14 +936,20 @@ export default function UserDashboardPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="addr" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Alamat Domisili</Label>
-              <Textarea 
-                id="addr"
-                placeholder="Masukkan alamat tinggal Anda saat ini..."
-                className="rounded-xl bg-slate-50 border-slate-200 min-h-[100px] font-bold focus:ring-blue-500"
+              <Label htmlFor="addr" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Provinsi Domisili</Label>
+              <Select 
                 value={profileForm.domisili}
-                onChange={(e) => setProfileForm({...profileForm, domisili: e.target.value})}
-              />
+                onValueChange={(v) => setProfileForm({...profileForm, domisili: v || ''})}
+              >
+                <SelectTrigger id="addr" className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500">
+                  <SelectValue placeholder="Pilih Provinsi Domisili" />
+                </SelectTrigger>
+                <SelectContent className="max-h-[300px]">
+                  {PROVINCES.map((prov) => (
+                    <SelectItem key={prov} value={prov}>{prov}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="photo" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pas Foto Baru (Opsional)</Label>

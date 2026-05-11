@@ -21,9 +21,7 @@ export interface User {
   foto?: string;
   /** ID Pekerja yang terhubung (hanya untuk role 'viewer') */
   pekerja_id?: number;
-  pekerja?: {
-    id: number;
-  };
+  pekerja?: PekerjaFull;
 }
 
 // -----------------------------------------------------------------------------
@@ -236,6 +234,7 @@ export interface DashboardStats {
     note: number;
     unfit: number;
   };
+  sebaran_wilayah?: Record<string, number>;
 }
 
 // -----------------------------------------------------------------------------
