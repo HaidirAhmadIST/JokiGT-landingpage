@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { cn, formatHealthStatus } from '@/lib/utils';
 import FormDetailMedis, { type DataMedis } from '@/components/FormDetailMedis';
+import { PROVINCES } from '@/lib/provinces';
 
 const STORAGE_KEY = 'REKAM_JEJAK_FORM_DATA';
 
@@ -149,7 +150,6 @@ export default function PendaftaranPekerjaPage() {
     alergi: '',
     riwayat_operasi: '',
     obat_rutin: '',
-    riwayat_merokok: 'Tidak Pernah',
     riwayat_pemeriksaan: []
   });
 
@@ -862,8 +862,21 @@ export default function PendaftaranPekerjaPage() {
                       <p className="text-[10px] text-slate-400 font-medium ml-1">Gunakan password ini untuk masuk ke dashboard nanti.</p>
                     </div>
                     <div className="space-y-2">
-                      <Label>Alamat Domisili</Label>
-                      <Textarea placeholder="Contoh: Jl. Merdeka No. 123, Kelurahan, Kecamatan" className="resize-none h-24" value={baseData.domisili} onChange={e => setBaseData({ ...baseData, domisili: e.target.value })} />
+                      <Label>Provinsi Domisili</Label>
+                      <Select 
+                        value={baseData.domisili} 
+                        onValueChange={v => setBaseData({ ...baseData, domisili: v || '' })}
+                      >
+                        <SelectTrigger className="h-11 bg-white">
+                          <SelectValue placeholder="Pilih Provinsi" />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-[300px]">
+                          {PROVINCES.map((prov) => (
+                            <SelectItem key={prov} value={prov}>{prov}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-[10px] text-slate-400 font-medium ml-1">Pilih provinsi tempat Anda tinggal saat ini (untuk pemetaan).</p>
                     </div>
                   </div>
                 </div>
@@ -994,7 +1007,8 @@ export default function PendaftaranPekerjaPage() {
                               value={pekerjaanSaatIni.lama_bekerja} 
                               onChange={e => setPekerjaanSaatIni({ ...pekerjaanSaatIni, lama_bekerja: e.target.value })} 
                             />
-                            <Select value={pekerjaanSaatIni.satuan_waktu} onValueChange={v => setPekerjaanSaatIni({ ...pekerjaanSaatIni, satuan_waktu: v })}>
+                            {/* @ts-ignore */}
+                            <Select value={pekerjaanSaatIni.satuan_waktu || ''} onValueChange={v => setPekerjaanSaatIni({ ...pekerjaanSaatIni, satuan_waktu: v || '' })}>
                               <SelectTrigger className="h-11 bg-white border-blue-200"><SelectValue /></SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="Hari">Hari</SelectItem>
@@ -1006,7 +1020,7 @@ export default function PendaftaranPekerjaPage() {
                         </div>
                         <div className="space-y-2">
                           <Label className="text-[#0ea5e9] font-bold">Peserta BPJS BPU?</Label>
-                          <Select value={pekerjaanSaatIni.bpjs_bpu} onValueChange={v => setPekerjaanSaatIni({ ...pekerjaanSaatIni, bpjs_bpu: v })}>
+                          <Select value={pekerjaanSaatIni.bpjs_bpu || ''} onValueChange={v => setPekerjaanSaatIni({ ...pekerjaanSaatIni, bpjs_bpu: v || '' })}>
                             <SelectTrigger className="h-11 bg-white border-blue-200"><SelectValue placeholder="Pilih Status" /></SelectTrigger>
                             <SelectContent>
                               <SelectItem value="Ya">Ya, Terdaftar</SelectItem>
