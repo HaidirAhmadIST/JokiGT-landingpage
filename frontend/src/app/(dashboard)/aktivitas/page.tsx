@@ -40,6 +40,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { Pagination } from '@/components/ui/Pagination';
 
 interface ActivityLog {
   id: number;
@@ -414,37 +415,14 @@ export default function AktivitasPage() {
           </TableBody>
         </Table>
 
-        {/* Pagination */}
-        {!loading && lastPage > 1 && (
-          <div className="p-6 border-t border-slate-100 flex items-center justify-between bg-slate-50/50">
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-              Total {total.toLocaleString('id-ID')} Aktivitas
-            </p>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={currentPage === 1}
-                onClick={() => fetchLogs(currentPage - 1)}
-                className="rounded-xl border-slate-200 h-9 font-bold"
-              >
-                <ChevronLeft className="h-4 w-4 mr-1" /> Prev
-              </Button>
-              <div className="flex items-center px-4 h-9 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-600 shadow-sm">
-                Halaman {currentPage} / {lastPage}
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={currentPage === lastPage}
-                onClick={() => fetchLogs(currentPage + 1)}
-                className="rounded-xl border-slate-200 h-9 font-bold"
-              >
-                Next <ChevronRight className="h-4 w-4 ml-1" />
-              </Button>
-            </div>
-          </div>
-        )}
+        <Pagination 
+          currentPage={currentPage}
+          total={total}
+          perPage={perPage}
+          lastPage={lastPage}
+          onPageChange={fetchLogs}
+          label="Aktivitas"
+        />
       </Card>
 
       {/* Detail Dialog */}

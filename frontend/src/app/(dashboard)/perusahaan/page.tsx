@@ -33,6 +33,7 @@ import { Plus, X, Building2, Briefcase, Info, CheckCircle2, ShieldAlert, CheckCi
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRole } from '@/hooks/useRole';
+import { Pagination } from '@/components/ui/Pagination';
 
 // ============================================================================
 // Types
@@ -791,66 +792,14 @@ export default function PerusahaanPage() {
             )}
           </TableBody>
         </Table>
-
-        {/* Pagination Footer */}
-        {!loading && lastPage > 0 && (
-          <div className="border-t border-slate-100 p-4 px-6 flex items-center justify-between text-sm text-slate-500 font-medium">
-            <p>
-              Menampilkan {data.length === 0 ? 0 : (currentPage - 1) * perPage + 1}–{Math.min(currentPage * perPage, total)} dari {total} perusahaan
-            </p>
-            <div className="flex items-center gap-1">
-              {/* Prev */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-slate-400 hover:bg-slate-100 disabled:opacity-30"
-                disabled={currentPage <= 1}
-                onClick={() => { const p = currentPage - 1; setCurrentPage(p); fetchData(p); }}
-              >
-                &lt;
-              </Button>
-
-              {/* Page number buttons — show up to 5 pages around current */}
-              {Array.from({ length: lastPage }, (_, i) => i + 1)
-                .filter(p => p === 1 || p === lastPage || Math.abs(p - currentPage) <= 2)
-                .reduce<(number | '...')[]>((acc, p, idx, arr) => {
-                  if (idx > 0 && p - (arr[idx - 1] as number) > 1) acc.push('...');
-                  acc.push(p);
-                  return acc;
-                }, [])
-                .map((p, idx) =>
-                  p === '...' ? (
-                    <span key={`ellipsis-${idx}`} className="px-1 text-slate-400">…</span>
-                  ) : (
-                    <Button
-                      key={p}
-                      variant="ghost"
-                      className={`h-8 w-8 rounded-full font-bold ${
-                        p === currentPage
-                          ? 'bg-[#0284c7] hover:bg-[#0369a1] text-white'
-                          : 'hover:bg-slate-100 text-slate-600'
-                      }`}
-                      onClick={() => { setCurrentPage(p as number); fetchData(p as number); }}
-                    >
-                      {p}
-                    </Button>
-                  )
-                )
-              }
-
-              {/* Next */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-slate-600 hover:bg-slate-100 disabled:opacity-30"
-                disabled={currentPage >= lastPage}
-                onClick={() => { const p = currentPage + 1; setCurrentPage(p); fetchData(p); }}
-              >
-                &gt;
-              </Button>
-            </div>
-          </div>
-        )}
+        <Pagination 
+          currentPage={currentPage}
+          total={total}
+          perPage={perPage}
+          lastPage={lastPage}
+          onPageChange={(p) => { setCurrentPage(p); fetchData(p); }}
+          label="perusahaan"
+        />
       </div>
 
       {/* ================================================================== */}

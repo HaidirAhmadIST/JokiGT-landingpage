@@ -24,6 +24,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Pagination } from '@/components/ui/Pagination';
 
 export default function PekerjaPage() {
   const router = useRouter();
@@ -367,41 +368,14 @@ export default function PekerjaPage() {
           </Table>
         </div>
         
-        {/* Pagination */}
-        <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between mt-2">
-          <p className="text-sm font-medium text-slate-500">
-            Menampilkan <span className="text-slate-900 font-bold">
-              {total > 0 ? (currentPage - 1) * perPage + 1 : 0}-
-              {Math.min(currentPage * perPage, total)}
-            </span> dari <span className="text-slate-900 font-bold">{total}</span> pekerja
-          </p>
-          <div className="flex items-center gap-2">
-            <Button 
-              variant="outline" 
-              size="icon" 
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-              className="h-9 w-9 rounded-lg border-slate-200 text-slate-600 disabled:opacity-30"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            
-            <div className="flex items-center gap-1 px-2">
-              <span className="text-sm font-bold text-slate-900">Halaman {currentPage}</span>
-              <span className="text-sm text-slate-400">dari {lastPage}</span>
-            </div>
-
-            <Button 
-              variant="outline" 
-              size="icon"
-              disabled={currentPage === lastPage || total === 0}
-              onClick={() => setCurrentPage(prev => Math.min(lastPage, prev + 1))}
-              className="h-9 w-9 rounded-lg border-slate-200 text-slate-600 disabled:opacity-30"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
+        <Pagination 
+          currentPage={currentPage}
+          total={total}
+          perPage={perPage}
+          lastPage={lastPage}
+          onPageChange={setCurrentPage}
+          label="pekerja"
+        />
       </div>
 
       {/* ===== Bulk Update Sheet ===== */}
