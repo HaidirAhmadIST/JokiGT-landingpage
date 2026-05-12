@@ -39,7 +39,6 @@ const caseTypeLabels: Record<string, string> = {
   PAK: 'PAK (Penyakit Akibat Kerja)',
   K3: 'K3 (Kecelakaan Kerja)',
   PHK: 'PHK (Pemutusan Hubungan Kerja)',
-  JHT: 'JHT (Jaminan / JHT)',
 };
 
 // Helpers for Status Kesehatan

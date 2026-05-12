@@ -99,7 +99,6 @@ export default function SheetEditKasus({ open, onOpenChange, data, onSuccess }: 
     { id: 'PAK', label: 'PAK (Penyakit Kerja)', icon: Activity, desc: 'Penyakit akibat lingkungan kerja', color: 'text-rose-500', bg: 'bg-rose-50' },
     { id: 'K3', label: 'K3 (Kecelakaan)', icon: HardHat, desc: 'Kecelakaan saat bekerja', color: 'text-amber-500', bg: 'bg-amber-50' },
     { id: 'PHK', label: 'PHK (Kasus)', icon: Gavel, desc: 'Perselisihan hubungan kerja', color: 'text-blue-500', bg: 'bg-blue-50' },
-    { id: 'JHT', label: 'JHT (Jaminan)', icon: Coins, desc: 'Klaim jaminan sosial/tua', color: 'text-emerald-500', bg: 'bg-emerald-50' },
   ];
 
   const handleSave = async (e: React.FormEvent) => {
