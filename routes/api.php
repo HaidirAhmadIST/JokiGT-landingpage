@@ -27,6 +27,7 @@ Route::get('perusahaan', [PerusahaanController::class, 'index']);
 Route::post('perusahaan', [PerusahaanController::class, 'store']);
 Route::get('pekerja', [PekerjaController::class, 'index']);
 Route::post('pekerja', [PekerjaController::class, 'store']);
+Route::get('dashboard/stats', [DashboardController::class, 'stats']);
 
 
 // =========================================================================
@@ -41,7 +42,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
 
     // Dashboard
-    Route::get('dashboard/stats', [DashboardController::class, 'stats']);
+    // Route::get('dashboard/stats', [DashboardController::class, 'stats']); // Moved to public routes
 
 
 
@@ -76,7 +77,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::delete('pekerja/{pekerja}', [PekerjaController::class, 'destroy'])->middleware('role:admin');
 
     // Dashboard & Reports
-    Route::get('dashboard/stats', [DashboardController::class, 'stats']);
+    // Route::get('dashboard/stats', [DashboardController::class, 'stats']); // Moved to public routes
     Route::get('activity-logs', [ActivityLogController::class, 'index']);
     Route::get('activity-logs/export', [ActivityLogController::class, 'export']);
     Route::get('activity-logs/archives', [ActivityLogController::class, 'listArchives']);

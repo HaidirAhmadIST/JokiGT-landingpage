@@ -44,7 +44,7 @@ class UpdateAdvokasiRequest extends FormRequest
             'bukti_rehabilitasi_bpjskes' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
 
             // Metadata fields for "Tambah Kasus" or updates
-            'jenis_kasus' => ['nullable', 'string', 'in:pak,k3,phk,jht,PAK,K3,PHK,JHT'],
+            'jenis_kasus' => ['nullable', 'string', 'in:pak,k3,phk,PAK,K3,PHK'],
             'tahap' => ['nullable', 'string', 'in:UPTD,BPJS,Pengadilan,uptd,bpjs,pengadilan'],
             'status_detail' => ['nullable', 'string', 'max:255'],
             'tanggal_pelaporan' => ['nullable', 'date'],

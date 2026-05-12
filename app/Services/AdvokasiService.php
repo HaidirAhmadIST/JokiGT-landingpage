@@ -14,17 +14,13 @@ class AdvokasiService
     /**
      * Get aggregate statistics and worker status breakdown for advocacy.
      *
+     * @param bool $includeWorkers Whether to include detailed worker lists for each step
      * @return array
      */
-    public function getStats(): array
+    public function getStats(bool $includeWorkers = false): array
     {
         $now = now();
         $startOfThisMonth = $now->copy()->startOfMonth();
-
-        $calcTrend = function ($current, $previous) {
-            if ($previous == 0) return $current > 0 ? 100 : 0;
-            return round((($current - $previous) / $previous) * 100, 1);
-        };
 
         $totalAll = StatusAdvokasi::whereNotNull('jenis_kasus')->count();
         $totalLastMonth = StatusAdvokasi::whereNotNull('jenis_kasus')
@@ -54,7 +50,6 @@ class AdvokasiService
             ]
         ];
 
-
         $steps = [
             ['key' => 'riwayat_pajanan', 'label' => 'Riwayat Pajanan', 'column' => 'riwayat_pajanan'],
             ['key' => 'persetujuan_dokter', 'label' => 'Evaluasi Dokter Okupasi', 'column' => 'persetujuan_dokter'],
@@ -67,24 +62,30 @@ class AdvokasiService
         $results = [];
         foreach ($steps as $step) {
             $col = $step['column'];
-            $workers = StatusAdvokasi::with(['pekerja:id,nama_lengkap,nik,perusahaan_id', 'pekerja.perusahaan:id,nama_perusahaan'])
-                ->where($col, true)
-                ->get()
-                ->map(fn ($s) => [
-                    'id'            => $s->pekerja?->id,
-                    'nama'          => $s->pekerja?->nama_lengkap ?? '-',
-                    'nik'           => $s->pekerja?->nik ?? '-',
-                    'perusahaan'    => $s->pekerja?->perusahaan?->nama_perusahaan ?? '-',
-                    'jenis_kasus'   => $s->jenis_kasus ? strtoupper($s->jenis_kasus) : '-',
-                    'status_detail' => $s->status_detail ?? '-',
-                    'progress'      => $s->progress_percentage,
-                ]);
+            $query = StatusAdvokasi::where($col, true);
+            
+            $count = $query->count();
+            $workers = [];
+
+            if ($includeWorkers && $count > 0) {
+                $workers = $query->with(['pekerja:id,nama_lengkap,nik,perusahaan_id', 'pekerja.perusahaan:id,nama_perusahaan'])
+                    ->get()
+                    ->map(fn ($s) => [
+                        'id'            => $s->pekerja?->id,
+                        'nama'          => $s->pekerja?->nama_lengkap ?? '-',
+                        'nik'           => $s->pekerja?->nik ?? '-',
+                        'perusahaan'    => $s->pekerja?->perusahaan?->nama_perusahaan ?? '-',
+                        'jenis_kasus'   => $s->jenis_kasus ? strtoupper($s->jenis_kasus) : '-',
+                        'status_detail' => $s->status_detail ?? '-',
+                        'progress'      => $s->progress_percentage,
+                    ])->values();
+            }
 
             $results[] = [
                 'key'     => $step['key'],
                 'label'   => $step['label'],
-                'jumlah'  => $workers->count(),
-                'pekerja' => $workers->values(),
+                'jumlah'  => $count,
+                'pekerja' => $workers,
             ];
         }
 
