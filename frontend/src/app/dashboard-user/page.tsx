@@ -17,7 +17,7 @@ import {
   User2, Building2, Briefcase, MapPin, HeartPulse, ShieldCheck,
   Search, Stethoscope, FileText, Scale, Coins, Clock, LogOut,
   Download, CheckCircle2, AlertCircle, Loader2, FileStack, Activity, Upload,
-  Calendar, Shield, Zap, Settings, ClipboardList, User, Plus, FilePlus
+  Calendar, Shield, Zap, Settings, ClipboardList, User, Plus, FilePlus, RefreshCw
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -31,17 +31,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useUserDashboard } from '@/hooks/useUserDashboard';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
 import { PROVINCES } from '@/lib/provinces';
-import type { StatusAdvokasi } from '@/types';
+import type { StatusAdvokasi, RiwayatPekerja, DetailMedis } from '@/types';
 
-const IndonesiaMap = dynamic(() => import('@/components/dashboard/IndonesiaMap'), {
-  ssr: false,
-  loading: () => (
-    <div className="w-full h-[400px] flex flex-col items-center justify-center bg-slate-50 rounded-2xl border border-slate-100">
-      <Loader2 className="h-8 w-8 text-[#0284c7] animate-spin mb-2" />
-      <p className="text-xs font-bold text-slate-400 animate-pulse">Memuat Peta Nasional...</p>
-    </div>
-  )
-});
+
 
 const API_BASE = (process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api').replace('/api', '');
 
@@ -77,11 +69,10 @@ const JENIS: Record<string, string> = {
   PAK: 'Penyakit Akibat Kerja (PAK)',
   K3:  'Kecelakaan Kerja (K3)',
   PHK: 'Pemutusan Hubungan Kerja',
-  JHT: 'Jaminan Hari Tua',
 };
 
 /** Format tanggal ke format lokal Indonesia. */
-const fmt = (d: string) => d ? new Date(d).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
+const fmt = (d?: string) => d ? new Date(d).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
 
 // ─── Komponen Utama ────────────────────────────────────────────────────────────
 
@@ -115,12 +106,14 @@ export default function UserDashboardPage() {
 
   // ── Derived data ────────────────────────────────────────────────────────────
   const adv = (pekerja?.status_advokasi ?? (pekerja as any)?.statusAdvokasi ?? null) as StatusAdvokasi | null;
-  const job = pekerja?.riwayat_pekerja?.find((r) => !r.tgl_keluar) ?? pekerja?.riwayat_pekerja?.[0] ?? null;
+  const job = pekerja?.riwayat_pekerja?.find((r: any) => !r.tgl_keluar) ?? pekerja?.riwayat_pekerja?.[0] ?? null;
   const medis = pekerja?.latest_detail_medis ?? null;
   const hCfg = healthConfig[pekerja?.status_kesehatan ?? 'sehat'] ?? healthConfig.sehat;
   const done = adv ? STEPS.filter(s => (adv as any)[s.key]).length : 0;
   const pct  = Math.round((done / 6) * 100);
-  const photo = pekerja?.pas_foto ? `${API_BASE}/storage/profil/${pekerja.pas_foto}` : null;
+  const photo = pekerja?.pas_foto 
+    ? `${API_BASE}/storage/profil/${pekerja.pas_foto}` 
+    : `https://api.dicebear.com/7.x/avataaars/svg?seed=${pekerja?.nama_lengkap || user?.nama || 'Pekerja'}`;
   const timeline = [
     { label: 'Terdaftar', at: pekerja?.created_at, icon: Shield, color: 'bg-slate-400' },
     ...STEPS.filter(s => adv && (adv as any)[s.key]).map(s => ({
@@ -217,28 +210,7 @@ export default function UserDashboardPage() {
           </div>
         </section>
 
-        {/* Peta Sebaran Nasional (Lazy Loaded) */}
-        <Card className="rounded-[24px] border-slate-100 shadow-sm p-6 bg-white relative overflow-hidden">
-           <div className="absolute top-[-20px] right-[-20px] opacity-[0.03] pointer-events-none">
-              <MapPin className="h-40 w-40" />
-           </div>
-           <div className="flex items-center justify-between mb-6 relative z-10">
-             <div className="flex items-center gap-2">
-               <MapPin className="h-4 w-4 text-[#0284c7]" />
-               <h2 className="text-xs font-black text-[#94a3b8] tracking-widest uppercase">Sebaran Laporan Nasional</h2>
-             </div>
-             <div className="flex items-center gap-2 bg-blue-50/50 px-3 py-1.5 rounded-lg border border-blue-100">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
-                </span>
-                <span className="text-[10px] font-bold text-blue-700">Live Map</span>
-             </div>
-           </div>
-           <div className="relative z-10">
-             <IndonesiaMap data={stats?.sebaran_wilayah || {}} />
-           </div>
-        </Card>
+
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[
@@ -498,11 +470,11 @@ export default function UserDashboardPage() {
             <table className="w-full text-sm text-left border-separate border-spacing-y-2">
               <thead className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                 <tr>
-                  <th className="px-4 py-2">Perusahaan / Proyek</th>
-                  <th className="px-4 py-2">Jenis Pajanan</th>
-                  <th className="px-4 py-2">APD yang Digunakan</th>
-                  <th className="px-4 py-2">Durasi</th>
-                  <th className="px-4 py-2 text-right">Aksi</th>
+                  <th className="px-4 py-2 w-[25%]">Perusahaan / Proyek</th>
+                  <th className="px-4 py-2 w-[20%]">Jenis Pajanan</th>
+                  <th className="px-4 py-2 w-[35%]">APD yang Digunakan</th>
+                  <th className="px-4 py-2 w-[12%] text-center">Durasi</th>
+                  <th className="px-4 py-2 w-[8%] text-right">Aksi</th>
                 </tr>
               </thead>
               <tbody>
@@ -562,8 +534,8 @@ export default function UserDashboardPage() {
                              })()}
                            </div>
                         </td>
-                         <td className="px-4 py-4 bg-slate-50/50 border-y border-slate-100 group-hover:bg-blue-50/30 transition-colors text-right whitespace-nowrap">
-                           <span className="inline-flex items-center px-2.5 py-1 bg-white text-slate-700 rounded-full border border-slate-200 text-[11px] font-black shadow-sm">
+                         <td className="px-4 py-4 bg-slate-50/50 border-y border-slate-100 group-hover:bg-blue-50/30 transition-colors text-center whitespace-nowrap">
+                           <span className="inline-flex items-center px-3 py-1 bg-white text-blue-600 rounded-full border border-blue-100 text-[11px] font-black shadow-sm">
                              {r.durasi_pajanan ? `${r.durasi_pajanan} Tahun` : '-'}
                            </span>
                          </td>
@@ -611,7 +583,7 @@ export default function UserDashboardPage() {
             </div>
             {(pekerja?.riwayat_pekerja?.length ?? 0) > 0 ? (
               <div className="space-y-3">
-                {pekerja!.riwayat_pekerja!.map((r, i: number) => (
+                {(pekerja?.riwayat_pekerja || []).map((r: any, i: number) => (
                   <div 
                     key={i} 
                     className={cn(
@@ -633,6 +605,33 @@ export default function UserDashboardPage() {
                         <div className={cn("flex items-center gap-1 mt-2 text-[9px] font-bold", selectedRiwayatId === r.id ? "text-blue-200" : "text-slate-400")}>
                           <Calendar className="h-2.5 w-2.5" /> {fmt(r.tgl_masuk)} - {r.tgl_keluar ? fmt(r.tgl_keluar) : 'Sekarang'}
                         </div>
+
+                        {/* MUTASI JABATAN (User Dashboard List) */}
+                        {(() => {
+                          try {
+                            const info = typeof r.informal_data === 'string' ? JSON.parse(r.informal_data) : r.informal_data;
+                            const mutations = info?.mutasi_jabatan || [];
+                            if (mutations.length === 0) return null;
+                            return (
+                              <div className={cn("mt-3 pt-3 border-t", selectedRiwayatId === r.id ? "border-blue-500/30" : "border-slate-200")}>
+                                <p className={cn("text-[8px] font-black uppercase tracking-wider mb-2 flex items-center gap-1", selectedRiwayatId === r.id ? "text-blue-200" : "text-slate-400")}>
+                                  <RefreshCw className="h-2.5 w-2.5" /> Histori Bagian Internal
+                                </p>
+                                <div className="space-y-2">
+                                  {mutations.map((m: any, midx: number) => (
+                                    <div key={midx} className="flex justify-between items-start gap-2">
+                                      <div className="min-w-0">
+                                        <p className={cn("text-[10px] font-bold truncate", selectedRiwayatId === r.id ? "text-white" : "text-slate-700")}>{m.bagian || '-'}</p>
+                                        <p className={cn("text-[8px] font-medium", selectedRiwayatId === r.id ? "text-blue-200" : "text-slate-400")}>{m.jabatan || '-'}</p>
+                                      </div>
+                                      <span className={cn("text-[9px] font-bold shrink-0", selectedRiwayatId === r.id ? "text-blue-100" : "text-slate-400")}>{m.tahun || '-'}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          } catch(e) { return null; }
+                        })()}
                       </div>
                       <div className="flex flex-col items-end gap-2">
                         {!r.tgl_keluar && <span className={cn("text-[8px] font-black px-1.5 py-0.5 rounded-full", selectedRiwayatId === r.id ? "bg-white text-blue-600" : "bg-blue-600 text-white")}>AKTIF</span>}
@@ -683,7 +682,7 @@ export default function UserDashboardPage() {
                     <Building2 className="h-3 w-3 text-white" />
                   </div>
                   <span className="text-[11px] font-black uppercase tracking-tight pr-1">
-                    {pekerja?.riwayat_pekerja?.find((r) => r.id === selectedRiwayatId)?.nama_perusahaan}
+                    {pekerja?.riwayat_pekerja?.find((r: any) => r.id === selectedRiwayatId)?.nama_perusahaan}
                   </span>
                 </div>
               )}
@@ -784,9 +783,8 @@ export default function UserDashboardPage() {
                 <h2 className="text-xs font-black text-[#94a3b8] tracking-widest uppercase">Lini Masa Aktivitas</h2>
               </div>
               <div className="relative space-y-6 before:absolute before:inset-0 before:ml-[15.5px] before:h-full before:w-[2px] before:bg-slate-100">
-                {timeline.map((t, i) => {
+                {timeline.map((t: any, i: number) => {
                   const Icon = t.icon;
-                  const isLast = i === timeline.length - 1;
                   return (
                     <div key={i} className="relative flex items-start gap-4 group">
                       <div className={cn(
@@ -832,7 +830,7 @@ export default function UserDashboardPage() {
                   onChange={(e) => setUploadForm({ ...uploadForm, step_key: e.target.value })}
                 >
                   <option value="" disabled hidden>Pilih Tahapan...</option>
-                  {STEPS.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
+                  {STEPS.map((s: any) => <option key={s.key} value={s.key}>{s.label}</option>)}
                 </select>
               </div>
               <div className="space-y-2">
@@ -945,7 +943,7 @@ export default function UserDashboardPage() {
                   <SelectValue placeholder="Pilih Provinsi Domisili" />
                 </SelectTrigger>
                 <SelectContent className="max-h-[300px]">
-                  {PROVINCES.map((prov) => (
+                  {PROVINCES.map((prov: string) => (
                     <SelectItem key={prov} value={prov}>{prov}</SelectItem>
                   ))}
                 </SelectContent>
@@ -1117,6 +1115,16 @@ export default function UserDashboardPage() {
                 className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500"
                 value={exposureForm.durasi_pajanan}
                 onChange={(e) => setExposureForm({...exposureForm, durasi_pajanan: e.target.value})}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="deskripsi" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Deskripsi Pekerjaan / Tanggung Jawab</Label>
+              <Textarea 
+                id="deskripsi"
+                placeholder="Jelaskan apa yang Anda kerjakan di posisi ini..."
+                className="rounded-xl bg-slate-50 border-slate-200 min-h-[80px] font-bold focus:ring-blue-500 resize-none"
+                value={exposureForm.deskripsi_pekerjaan}
+                onChange={(e) => setExposureForm({...exposureForm, deskripsi_pekerjaan: e.target.value})}
               />
             </div>
             <div className="space-y-2">

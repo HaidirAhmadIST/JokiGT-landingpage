@@ -54,6 +54,11 @@ export interface InformalData {
   tugas_spesifik?: string;
   lama_bekerja?: string;
   bpjs_bpu?: string;
+  mutasi_jabatan?: Array<{
+    bagian: string;
+    jabatan: string;
+    tahun: string;
+  }>;
 }
 
 export interface RiwayatPekerja {
@@ -70,6 +75,8 @@ export interface RiwayatPekerja {
   durasi_pajanan?: number | string;
   /** Data tambahan untuk pekerja informal, disimpan sebagai JSON di DB. */
   informal_data?: InformalData | string;
+  /** Deskripsi tugas atau tanggung jawab di pekerjaan tersebut. */
+  deskripsi_pekerjaan?: string;
   /** Riwayat pemeriksaan kesehatan yang terkait dengan periode pekerjaan ini. */
   detail_medis?: DetailMedis[];
 }
@@ -91,6 +98,14 @@ export interface DetailMedis {
   rekomendasi?: string;
   pendamping?: string;
   updated_at: string;
+  /** Alias untuk jenis_pemeriksa (digunakan di beberapa bagian UI) */
+  jenis_pemeriksaan?: string;
+  /** Alias untuk tgl_pemeriksaan (digunakan di beberapa bagian UI) */
+  tanggal_pemeriksaan?: string;
+  /** Alias untuk dokter_pemeriksa (digunakan di beberapa bagian UI) */
+  dokter?: string;
+  /** File hasil pemeriksaan jika ada */
+  file_hasil?: string;
 }
 
 /** Status kesehatan pekerja yang digunakan di database dan UI. */
@@ -157,6 +172,23 @@ export interface StatusAdvokasi {
   progress_percentage?: number;
 }
 
+export interface RiwayatMedis {
+  id: number;
+  pekerja_id: number;
+  golongan_darah?: string;
+  rhesus?: string;
+  riwayat_penyakit?: string | string[];
+  alergi?: string | string[];
+  riwayat_operasi?: string | string[];
+  kebiasaan_buruk?: string | string[];
+  obat_rutin?: string;
+  olahraga?: string;
+  tinggi_badan?: number;
+  berat_badan?: number;
+  created_at: string;
+  updated_at: string;
+}
+
 // -----------------------------------------------------------------------------
 // PEKERJA
 // -----------------------------------------------------------------------------
@@ -181,7 +213,10 @@ export interface PekerjaFull {
   perusahaan?: Perusahaan;
   riwayat_pekerja?: RiwayatPekerja[];
   latest_detail_medis?: DetailMedis;
+  detail_medis?: DetailMedis[];
+  riwayat_medis?: RiwayatMedis;
   status_advokasi?: StatusAdvokasi;
+  status_saran?: string;
   created_at: string;
   updated_at: string;
 }

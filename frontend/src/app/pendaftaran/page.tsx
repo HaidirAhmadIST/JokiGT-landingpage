@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Bell, Globe, User, ShieldAlert, ArrowRight, ArrowLeft, Plus, UploadCloud, Save, CheckCircle, X, Activity, Info, Briefcase, HeartPulse, ClipboardList, Zap, Trash2, RefreshCw, Eye, EyeOff, Lock, Mail } from 'lucide-react';
+import { Bell, Globe, User, ShieldAlert, ArrowRight, ArrowLeft, Plus, UploadCloud, Save, CheckCircle, X, Activity, Info, Briefcase, HeartPulse, ClipboardList, Zap, Trash2, RefreshCw, Eye, EyeOff, Lock, Mail, ChevronDown, ChevronUp } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -59,6 +59,7 @@ export default function PendaftaranPekerjaPage() {
     jenis_pajanan: '',
     durasi_pajanan: '',
     file_bukti: [] as File[],
+    collapsed: false,
     riwayat_pemeriksaan: [] as any[],
     informal_data: {
       tugas_spesifik: '',
@@ -68,6 +69,7 @@ export default function PendaftaranPekerjaPage() {
       apd_disediakan: '',
       jenis_apd_sendiri: '',
       lokasi_proyek: [''],
+      mutasi_jabatan: [] as { bagian: string; jabatan: string; tahun: string }[],
     }
   });
 
@@ -127,7 +129,9 @@ export default function PendaftaranPekerjaPage() {
     apd_disediakan: '',
     jenis_apd_sendiri: '',
     lokasi_proyek: [] as string[],
-    riwayat_pemeriksaan: [] as any[]
+    riwayat_pemeriksaan: [] as any[],
+    mutasi_jabatan: [] as { bagian: string; jabatan: string; tahun: string }[],
+    file_bukti: [] as File[]
   });
 
   const [baseData, setBaseData] = useState({
@@ -415,6 +419,7 @@ export default function PendaftaranPekerjaPage() {
             apd_disediakan: pekerjaanSaatIni.apd_disediakan,
             jenis_apd_sendiri: pekerjaanSaatIni.jenis_apd_sendiri,
             lokasi_proyek: pekerjaanSaatIni.lokasi_proyek,
+            mutasi_jabatan: pekerjaanSaatIni.mutasi_jabatan,
           },
           riwayat_pemeriksaan: (pekerjaanSaatIni.riwayat_pemeriksaan || []).filter(
             (m: any) => m.tanggal_pemeriksaan && m.hasil_diagnosis
@@ -610,7 +615,7 @@ export default function PendaftaranPekerjaPage() {
           
           if (user.role === 'admin' || user.role === 'petugas') {
             // Admin/Petugas goes to main dashboard (clean-sync)
-            router.push('/');
+            router.push('/dashboard-admin');
           } else {
             // Regular worker (viewer) goes to their user dashboard
             localStorage.setItem('user', JSON.stringify({ ...user, pekerja_id: pekerjaId }));
@@ -1065,6 +1070,101 @@ export default function PendaftaranPekerjaPage() {
                       />
                     </div>
 
+                    <div className="col-span-1 sm:col-span-2 space-y-2">
+                      <Label>Deskripsikan Pekerjaan Anda</Label>
+                      <Textarea 
+                        placeholder="Contoh: Mengoperasikan mesin produksi, memastikan target harian tercapai, dan melapor ke supervisor..." 
+                        className="min-h-[100px] bg-white resize-none" 
+                        value={pekerjaanSaatIni.deskripsi_pekerjaan} 
+                        onChange={e => setPekerjaanSaatIni({ ...pekerjaanSaatIni, deskripsi_pekerjaan: e.target.value })} 
+                      />
+                      <p className="text-[10px] text-slate-400 italic">Jelaskan tugas dan tanggung jawab utama Anda di posisi ini.</p>
+                    </div>
+
+                    {/* MUTASI JABATAN (Current Job) */}
+                    <div className="col-span-1 sm:col-span-2 space-y-3 bg-white/50 p-4 rounded-xl border border-blue-100/50">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-[11px] font-bold text-blue-600 uppercase tracking-wider flex items-center gap-2">
+                          <RefreshCw className="h-3 w-3" /> Riwayat Mutasi / Perpindahan Bagian (Opsional)
+                        </Label>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-7 text-[10px] text-blue-500 hover:bg-blue-100"
+                          onClick={() => setPekerjaanSaatIni({
+                            ...pekerjaanSaatIni,
+                            mutasi_jabatan: [...(pekerjaanSaatIni.mutasi_jabatan || []), { bagian: '', jabatan: '', tahun: '' }]
+                          })}
+                        >
+                          <Plus className="h-3 w-3 mr-1" /> Tambah Mutasi
+                        </Button>
+                      </div>
+                      
+                      {(pekerjaanSaatIni.mutasi_jabatan || []).map((m, midx) => (
+                        <div key={midx} className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end animate-in fade-in slide-in-from-top-1">
+                          <div className="sm:col-span-1">
+                             <Label className="text-[9px] text-slate-400">Bagian</Label>
+                             <Input placeholder="Produksi" className="h-9 text-sm" value={m.bagian} onChange={e => {
+                               const newM = [...pekerjaanSaatIni.mutasi_jabatan]; newM[midx].bagian = e.target.value;
+                               setPekerjaanSaatIni({ ...pekerjaanSaatIni, mutasi_jabatan: newM });
+                             }} />
+                          </div>
+                          <div className="sm:col-span-1">
+                             <Label className="text-[9px] text-slate-400">Jabatan</Label>
+                             <Input placeholder="Staff" className="h-9 text-sm" value={m.jabatan} onChange={e => {
+                               const newM = [...pekerjaanSaatIni.mutasi_jabatan]; newM[midx].jabatan = e.target.value;
+                               setPekerjaanSaatIni({ ...pekerjaanSaatIni, mutasi_jabatan: newM });
+                             }} />
+                          </div>
+                          <div className="sm:col-span-1">
+                             <Label className="text-[9px] text-slate-400">Tahun / Periode</Label>
+                             <Input placeholder="2010-2015" className="h-9 text-sm" value={m.tahun} onChange={e => {
+                               const newM = [...pekerjaanSaatIni.mutasi_jabatan]; newM[midx].tahun = e.target.value;
+                               setPekerjaanSaatIni({ ...pekerjaanSaatIni, mutasi_jabatan: newM });
+                             }} />
+                          </div>
+                          <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-red-500" onClick={() => {
+                            const newM = pekerjaanSaatIni.mutasi_jabatan.filter((_, i) => i !== midx);
+                            setPekerjaanSaatIni({ ...pekerjaanSaatIni, mutasi_jabatan: newM });
+                          }}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                      {(!pekerjaanSaatIni.mutasi_jabatan || pekerjaanSaatIni.mutasi_jabatan.length === 0) && (
+                        <p className="text-[10px] text-slate-400 italic">Gunakan ini jika Anda pernah pindah bagian di perusahaan ini.</p>
+                      )}
+                    </div>
+
+                    {/* Upload Section: Pekerjaan Saat Ini */}
+                    <div className="col-span-1 sm:col-span-2 space-y-2 mt-2 pt-2 border-t border-slate-50">
+                      <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Upload Paklaring / Dokumen Verifikasi <span className="text-slate-400 font-normal italic ml-1">(Opsional)</span></Label>
+                      <div className="mt-1 flex items-center gap-3">
+                        <div className="relative group">
+                          <input 
+                            type="file" 
+                            multiple
+                            onChange={(e) => {
+                              const files = e.target.files ? Array.from(e.target.files) : [];
+                              setPekerjaanSaatIni({ ...pekerjaanSaatIni, file_bukti: files });
+                            }}
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                          />
+                          <Button variant="outline" size="sm" className="h-8 text-[11px] border-dashed border-slate-300 bg-white">
+                            <UploadCloud className="h-3 w-3 mr-2 text-blue-500" /> 
+                            {pekerjaanSaatIni.file_bukti && pekerjaanSaatIni.file_bukti.length > 0 
+                              ? `Update Berkas (${pekerjaanSaatIni.file_bukti.length})` 
+                              : 'Pilih Berkas Bukti (Multiple)'}
+                          </Button>
+                        </div>
+                        {pekerjaanSaatIni.file_bukti && pekerjaanSaatIni.file_bukti.length > 0 && (
+                          <span className="text-[10px] text-slate-500 italic truncate max-w-[250px]">
+                            {pekerjaanSaatIni.file_bukti.map((f: any) => f.name).join(', ')}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
 
 
 
@@ -1141,6 +1241,34 @@ export default function PendaftaranPekerjaPage() {
                               <div className="space-y-1 col-span-1 sm:col-span-2">
                                 <Label className="text-[10px] text-slate-500 font-bold uppercase">Rekomendasi Dokter (Saran)</Label>
                                 <Input placeholder="Contoh: Istirahat cukup, hindari debu..." className="h-9 bg-slate-50/50 text-sm" value={med.rekomendasi} onChange={e => updateMed('rekomendasi', e.target.value)} />
+                              </div>
+
+                              <div className="space-y-2 col-span-1 sm:col-span-2 pt-2 border-t border-blue-50">
+                                <Label className="text-[10px] text-slate-500 font-bold uppercase">Upload Hasil Pemeriksaan <span className="text-slate-400 font-normal italic ml-1">(Opsional)</span></Label>
+                                <div className="mt-1 flex items-center gap-3">
+                                  <div className="relative group">
+                                    <input 
+                                      type="file" 
+                                      multiple
+                                      onChange={(e) => {
+                                        const files = e.target.files ? Array.from(e.target.files) : [];
+                                        updateMed('file_hasil', files);
+                                      }}
+                                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                    />
+                                    <Button variant="outline" size="sm" className="h-8 text-[11px] border-dashed border-slate-300 bg-white">
+                                      <UploadCloud className="h-3 w-3 mr-2 text-blue-500" /> 
+                                      {med.file_hasil && med.file_hasil.length > 0 
+                                        ? `Update Berkas (${med.file_hasil.length})` 
+                                        : 'Pilih Berkas Hasil Medis (Multiple)'}
+                                    </Button>
+                                  </div>
+                                  {med.file_hasil && med.file_hasil.length > 0 && (
+                                    <span className="text-[10px] text-slate-500 italic truncate max-w-[250px]">
+                                      {med.file_hasil.map((f: any) => f.name).join(', ')}
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                             </div>
                             <p className="text-[9px] text-slate-400 italic italic">Riwayat Medis Ini Untuk Pekerjaan Saat Ini.</p>
@@ -1241,30 +1369,42 @@ export default function PendaftaranPekerjaPage() {
                               <span className="bg-[#0ea5e9] text-white w-5 h-5 flex items-center justify-center rounded-full text-xs">{idx + 1}</span>
                               {item.nama_perusahaan || `Pengalaman #${idx + 1}`}
                             </h4>
-                            <Button variant="ghost" size="icon" className="text-slate-400 hover:text-red-500 hover:bg-red-50 h-8 w-8"
-                              onClick={() => setRiwayatLalu(riwayatLalu.filter((_, i) => i !== idx))}>
-                              <X className="h-4 w-4" />
-                            </Button>
+                            <div className="flex items-center gap-1">
+                              <Button variant="ghost" size="icon" className="text-slate-400 hover:text-blue-500 hover:bg-blue-50 h-8 w-8"
+                                onClick={() => {
+                                  const newR = [...riwayatLalu];
+                                  newR[idx].collapsed = !newR[idx].collapsed;
+                                  setRiwayatLalu(newR);
+                                }}>
+                                {item.collapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+                              </Button>
+                              <Button variant="ghost" size="icon" className="text-slate-400 hover:text-red-500 hover:bg-red-50 h-8 w-8"
+                                onClick={() => setRiwayatLalu(riwayatLalu.filter((_, i) => i !== idx))}>
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </div>
 
                           {/* Body: Data Pekerjaan */}
-                          <div className="p-5">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                              <div className="space-y-2 col-span-2 sm:col-span-1">
-                                <Label>
-                                  {(item.status_pekerjaan === 'Borongan' || item.status_pekerjaan === 'Harian Lepas') 
-                                    ? 'Nama Perusahaan / Proyek Sebelumnya' 
-                                    : 'Nama Perusahaan Sebelumnya'}
-                                </Label>
-                                <Input 
-                                  placeholder={(item.status_pekerjaan === 'Borongan' || item.status_pekerjaan === 'Harian Lepas') 
-                                    ? "Contoh: Proyek Pembangunan Jalan" 
-                                    : "Contoh: PT Logam Terpadu"} 
-                                  value={item.nama_perusahaan} 
-                                  onChange={(e) => {
-                                  const newR = [...riwayatLalu]; newR[idx].nama_perusahaan = e.target.value; setRiwayatLalu(newR);
-                                }} />
-                              </div>
+                          {!item.collapsed && (
+                            <div className="p-5 animate-in fade-in duration-300">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="space-y-2 col-span-2 sm:col-span-1">
+                                  <Label>
+                                    {(item.status_pekerjaan === 'Borongan' || item.status_pekerjaan === 'Harian Lepas') 
+                                      ? 'Nama Perusahaan / Proyek Sebelumnya' 
+                                      : 'Nama Perusahaan Sebelumnya'}
+                                  </Label>
+                                  <Input 
+                                    placeholder={(item.status_pekerjaan === 'Borongan' || item.status_pekerjaan === 'Harian Lepas') 
+                                      ? "Contoh: Proyek Pembangunan Jalan" 
+                                      : "Contoh: PT Logam Terpadu"} 
+                                    value={item.nama_perusahaan} 
+                                    onChange={(e) => {
+                                      const newR = [...riwayatLalu]; newR[idx].nama_perusahaan = e.target.value; setRiwayatLalu(newR);
+                                    }} 
+                                  />
+                                </div>
                               <div className="space-y-2 col-span-2 sm:col-span-1">
                                 <Label>Status Pekerjaan</Label>
                                 <Select value={item.status_pekerjaan} onValueChange={(v: any) => {
@@ -1365,6 +1505,66 @@ export default function PendaftaranPekerjaPage() {
                                     const newR = [...riwayatLalu]; newR[idx].jabatan = e.target.value; setRiwayatLalu(newR);
                                   }} 
                                 />
+                              </div>
+
+                              {/* MUTASI JABATAN (Past Job) */}
+                              <div className="col-span-2 space-y-3 bg-slate-50/50 p-4 rounded-xl border border-slate-200/50 mt-2">
+                                <div className="flex items-center justify-between">
+                                  <Label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider flex items-center gap-2">
+                                    <RefreshCw className="h-3 w-3" /> Riwayat Mutasi / Perpindahan Bagian (Opsional)
+                                  </Label>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="h-7 text-[10px] text-blue-500 hover:bg-blue-50"
+                                    onClick={() => {
+                                      const newR = [...riwayatLalu];
+                                      newR[idx].informal_data = {
+                                        ...(newR[idx].informal_data || {}),
+                                        mutasi_jabatan: [...(newR[idx].informal_data?.mutasi_jabatan || []), { bagian: '', jabatan: '', tahun: '' }]
+                                      };
+                                      setRiwayatLalu(newR);
+                                    }}
+                                  >
+                                    <Plus className="h-3 w-3 mr-1" /> Tambah Mutasi
+                                  </Button>
+                                </div>
+                                
+                                {(item.informal_data?.mutasi_jabatan || []).map((m: any, midx: number) => (
+                                  <div key={midx} className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end animate-in fade-in slide-in-from-top-1">
+                                    <div className="sm:col-span-1">
+                                       <Label className="text-[9px] text-slate-400">Bagian</Label>
+                                       <Input placeholder="Produksi" className="h-9 text-sm" value={m.bagian} onChange={e => {
+                                         const newR = [...riwayatLalu]; 
+                                         newR[idx].informal_data.mutasi_jabatan[midx].bagian = e.target.value;
+                                         setRiwayatLalu(newR);
+                                       }} />
+                                    </div>
+                                    <div className="sm:col-span-1">
+                                       <Label className="text-[9px] text-slate-400">Jabatan</Label>
+                                       <Input placeholder="Staff" className="h-9 text-sm" value={m.jabatan} onChange={e => {
+                                         const newR = [...riwayatLalu]; 
+                                         newR[idx].informal_data.mutasi_jabatan[midx].jabatan = e.target.value;
+                                         setRiwayatLalu(newR);
+                                       }} />
+                                    </div>
+                                    <div className="sm:col-span-1">
+                                       <Label className="text-[9px] text-slate-400">Tahun / Periode</Label>
+                                       <Input placeholder="2010-2015" className="h-9 text-sm" value={m.tahun} onChange={e => {
+                                         const newR = [...riwayatLalu]; 
+                                         newR[idx].informal_data.mutasi_jabatan[midx].tahun = e.target.value;
+                                         setRiwayatLalu(newR);
+                                       }} />
+                                    </div>
+                                    <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-red-500" onClick={() => {
+                                      const newR = [...riwayatLalu];
+                                      newR[idx].informal_data.mutasi_jabatan = item.informal_data.mutasi_jabatan.filter((_: any, i: number) => i !== midx);
+                                      setRiwayatLalu(newR);
+                                    }}>
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                ))}
                               </div>
                               <div className="space-y-2">
                                 <Label>Tanggal Masuk</Label>
@@ -1592,13 +1792,12 @@ export default function PendaftaranPekerjaPage() {
                               })()}
                             </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
 
                 <div className="p-6 bg-red-50/30 border border-red-100 rounded-xl">
                   <h3 className="flex items-center text-sm font-bold text-red-500 mb-2 uppercase tracking-wider">

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import api from '@/lib/axios';
 import { toast } from 'sonner';
@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import {
   ArrowLeft, Printer, Pin, Mail, Phone, MapPin,
   Briefcase, ShieldAlert, CheckCircle2, Circle, Edit3,
-  Download, Image as ImageIcon, Activity, FileText, FileCheck, ClipboardList, HeartPulse, HardHat, Zap, Building2, User
+  Download, Image as ImageIcon, Activity, FileText, FileCheck, ClipboardList, HeartPulse, HardHat, Zap, Building2, User, RefreshCw, Plus, History as TenureIcon
 } from 'lucide-react';
 import { format, differenceInYears, differenceInMonths, parseISO } from 'date-fns';
 import { id as localeID } from 'date-fns/locale';
@@ -34,11 +34,12 @@ import {
 } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn, formatHealthStatus } from '@/lib/utils';
+import { PekerjaFull, RiwayatPekerja, InformalData } from '@/types';
 
 export default function PekerjaDetailPage() {
   const { id } = useParams();
   const router = useRouter();
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<PekerjaFull | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploadLoading, setUploadLoading] = useState<string | null>(null);
   const [statusLoading, setStatusLoading] = useState(false);
@@ -55,25 +56,48 @@ export default function PekerjaDetailPage() {
     durasi_pajanan: '',
     apd_disediakan: '',
     jenis_apd_sendiri: '',
+    mutasi_jabatan: [] as Array<{bagian: string, jabatan: string, tahun: string}>
   });
   const [savingRiwayat, setSavingRiwayat] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const { isSuperAdmin, isStaffOrAbove, loading: roleLoading } = useRole();
+  const { isSuperAdmin, isStaffOrAbove } = useRole();
 
-  const openEditRiwayat = (riwayat: any) => {
+  const openEditRiwayat = (riwayat: RiwayatPekerja) => {
     setEditingRiwayat(riwayat);
-    let info: any = {};
+    let info: InformalData = {};
     try {
-      info = typeof riwayat.informal_data === 'string' ? JSON.parse(riwayat.informal_data) : (riwayat.informal_data || {});
+      info = typeof riwayat.informal_data === 'string' 
+        ? JSON.parse(riwayat.informal_data) 
+        : (riwayat.informal_data || {});
     } catch (e) {}
     
     setRiwayatForm({
       jenis_pajanan: riwayat.jenis_pajanan || '',
-      durasi_pajanan: riwayat.durasi_pajanan || '',
+      durasi_pajanan: riwayat.durasi_pajanan?.toString() || '',
       apd_disediakan: info.apd_disediakan || '',
       jenis_apd_sendiri: info.jenis_apd_sendiri || '',
+      mutasi_jabatan: info.mutasi_jabatan || []
     });
     setIsEditRiwayatOpen(true);
+  };
+
+  const addMutasi = () => {
+    setRiwayatForm({
+      ...riwayatForm,
+      mutasi_jabatan: [...riwayatForm.mutasi_jabatan, { bagian: '', jabatan: '', tahun: '' }]
+    });
+  };
+
+  const removeMutasi = (index: number) => {
+    const newMutasi = [...riwayatForm.mutasi_jabatan];
+    newMutasi.splice(index, 1);
+    setRiwayatForm({ ...riwayatForm, mutasi_jabatan: newMutasi });
+  };
+
+  const updateMutasi = (index: number, field: string, value: string) => {
+    const newMutasi = [...riwayatForm.mutasi_jabatan];
+    newMutasi[index] = { ...newMutasi[index], [field]: value };
+    setRiwayatForm({ ...riwayatForm, mutasi_jabatan: newMutasi });
   };
 
   const handleUpdateRiwayat = async () => {
@@ -88,6 +112,7 @@ export default function PekerjaDetailPage() {
         ...info,
         apd_disediakan: riwayatForm.apd_disediakan,
         jenis_apd_sendiri: riwayatForm.jenis_apd_sendiri,
+        mutasi_jabatan: riwayatForm.mutasi_jabatan,
       };
 
       await api.put(`/riwayat-pekerja/${editingRiwayat.id}`, {
@@ -116,7 +141,7 @@ export default function PekerjaDetailPage() {
     }
   };
 
-  const fetchDetail = async () => {
+  const fetchDetail = useCallback(async () => {
     try {
       setLoading(true);
       const res = await api.get(`/pekerja/${id}`);
@@ -128,7 +153,7 @@ export default function PekerjaDetailPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
   
   const handleExportPdf = async () => {
     if (!data?.status_advokasi?.id) {
@@ -161,7 +186,7 @@ export default function PekerjaDetailPage() {
 
   useEffect(() => {
     fetchDetail();
-  }, [id]);
+  }, [id, fetchDetail]);
 
   // Simulate fetching when selected job changes
   useEffect(() => {
@@ -176,12 +201,12 @@ export default function PekerjaDetailPage() {
 
   // Set default selection to first job
   useEffect(() => {
-    if (data?.riwayat_pekerja?.length > 0 && selectedJobId === null) {
+    if (data?.riwayat_pekerja && data.riwayat_pekerja.length > 0 && selectedJobId === null) {
       // Find active job first, otherwise first in list
-      const activeIdx = data.riwayat_pekerja.findIndex((r: any) => !r.tgl_keluar);
+      const activeIdx = data.riwayat_pekerja.findIndex((r) => !r.tgl_keluar);
       setSelectedJobId(activeIdx !== -1 ? activeIdx : 0);
     }
-  }, [data]);
+  }, [data, selectedJobId]);
 
   const toggleAdvokasi = async (field: string, checked: boolean) => {
     try {
@@ -316,7 +341,7 @@ export default function PekerjaDetailPage() {
       setSavingCatatan(true);
       await api.put(`/pekerja/${id}`, { catatan_admin: catatanInput });
       toast.success('Catatan berhasil diperbarui');
-      setData({ ...data, catatan_admin: catatanInput });
+      if (data) setData({ ...data, catatan_admin: catatanInput });
       setIsEditingCatatan(false);
     } catch (e: any) {
       toast.error('Gagal memperbarui catatan');
@@ -517,17 +542,13 @@ export default function PekerjaDetailPage() {
           <div className="flex items-center gap-6 w-full lg:w-auto">
             <div className="h-24 w-24 rounded-2xl bg-orange-50 flex items-center justify-center border-4 border-white shadow-sm overflow-hidden relative">
               {/* Placeholder Avatar - replacing with an icon wrapper */}
-              {data.pas_foto ? (
+              <div className="w-full h-full rounded-[26px] overflow-hidden bg-slate-100 border border-slate-200 relative">
                 <img
-                  src={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://127.0.0.1:8000'}/storage/profil/${data.pas_foto}`}
+                  src={data.pas_foto ? `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://127.0.0.1:8000'}/storage/profil/${data.pas_foto}` : `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.nama_lengkap}`}
                   alt="avatar"
                   className="w-full h-full object-cover object-top"
                 />
-              ) : (
-                <div className="absolute inset-0 bg-gradient-to-br from-orange-100 to-orange-50 flex items-center justify-center">
-                  <ImageIcon className="h-10 w-10 text-orange-300" />
-                </div>
-              )}
+              </div>
               <div className="absolute bottom-[-4px] right-[-4px] bg-[#0ea5e9] rounded-full p-1.5 border-2 border-white text-white">
                 <CheckCircle2 className="h-3 w-3" />
               </div>
@@ -601,8 +622,8 @@ export default function PekerjaDetailPage() {
             <div className={`bg-slate-50/50 border border-slate-100 rounded-xl p-4 flex-1 min-w-[170px] relative transition-all ${isStaffOrAbove ? 'hover:bg-blue-50/30 cursor-pointer group/status border-dashed' : ''}`}>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Status Kesehatan</p>
               <div className="flex items-center gap-2">
-                <span className={`text-xl font-bold capitalize ${getStatusColor(data.status_kesehatan)}`}>
-                  {getStatusLabel(data.status_kesehatan)}
+                <span className={`text-xl font-bold capitalize ${getStatusColor(data?.status_kesehatan || '')}`}>
+                  {getStatusLabel(data?.status_kesehatan || '')}
                 </span>
 
                 {isStaffOrAbove && <Edit3 className="h-3.5 w-3.5 text-slate-400 group-hover/status:text-[#0ea5e9] transition-colors" />}
@@ -611,9 +632,9 @@ export default function PekerjaDetailPage() {
                 {isStaffOrAbove && (
                   <select 
                     className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                    value={normalizeStatus(data.status_kesehatan)}
-                    onChange={(e) => updateStatusKesehatan(e.target.value)}
+                    value={normalizeStatus(data?.status_kesehatan || '')}
                     disabled={statusLoading}
+                    onChange={(e) => updateStatusKesehatan(e.target.value)}
                   >
                     <option value="sehat">Sehat</option>
                     <option value="sehat_dengan_catatan">Sehat dengan Catatan</option>
@@ -792,13 +813,13 @@ export default function PekerjaDetailPage() {
               </div>
               
               <Dialog open={isRekamJejakOpen} onOpenChange={setIsRekamJejakOpen}>
-                <DialogTrigger
+                <DialogTrigger 
                   render={
-                    <Button className="bg-white text-[#0ea5e9] hover:bg-blue-50 font-bold px-6 py-6 rounded-xl shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98]" />
+                    <Button className="bg-white text-[#0ea5e9] hover:bg-blue-50 font-bold px-6 py-6 rounded-xl shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98]">
+                      Buka Rekam Jejak Lengkap
+                    </Button>
                   }
-                >
-                  Buka Rekam Jejak Lengkap
-                </DialogTrigger>
+                />
                 <DialogContent className="max-w-[95vw] lg:max-w-6xl h-[90vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl bg-slate-50">
                   <DialogHeader className="p-6 bg-white border-b border-slate-100 flex flex-row items-center justify-between shrink-0">
                     <div className="flex items-center gap-4">
@@ -916,6 +937,37 @@ export default function PekerjaDetailPage() {
                                   )}
                                 </div>
 
+                                {/* MUTASI JABATAN (Admin Detail Modal) */}
+                                {(() => {
+                                  try {
+                                    const info = typeof r.informal_data === 'string' ? JSON.parse(r.informal_data) : r.informal_data;
+                                    const mutations = info?.mutasi_jabatan || [];
+                                    if (mutations.length === 0) return null;
+                                    return (
+                                      <div className="mt-4 mb-6 bg-slate-50/50 p-4 rounded-xl border border-slate-100">
+                                        <p className="text-[10px] font-bold text-[#0ea5e9] uppercase tracking-widest mb-4 flex items-center gap-1.5">
+                                          Riwayat Mutasi Bagian / Jabatan
+                                        </p>
+                                        <div className="space-y-4">
+                                          {mutations.map((m: any, midx: number) => (
+                                            <div key={midx} className="flex items-start gap-3 relative">
+                                              {midx < mutations.length - 1 && <div className="absolute left-[7px] top-[18px] bottom-[-15px] w-[2px] bg-slate-200" />}
+                                              <div className="h-4 w-4 rounded-full border-2 border-[#0ea5e9] bg-white z-10 mt-0.5 shadow-sm" />
+                                              <div className="flex-1">
+                                                <div className="flex justify-between items-center mb-0.5">
+                                                  <p className="text-xs font-bold text-slate-800">{m.bagian || '-'}</p>
+                                                  <span className="text-[10px] font-bold text-slate-400">{m.tahun || '-'}</span>
+                                                </div>
+                                                <p className="text-[11px] text-slate-500 font-medium">Jabatan: {m.jabatan || '-'}</p>
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    );
+                                  } catch(e) { return null; }
+                                })()}
+
                                 {r.deskripsi_pekerjaan && (
                                   <div className="mb-4">
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Deskripsi Pekerjaan</p>
@@ -983,8 +1035,8 @@ export default function PekerjaDetailPage() {
                                       variant="ghost" 
                                       size="sm" 
                                       onClick={() => downloadRiwayatDoc(r.id)}
-                                      className="h-9 w-full bg-blue-50 text-[#0ea5e9] hover:bg-blue-100 border border-blue-100 rounded-xl font-bold transition-all"
-                                    >
+                                      className="h-9 w-full bg-blue-50 text-[#0ea5e9] hover:bg-blue-100 border border-blue-100 rounded-xl font-bold transition-all" >
+
                                       <Download className="h-4 w-4 mr-2" /> Unduh Bukti Riwayat / Pajanan
                                     </Button>
                                   </div>
@@ -1087,8 +1139,8 @@ export default function PekerjaDetailPage() {
                                             variant="ghost" 
                                             size="sm"
                                             onClick={() => downloadMedisDoc(m.id)}
-                                            className="mt-3 h-7 w-full bg-blue-50 text-[#0ea5e9] hover:bg-blue-100 border border-blue-100 rounded-lg font-bold text-[9px] transition-all uppercase"
-                                          >
+                                            className="mt-3 h-7 w-full bg-blue-50 text-[#0ea5e9] hover:bg-blue-100 border border-blue-100 rounded-lg font-bold text-[9px] transition-all uppercase" >
+
                                             <Download className="h-3 w-3 mr-1.5" /> Unduh Laporan Medis
                                           </Button>
                                         )}
@@ -1159,7 +1211,7 @@ export default function PekerjaDetailPage() {
                     <div className="flex items-center gap-6 px-4">
                       <div className="flex flex-col">
                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Status Kesehatan</span>
-                        <span className={`text-sm font-extrabold ${getStatusColor(data.status_kesehatan)}`}>{getStatusLabel(data.status_kesehatan)}</span>
+                        <span className={`text-sm font-extrabold ${getStatusColor(data?.status_kesehatan || '')}`}>{getStatusLabel(data?.status_kesehatan || '')}</span>
                       </div>
                       <div className="flex flex-col border-l border-slate-200 pl-6">
                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Progress Advokasi</span>
@@ -1175,8 +1227,11 @@ export default function PekerjaDetailPage() {
             </div>
 
             {/* MASTER-DETAIL GRID: Riwayat Pekerjaan & Riwayat Kesehatan */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
-              {/* Left Column: Riwayat Pekerjaan (Master) */}
+            <div className="space-y-8">
+              
+              {/* Left Side: Master-Detail (8 Columns) */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+                  {/* Riwayat Pekerjaan (Master) */}
               <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6 flex flex-col">
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="text-sm font-bold text-[#1e293b] flex items-center">
@@ -1201,7 +1256,7 @@ export default function PekerjaDetailPage() {
                                ? 'bg-slate-50 border-[#0ea5e9] shadow-inner ring-1 ring-slate-200/50' 
                                : 'bg-white border-transparent hover:bg-slate-50/50 hover:border-slate-200'
                            }`}
-                         >
+                          >
                            <div className="min-w-0 flex-1">
                              <div className="flex items-center gap-2 mb-1">
                                <p className={`text-[13px] font-bold truncate ${isSelected ? 'text-[#0ea5e9]' : 'text-slate-800'}`}>
@@ -1237,6 +1292,33 @@ export default function PekerjaDetailPage() {
                                      )}
                                    </div>
                                  )}
+
+                                 {/* MUTASI JABATAN (Main Page Left Card) */}
+                                 {(() => {
+                                   try {
+                                     const info = typeof r.informal_data === 'string' ? JSON.parse(r.informal_data) : r.informal_data;
+                                     const mutations = info?.mutasi_jabatan || [];
+                                     if (mutations.length === 0) return null;
+                                     return (
+                                       <div className="mt-2.5 pt-2 border-t border-slate-100/50">
+                                         <p className="text-[8px] font-black text-[#0ea5e9] uppercase tracking-widest mb-1.5 flex items-center gap-1">
+                                           <RefreshCw className="h-2 w-2" /> Riwayat Mutasi
+                                         </p>
+                                         <div className="space-y-1">
+                                           {mutations.map((m: any, midx: number) => (
+                                             <div key={midx} className="flex items-center justify-between gap-2">
+                                               <div className="text-[9px] font-bold text-slate-600 truncate flex-1 flex items-center gap-1.5">
+                                                 <div className="w-1 h-1 rounded-full bg-blue-400" />
+                                                 {m.bagian || '-'}
+                                               </div>
+                                               <span className="text-[8px] font-bold text-slate-400">{m.tahun || '-'}</span>
+                                             </div>
+                                           ))}
+                                         </div>
+                                       </div>
+                                     );
+                                   } catch(e) { return null; }
+                                 })()}
                              </div>
                              {/* Badge jumlah pemeriksaan */}
                              {medisCount > 0 && (
@@ -1256,8 +1338,8 @@ export default function PekerjaDetailPage() {
                                  variant="ghost" 
                                  size="sm"
                                  onClick={(e) => { e.stopPropagation(); downloadRiwayatDoc(r.id); }}
-                                 className="h-6 text-[9px] font-bold text-[#0ea5e9] hover:bg-blue-50 border border-blue-100 rounded px-2"
-                               >
+                                 className="h-6 text-[9px] font-bold text-[#0ea5e9] hover:bg-blue-50 border border-blue-100 rounded px-2" >
+
                                  <FileCheck className="h-2 w-2 mr-1" /> Bukti
                                </Button>
                              )}
@@ -1350,8 +1432,8 @@ export default function PekerjaDetailPage() {
                               variant="ghost" 
                               size="sm"
                               onClick={() => downloadMedisDoc(m.id)}
-                              className="mt-4 h-9 w-full bg-blue-50 text-[#0ea5e9] hover:bg-[#0ea5e9] hover:text-white border border-blue-100 rounded-xl font-bold text-[10px] transition-all uppercase tracking-wide"
-                            >
+                              className="mt-4 h-9 w-full bg-blue-50 text-[#0ea5e9] hover:bg-[#0ea5e9] hover:text-white border border-blue-100 rounded-xl font-bold text-[10px] transition-all uppercase tracking-wide" >
+
                               <Download className="h-3.5 w-3.5 mr-2" /> Unduh Laporan Medis
                             </Button>
                           )}
@@ -1366,116 +1448,15 @@ export default function PekerjaDetailPage() {
                       <p className="text-sm font-bold text-slate-500 text-center px-6">
                         Pilih riwayat pekerjaan di sebelah kiri untuk melihat rekam medis terkait.
                       </p>
-                             </div>
+                    </div>
                   )}
                 </div>
               </div>
             </div>
-
-            {/* Riwayat Pajanan Section */}
-            <div className="bg-white border border-slate-100 shadow-sm rounded-2xl overflow-hidden">
-              <div className="p-6 border-b border-slate-50 bg-slate-50/30">
-                <h3 className="text-sm font-bold text-[#1e293b] flex items-center">
-                  <Zap className="h-4 w-4 text-[#0ea5e9] mr-2" /> Riwayat Pajanan & APD
-                </h3>
-              </div>
-              
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left border-collapse">
-                  <thead>
-                    <tr className="bg-slate-50/80 border-b border-slate-100">
-                      <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Perusahaan / Proyek</th>
-                      <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Jenis Pajanan</th>
-                      <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">APD yang Digunakan</th>
-                      <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right">Durasi</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-50">
-                    {data.riwayat_pekerja?.some((r: any) => r.jenis_pajanan || r.durasi_pajanan || r.informal_data?.apd_list || r.informal_data?.apd_disediakan || r.informal_data?.jenis_apd_sendiri) ? (
-                      data.riwayat_pekerja.map((r: any, idx: number) => (
-                        (r.jenis_pajanan || r.durasi_pajanan || r.informal_data?.apd_list || r.informal_data?.apd_disediakan || r.informal_data?.jenis_apd_sendiri) && (
-                          <tr key={idx} className="hover:bg-slate-50/70 transition-all duration-200">
-                            <td className="px-6 py-5">
-                              <p className="font-bold text-slate-800 text-[13px]">{r.nama_perusahaan}</p>
-                              <p className="text-[10px] text-slate-400 mt-1 font-medium">{r.bagian || r.jabatan || 'Pekerja'}</p>
-                            </td>
-                            <td className="px-6 py-5">
-                              <div className="inline-flex items-center px-2.5 py-1 bg-amber-50 text-amber-600 rounded-lg border border-amber-100 text-[10px] font-bold uppercase tracking-wider">
-                                <Activity className="h-3 w-3 mr-1.5" />
-                                {r.jenis_pajanan || 'UMUM'}
-                              </div>
-                            </td>
-                            <td className="px-6 py-5">
-                              <div className="flex flex-col gap-3">
-                                {(() => {
-                                  try {
-                                    const info = typeof r.informal_data === 'string' ? JSON.parse(r.informal_data) : (r.informal_data || {});
-                                    
-                                    const formatApd = (val: any) => {
-                                      if (!val) return "";
-                                      if (Array.isArray(val)) return val.filter(Boolean).join(", ");
-                                      return String(val);
-                                    };
-
-                                    const provided = formatApd(info.apd_disediakan);
-                                    const own = formatApd(info.jenis_apd_sendiri);
-                                    const legacy = formatApd(info.apd_list);
-                                    
-                                    const hasProvided = provided.trim().length > 0 && provided !== '-' && provided.toLowerCase() !== 'tidak ada' && provided.toLowerCase() !== 'n/a';
-                                    const hasOwn = own.trim().length > 0 && own !== '-' && own.toLowerCase() !== 'tidak ada' && own.toLowerCase() !== 'n/a';
-                                    const hasLegacy = legacy.trim().length > 0 && legacy !== '-' && legacy.toLowerCase() !== 'tidak ada';
-
-                                    if (!hasProvided && !hasOwn && !hasLegacy) return <span className="text-slate-400 italic text-[11px]">-</span>;
-
-                                    return (
-                                      <div className="space-y-2">
-                                        {hasProvided && (
-                                          <div className="flex flex-col">
-                                            <span className="text-[9px] font-black text-blue-500 uppercase tracking-tight leading-none mb-1">Disediakan Perusahaan:</span>
-                                            <p className="text-[11px] text-slate-700 font-bold leading-snug">{provided}</p>
-                                          </div>
-                                        )}
-                                        {hasOwn && (
-                                          <div className="flex flex-col">
-                                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-tight leading-none mb-1">Milik Mandiri:</span>
-                                            <p className="text-[11px] text-slate-700 font-bold leading-snug">{own}</p>
-                                          </div>
-                                        )}
-                                        {!hasProvided && !hasOwn && hasLegacy && (
-                                          <div className="flex flex-col">
-                                            <span className="text-[9px] font-black text-blue-400 uppercase tracking-tight leading-none mb-1">Riwayat APD:</span>
-                                            <p className="text-[11px] text-slate-700 font-bold leading-snug">{legacy}</p>
-                                          </div>
-                                        )}
-                                      </div>
-                                    );
-                                  } catch(e) { return <span className="text-slate-400 italic text-[11px]">-</span>; }
-                                })()}
-                              </div>
-                            </td>
-                             <td className="px-6 py-5 text-right whitespace-nowrap">
-                               <span className="inline-flex items-center px-3 py-1 bg-slate-50 text-slate-700 rounded-full border border-slate-100 text-[12px] font-extrabold shadow-sm">
-                                 {r.durasi_pajanan ? `${r.durasi_pajanan} Tahun` : '-'}
-                               </span>
-                             </td>
-                          </tr>
-                        )
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan={4} className="px-6 py-12 text-center">
-                          <Activity className="h-10 w-10 text-slate-100 mx-auto mb-3" />
-                          <p className="text-sm font-bold text-slate-300">Tidak ada data riwayat pajanan.</p>
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+          </div>
           </div>
 
-          {/* RIGHT COLUMN (Stacking Cards) */}
+          {/* RIGHT COLUMN (Advocacy) */}
           <div className="lg:col-span-4 space-y-6">
             {/* Status Advokasi Box */}
             <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6">
@@ -1525,9 +1506,9 @@ export default function PekerjaDetailPage() {
                           <div className="mt-3 p-3 bg-slate-50 border border-slate-100 rounded-lg">
                              <div className="flex justify-between items-center mb-2">
                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Dokumen / Bukti Pendukung</span>
-                               {getFilePath(step.key) && getUploadDate(step.key) && (
+                               {!!getFilePath(step.key) && !!getUploadDate(step.key) && (
                                  <span className="text-[9px] font-medium text-slate-400 italic">
-                                   Diunggah: {formatDate(getUploadDate(step.key))}
+                                   Diunggah: {formatDate(getUploadDate(step.key) as string)}
                                  </span>
                                )}
                              </div>
@@ -1570,10 +1551,175 @@ export default function PekerjaDetailPage() {
                </div>
             </div>
           </div>
+         </div>
         </div>
-      </div>
 
-      {/* Floating Action Button (Print) */}
+
+        {/* FULL WIDTH SECTION BELOW THE GRID */}
+        {/* Riwayat Pajanan Section (Full Width) */}
+        <div className="bg-white border border-slate-100 shadow-sm rounded-2xl overflow-hidden mt-8 mb-12">
+          <div className="p-6 border-b border-slate-100 bg-white flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-100 rounded-xl text-blue-600">
+                <Zap className="h-4 w-4" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-[#1e293b]">Riwayat Pajanan & APD</h3>
+                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tight">Profil Risiko Lingkungan & Alat Pelindung Diri</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold text-slate-700 uppercase tracking-widest bg-slate-50 px-4 py-2 rounded-xl border border-slate-200">
+                Total {data.riwayat_pekerja?.length || 0} Pengalaman Terdata
+              </span>
+            </div>
+          </div>
+          
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left border-collapse">
+              <thead>
+                <tr className="bg-white border-b-2 border-slate-100">
+                  <th className="px-10 py-6 text-[11px] font-extrabold text-slate-800 uppercase tracking-widest w-[35%]">Identitas Pekerjaan</th>
+                  <th className="px-8 py-6 text-[11px] font-extrabold text-slate-800 uppercase tracking-widest w-[20%] text-center">Profil Pajanan</th>
+                  <th className="px-8 py-6 text-[11px] font-extrabold text-slate-800 uppercase tracking-widest w-[30%]">Alat Pelindung Diri (APD)</th>
+                  <th className="px-10 py-6 text-[11px] font-extrabold text-slate-800 uppercase tracking-widest w-[15%] text-right">Durasi Kerja</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {data.riwayat_pekerja?.some((r: any) => r.jenis_pajanan || r.durasi_pajanan || r.informal_data) ? (
+                  data.riwayat_pekerja.map((r: any, idx: number) => {
+                    const info = typeof r.informal_data === 'string' ? JSON.parse(r.informal_data || '{}') : (r.informal_data || {});
+                    const mutations = info?.mutasi_jabatan || [];
+                    const apdDisediakan = info?.apd_disediakan || info?.apd_list || '';
+                    const apdMandiri = info?.jenis_apd_sendiri || '';
+                    
+                    if (!r.jenis_pajanan && !r.durasi_pajanan && !apdDisediakan && !apdMandiri) return null;
+
+                    return (
+                      <tr key={idx}>
+                        {/* Column 1: Company & Refined Mutation Timeline */}
+                        <td className="px-10 py-10 align-top">
+                          <div className="flex flex-col">
+                            <p className="font-extrabold text-[#1e293b] text-[17px] tracking-tight">{r.nama_perusahaan}</p>
+                            <div className="flex items-center gap-2 mt-2">
+                              <span className="px-3 py-1 bg-slate-100 text-slate-600 text-[10px] font-black rounded-lg uppercase tracking-wider">
+                                {r.bagian || r.jabatan || 'Pekerja'}
+                              </span>
+                            </div>
+
+                            {/* Timeline Mutasi */}
+                            {mutations.length > 0 && (
+                              <div className="mt-8 ml-2 border-l-[2px] border-slate-100 space-y-6">
+                                {mutations.map((m: any, midx: number) => (
+                                  <div key={midx} className="relative pl-8">
+                                    <div className="absolute left-[-6px] top-1 h-3 w-3 rounded-full bg-[#0ea5e9] border-2 border-white" />
+                                    <div className="flex justify-between items-start gap-6">
+                                      <div>
+                                        <p className="text-[11px] font-black text-slate-700 leading-none uppercase">{m.bagian || '-'}</p>
+                                        <p className="text-[10px] text-slate-600 mt-1.5 font-bold">{m.jabatan || '-'}</p>
+                                      </div>
+                                      <span className="text-[11px] font-extrabold text-slate-500 tracking-tighter shrink-0">{m.tahun || '-'}</span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Column 2: Exposure Profiles */}
+                        <td className="px-8 py-10 align-middle">
+                          <div className="flex flex-wrap justify-center gap-3">
+                            {r.jenis_pajanan ? r.jenis_pajanan.split(',').map((p: string, pIdx: number) => (
+                              <div key={pIdx} className="flex items-center gap-2 px-4 py-2 bg-amber-50/50 text-amber-700 rounded-2xl border border-amber-100">
+                                <span className="text-[11px] font-black uppercase tracking-tight">{p.trim()}</span>
+                              </div>
+                            )) : (
+                              <span className="text-slate-300 text-[11px] font-bold italic">Nihil Pajanan</span>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Column 3: PPE (APD) Analysis */}
+                        <td className="px-8 py-10 align-middle">
+                          <div className="space-y-6">
+                            {apdDisediakan && (
+                              <div className="flex flex-col gap-2">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[9px] font-black text-[#0ea5e9] uppercase tracking-[0.2em]">STANDAR PERUSAHAAN</span>
+                                </div>
+                                <div className="p-4 bg-blue-50/40 rounded-2xl border border-blue-100/50">
+                                  <p className="text-[12px] font-bold text-slate-700 leading-relaxed italic">
+                                    &quot;{apdDisediakan}&quot;
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+                            {apdMandiri && (
+                              <div className="flex flex-col gap-2">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[9px] font-black text-rose-500 uppercase tracking-[0.2em]">PROTEKSI MANDIRI</span>
+                                </div>
+                                <div className="p-4 bg-rose-50/40 rounded-2xl border border-rose-100/50">
+                                  <p className="text-[12px] font-bold text-slate-700 leading-relaxed italic">
+                                    &quot;{apdMandiri}&quot;
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+                            {!apdDisediakan && !apdMandiri && (
+                              <div className="flex items-center gap-2 text-slate-300">
+                                <FileText className="h-4 w-4 opacity-50" />
+                                <span className="text-[11px] font-bold italic">Dokumentasi APD tidak ditemukan</span>
+                              </div>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Column 4: Tenure Duration */}
+                        <td className="px-10 py-10 align-middle text-right">
+                          <div className="inline-flex flex-col items-end">
+                            <div className="flex flex-col items-end min-w-[110px] pr-4">
+                              <span className="text-[36px] font-black leading-none text-[#0ea5e9]">{r.durasi_pajanan || 0}</span>
+                              <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest mt-1">TAHUN</span>
+                            </div>
+                            <div className="flex items-center gap-2 mt-4 text-slate-600 font-bold">
+                              <span className="text-[10px] font-black tracking-widest uppercase">MULAI {r.tgl_masuk?.substring(0,4) || '-'}</span>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan={4} className="px-10 py-32 text-center bg-slate-50/30">
+                      <Zap className="h-16 w-16 text-slate-100 mx-auto mb-5" />
+                      <h4 className="text-lg font-black text-slate-300 uppercase tracking-[0.4em]">BELUM ADA DATA PAJANAN</h4>
+                      <p className="text-sm text-slate-400 mt-2 font-medium">Lengkapi riwayat pekerjaan untuk memunculkan profil pajanan</p>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          <div className="p-6 bg-slate-50/50 border-t border-slate-100 flex justify-center gap-12">
+             <div className="flex items-center gap-3">
+               <div className="h-2 w-2 rounded-full bg-amber-500 shadow-sm" />
+               <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Risiko Lingkungan</span>
+             </div>
+             <div className="flex items-center gap-3">
+               <div className="h-2 w-2 rounded-full bg-indigo-500 shadow-sm" />
+               <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Alat Pelindung Diri</span>
+             </div>
+             <div className="flex items-center gap-3">
+               <div className="h-2 w-2 rounded-full bg-[#0ea5e9] shadow-sm" />
+               <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Akumulasi Masa Kerja</span>
+             </div>
+          </div>
+        </div>
+
+
       <button 
         onClick={handleExportPdf}
         className="fixed bottom-8 right-8 z-50 bg-[#0ea5e9] hover:bg-[#0284c7] text-white rounded-full w-14 h-14 shadow-lg shadow-blue-500/30 flex items-center justify-center transition-transform hover:scale-105 active:scale-95"
@@ -1646,6 +1792,71 @@ export default function PekerjaDetailPage() {
                   value={riwayatForm.jenis_apd_sendiri}
                   onChange={(e) => setRiwayatForm({...riwayatForm, jenis_apd_sendiri: e.target.value})}
                 />
+              </div>
+            </div>
+
+            {/* MUTASI JABATAN SECTION */}
+            <div className="space-y-4 pt-4 border-t border-slate-100">
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] font-bold text-[#0ea5e9] uppercase tracking-widest flex items-center gap-1.5">
+                  <RefreshCw className="h-3 w-3" /> Riwayat Mutasi Pekerjaan
+                </label>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={addMutasi}
+                  className="h-7 px-2 text-[10px] font-bold text-[#0ea5e9] hover:bg-blue-50"
+                >
+                  <Plus className="h-3 w-3 mr-1" /> Tambah Mutasi
+                </Button>
+              </div>
+
+              <div className="space-y-3">
+                {riwayatForm.mutasi_jabatan.length === 0 ? (
+                  <p className="text-[10px] text-slate-400 italic text-center py-2 bg-slate-50 rounded-lg border border-dashed border-slate-200">
+                    Belum ada histori mutasi tercatat.
+                  </p>
+                ) : (
+                  riwayatForm.mutasi_jabatan.map((m, idx) => (
+                    <div key={idx} className="grid grid-cols-12 gap-2 items-end bg-slate-50/50 p-3 rounded-xl border border-slate-100">
+                      <div className="col-span-4 space-y-1">
+                        <label className="text-[8px] font-bold text-slate-400 uppercase">Bagian</label>
+                        <input 
+                          className="w-full h-8 px-2 bg-white border border-slate-200 rounded-lg text-[11px] font-semibold outline-none focus:ring-1 focus:ring-blue-200"
+                          value={m.bagian}
+                          onChange={(e) => updateMutasi(idx, 'bagian', e.target.value)}
+                        />
+                      </div>
+                      <div className="col-span-4 space-y-1">
+                        <label className="text-[8px] font-bold text-slate-400 uppercase">Jabatan</label>
+                        <input 
+                          className="w-full h-8 px-2 bg-white border border-slate-200 rounded-lg text-[11px] font-semibold outline-none focus:ring-1 focus:ring-blue-200"
+                          value={m.jabatan}
+                          onChange={(e) => updateMutasi(idx, 'jabatan', e.target.value)}
+                        />
+                      </div>
+                      <div className="col-span-3 space-y-1">
+                        <label className="text-[8px] font-bold text-slate-400 uppercase">Tahun</label>
+                        <input 
+                          className="w-full h-8 px-2 bg-white border border-slate-200 rounded-lg text-[11px] font-semibold outline-none focus:ring-1 focus:ring-blue-200"
+                          placeholder="2024"
+                          value={m.tahun}
+                          onChange={(e) => updateMutasi(idx, 'tahun', e.target.value)}
+                        />
+                      </div>
+                      <div className="col-span-1 pb-0.5">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => removeMutasi(idx)}
+                          className="h-8 w-8 text-rose-400 hover:text-rose-600 hover:bg-rose-50"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </div>

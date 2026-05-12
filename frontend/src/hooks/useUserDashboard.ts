@@ -38,6 +38,7 @@ export interface ExposureForm {
   durasi_pajanan: string;
   apd_disediakan: string;
   jenis_apd_sendiri: string;
+  deskripsi_pekerjaan: string;
 }
 
 export interface MedisForm {
@@ -107,6 +108,7 @@ export function useUserDashboard() {
     id: null, nama_perusahaan: '', jabatan: '', status_pekerjaan: '',
     tgl_masuk: '', tgl_keluar: '', jenis_pajanan: '', durasi_pajanan: '',
     apd_disediakan: '', jenis_apd_sendiri: '',
+    deskripsi_pekerjaan: '',
   });
 
   const [isMedisModalOpen, setIsMedisModalOpen] = useState(false);
@@ -146,8 +148,9 @@ export function useUserDashboard() {
         );
         setIncompleteData(incomplete);
       }
-    } catch (err: any) {
-      if (err.response?.status === 401) {
+    } catch (err: unknown) {
+      const error = err as any;
+      if (error.response?.status === 401) {
         toast.error('Sesi Anda telah berakhir, silakan login kembali.');
         Cookies.remove('auth_token', { path: '/' });
         localStorage.removeItem('user');
@@ -203,8 +206,9 @@ export function useUserDashboard() {
         setUploadForm({ step_key: '', file: null });
         fetchData();
       }
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Gagal mengunggah dokumen.');
+    } catch (err: unknown) {
+      const error = err as any;
+      toast.error(error.response?.data?.message || 'Gagal mengunggah dokumen.');
     } finally {
       setUploading(false);
     }
@@ -215,7 +219,7 @@ export function useUserDashboard() {
     try { await api.post('/logout'); } catch { /* silent */ }
     Cookies.remove('auth_token', { path: '/' });
     localStorage.removeItem('user');
-    router.push('/login');
+    router.push('/');
   }, [router]);
 
   /** Memperbarui data profil (whatsapp, domisili, dan opsional foto). */
@@ -241,8 +245,9 @@ export function useUserDashboard() {
       toast.success('Profil berhasil diperbarui!');
       setIsProfileModalOpen(false);
       fetchData();
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Gagal memperbarui profil.');
+    } catch (err: unknown) {
+      const error = err as any;
+      toast.error(error.response?.data?.message || 'Gagal memperbarui profil.');
     } finally {
       setProfileLoading(false);
     }
@@ -257,8 +262,9 @@ export function useUserDashboard() {
       toast.success('Detail advokasi diperbarui!');
       setIsAdvModalOpen(false);
       fetchData();
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Gagal memperbarui advokasi.');
+    } catch (err: unknown) {
+      const error = err as any;
+      toast.error(error.response?.data?.message || 'Gagal memperbarui advokasi.');
     } finally {
       setAdvLoading(false);
     }
@@ -277,6 +283,7 @@ export function useUserDashboard() {
         tgl_keluar: exposureForm.tgl_keluar,
         jenis_pajanan: exposureForm.jenis_pajanan,
         durasi_pajanan: exposureForm.durasi_pajanan ? parseInt(exposureForm.durasi_pajanan) : null,
+        deskripsi_pekerjaan: exposureForm.deskripsi_pekerjaan,
         informal_data: {
           apd_disediakan: exposureForm.apd_disediakan,
           jenis_apd_sendiri: exposureForm.jenis_apd_sendiri,
@@ -291,8 +298,9 @@ export function useUserDashboard() {
       toast.success('Data pajanan berhasil diperbarui!');
       setIsExposureModalOpen(false);
       fetchData();
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Gagal memperbarui data pajanan.');
+    } catch (err: unknown) {
+      const error = err as any;
+      toast.error(error.response?.data?.message || 'Gagal memperbarui data pajanan.');
     } finally {
       setExposureLoading(false);
     }
@@ -315,8 +323,9 @@ export function useUserDashboard() {
       toast.success('Catatan medis berhasil disimpan!');
       setIsMedisModalOpen(false);
       fetchData();
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Gagal menyimpan catatan medis.');
+    } catch (err: unknown) {
+      const error = err as any;
+      toast.error(error.response?.data?.message || 'Gagal menyimpan catatan medis.');
     } finally {
       setMedisLoading(false);
     }
@@ -343,7 +352,7 @@ export function useUserDashboard() {
     setExposureForm({
       id: null, nama_perusahaan: '', jabatan: '', status_pekerjaan: 'Sudah Berhenti',
       tgl_masuk: '', tgl_keluar: '', jenis_pajanan: '', durasi_pajanan: '',
-      apd_disediakan: '', jenis_apd_sendiri: '',
+      apd_disediakan: '', jenis_apd_sendiri: '', deskripsi_pekerjaan: '',
     });
     setIsExposureModalOpen(true);
   }, []);
@@ -367,6 +376,7 @@ export function useUserDashboard() {
       durasi_pajanan: r.durasi_pajanan?.toString() || '',
       apd_disediakan: info.apd_disediakan || '',
       jenis_apd_sendiri: info.jenis_apd_sendiri || '',
+      deskripsi_pekerjaan: r.deskripsi_pekerjaan || '',
     });
     setIsExposureModalOpen(true);
   }, []);
@@ -381,7 +391,7 @@ export function useUserDashboard() {
     setIsMedisModalOpen(true);
   }, [selectedRiwayatId]);
 
-  const openMedisEdit = useCallback((m: any) => {
+  const openMedisEdit = useCallback((m: Record<string, any>) => {
     setMedisForm({
       id: m.id,
       riwayat_pekerja_id: m.riwayat_pekerja_id,
