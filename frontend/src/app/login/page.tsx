@@ -49,13 +49,17 @@ export default function LoginPage() {
             window.location.href = '/pendaftaran';
           }
         } else {
-          window.location.href = '/';
+          window.location.href = '/dashboard-admin';
         }
+        
+        // Note: We DON'T call setLoading(false) here because we want the 
+        // button to stay in "Masuk..." state while the router is navigating.
+        // The page will be replaced soon anyway.
+        return;
       }
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Gagal login. Periksa email dan password.');
-    } finally {
-      setLoading(false);
+      setLoading(false); // Only reset loading on error
     }
   };
 
