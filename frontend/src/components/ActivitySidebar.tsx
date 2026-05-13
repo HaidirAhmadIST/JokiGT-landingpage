@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import api from '@/lib/axios';
+import { useRouter } from 'next/navigation';
 import {
   Plus,
   RefreshCw,
@@ -83,50 +84,7 @@ function getActionMeta(action: string) {
   }
 }
 
-// ─── Hardcoded "Sistem" events ────────────────────────────────────────────────
 
-const sistemEvents: ActivityLogItem[] = [
-  {
-    id: -1,
-    action: 'create',
-    description: 'Kasus Baru Ditambahkan',
-    category: 'sistem',
-    user_name: 'System',
-    metadata: { subtitle: 'Andi Pratama · PT. Maju Jaya' },
-    created_at: '',
-    time_ago: '2 Jam Yang Lalu',
-  },
-  {
-    id: -2,
-    action: 'update',
-    description: 'Status Diperbarui',
-    category: 'sistem',
-    user_name: 'System',
-    metadata: { subtitle: 'Siti Aminah · Berkas dikirim ke BPJS' },
-    created_at: '',
-    time_ago: '5 Jam Yang Lalu',
-  },
-  {
-    id: -3,
-    action: 'warning',
-    description: 'Peringatan Tenggat',
-    category: 'sistem',
-    user_name: 'System',
-    metadata: { subtitle: 'Laporan UPTD Tahap 2 tertunda' },
-    created_at: '',
-    time_ago: 'Kemarin, 14:50',
-  },
-  {
-    id: -4,
-    action: 'default',
-    description: 'Advokasi Selesai',
-    category: 'sistem',
-    user_name: 'System',
-    metadata: { subtitle: 'Eko Prasetyo · Klaim disetujui 100%' },
-    created_at: '',
-    time_ago: '2 Hari Yang Lalu',
-  },
-];
 
 // ─── Single Activity Item ─────────────────────────────────────────────────────
 
@@ -169,16 +127,17 @@ function ActivityItem({ item }: { item: ActivityLogItem }) {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function ActivitySidebar() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<'sistem' | 'admin'>('sistem');
-  const [adminLogs, setAdminLogs] = useState<ActivityLogItem[]>([]);
+  const [logs, setLogs] = useState<ActivityLogItem[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const fetchAdminLogs = useCallback(async () => {
+  const fetchLogs = useCallback(async (category: string) => {
     setLoading(true);
     try {
-      const res = await api.get('/activity-logs', { params: { category: 'admin' } });
+      const res = await api.get('/activity-logs', { params: { category } });
       if (res.data.status === 'success') {
-        setAdminLogs(res.data.data);
+        setLogs(res.data.data.data || res.data.data);
       }
     } catch {
       // silently fail
@@ -188,12 +147,10 @@ export default function ActivitySidebar() {
   }, []);
 
   useEffect(() => {
-    if (activeTab === 'admin') {
-      fetchAdminLogs();
-    }
-  }, [activeTab, fetchAdminLogs]);
+    fetchLogs(activeTab);
+  }, [activeTab, fetchLogs]);
 
-  const displayItems = activeTab === 'sistem' ? sistemEvents : adminLogs;
+  const displayItems = logs;
 
   return (
     <div className="flex flex-col h-full rounded-[20px] bg-white shadow-sm border border-slate-100 overflow-hidden">
@@ -254,7 +211,7 @@ export default function ActivitySidebar() {
           </div>
         ) : (
           <div className="space-y-4 py-2">
-            {displayItems.map((item) => (
+            {displayItems.slice(0, 5).map((item) => (
               <ActivityItem key={item.id} item={item} />
             ))}
           </div>
@@ -264,10 +221,10 @@ export default function ActivitySidebar() {
       {/* ── Footer ── */}
       <div className="px-6 py-4 border-t border-slate-100 text-center">
         <button
-          onClick={activeTab === 'admin' ? fetchAdminLogs : undefined}
+          onClick={() => router.push('/aktivitas')}
           className="text-[13px] font-bold text-[#0ea5e9] hover:text-[#0284c7] transition-colors"
         >
-          {activeTab === 'admin' ? '↻ Refresh Log Admin' : 'Lihat Semua Aktivitas'}
+          Lihat Semua Aktivitas
         </button>
       </div>
     </div>

@@ -24,15 +24,19 @@ class PerusahaanController extends Controller
             $query = Perusahaan::query()->withCount('pekerja');
         }
 
-        if ($request->has('search') && $request->search) {
-            $query->where('nama_perusahaan', 'like', "%{$request->search}%");
+        if ($request->has('search')) {
+            $search = strtolower($request->search);
+            $query->whereRaw('LOWER(nama_perusahaan) LIKE ?', ["%{$search}%"]);
         }
 
         if ($request->has('status') && $request->status) {
             $query->where('status_pendamping', $request->status);
         }
 
-        $perusahaan = $query->latest()->paginate(15);
+        $sortBy = $request->input('sort_by', 'created_at');
+        $sortDir = $request->input('sort_dir', 'desc');
+
+        $perusahaan = $query->orderBy($sortBy, $sortDir)->paginate(15);
 
         return response()->json([
             'status' => 'success',

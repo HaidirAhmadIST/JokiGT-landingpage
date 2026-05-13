@@ -17,7 +17,8 @@ import {
   Search,
   Settings,
   Loader2,
-  User as UserIcon
+  User as UserIcon,
+  History
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -35,11 +36,12 @@ import {
 import { FileText } from 'lucide-react';
 
 const navigation = [
-  { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+  { name: 'Dashboard', href: '/dashboard-admin', icon: LayoutDashboard },
   { name: 'Pekerja', href: '/pekerja', icon: Users },
   { name: 'Perusahaan', href: '/perusahaan', icon: Building2 },
   { name: 'Advokasi', href: '/advokasi', icon: ShieldCheck },
   { name: 'Laporan', href: '/laporan', icon: FileText },
+  { name: 'Aktivitas', href: '/aktivitas', icon: History },
 ];
 
 export default function DashboardLayout({
@@ -63,42 +65,51 @@ export default function DashboardLayout({
 
   useEffect(() => {
     const initUser = async () => {
-      // 1. Try to load from local storage first for speed
-      let storedUser = localStorage.getItem('user');
-      let userData = null;
+      try {
+        // 1. Try to load from local storage first for speed
+        const storedUser = localStorage.getItem('user');
+        let userData = null;
 
-      if (storedUser) {
-        userData = JSON.parse(storedUser);
-      } else {
-        // 2. If not in local storage, try to fetch from server if token exists
-        const token = Cookies.get('auth_token');
-        if (token) {
+        if (storedUser) {
           try {
-            const res = await api.get('/me');
-            userData = res.data.data;
-            if (userData) {
-              // Populate pekerja_id if missing (for viewer role)
-              if (userData.role === 'viewer' && userData.pekerja?.id) {
-                userData.pekerja_id = userData.pekerja.id;
-              }
-              localStorage.setItem('user', JSON.stringify(userData));
-            }
-          } catch (err) {
-            console.error('Failed to fetch user in layout', err);
+            userData = JSON.parse(storedUser);
+          } catch (e) {
+            console.error('Failed to parse stored user', e);
           }
         }
-      }
 
-      if (userData) {
-        setUser(userData);
-
-        // Viewer can only see their own dashboard
-        if (userData.role === 'viewer') {
-          router.push('/dashboard-user');
+        // 2. If no valid stored user, try to fetch from server
+        if (!userData) {
+          const token = Cookies.get('auth_token');
+          if (token) {
+            try {
+              const res = await api.get('/me');
+              userData = res.data.data;
+              if (userData) {
+                if (userData.role === 'viewer' && userData.pekerja?.id) {
+                  userData.pekerja_id = userData.pekerja.id;
+                }
+                localStorage.setItem('user', JSON.stringify(userData));
+              }
+            } catch (err) {
+              console.error('Failed to fetch user in layout', err);
+            }
+          }
         }
+
+        if (userData) {
+          setUser(userData);
+          // Only redirect if we're not already on the correct dashboard
+          if (userData.role === 'viewer' && !window.location.pathname.startsWith('/dashboard-user')) {
+            router.push('/dashboard-user');
+          }
+        } else {
+          // No user data found after all checks, go to login
+          router.push('/login');
+        }
+      } finally {
+        setMounted(true);
       }
-      
-      setMounted(true);
     };
 
     initUser();
@@ -158,9 +169,42 @@ export default function DashboardLayout({
     } finally {
       Cookies.remove('auth_token', { path: '/' });
       localStorage.removeItem('user');
-      router.push('/login');
+      router.push('/');
     }
   };
+
+  const [sidebarWidth, setSidebarWidth] = useState(260);
+  const [isResizing, setIsResizing] = useState(false);
+  const sidebarRef = useRef<HTMLDivElement>(null);
+
+  const startResizing = useCallback(() => {
+    setIsResizing(true);
+  }, []);
+
+  const stopResizing = useCallback(() => {
+    setIsResizing(false);
+  }, []);
+
+  const resize = useCallback(
+    (mouseMoveEvent: MouseEvent) => {
+      if (isResizing) {
+        const newWidth = mouseMoveEvent.clientX;
+        if (newWidth > 180 && newWidth < 450) {
+          setSidebarWidth(newWidth);
+        }
+      }
+    },
+    [isResizing]
+  );
+
+  useEffect(() => {
+    window.addEventListener("mousemove", resize);
+    window.addEventListener("mouseup", stopResizing);
+    return () => {
+      window.removeEventListener("mousemove", resize);
+      window.removeEventListener("mouseup", stopResizing);
+    };
+  }, [resize, stopResizing]);
 
   if (!mounted || !user) {
     return (
@@ -363,17 +407,28 @@ export default function DashboardLayout({
       {/* BODY AREA */}
       <div className="flex flex-1 overflow-hidden print:overflow-visible">
         
-        {/* DESKTOP SIDEBAR */}
-        <aside className="hidden md:flex w-[260px] flex-col bg-white border-r border-slate-200 z-10 justify-between py-6 shrink-0 print:hidden">
-           
-           <div className="w-full">
+        {/* DESKTOP SIDEBAR (Resizable) */}
+        <aside 
+          ref={sidebarRef}
+          style={{ width: `${sidebarWidth}px` }}
+          className="hidden md:flex flex-col bg-white border-r border-slate-200 z-10 justify-between py-6 shrink-0 print:hidden relative transition-[width] duration-75 ease-out"
+        >
+           {/* Resizer Handle */}
+           <div 
+             onMouseDown={startResizing}
+             className="absolute top-0 right-0 w-1.5 h-full cursor-col-resize hover:bg-[#0ea5e9]/30 active:bg-[#0ea5e9] transition-colors z-20 group"
+           >
+              <div className="absolute top-1/2 right-0 -translate-y-1/2 w-0.5 h-8 bg-slate-200 group-hover:bg-[#0ea5e9] rounded-full mx-0.5" />
+           </div>
+
+           <div className="w-full overflow-hidden">
              {/* Admin Panel Token */}
              <div className="px-4 mb-6">
                <div className="bg-blue-50/50 border border-blue-100/50 rounded-xl p-3 flex items-center gap-2.5">
                   <div className="bg-blue-100 p-1.5 rounded-lg text-[#0ea5e9] shrink-0">
                     <Shield className="h-4 w-4" />
                   </div>
-                  <div className="min-w-0">
+                  <div className={`min-w-0 transition-opacity duration-200 ${sidebarWidth < 160 ? 'opacity-0' : 'opacity-100'}`}>
                     <p className="text-[10px] font-extrabold text-[#1e293b] tracking-wider truncate">ADMIN PANEL</p>
                     <p className="text-[9px] text-slate-500 font-medium mt-0.5">Mode Manajemen</p>
                   </div>
@@ -383,7 +438,6 @@ export default function DashboardLayout({
              {/* Navigation Links */}
              <nav className="flex flex-col space-y-1">
               {navigation.map((item) => {
-                // Determine actual active state even for nested routes (like detail page)
                 const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
                 return (
                   <Link
@@ -396,7 +450,9 @@ export default function DashboardLayout({
                     }`}
                   >
                     <item.icon className={`mr-3 shrink-0 h-[18px] w-[18px] ${isActive ? 'text-[#0ea5e9]' : 'text-slate-400 group-hover:text-slate-600'}`} />
-                    {item.name}
+                    <span className={`truncate transition-opacity duration-200 ${sidebarWidth < 120 ? 'opacity-0' : 'opacity-100'}`}>
+                      {item.name}
+                    </span>
                   </Link>
                 );
               })}
@@ -404,13 +460,15 @@ export default function DashboardLayout({
            </div>
            
            {/* Bottom Settings Link */}
-           <div className="px-5 flex flex-col space-y-1 pb-2">
+           <div className="px-5 flex flex-col space-y-1 pb-2 overflow-hidden">
               <Link
                 href="/settings"
                 className="group flex items-center py-3 text-sm font-semibold text-slate-500 hover:text-slate-800 transition-colors"
               >
                 <Settings className="mr-3 shrink-0 h-[18px] w-[18px] text-slate-400 group-hover:text-slate-600" />
-                Pengaturan
+                <span className={`truncate transition-opacity duration-200 ${sidebarWidth < 120 ? 'opacity-0' : 'opacity-100'}`}>
+                  Pengaturan
+                </span>
               </Link>
            </div>
         </aside>

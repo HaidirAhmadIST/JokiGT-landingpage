@@ -93,12 +93,11 @@ const caseTypeLabels: Record<string, string> = {
   PAK: 'PAK (Penyakit Kerja)',
   K3: 'K3 (Kecelakaan)',
   PHK: 'PHK (Kasus)',
-  JHT: 'JHT (Jaminan)',
 };
 
 // ─── X-axis tick with line breaks ─────────────────────────────────────────────
 
-function CustomXAxisTick({ x, y, payload }: any) {
+function CustomXAxisTick({ x, y, payload }: { x: number; y: number; payload: { value: string } }) {
   const cfg = stepConfig[payload.value];
   const lines = cfg?.shortLabel?.split('\n') ?? [payload.value];
   return (
@@ -123,7 +122,7 @@ function CustomXAxisTick({ x, y, payload }: any) {
 
 // ─── Custom Tooltip ───────────────────────────────────────────────────────────
 
-function CustomTooltip({ active, payload }: any) {
+function CustomTooltip({ active, payload }: { active?: boolean; payload?: any[] }) {
   if (active && payload && payload.length) {
     const d = payload[0].payload as StepStat;
     const cfg = stepConfig[d.key];
@@ -183,10 +182,12 @@ export default function AdvokasiBarChart() {
   const [loading, setLoading] = useState(true);
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
 
-  const fetchStats = useCallback(async () => {
-    setLoading(true);
+  const fetchStats = useCallback(async (withWorkers = false) => {
+    if (!withWorkers) setLoading(true);
     try {
-      const res = await api.get('/advokasi/stats');
+      const res = await api.get('/advokasi/stats', { 
+        params: { include_workers: withWorkers } 
+      });
       if (res.data.status === 'success') {
         setStats(res.data.data);
         setTotal(res.data.total);
@@ -200,11 +201,25 @@ export default function AdvokasiBarChart() {
   }, []);
 
   useEffect(() => {
-    fetchStats();
+    fetchStats(false); // Initial load without workers
   }, [fetchStats]);
 
-  const toggleStep = (key: string) =>
-    setExpandedKey((prev) => (prev === key ? null : key));
+  const toggleStep = async (key: string) => {
+    if (expandedKey === key) {
+      setExpandedKey(null);
+      return;
+    }
+
+    // If we don't have worker data for this step, fetch it
+    const step = stats.find(s => s.key === key);
+    if (step && step.jumlah > 0 && (!step.pekerja || step.pekerja.length === 0)) {
+      toast.loading('Memuat daftar pekerja...', { id: 'fetch-workers' });
+      await fetchStats(true);
+      toast.dismiss('fetch-workers');
+    }
+    
+    setExpandedKey(key);
+  };
 
   const expandedStep = stats.find((s) => s.key === expandedKey);
 
@@ -245,7 +260,7 @@ export default function AdvokasiBarChart() {
             <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
             <XAxis
               dataKey="key"
-              tick={<CustomXAxisTick />}
+              tick={<CustomXAxisTick {...({} as any)} />}
               axisLine={false}
               tickLine={false}
               interval={0}

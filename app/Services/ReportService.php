@@ -149,8 +149,9 @@ class ReportService
         return StatusAdvokasi::whereNotNull('jenis_kasus')
             ->whereHas('pekerja', function($q) use ($query) {
                 if ($query) {
-                    $q->where('nama_lengkap', 'like', "%{$query}%")
-                      ->orWhere('nik', 'like', "%{$query}%");
+                    $search = strtolower($query);
+                    $q->whereRaw('LOWER(nama_lengkap) LIKE ?', ["%{$search}%"])
+                      ->orWhereRaw('LOWER(nik) LIKE ?', ["%{$search}%"]);
                 }
             })
             ->with(['pekerja' => function($q) {

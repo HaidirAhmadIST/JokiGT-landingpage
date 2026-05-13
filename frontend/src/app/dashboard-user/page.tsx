@@ -1,292 +1,99 @@
 'use client';
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import api from '@/lib/axios';
-import Cookies from 'js-cookie';
+
+/**
+ * Dashboard User (Pekerja)
+ *
+ * Halaman dashboard pribadi pekerja untuk melihat profil, status kesehatan,
+ * progres advokasi, riwayat pajanan, dan riwayat kesehatan per perusahaan.
+ *
+ * Semua state dan logika bisnis dikelola oleh hook `useUserDashboard`.
+ * File ini hanya berisi JSX layout dan UI rendering.
+ */
+
 import { cn, formatHealthStatus } from '@/lib/utils';
-import { toast } from 'sonner';
+import dynamic from 'next/dynamic';
 import { Card } from '@/components/ui/card';
 import {
   User2, Building2, Briefcase, MapPin, HeartPulse, ShieldCheck,
   Search, Stethoscope, FileText, Scale, Coins, Clock, LogOut,
   Download, CheckCircle2, AlertCircle, Loader2, FileStack, Activity, Upload,
-  Calendar, Shield, Zap, Settings, ClipboardList, User
+  Calendar, Shield, Zap, Settings, ClipboardList, User, Plus, FilePlus, RefreshCw
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+  Dialog, DialogContent, DialogDescription, DialogHeader,
+  DialogTitle, DialogFooter,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useUserDashboard } from '@/hooks/useUserDashboard';
+import { useDashboardStats } from '@/hooks/useDashboardStats';
+import { PROVINCES } from '@/lib/provinces';
+import type { StatusAdvokasi, RiwayatPekerja, DetailMedis } from '@/types';
+
+
 
 const API_BASE = (process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api').replace('/api', '');
 
-const healthConfig: Record<string,{label:string;color:string;bg:string;dot:string}> = {
-  sehat: { label:'Sehat / Fit', color:'text-emerald-700', bg:'bg-emerald-50 border-emerald-200', dot:'bg-emerald-500' },
-  sehat_dengan_catatan: { label:'Sehat dengan Catatan', color:'text-amber-700', bg:'bg-amber-50 border-amber-200', dot:'bg-amber-500' },
-  tidak_sehat: { label:'Tidak Sehat / Unfit', color:'text-rose-700', bg:'bg-rose-50 border-rose-200', dot:'bg-rose-500' },
+/** Konfigurasi tampilan untuk setiap status kesehatan. */
+const healthConfig: Record<string, { label: string; color: string; bg: string; dot: string }> = {
+  sehat:                { label: 'Sehat / Fit',           color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-200',  dot: 'bg-emerald-500' },
+  sehat_dengan_catatan: { label: 'Sehat dengan Catatan',  color: 'text-amber-700',   bg: 'bg-amber-50 border-amber-200',      dot: 'bg-amber-500'   },
+  tidak_sehat:          { label: 'Tidak Sehat / Unfit',   color: 'text-rose-700',    bg: 'bg-rose-50 border-rose-200',        dot: 'bg-rose-500'    },
 };
 
+/** 6 tahapan advokasi PAK secara berurutan. */
 const STEPS = [
-  { key:'riwayat_pajanan', label:'Pajanan', icon:Search, color:'bg-blue-500' },
-  { key:'persetujuan_dokter', label:'Diagnosis', icon:Stethoscope, color:'bg-emerald-500' },
-  { key:'perusahaan_lapor', label:'Pelaporan', icon:FileText, color:'bg-amber-500' },
-  { key:'penetapan_pak', label:'Penetapan', icon:Scale, color:'bg-indigo-500' },
-  { key:'kompensasi_bpjstk', label:'Kompensasi', icon:Coins, color:'bg-rose-500' },
-  { key:'rehabilitasi_bpjskes', label:'Rehabilitasi', icon:HeartPulse, color:'bg-sky-500' },
+  { key: 'riwayat_pajanan',     label: 'Pajanan',     icon: Search,      color: 'bg-blue-500'    },
+  { key: 'persetujuan_dokter',  label: 'Diagnosis',   icon: Stethoscope, color: 'bg-emerald-500' },
+  { key: 'perusahaan_lapor',    label: 'Pelaporan',   icon: FileText,    color: 'bg-amber-500'   },
+  { key: 'penetapan_pak',       label: 'Penetapan',   icon: Scale,       color: 'bg-indigo-500'  },
+  { key: 'kompensasi_bpjstk',   label: 'Kompensasi',  icon: Coins,       color: 'bg-rose-500'    },
+  { key: 'rehabilitasi_bpjskes',label: 'Rehabilitasi',icon: HeartPulse,  color: 'bg-sky-500'     },
 ];
 
+/** Mapping key tahap ke kolom path dan tanggal dokumen di database. */
 const DOC_KEYS = [
-  { key:'riwayat_pajanan', name:'Bukti Pajanan', pathKey:'bukti_pajanan_path', dateKey:'bukti_pajanan_at' },
-  { key:'persetujuan_dokter', name:'Diagnosis Dokter', pathKey:'bukti_persetujuan_dokter_path', dateKey:'bukti_persetujuan_dokter_at' },
-  { key:'perusahaan_lapor', name:'Laporan Perusahaan', pathKey:'bukti_perusahaan_lapor_path', dateKey:'bukti_perusahaan_lapor_at' },
-  { key:'penetapan_pak', name:'Penetapan PAK', pathKey:'bukti_penetapan_pak_path', dateKey:'bukti_penetapan_pak_at' },
-  { key:'kompensasi_bpjstk', name:'Kompensasi BPJSTK', pathKey:'bukti_kompensasi_bpjstk_path', dateKey:'bukti_kompensasi_bpjstk_at' },
-  { key:'rehabilitasi_bpjskes', name:'Rehabilitasi BPJSKES', pathKey:'bukti_rehabilitasi_bpjskes_path', dateKey:'bukti_rehabilitasi_bpjskes_at' },
+  { key: 'riwayat_pajanan',     name: 'Bukti Pajanan',        pathKey: 'bukti_pajanan_path',               dateKey: 'bukti_pajanan_at'               },
+  { key: 'persetujuan_dokter',  name: 'Diagnosis Dokter',     pathKey: 'bukti_persetujuan_dokter_path',    dateKey: 'bukti_persetujuan_dokter_at'    },
+  { key: 'perusahaan_lapor',    name: 'Laporan Perusahaan',   pathKey: 'bukti_perusahaan_lapor_path',      dateKey: 'bukti_perusahaan_lapor_at'      },
+  { key: 'penetapan_pak',       name: 'Penetapan PAK',        pathKey: 'bukti_penetapan_pak_path',         dateKey: 'bukti_penetapan_pak_at'         },
+  { key: 'kompensasi_bpjstk',   name: 'Kompensasi BPJSTK',   pathKey: 'bukti_kompensasi_bpjstk_path',     dateKey: 'bukti_kompensasi_bpjstk_at'     },
+  { key: 'rehabilitasi_bpjskes',name: 'Rehabilitasi BPJSKES', pathKey: 'bukti_rehabilitasi_bpjskes_path', dateKey: 'bukti_rehabilitasi_bpjskes_at'  },
 ];
 
-const JENIS: Record<string,string> = {
-  PAK:'Penyakit Akibat Kerja (PAK)', K3:'Kecelakaan Kerja (K3)', PHK:'Pemutusan Hubungan Kerja', JHT:'Jaminan Hari Tua',
+/** Jenis kasus advokasi yang tersedia. */
+const JENIS: Record<string, string> = {
+  PAK: 'Penyakit Akibat Kerja (PAK)',
+  K3:  'Kecelakaan Kerja (K3)',
+  PHK: 'Pemutusan Hubungan Kerja',
 };
 
-const fmt = (d: string) => d ? new Date(d).toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'}) : '-';
+/** Format tanggal ke format lokal Indonesia. */
+const fmt = (d?: string) => d ? new Date(d).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
+
+// ─── Komponen Utama ────────────────────────────────────────────────────────────
 
 export default function UserDashboardPage() {
-  const router = useRouter();
-  const [user, setUser] = useState<any>(null);
-  const [pekerja, setPekerja] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [uploadModal, setUploadModal] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [uploadForm, setUploadForm] = useState({ step_key: '', file: null as File | null });
+  // Semua logika dikelola oleh hook ini
+  const {
+    user, pekerja, loading, incompleteData, selectedRiwayatId, setSelectedRiwayatId,
+    uploadModal, setUploadModal, uploading, uploadForm, setUploadForm, handleUpload,
+    isProfileModalOpen, setIsProfileModalOpen, profileForm, setProfileForm,
+    profileLoading, handleUpdateProfile, openProfileEdit,
+    isAdvModalOpen, setIsAdvModalOpen, advForm, setAdvForm, advLoading,
+    handleUpdateAdvokasi, openAdvEdit,
+    isExposureModalOpen, setIsExposureModalOpen, exposureForm, setExposureForm,
+    exposureLoading, handleUpdateExposure, openExposureAdd, openExposureEdit,
+    // Medis
+    isMedisModalOpen, setIsMedisModalOpen, medisForm, setMedisForm,
+    medisLoading, handleUpdateMedis, openMedisAdd, openMedisEdit,
+    logout, handleViewFile,
+  } = useUserDashboard();
 
-  // Profile Edit State
-  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
-  const [profileForm, setProfileForm] = useState({
-    whatsapp: '',
-    domisili: '',
-    pas_foto: null as File | null
-  });
-  const [profileLoading, setProfileLoading] = useState(false);
-
-  // Advocacy Edit State
-  const [isAdvModalOpen, setIsAdvModalOpen] = useState(false);
-  const [advForm, setAdvForm] = useState({
-    jenis_kasus: '',
-    catatan: ''
-  });
-  const [advLoading, setAdvLoading] = useState(false);
-  
-  // Exposure Edit State
-  const [isExposureModalOpen, setIsExposureModalOpen] = useState(false);
-  const [exposureForm, setExposureForm] = useState({
-    id: null as number | null,
-    nama_perusahaan: '',
-    jenis_pajanan: '',
-    durasi_pajanan: '',
-    apd_disediakan: '',
-    jenis_apd_sendiri: ''
-  });
-  const [exposureLoading, setExposureLoading] = useState(false);
-  
-  // Data completeness check
-  const [incompleteData, setIncompleteData] = useState<any[]>([]);
-  const [selectedRiwayatId, setSelectedRiwayatId] = useState<number | null>(null);
-
-  useEffect(() => { fetchData(); }, []);
-
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const userRes = await api.get('/me');
-      const u = userRes.data.data;
-      setUser(u);
-      const pid = u?.pekerja?.id;
-      if (pid) {
-        const r = await api.get('/pekerja/' + pid);
-        const pData = r.data.data;
-        setPekerja(pData);
-        
-        // Auto select first riwayat
-        if (pData?.riwayat_pekerja?.length > 0 && !selectedRiwayatId) {
-          setSelectedRiwayatId(pData.riwayat_pekerja[0].id);
-        }
-        
-        // Check for incomplete exposure data
-        const incomplete = (pData?.riwayat_pekerja || []).filter((r: any) => !r.jenis_pajanan || !r.durasi_pajanan);
-        setIncompleteData(incomplete);
-      } else {
-        const s = await api.get('/pekerja', { params: { search: u.email } });
-        const items = s.data.data?.data || s.data.data || [];
-        const match = items.find((p: any) => p.user?.email === u.email);
-        if (match) { 
-          const r = await api.get('/pekerja/' + match.id); 
-          const pData = r.data.data;
-          setPekerja(pData); 
-          const incomplete = (pData?.riwayat_pekerja || []).filter((r: any) => !r.jenis_pajanan || !r.durasi_pajanan);
-          setIncompleteData(incomplete);
-        }
-      }
-    } catch { toast.error('Gagal memuat data dashboard.'); }
-    finally { setLoading(false); }
-  };
-
-
-  const handleViewFile = async (url: string) => {
-    try {
-      const res = await api.get(url, { responseType: 'blob' });
-      const contentType = res.headers['content-type'] || 'application/pdf';
-      const blob = new Blob([res.data], { type: contentType });
-      const blobUrl = window.URL.createObjectURL(blob);
-      window.open(blobUrl, '_blank');
-    } catch (err) {
-      toast.error('Gagal membuka dokumen.');
-    }
-  };
-
-  const handleUpload = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!uploadForm.step_key || !uploadForm.file) {
-      toast.error('Pilih jenis dokumen dan file terlebih dahulu.');
-      return;
-    }
-    setUploading(true);
-    try {
-      const fd = new FormData();
-      fd.append('step_key', uploadForm.step_key);
-      fd.append('file', uploadForm.file);
-      const res = await api.post('/pekerja/' + pekerja.id + '/advokasi', fd, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      if (res.data.status === 'success') {
-        const uploadedStep = uploadForm.step_key;
-        toast.success('Dokumen berhasil diunggah!', {
-          action: {
-            label: 'Lihat Dokumen',
-            onClick: () => handleViewFile('/pekerja/' + pekerja.id + '/files/advokasi/' + uploadedStep)
-          }
-        });
-        setUploadModal(false);
-        setUploadForm({ step_key: '', file: null });
-        fetchData();
-      }
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Gagal mengunggah dokumen.');
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const logout = async () => {
-    try { await api.post('/logout'); } catch {}
-    Cookies.remove('auth_token', { path: '/' });
-    localStorage.removeItem('user');
-    router.push('/login');
-  };
-
-  const handleUpdateProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setProfileLoading(true);
-    try {
-      // 1. Update basic info
-      await api.put(`/pekerja/${pekerja.id}`, {
-        whatsapp: profileForm.whatsapp,
-        domisili: profileForm.domisili
-      });
-
-      // 2. Update photo if provided
-      if (profileForm.pas_foto) {
-        const fd = new FormData();
-        fd.append('pas_foto', profileForm.pas_foto);
-        await api.post(`/pekerja/${pekerja.id}/foto`, fd, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        });
-      }
-
-      toast.success('Profil berhasil diperbarui!');
-      setIsProfileModalOpen(false);
-      fetchData();
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Gagal memperbarui profil.');
-    } finally {
-      setProfileLoading(false);
-    }
-  };
-
-  const handleUpdateAdvokasi = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setAdvLoading(true);
-    try {
-      await api.post(`/pekerja/${pekerja.id}/advokasi`, advForm);
-      toast.success('Detail advokasi diperbarui!');
-      setIsAdvModalOpen(false);
-      fetchData();
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Gagal memperbarui advokasi.');
-    } finally {
-      setAdvLoading(false);
-    }
-  };
-
-  const openProfileEdit = () => {
-    setProfileForm({
-      whatsapp: pekerja?.whatsapp || '',
-      domisili: pekerja?.domisili || '',
-      pas_foto: null
-    });
-    setIsProfileModalOpen(true);
-  };
-
-  const openAdvEdit = () => {
-    setIsAdvModalOpen(true);
-  };
-
-  const openExposureEdit = (r: any) => {
-    let info: any = {};
-    try {
-      info = typeof r.informal_data === 'string' ? JSON.parse(r.informal_data) : (r.informal_data || {});
-    } catch(e) {}
-    
-    setExposureForm({
-      id: r.id,
-      nama_perusahaan: r.nama_perusahaan,
-      jenis_pajanan: r.jenis_pajanan || '',
-      durasi_pajanan: r.durasi_pajanan?.toString() || '',
-      apd_disediakan: info.apd_disediakan || '',
-      jenis_apd_sendiri: info.jenis_apd_sendiri || ''
-    });
-    setIsExposureModalOpen(true);
-  };
-
-  const handleUpdateExposure = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!exposureForm.id) return;
-    setExposureLoading(true);
-    try {
-      await api.put(`/riwayat-pekerja/${exposureForm.id}`, {
-        jenis_pajanan: exposureForm.jenis_pajanan,
-        durasi_pajanan: exposureForm.durasi_pajanan ? parseInt(exposureForm.durasi_pajanan) : null,
-        informal_data: {
-          apd_disediakan: exposureForm.apd_disediakan,
-          jenis_apd_sendiri: exposureForm.jenis_apd_sendiri
-        }
-      });
-      toast.success('Data pajanan berhasil diperbarui!');
-      setIsExposureModalOpen(false);
-      fetchData();
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Gagal memperbarui data pajanan.');
-    } finally {
-      setExposureLoading(false);
-    }
-  };
+  const { stats } = useDashboardStats();
 
   if (loading) return (
     <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center">
@@ -297,26 +104,28 @@ export default function UserDashboardPage() {
     </div>
   );
 
-  const adv = pekerja?.status_advokasi ?? pekerja?.statusAdvokasi ?? null;
+  // ── Derived data ────────────────────────────────────────────────────────────
+  const adv = (pekerja?.status_advokasi ?? (pekerja as any)?.statusAdvokasi ?? null) as StatusAdvokasi | null;
   const job = pekerja?.riwayat_pekerja?.find((r: any) => !r.tgl_keluar) ?? pekerja?.riwayat_pekerja?.[0] ?? null;
-  const medis = pekerja?.latest_detail_medis ?? pekerja?.detail_medis?.[0] ?? null;
+  const medis = pekerja?.latest_detail_medis ?? null;
   const hCfg = healthConfig[pekerja?.status_kesehatan ?? 'sehat'] ?? healthConfig.sehat;
-  const done = adv ? STEPS.filter(s => adv[s.key]).length : 0;
-  const pct = Math.round((done / 6) * 100);
-  const photo = pekerja?.pas_foto ? API_BASE + '/storage/profil/' + pekerja.pas_foto : null;
-  const docs = adv ? DOC_KEYS.filter(d => adv[d.pathKey]) : [];
+  const done = adv ? STEPS.filter(s => (adv as any)[s.key]).length : 0;
+  const pct  = Math.round((done / 6) * 100);
+  const photo = pekerja?.pas_foto 
+    ? `${API_BASE}/storage/profil/${pekerja.pas_foto}` 
+    : `https://api.dicebear.com/7.x/avataaars/svg?seed=${pekerja?.nama_lengkap || user?.nama || 'Pekerja'}`;
   const timeline = [
     { label: 'Terdaftar', at: pekerja?.created_at, icon: Shield, color: 'bg-slate-400' },
-    ...STEPS.filter(s => adv && adv[s.key]).map(s => ({
+    ...STEPS.filter(s => adv && (adv as any)[s.key]).map(s => ({
       label: s.label, icon: s.icon, color: s.color,
-      at: adv['bukti_' + (s.key === 'riwayat_pajanan' ? 'pajanan' : s.key) + '_at'],
+      at: (adv as any)[`bukti_${s.key === 'riwayat_pajanan' ? 'pajanan' : s.key}_at`],
     }))
-  ].filter(t => !!t.at).sort((a,b) => new Date(a.at).getTime() - new Date(b.at).getTime());
+  ].filter(t => !!t.at).sort((a, b) => new Date(a.at!).getTime() - new Date(b.at!).getTime());
 
   return (
     <div className="min-h-screen bg-[#f8fafc] font-sans">
       {/* HEADER */}
-      <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 sticky top-0 z-20 shadow-sm">
+      <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 sticky top-0 z-[50] shadow-sm">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-[#0284c7] rounded-lg flex items-center justify-center">
             <ShieldCheck className="h-4 w-4 text-white" />
@@ -345,7 +154,7 @@ export default function UserDashboardPage() {
 
       <main className="max-w-5xl mx-auto px-6 py-8 space-y-8">
         {incompleteData.length > 0 && (
-          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center justify-between gap-4 animate-in slide-in-from-top-4 duration-500">
+          <div className="bg-amber-50/90 backdrop-blur-md border border-amber-200 rounded-2xl p-4 flex items-center justify-between gap-4 animate-in slide-in-from-top-4 duration-500 sticky top-[80px] z-[40] shadow-lg shadow-amber-900/5 mb-6">
             <div className="flex items-center gap-3">
               <div className="bg-amber-100 p-2 rounded-xl text-amber-600">
                 <AlertCircle className="h-5 w-5" />
@@ -361,7 +170,10 @@ export default function UserDashboardPage() {
               className="bg-white border-amber-200 text-amber-700 hover:bg-amber-100 font-bold text-[10px]"
               onClick={() => {
                 const first = incompleteData[0];
-                if (first) openExposureEdit(first);
+                if (first) {
+                  document.getElementById('section-pajanan')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  setTimeout(() => openExposureEdit(first), 500);
+                }
               }}
             >
               Lengkapi Sekarang
@@ -397,6 +209,8 @@ export default function UserDashboardPage() {
             )}
           </div>
         </section>
+
+
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[
@@ -518,8 +332,8 @@ export default function UserDashboardPage() {
             </div>
             <div className="flex items-start min-w-[700px]">
               {STEPS.map((step, i) => {
-                const isDone = !!(adv[step.key]);
-                const isActive = !isDone && (i === 0 || !!(adv[STEPS[i-1]?.key]));
+                const isDone = !!(adv?.[step.key]);
+                const isActive = !isDone && (i === 0 || !!(adv?.[STEPS[i-1]?.key]));
                 const Icon = step.icon;
                 return (
                   <div key={step.key} className="flex items-start flex-1 last:flex-none">
@@ -559,11 +373,11 @@ export default function UserDashboardPage() {
             </div>
             <div className="space-y-4">
               {STEPS.map((step, i) => {
-                const isDone = !!(adv[step.key]);
-                const isActive = !isDone && (i === 0 || !!(adv[STEPS[i-1]?.key]));
+                const isDone = !!(adv?.[step.key]);
+                const isActive = !isDone && (i === 0 || !!(adv?.[STEPS[i-1]?.key]));
                 const docKey = DOC_KEYS.find(d => d.key === step.key);
-                const hasDoc = docKey && adv[docKey.pathKey];
-                const docDate = docKey && adv[docKey.dateKey];
+                const hasDoc = docKey ? (adv?.[docKey.pathKey] as string | undefined) : undefined;
+                const docDate = docKey ? (adv?.[docKey.dateKey] as string | undefined) : undefined;
                 const Icon = step.icon;
                 return (
                   <div key={step.key} className={cn(
@@ -634,24 +448,33 @@ export default function UserDashboardPage() {
           </Card>
         )}
 
-        <Card className="rounded-[24px] border-slate-100 shadow-sm p-6 bg-white overflow-hidden relative">
+        <Card id="section-pajanan" className="rounded-[24px] border-slate-100 shadow-sm p-6 bg-white overflow-hidden relative scroll-mt-32 transition-all duration-500">
           <div className="absolute top-[-20px] right-[-20px] opacity-[0.02] pointer-events-none">
              <Zap className="h-40 w-40" />
           </div>
-          <div className="flex items-center gap-2 mb-6 relative z-10">
-            <Zap className="h-4 w-4 text-amber-500" />
-            <h2 className="text-xs font-black text-[#94a3b8] tracking-widest uppercase">Riwayat Pajanan (Exposure History)</h2>
+          <div className="flex items-center justify-between mb-6 relative z-10">
+            <div className="flex items-center gap-2">
+              <Zap className="h-4 w-4 text-amber-500" />
+              <h2 className="text-xs font-black text-[#94a3b8] tracking-widest uppercase">Riwayat Pekerjaan & Pajanan</h2>
+            </div>
+            <Button 
+              onClick={openExposureAdd}
+              size="sm"
+              className="h-8 px-3 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 border-none font-bold text-[10px]"
+            >
+              <FilePlus className="h-3.5 w-3.5 mr-1.5" /> Tambah Riwayat
+            </Button>
           </div>
           
           <div className="overflow-x-auto relative z-10">
             <table className="w-full text-sm text-left border-separate border-spacing-y-2">
               <thead className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                 <tr>
-                  <th className="px-4 py-2">Perusahaan / Proyek</th>
-                  <th className="px-4 py-2">Jenis Pajanan</th>
-                  <th className="px-4 py-2">APD yang Digunakan</th>
-                  <th className="px-4 py-2">Durasi</th>
-                  <th className="px-4 py-2 text-right">Aksi</th>
+                  <th className="px-4 py-2 w-[25%]">Perusahaan / Proyek</th>
+                  <th className="px-4 py-2 w-[20%]">Jenis Pajanan</th>
+                  <th className="px-4 py-2 w-[35%]">APD yang Digunakan</th>
+                  <th className="px-4 py-2 w-[12%] text-center">Durasi</th>
+                  <th className="px-4 py-2 w-[8%] text-right">Aksi</th>
                 </tr>
               </thead>
               <tbody>
@@ -686,28 +509,22 @@ export default function UserDashboardPage() {
                                   if (!hasProvided && !hasOwn && !legacy) return <span className="text-slate-400 italic text-[11px]">-</span>;
 
                                   return (
-                                    <div className="flex flex-col gap-2.5 py-1">
+                                    <div className="flex flex-col gap-2 py-1">
                                       {hasProvided && (
-                                        <div className="flex items-start gap-2">
-                                          <div className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)] shrink-0" />
-                                          <div className="flex flex-col">
-                                            <span className="text-[8px] font-black text-blue-600/80 uppercase tracking-[0.05em] leading-none mb-1">Oleh Perusahaan</span>
-                                            <span className="text-[11px] text-slate-700 font-bold leading-snug">{provided}</span>
-                                          </div>
+                                        <div className="flex flex-col">
+                                          <span className="text-[8px] font-black text-blue-500 uppercase tracking-tighter mb-0.5">Disediakan Perusahaan:</span>
+                                          <span className="text-[11px] text-slate-700 font-bold leading-snug">{provided}</span>
                                         </div>
                                       )}
                                       {hasOwn && (
-                                        <div className="flex items-start gap-2">
-                                          <div className="mt-1.5 h-1.5 w-1.5 rounded-full bg-slate-400 shrink-0" />
-                                          <div className="flex flex-col">
-                                            <span className="text-[8px] font-black text-slate-500 uppercase tracking-[0.05em] leading-none mb-1">Milik Mandiri</span>
-                                            <span className="text-[11px] text-slate-700 font-bold leading-snug">{own}</span>
-                                          </div>
+                                        <div className="flex flex-col">
+                                          <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter mb-0.5">Milik Mandiri:</span>
+                                          <span className="text-[11px] text-slate-700 font-bold leading-snug">{own}</span>
                                         </div>
                                       )}
                                       {!hasProvided && !hasOwn && legacy && (
-                                         <div className="flex items-start gap-2">
-                                           <div className="mt-1.5 h-1.5 w-1.5 rounded-full bg-slate-300 shrink-0" />
+                                         <div className="flex flex-col">
+                                           <span className="text-[8px] font-black text-blue-400 uppercase tracking-tighter mb-0.5">Riwayat APD:</span>
                                            <span className="text-[11px] text-slate-600 font-medium leading-snug">{legacy}</span>
                                          </div>
                                       )}
@@ -717,9 +534,11 @@ export default function UserDashboardPage() {
                              })()}
                            </div>
                         </td>
-                        <td className="px-4 py-4 bg-slate-50/50 border-y border-slate-100 group-hover:bg-blue-50/30 transition-colors text-[11px] font-black text-slate-700">
-                          {r.durasi_pajanan ? `${r.durasi_pajanan} Tahun` : '-'}
-                        </td>
+                         <td className="px-4 py-4 bg-slate-50/50 border-y border-slate-100 group-hover:bg-blue-50/30 transition-colors text-center whitespace-nowrap">
+                           <span className="inline-flex items-center px-3 py-1 bg-white text-blue-600 rounded-full border border-blue-100 text-[11px] font-black shadow-sm">
+                             {r.durasi_pajanan ? `${r.durasi_pajanan} Tahun` : '-'}
+                           </span>
+                         </td>
                         <td className="px-4 py-4 bg-slate-50/50 rounded-r-2xl border-y border-r border-slate-100 group-hover:bg-blue-50/30 transition-colors text-right">
                           <Button 
                             variant="ghost" 
@@ -747,34 +566,92 @@ export default function UserDashboardPage() {
 
         <div className="grid lg:grid-cols-2 gap-8">
           <Card className="rounded-[24px] border-slate-100 shadow-sm p-6 bg-white">
-            <div className="flex items-center gap-2 mb-6">
-              <Briefcase className="h-4 w-4 text-[#0284c7]" />
-              <h2 className="text-xs font-black text-[#94a3b8] tracking-widest uppercase">Pilih Pekerjaan</h2>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-2">
+                <Briefcase className="h-4 w-4 text-[#0284c7]" />
+                <h2 className="text-xs font-black text-[#94a3b8] tracking-widest uppercase">Pilih Pekerjaan</h2>
+              </div>
+              <Button 
+                onClick={openExposureAdd}
+                variant="ghost" 
+                size="sm" 
+                className="h-8 px-2 text-[#0284c7] hover:bg-blue-50 font-bold text-[10px] uppercase tracking-wider gap-1"
+              >
+                <Plus className="h-3 w-3" />
+                Tambah
+              </Button>
             </div>
-            {pekerja?.riwayat_pekerja?.length > 0 ? (
+            {(pekerja?.riwayat_pekerja?.length ?? 0) > 0 ? (
               <div className="space-y-3">
-                {pekerja.riwayat_pekerja.map((r: any, i: number) => (
-                  <button 
+                {(pekerja?.riwayat_pekerja || []).map((r: any, i: number) => (
+                  <div 
                     key={i} 
-                    onClick={() => setSelectedRiwayatId(r.id)}
                     className={cn(
-                      "w-full text-left p-4 rounded-2xl border transition-all hover:shadow-md",
+                      "group relative w-full p-4 rounded-2xl border transition-all cursor-pointer",
                       selectedRiwayatId === r.id 
-                        ? "bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-100 scale-[1.02]" 
+                        ? "bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-100" 
                         : "bg-slate-50 border-slate-100 text-slate-800 hover:bg-slate-100"
                     )}
+                    onClick={() => setSelectedRiwayatId(r.id)}
                   >
                     <div className="flex justify-between items-start gap-2">
                       <div className="min-w-0 flex-1">
-                        <p className={cn("text-xs font-black truncate", selectedRiwayatId === r.id ? "text-white" : "text-slate-800")}>{r.nama_perusahaan}</p>
-                        <p className={cn("text-[10px] font-bold mt-0.5", selectedRiwayatId === r.id ? "text-blue-100" : "text-slate-500")}>{r.jabatan}</p>
+                        <p className={cn("text-sm font-black truncate", selectedRiwayatId === r.id ? "text-white" : "text-slate-800")}>
+                          {r.nama_perusahaan || 'Perusahaan Tidak Diketahui'}
+                        </p>
+                        <p className={cn("text-[10px] font-bold mt-0.5", selectedRiwayatId === r.id ? "text-blue-100" : "text-slate-500")}>
+                          {r.jabatan || 'Jabatan Belum Diisi'}
+                        </p>
                         <div className={cn("flex items-center gap-1 mt-2 text-[9px] font-bold", selectedRiwayatId === r.id ? "text-blue-200" : "text-slate-400")}>
                           <Calendar className="h-2.5 w-2.5" /> {fmt(r.tgl_masuk)} - {r.tgl_keluar ? fmt(r.tgl_keluar) : 'Sekarang'}
                         </div>
+
+                        {/* MUTASI JABATAN (User Dashboard List) */}
+                        {(() => {
+                          try {
+                            const info = typeof r.informal_data === 'string' ? JSON.parse(r.informal_data) : r.informal_data;
+                            const mutations = info?.mutasi_jabatan || [];
+                            if (mutations.length === 0) return null;
+                            return (
+                              <div className={cn("mt-3 pt-3 border-t", selectedRiwayatId === r.id ? "border-blue-500/30" : "border-slate-200")}>
+                                <p className={cn("text-[8px] font-black uppercase tracking-wider mb-2 flex items-center gap-1", selectedRiwayatId === r.id ? "text-blue-200" : "text-slate-400")}>
+                                  <RefreshCw className="h-2.5 w-2.5" /> Histori Bagian Internal
+                                </p>
+                                <div className="space-y-2">
+                                  {mutations.map((m: any, midx: number) => (
+                                    <div key={midx} className="flex justify-between items-start gap-2">
+                                      <div className="min-w-0">
+                                        <p className={cn("text-[10px] font-bold truncate", selectedRiwayatId === r.id ? "text-white" : "text-slate-700")}>{m.bagian || '-'}</p>
+                                        <p className={cn("text-[8px] font-medium", selectedRiwayatId === r.id ? "text-blue-200" : "text-slate-400")}>{m.jabatan || '-'}</p>
+                                      </div>
+                                      <span className={cn("text-[9px] font-bold shrink-0", selectedRiwayatId === r.id ? "text-blue-100" : "text-slate-400")}>{m.tahun || '-'}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          } catch(e) { return null; }
+                        })()}
                       </div>
-                      {!r.tgl_keluar && <span className={cn("text-[8px] font-black px-1.5 py-0.5 rounded-full", selectedRiwayatId === r.id ? "bg-white text-blue-600" : "bg-blue-600 text-white")}>AKTIF</span>}
+                      <div className="flex flex-col items-end gap-2">
+                        {!r.tgl_keluar && <span className={cn("text-[8px] font-black px-1.5 py-0.5 rounded-full", selectedRiwayatId === r.id ? "bg-white text-blue-600" : "bg-blue-600 text-white")}>AKTIF</span>}
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className={cn(
+                            "h-7 w-7 rounded-lg transition-all opacity-0 group-hover:opacity-100",
+                            selectedRiwayatId === r.id ? "hover:bg-blue-500 text-white" : "hover:bg-white text-slate-400"
+                          )}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openExposureEdit(r);
+                          }}
+                        >
+                          <Settings className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
                     </div>
-                  </button>
+                  </div>
                 ))}
               </div>
             ) : (
@@ -784,9 +661,20 @@ export default function UserDashboardPage() {
 
           <Card className="rounded-[24px] border-slate-100 shadow-sm p-6 bg-white min-h-[400px]">
             <div className="mb-5">
-              <div className="flex items-center gap-2 mb-2">
-                <HeartPulse className="h-4 w-4 text-[#0284c7]" />
-                <h2 className="text-xs font-black text-[#94a3b8] tracking-widest uppercase">Riwayat Kesehatan di Perusahaan Ini</h2>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <HeartPulse className="h-4 w-4 text-[#0284c7]" />
+                  <h2 className="text-xs font-black text-[#94a3b8] tracking-widest uppercase">Riwayat Kesehatan</h2>
+                </div>
+                {selectedRiwayatId && (
+                  <Button 
+                    onClick={openMedisAdd}
+                    size="sm"
+                    className="h-8 px-3 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border-none font-bold text-[10px]"
+                  >
+                    <Plus className="h-3.5 w-3.5 mr-1.5" /> Tambah Catatan
+                  </Button>
+                )}
               </div>
               {selectedRiwayatId && (
                 <div className="flex items-center gap-2 px-3 py-2 bg-blue-50/50 text-blue-700 rounded-2xl border border-blue-100/50 w-fit">
@@ -794,7 +682,7 @@ export default function UserDashboardPage() {
                     <Building2 className="h-3 w-3 text-white" />
                   </div>
                   <span className="text-[11px] font-black uppercase tracking-tight pr-1">
-                    {pekerja.riwayat_pekerja.find((r: any) => r.id === selectedRiwayatId)?.nama_perusahaan}
+                    {pekerja?.riwayat_pekerja?.find((r: any) => r.id === selectedRiwayatId)?.nama_perusahaan}
                   </span>
                 </div>
               )}
@@ -829,6 +717,14 @@ export default function UserDashboardPage() {
                           )}>
                             {formatHealthStatus(m.status_kesehatan)}
                           </span>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() => openMedisEdit(m)}
+                            className="h-8 w-8 text-slate-400 hover:text-blue-600"
+                          >
+                            <Settings className="h-3.5 w-3.5" />
+                          </Button>
                         </div>
                         
                         <div className="grid grid-cols-2 gap-4 mt-4">
@@ -887,9 +783,8 @@ export default function UserDashboardPage() {
                 <h2 className="text-xs font-black text-[#94a3b8] tracking-widest uppercase">Lini Masa Aktivitas</h2>
               </div>
               <div className="relative space-y-6 before:absolute before:inset-0 before:ml-[15.5px] before:h-full before:w-[2px] before:bg-slate-100">
-                {timeline.map((t, i) => {
+                {timeline.map((t: any, i: number) => {
                   const Icon = t.icon;
-                  const isLast = i === timeline.length - 1;
                   return (
                     <div key={i} className="relative flex items-start gap-4 group">
                       <div className={cn(
@@ -935,7 +830,7 @@ export default function UserDashboardPage() {
                   onChange={(e) => setUploadForm({ ...uploadForm, step_key: e.target.value })}
                 >
                   <option value="" disabled hidden>Pilih Tahapan...</option>
-                  {STEPS.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
+                  {STEPS.map((s: any) => <option key={s.key} value={s.key}>{s.label}</option>)}
                 </select>
               </div>
               <div className="space-y-2">
@@ -976,7 +871,58 @@ export default function UserDashboardPage() {
               Perbarui informasi kontak agar tim advokasi dapat menghubungi Anda dengan mudah.
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleUpdateProfile} className="space-y-5 py-4">
+          <form onSubmit={handleUpdateProfile} className="space-y-4 py-4 max-h-[70vh] overflow-y-auto px-1">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="nik" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">NIK</Label>
+                <Input 
+                  id="nik"
+                  placeholder="16 digit NIK"
+                  className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500"
+                  value={profileForm.nik}
+                  onChange={(e) => setProfileForm({...profileForm, nik: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="nama" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nama Lengkap</Label>
+                <Input 
+                  id="nama"
+                  placeholder="Nama sesuai KTP"
+                  className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500"
+                  value={profileForm.nama_lengkap}
+                  onChange={(e) => setProfileForm({...profileForm, nama_lengkap: e.target.value})}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Jenis Kelamin</Label>
+                <Select 
+                  value={profileForm.jenis_kelamin} 
+                  onValueChange={(v) => setProfileForm({...profileForm, jenis_kelamin: v || ''})}
+                >
+                  <SelectTrigger className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500">
+                    <SelectValue placeholder="Pilih..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="L">Laki-laki</SelectItem>
+                    <SelectItem value="P">Perempuan</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="dob" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tanggal Lahir</Label>
+                <Input 
+                  id="dob"
+                  type="date"
+                  className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500"
+                  value={profileForm.tanggal_lahir}
+                  onChange={(e) => setProfileForm({...profileForm, tanggal_lahir: e.target.value})}
+                />
+              </div>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="wa" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nomor WhatsApp</Label>
               <Input 
@@ -988,14 +934,20 @@ export default function UserDashboardPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="addr" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Alamat Domisili</Label>
-              <Textarea 
-                id="addr"
-                placeholder="Masukkan alamat tinggal Anda saat ini..."
-                className="rounded-xl bg-slate-50 border-slate-200 min-h-[100px] font-bold focus:ring-blue-500"
+              <Label htmlFor="addr" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Provinsi Domisili</Label>
+              <Select 
                 value={profileForm.domisili}
-                onChange={(e) => setProfileForm({...profileForm, domisili: e.target.value})}
-              />
+                onValueChange={(v) => setProfileForm({...profileForm, domisili: v || ''})}
+              >
+                <SelectTrigger id="addr" className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500">
+                  <SelectValue placeholder="Pilih Provinsi Domisili" />
+                </SelectTrigger>
+                <SelectContent className="max-h-[300px]">
+                  {PROVINCES.map((prov: string) => (
+                    <SelectItem key={prov} value={prov}>{prov}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="photo" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pas Foto Baru (Opsional)</Label>
@@ -1063,17 +1015,81 @@ export default function UserDashboardPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Exposure Edit Modal */}
       <Dialog open={isExposureModalOpen} onOpenChange={setIsExposureModalOpen}>
-        <DialogContent className="sm:max-w-[425px] rounded-[24px]">
+        <DialogContent className="sm:max-w-[480px] rounded-[24px]">
           <DialogHeader>
-            <DialogTitle className="text-xl font-black text-slate-800">Lengkapi Data Pajanan</DialogTitle>
+            <DialogTitle className="text-xl font-black text-slate-800">Edit Riwayat & Pajanan</DialogTitle>
             <DialogDescription className="text-xs font-medium text-slate-500">
-              Informasi pajanan di {exposureForm.nama_perusahaan} sangat penting untuk mendeteksi Penyakit Akibat Kerja (PAK).
+              Perbarui detail pekerjaan dan informasi pajanan Anda untuk mempermudah deteksi PAK.
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleUpdateExposure} className="space-y-5 py-4">
+          <form onSubmit={handleUpdateExposure} className="space-y-4 py-4 max-h-[75vh] overflow-y-auto px-1">
             <div className="space-y-2">
+              <Label htmlFor="perusahaan" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nama Perusahaan / Proyek</Label>
+              <Input 
+                id="perusahaan"
+                className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500"
+                value={exposureForm.nama_perusahaan}
+                onChange={(e) => setExposureForm({...exposureForm, nama_perusahaan: e.target.value})}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="jabatan" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Jabatan</Label>
+                <Input 
+                  id="jabatan"
+                  placeholder="Contoh: Welder, Admin..."
+                  className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500"
+                  value={exposureForm.jabatan}
+                  onChange={(e) => setExposureForm({...exposureForm, jabatan: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Status Kerja</Label>
+                <Select 
+                  value={exposureForm.status_pekerjaan} 
+                  onValueChange={(v) => setExposureForm({...exposureForm, status_pekerjaan: v || ''})}
+                >
+                  <SelectTrigger className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500">
+                    <SelectValue placeholder="Pilih..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Masih Bekerja">Masih Bekerja</SelectItem>
+                    <SelectItem value="Sudah Berhenti">Sudah Berhenti</SelectItem>
+                    <SelectItem value="Kontrak Selesai">Kontrak Selesai</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="masuk" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tgl Masuk</Label>
+                <Input 
+                  id="masuk"
+                  type="date"
+                  className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500"
+                  value={exposureForm.tgl_masuk}
+                  onChange={(e) => setExposureForm({...exposureForm, tgl_masuk: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="keluar" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tgl Keluar (Opsional)</Label>
+                <Input 
+                  id="keluar"
+                  type="date"
+                  disabled={exposureForm.status_pekerjaan === 'Masih Bekerja'}
+                  className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500 disabled:opacity-50"
+                  value={exposureForm.tgl_keluar}
+                  onChange={(e) => setExposureForm({...exposureForm, tgl_keluar: e.target.value})}
+                />
+              </div>
+            </div>
+
+            <div className="h-px bg-slate-100 my-2" />
+
+            <div className="grid grid-cols-2 gap-4">
               <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Jenis Pajanan</Label>
               <Select 
                 value={exposureForm.jenis_pajanan} 
@@ -1102,6 +1118,16 @@ export default function UserDashboardPage() {
               />
             </div>
             <div className="space-y-2">
+              <Label htmlFor="deskripsi" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Deskripsi Pekerjaan / Tanggung Jawab</Label>
+              <Textarea 
+                id="deskripsi"
+                placeholder="Jelaskan apa yang Anda kerjakan di posisi ini..."
+                className="rounded-xl bg-slate-50 border-slate-200 min-h-[80px] font-bold focus:ring-blue-500 resize-none"
+                value={exposureForm.deskripsi_pekerjaan}
+                onChange={(e) => setExposureForm({...exposureForm, deskripsi_pekerjaan: e.target.value})}
+              />
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="apd_dist" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">APD yang Disediakan Perusahaan</Label>
               <Input 
                 id="apd_dist"
@@ -1125,6 +1151,98 @@ export default function UserDashboardPage() {
               <Button type="submit" disabled={exposureLoading} className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black shadow-lg shadow-blue-100 transition-all">
                 {exposureLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
                 Simpan Data Pajanan
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Health History Modal */}
+      <Dialog open={isMedisModalOpen} onOpenChange={setIsMedisModalOpen}>
+        <DialogContent className="sm:max-w-[480px] rounded-[24px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-black text-slate-800">
+              {medisForm.id ? 'Edit Catatan Medis' : 'Tambah Catatan Medis'}
+            </DialogTitle>
+            <DialogDescription className="text-xs font-medium text-slate-500">
+              Masukkan detail pemeriksaan kesehatan Anda untuk melengkapi rekam medis di sistem.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleUpdateMedis} className="space-y-4 py-4 max-h-[75vh] overflow-y-auto px-1">
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Jenis Pemeriksaan</Label>
+              <Input 
+                placeholder="Contoh: MCU Tahunan, Pemeriksaan Klinis..."
+                className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500"
+                value={medisForm.jenis_pemeriksaan}
+                onChange={(e) => setMedisForm({...medisForm, jenis_pemeriksaan: e.target.value})}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tgl Pemeriksaan</Label>
+                <Input 
+                  type="date"
+                  className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500"
+                  value={medisForm.tanggal_pemeriksaan}
+                  onChange={(e) => setMedisForm({...medisForm, tanggal_pemeriksaan: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Status Kesehatan</Label>
+                <Select 
+                  value={medisForm.status_kesehatan} 
+                  onValueChange={(v) => setMedisForm({...medisForm, status_kesehatan: v || ''})}
+                >
+                  <SelectTrigger className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500 capitalize">
+                    <SelectValue placeholder="Pilih...">
+                      {formatHealthStatus(medisForm.status_kesehatan)}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sehat">Sehat / Fit</SelectItem>
+                    <SelectItem value="sehat_dengan_catatan">Sehat dengan Catatan</SelectItem>
+                    <SelectItem value="tidak_sehat">Tidak Sehat / Unfit</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Hasil Diagnosis</Label>
+              <Textarea 
+                placeholder="Hasil diagnosa dokter..."
+                className="rounded-xl bg-slate-50 border-slate-200 min-h-[80px] font-bold focus:ring-blue-500"
+                value={medisForm.hasil_diagnosis}
+                onChange={(e) => setMedisForm({...medisForm, hasil_diagnosis: e.target.value})}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Rekomendasi / Saran</Label>
+              <Textarea 
+                placeholder="Saran dari dokter atau tindak lanjut..."
+                className="rounded-xl bg-slate-50 border-slate-200 min-h-[80px] font-bold focus:ring-blue-500"
+                value={medisForm.rekomendasi}
+                onChange={(e) => setMedisForm({...medisForm, rekomendasi: e.target.value})}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Dokter Pemeriksa</Label>
+              <Input 
+                placeholder="Nama dokter atau klinik..."
+                className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500"
+                value={medisForm.dokter_pemeriksa}
+                onChange={(e) => setMedisForm({...medisForm, dokter_pemeriksa: e.target.value})}
+              />
+            </div>
+
+            <DialogFooter className="pt-2">
+              <Button type="submit" disabled={medisLoading} className="w-full h-11 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black shadow-lg shadow-emerald-100 transition-all">
+                {medisLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
+                {medisForm.id ? 'Simpan Perubahan' : 'Tambah Rekam Medis'}
               </Button>
             </DialogFooter>
           </form>

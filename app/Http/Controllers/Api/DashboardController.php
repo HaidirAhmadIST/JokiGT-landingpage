@@ -7,82 +7,120 @@ use App\Models\Pekerja;
 use App\Models\Perusahaan;
 use App\Models\StatusAdvokasi;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 
+/**
+ * DashboardController
+ *
+ * Menyediakan statistik agregat untuk halaman Dashboard Admin.
+ * Data di-cache selama 30 detik untuk mencegah beban database berlebih
+ * saat banyak admin membuka halaman secara bersamaan.
+ */
 class DashboardController extends Controller
 {
     /**
-     * Get statistics for the dashboard.
+     * Mengambil statistik utama dashboard admin.
+     *
+     * Menghitung total pekerja, kasus aktif, advokasi selesai, klaim disetujui,
+     * total perusahaan, dan breakdown status kesehatan pekerja.
+     *
+     * @return JsonResponse
      */
     public function stats(): JsonResponse
     {
         try {
-            $now = now();
-            $startOfThisMonth = $now->copy()->startOfMonth();
+            // Cache 30 detik agar tidak memukul DB setiap request
+            $data = cache()->remember('admin_dashboard_stats', 30, function () {
+                $startOfThisMonth = now()->startOfMonth();
 
-            $calcTrend = function ($current, $previous) {
-                if ($previous == 0) return $current > 0 ? 100 : 0;
-                return round((($current - $previous) / $previous) * 100, 1);
-            };
+                // ── Pekerja ─────────────────────────────────────────────────────
+                $totalPekerja = Pekerja::count();
+                $newPekerja   = Pekerja::where('created_at', '>=', $startOfThisMonth)->count();
 
-            // 1. Total Pekerja
-            $totalPekerja = Pekerja::count();
-            $totalPekerjaLastMonth = Pekerja::where('created_at', '<', $startOfThisMonth)->count();
+                // ── Kasus Aktif (Advokasi yang belum selesai rehabilitasi) ───────
+                $kasusAktif = StatusAdvokasi::whereNotNull('jenis_kasus')
+                    ->where('rehabilitasi_bpjskes', false)
+                    ->count();
+                $newKasus   = StatusAdvokasi::whereNotNull('jenis_kasus')
+                    ->where('rehabilitasi_bpjskes', false)
+                    ->where('created_at', '>=', $startOfThisMonth)
+                    ->count();
 
-            // 2. Kasus Aktif
-            $kasusAktif = StatusAdvokasi::whereNotNull('jenis_kasus')
-                ->where('rehabilitasi_bpjskes', false)
-                ->count();
-            $kasusAktifLastMonth = StatusAdvokasi::whereNotNull('jenis_kasus')
-                ->where('rehabilitasi_bpjskes', false)
-                ->where('created_at', '<', $startOfThisMonth)
-                ->count();
+                // ── Advokasi Selesai ─────────────────────────────────────────────
+                $advokasiSelesai = StatusAdvokasi::where('rehabilitasi_bpjskes', true)->count();
+                $newSelesai      = StatusAdvokasi::where('created_at', '>=', $startOfThisMonth)
+                    ->where('rehabilitasi_bpjskes', true)
+                    ->count();
 
-            // 3. Advokasi Selesai
-            $advokasiSelesai = StatusAdvokasi::where('rehabilitasi_bpjskes', true)->count();
-            $advokasiSelesaiLastMonth = StatusAdvokasi::where('rehabilitasi_bpjskes', true)
-                ->where('created_at', '<', $startOfThisMonth)
-                ->count();
+                // ── Klaim Disetujui ──────────────────────────────────────────────
+                $klaimDisetujui = StatusAdvokasi::where('kompensasi_bpjstk', true)->count();
+                $newKlaim       = StatusAdvokasi::where('created_at', '>=', $startOfThisMonth)
+                    ->where('kompensasi_bpjstk', true)
+                    ->count();
 
-            // 4. Klaim Disetujui
-            $klaimDisetujui = StatusAdvokasi::where('kompensasi_bpjstk', true)->count();
-            $klaimDisetujuiLastMonth = StatusAdvokasi::where('kompensasi_bpjstk', true)
-                ->where('created_at', '<', $startOfThisMonth)
-                ->count();
+                // ── Perusahaan ───────────────────────────────────────────────────
+                $totalPerusahaan = Perusahaan::count();
+                $newPerusahaan   = Perusahaan::where('created_at', '>=', $startOfThisMonth)->count();
 
-            // 5. Total Perusahaan
-            $totalPerusahaan = Perusahaan::count();
-            $totalPerusahaanLastMonth = Perusahaan::where('created_at', '<', $startOfThisMonth)->count();
+                // ── Status Kesehatan (Optimized to 1 Query) ─────────────────────
+                $kesehatanStats = Pekerja::selectRaw("
+                    COUNT(CASE WHEN status_kesehatan = 'sehat' THEN 1 END) as fit,
+                    COUNT(CASE WHEN status_kesehatan = 'sehat_dengan_catatan' THEN 1 END) as note,
+                    COUNT(CASE WHEN status_kesehatan = 'tidak_sehat' THEN 1 END) as unfit
+                ")->first();
 
-            // 6. Statistik Kesehatan
-            $kesehatan = [
-                'fit' => Pekerja::where('status_kesehatan', 'sehat')->count(),
-                'note' => Pekerja::where('status_kesehatan', 'sehat_dengan_catatan')->count(),
-                'unfit' => Pekerja::where('status_kesehatan', 'tidak_sehat')->count(),
-            ];
+                $kesehatan = [
+                    'fit'   => (int) $kesehatanStats->fit,
+                    'note'  => (int) $kesehatanStats->note,
+                    'unfit' => (int) $kesehatanStats->unfit,
+                ];
+
+                // ── Sebaran Wilayah Kasus (PAK/dll) ──────────────────────────────
+                // Optimasi: Tidak menggunakan LOWER() di SQL untuk menghindari Full Table Scan jika ada Index.
+                // MySQL default collation (utf8mb4_unicode_ci) sudah case-insensitive untuk GROUP BY.
+                $sebaranWilayah = \Illuminate\Support\Facades\DB::table('status_advokasi')
+                    ->join('pekerja', 'status_advokasi.pekerja_id', '=', 'pekerja.id')
+                    ->whereNotNull('status_advokasi.jenis_kasus')
+                    ->select('pekerja.domisili', \Illuminate\Support\Facades\DB::raw('COUNT(*) as total'))
+                    ->groupBy('pekerja.domisili')
+                    ->get()
+                    ->filter(function($item) {
+                        return !empty($item->domisili);
+                    })
+                    ->mapWithKeys(function ($item) {
+                        // Normalisasi ke huruf kecil di level PHP (Aman & Ringan)
+                        $provinsi = strtolower(trim($item->domisili));
+                        return [$provinsi => (int) $item->total];
+                    })->toArray();
+
+                return [
+                    'total_pekerja'       => $totalPekerja,
+                    'total_pekerja_new'   => $newPekerja,
+                    'kasus_aktif'         => $kasusAktif,
+                    'kasus_aktif_new'     => $newKasus,
+                    'advokasi_selesai'    => $advokasiSelesai,
+                    'advokasi_selesai_new'=> $newSelesai,
+                    'klaim_disetujui'     => $klaimDisetujui,
+                    'klaim_disetujui_new' => $newKlaim,
+                    'total_perusahaan'    => $totalPerusahaan,
+                    'total_perusahaan_new'=> $newPerusahaan,
+                    'kesehatan'           => $kesehatan,
+                    'sebaran_wilayah'     => $sebaranWilayah,
+                ];
+            });
 
             return response()->json([
                 'status' => 'success',
-                'data' => [
-                    'total_pekerja' => $totalPekerja,
-                    'total_pekerja_new' => $totalPekerja - $totalPekerjaLastMonth,
-                    'kasus_aktif' => $kasusAktif,
-                    'kasus_aktif_new' => $kasusAktif - $kasusAktifLastMonth,
-                    'advokasi_selesai' => $advokasiSelesai,
-                    'advokasi_selesai_new' => $advokasiSelesai - $advokasiSelesaiLastMonth,
-                    'klaim_disetujui' => $klaimDisetujui,
-                    'klaim_disetujui_new' => $klaimDisetujui - $klaimDisetujuiLastMonth,
-                    'total_perusahaan' => $totalPerusahaan,
-                    'total_perusahaan_new' => $totalPerusahaan - $totalPerusahaanLastMonth,
-                    'kesehatan' => $kesehatan,
-                ]
+                'data'   => $data,
             ]);
 
-
         } catch (\Exception $e) {
+            Log::error('DashboardController@stats failed: ' . $e->getMessage());
 
             return response()->json([
-                'status' => 'error',
-                'message' => 'Gagal mengambil statistik: ' . $e->getMessage()
+                'status'  => 'error',
+                'message' => 'Gagal mengambil statistik dashboard.',
+                'error'   => env('APP_DEBUG') ? $e->getMessage() : null,
             ], 500);
         }
     }

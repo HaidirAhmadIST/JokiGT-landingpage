@@ -11,9 +11,20 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Bell, Globe, User, ShieldAlert, ArrowRight, ArrowLeft, Plus, UploadCloud, Save, CheckCircle, X, Activity, Info, Briefcase, HeartPulse, ClipboardList, Zap } from 'lucide-react';
+import { Bell, Globe, User, ShieldAlert, ArrowRight, ArrowLeft, Plus, UploadCloud, Save, CheckCircle, X, Activity, Info, Briefcase, HeartPulse, ClipboardList, Zap, Trash2, RefreshCw, Eye, EyeOff, Lock, Mail, ChevronDown, ChevronUp } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { cn, formatHealthStatus } from '@/lib/utils';
 import FormDetailMedis, { type DataMedis } from '@/components/FormDetailMedis';
+import { PROVINCES } from '@/lib/provinces';
 
 const STORAGE_KEY = 'REKAM_JEJAK_FORM_DATA';
 
@@ -26,6 +37,7 @@ export default function PendaftaranPekerjaPage() {
   // Email locked to the logged-in user's account
   const [lockedEmail, setLockedEmail] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
+  const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
 
 
   // Form States 
@@ -47,6 +59,7 @@ export default function PendaftaranPekerjaPage() {
     jenis_pajanan: '',
     durasi_pajanan: '',
     file_bukti: [] as File[],
+    collapsed: false,
     riwayat_pemeriksaan: [] as any[],
     informal_data: {
       tugas_spesifik: '',
@@ -56,6 +69,7 @@ export default function PendaftaranPekerjaPage() {
       apd_disediakan: '',
       jenis_apd_sendiri: '',
       lokasi_proyek: [''],
+      mutasi_jabatan: [] as { bagian: string; jabatan: string; tahun: string }[],
     }
   });
 
@@ -115,14 +129,16 @@ export default function PendaftaranPekerjaPage() {
     apd_disediakan: '',
     jenis_apd_sendiri: '',
     lokasi_proyek: [] as string[],
-    riwayat_pemeriksaan: [] as any[]
+    riwayat_pemeriksaan: [] as any[],
+    mutasi_jabatan: [] as { bagian: string; jabatan: string; tahun: string }[],
+    file_bukti: [] as File[]
   });
 
   const [baseData, setBaseData] = useState({
     nik: '',
     nama_lengkap: '',
     email: '',
-    password: 'password123',
+    password: '',
     perusahaan_id: '',
     status_kesehatan: 'sehat',
     catatan_admin: '',
@@ -138,9 +154,10 @@ export default function PendaftaranPekerjaPage() {
     alergi: '',
     riwayat_operasi: '',
     obat_rutin: '',
-    riwayat_merokok: 'Tidak Pernah',
     riwayat_pemeriksaan: []
   });
+
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleDetailMedisChange = (field: keyof DataMedis, value: any) => {
     setDetailMedisData(prev => ({ ...prev, [field]: value }));
@@ -330,6 +347,11 @@ export default function PendaftaranPekerjaPage() {
       scrollToField('email', 1);
       return;
     }
+    if (!baseData.password || baseData.password.length < 8) {
+      toast.error("Password minimal 8 karakter!");
+      scrollToField('password', 1);
+      return;
+    }
     setLoading(true);
     try {
       let finalPerusahaanId = baseData.perusahaan_id;
@@ -397,6 +419,7 @@ export default function PendaftaranPekerjaPage() {
             apd_disediakan: pekerjaanSaatIni.apd_disediakan,
             jenis_apd_sendiri: pekerjaanSaatIni.jenis_apd_sendiri,
             lokasi_proyek: pekerjaanSaatIni.lokasi_proyek,
+            mutasi_jabatan: pekerjaanSaatIni.mutasi_jabatan,
           },
           riwayat_pemeriksaan: (pekerjaanSaatIni.riwayat_pemeriksaan || []).filter(
             (m: any) => m.tanggal_pemeriksaan && m.hasil_diagnosis
@@ -592,15 +615,27 @@ export default function PendaftaranPekerjaPage() {
           
           if (user.role === 'admin' || user.role === 'petugas') {
             // Admin/Petugas goes to main dashboard (clean-sync)
-            router.push('/');
+            router.push('/dashboard-admin');
           } else {
             // Regular worker (viewer) goes to their user dashboard
             localStorage.setItem('user', JSON.stringify({ ...user, pekerja_id: pekerjaId }));
             router.push('/dashboard-user');
           }
         } else {
-          // Guest goes to set password for activation
-          router.push(`/register-password?email=${encodeURIComponent(baseData.email)}`);
+          // AUTO-LOGIN: Set user session and redirect to dashboard
+          const userData = {
+            id: response.data.data.user_id,
+            email: baseData.email,
+            nama_lengkap: baseData.nama_lengkap,
+            role: 'viewer',
+            pekerja_id: response.data.data.id
+          };
+          
+          localStorage.setItem('user', JSON.stringify(userData));
+          localStorage.removeItem(STORAGE_KEY);
+          
+          toast.success('Pendaftaran Berhasil! Menuju dashboard Anda...');
+          router.push('/dashboard-user');
         }
       } catch (error: any) {
 
@@ -657,12 +692,7 @@ export default function PendaftaranPekerjaPage() {
             variant="ghost"
             size="sm"
             className="text-xs font-bold text-red-500 hover:text-red-600 hover:bg-red-50 px-3"
-            onClick={() => {
-              if (confirm("Anda yakin ingin menghapus seluruh progres pendaftaran ini? Data yang sudah diisi akan hilang.")) {
-                localStorage.removeItem(STORAGE_KEY);
-                window.location.reload();
-              }
-            }}
+            onClick={() => setIsResetDialogOpen(true)}
           >
             Hapus Sesi / Reset
           </Button>
@@ -797,23 +827,61 @@ export default function PendaftaranPekerjaPage() {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="email">Alamat Email (Wajib untuk Login)</Label>
-                      <Input
-                        id="email"
-                        placeholder="nama@email.com"
-                        type="email"
-                        className={`h-11 ${duplicateWarning.email ? 'border-amber-400 bg-amber-50/30' : ''}`}
-                        value={baseData.email}
-                        onChange={e => setBaseData({ ...baseData, email: e.target.value })}
-                        onBlur={(e) => checkDuplicate('email', e.target.value)}
-                        disabled={!!lockedEmail}
-                      />
-
+                      <Label htmlFor="email">Alamat Email</Label>
+                      <div className="relative">
+                        <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                        <Input
+                          id="email"
+                          type="email"
+                          placeholder="contoh@email.com"
+                          className={cn("h-11 pl-10", lockedEmail ? "bg-slate-50 cursor-not-allowed" : "")}
+                          readOnly={!!lockedEmail}
+                          value={baseData.email}
+                          onChange={e => setBaseData({ ...baseData, email: e.target.value })}
+                          onBlur={(e) => checkDuplicate('email', e.target.value)}
+                        />
+                      </div>
                       {duplicateWarning.email && <p className="text-[10px] text-amber-600 font-medium">{duplicateWarning.email}</p>}
                     </div>
+
                     <div className="space-y-2">
-                      <Label>Alamat Domisili</Label>
-                      <Textarea placeholder="Contoh: Jl. Merdeka No. 123, Kelurahan, Kecamatan" className="resize-none h-24" value={baseData.domisili} onChange={e => setBaseData({ ...baseData, domisili: e.target.value })} />
+                      <Label htmlFor="password">Password (Minimal 8 Karakter)</Label>
+                      <div className="relative">
+                        <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                        <Input
+                          id="password"
+                          type={showPassword ? "text" : "password"}
+                          placeholder="Buat password untuk masuk"
+                          className="h-11 pl-10 pr-10"
+                          value={baseData.password}
+                          onChange={e => setBaseData({ ...baseData, password: e.target.value })}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                        >
+                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
+                      <p className="text-[10px] text-slate-400 font-medium ml-1">Gunakan password ini untuk masuk ke dashboard nanti.</p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Provinsi Domisili</Label>
+                      <Select 
+                        value={baseData.domisili} 
+                        onValueChange={v => setBaseData({ ...baseData, domisili: v || '' })}
+                      >
+                        <SelectTrigger className="h-11 bg-white">
+                          <SelectValue placeholder="Pilih Provinsi" />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-[300px]">
+                          {PROVINCES.map((prov) => (
+                            <SelectItem key={prov} value={prov}>{prov}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-[10px] text-slate-400 font-medium ml-1">Pilih provinsi tempat Anda tinggal saat ini (untuk pemetaan).</p>
                     </div>
                   </div>
                 </div>
@@ -826,7 +894,11 @@ export default function PendaftaranPekerjaPage() {
                   
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2 col-span-1 sm:col-span-2">
-                      <Label>Nama Perusahaan / Proyek Saat Ini</Label>
+                      <Label>
+                        {(pekerjaanSaatIni.status_pekerjaan === 'Borongan' || pekerjaanSaatIni.status_pekerjaan === 'Harian Lepas') 
+                          ? 'Nama Perusahaan / Proyek Saat Ini' 
+                          : 'Nama Perusahaan Saat Ini'}
+                      </Label>
                       <div className="flex flex-col gap-2">
                         <Select 
                           value={pekerjaanSaatIni.nama_perusahaan} 
@@ -855,13 +927,19 @@ export default function PendaftaranPekerjaPage() {
                             {perusahaanList.map((p: any) => (
                               <SelectItem key={p.id} value={p.nama_perusahaan}>{p.nama_perusahaan}</SelectItem>
                             ))}
-                            <SelectItem value="Lainnya">+ Tambah Perusahaan Baru</SelectItem>
+                            <SelectItem value="Lainnya">
+                              {(pekerjaanSaatIni.status_pekerjaan === 'Borongan' || pekerjaanSaatIni.status_pekerjaan === 'Harian Lepas') 
+                                ? '+ Tambah Proyek / Tempat Kerja Baru' 
+                                : '+ Tambah Perusahaan Baru'}
+                            </SelectItem>
                           </SelectContent>
                         </Select>
 
                         {pekerjaanSaatIni.nama_perusahaan === 'Lainnya' && (
                           <Input 
-                            placeholder="Ketik Nama Perusahaan Baru..." 
+                            placeholder={(pekerjaanSaatIni.status_pekerjaan === 'Borongan' || pekerjaanSaatIni.status_pekerjaan === 'Harian Lepas') 
+                              ? "Ketik Nama Proyek / Tempat Kerja Baru..." 
+                              : "Ketik Nama Perusahaan Baru..."} 
                             className="h-11 bg-white animate-in slide-in-from-top-2"
                             value={pekerjaanSaatIni.nama_perusahaan_baru}
                             onChange={e => setPekerjaanSaatIni({ ...pekerjaanSaatIni, nama_perusahaan_baru: e.target.value })}
@@ -913,6 +991,51 @@ export default function PendaftaranPekerjaPage() {
                       </div>
                     )}
 
+                    {(pekerjaanSaatIni.status_pekerjaan === 'Borongan' || pekerjaanSaatIni.status_pekerjaan === 'Harian Lepas') && (
+                      <div className="col-span-1 sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4 bg-blue-50/50 border border-blue-100 p-6 rounded-xl animate-in fade-in slide-in-from-top-2">
+                        <div className="space-y-2 col-span-1 sm:col-span-2">
+                          <Label className="text-[#0ea5e9] font-bold">Tugas Spesifik / Detail Pekerjaan</Label>
+                          <Input 
+                            placeholder="Contoh: Bongkar muat besi, Las konstruksi kapal" 
+                            className="h-11 bg-white border-blue-200" 
+                            value={pekerjaanSaatIni.tugas_spesifik} 
+                            onChange={e => setPekerjaanSaatIni({ ...pekerjaanSaatIni, tugas_spesifik: e.target.value })} 
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-[#0ea5e9] font-bold">Lama Bekerja</Label>
+                          <div className="flex gap-2">
+                            <Input 
+                              type="number" 
+                              placeholder="0" 
+                              className="h-11 bg-white border-blue-200 w-24" 
+                              value={pekerjaanSaatIni.lama_bekerja} 
+                              onChange={e => setPekerjaanSaatIni({ ...pekerjaanSaatIni, lama_bekerja: e.target.value })} 
+                            />
+                            {/* @ts-ignore */}
+                            <Select value={pekerjaanSaatIni.satuan_waktu || ''} onValueChange={v => setPekerjaanSaatIni({ ...pekerjaanSaatIni, satuan_waktu: v || '' })}>
+                              <SelectTrigger className="h-11 bg-white border-blue-200"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Hari">Hari</SelectItem>
+                                <SelectItem value="Bulan">Bulan</SelectItem>
+                                <SelectItem value="Tahun">Tahun</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-[#0ea5e9] font-bold">Peserta BPJS BPU?</Label>
+                          <Select value={pekerjaanSaatIni.bpjs_bpu || ''} onValueChange={v => setPekerjaanSaatIni({ ...pekerjaanSaatIni, bpjs_bpu: v || '' })}>
+                            <SelectTrigger className="h-11 bg-white border-blue-200"><SelectValue placeholder="Pilih Status" /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Ya">Ya, Terdaftar</SelectItem>
+                              <SelectItem value="Tidak">Tidak</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="space-y-2">
                       <Label>Tanggal Masuk</Label>
                       <Input 
@@ -926,7 +1049,9 @@ export default function PendaftaranPekerjaPage() {
                     <div className="space-y-2">
                       <Label>Bagian / Unit Kerja</Label>
                       <Input 
-                        placeholder="Contoh: Produksi, Gudang" 
+                        placeholder={(pekerjaanSaatIni.status_pekerjaan === 'Borongan' || pekerjaanSaatIni.status_pekerjaan === 'Harian Lepas') 
+                          ? "Contoh: Lapangan, Konstruksi, Bongkar Muat" 
+                          : "Contoh: Produksi, Gudang"} 
                         className="h-11 bg-white" 
                         value={pekerjaanSaatIni.bagian} 
                         onChange={e => setPekerjaanSaatIni({ ...pekerjaanSaatIni, bagian: e.target.value })} 
@@ -936,11 +1061,108 @@ export default function PendaftaranPekerjaPage() {
                     <div className="space-y-2">
                       <Label>Jabatan</Label>
                       <Input 
-                        placeholder="Contoh: Operator, Staff" 
+                        placeholder={(pekerjaanSaatIni.status_pekerjaan === 'Borongan' || pekerjaanSaatIni.status_pekerjaan === 'Harian Lepas') 
+                          ? "Contoh: Tukang Las, Kuli Bangunan, Sopir" 
+                          : "Contoh: Operator, Staff"} 
                         className="h-11 bg-white" 
                         value={pekerjaanSaatIni.jabatan} 
                         onChange={e => setPekerjaanSaatIni({ ...pekerjaanSaatIni, jabatan: e.target.value })} 
                       />
+                    </div>
+
+                    <div className="col-span-1 sm:col-span-2 space-y-2">
+                      <Label>Deskripsikan Pekerjaan Anda</Label>
+                      <Textarea 
+                        placeholder="Contoh: Mengoperasikan mesin produksi, memastikan target harian tercapai, dan melapor ke supervisor..." 
+                        className="min-h-[100px] bg-white resize-none" 
+                        value={pekerjaanSaatIni.deskripsi_pekerjaan} 
+                        onChange={e => setPekerjaanSaatIni({ ...pekerjaanSaatIni, deskripsi_pekerjaan: e.target.value })} 
+                      />
+                      <p className="text-[10px] text-slate-400 italic">Jelaskan tugas dan tanggung jawab utama Anda di posisi ini.</p>
+                    </div>
+
+                    {/* MUTASI JABATAN (Current Job) */}
+                    <div className="col-span-1 sm:col-span-2 space-y-3 bg-white/50 p-4 rounded-xl border border-blue-100/50">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-[11px] font-bold text-blue-600 uppercase tracking-wider flex items-center gap-2">
+                          <RefreshCw className="h-3 w-3" /> Riwayat Mutasi / Perpindahan Bagian (Opsional)
+                        </Label>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-7 text-[10px] text-blue-500 hover:bg-blue-100"
+                          onClick={() => setPekerjaanSaatIni({
+                            ...pekerjaanSaatIni,
+                            mutasi_jabatan: [...(pekerjaanSaatIni.mutasi_jabatan || []), { bagian: '', jabatan: '', tahun: '' }]
+                          })}
+                        >
+                          <Plus className="h-3 w-3 mr-1" /> Tambah Mutasi
+                        </Button>
+                      </div>
+                      
+                      {(pekerjaanSaatIni.mutasi_jabatan || []).map((m, midx) => (
+                        <div key={midx} className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end animate-in fade-in slide-in-from-top-1">
+                          <div className="sm:col-span-1">
+                             <Label className="text-[9px] text-slate-400">Bagian</Label>
+                             <Input placeholder="Produksi" className="h-9 text-sm" value={m.bagian} onChange={e => {
+                               const newM = [...pekerjaanSaatIni.mutasi_jabatan]; newM[midx].bagian = e.target.value;
+                               setPekerjaanSaatIni({ ...pekerjaanSaatIni, mutasi_jabatan: newM });
+                             }} />
+                          </div>
+                          <div className="sm:col-span-1">
+                             <Label className="text-[9px] text-slate-400">Jabatan</Label>
+                             <Input placeholder="Staff" className="h-9 text-sm" value={m.jabatan} onChange={e => {
+                               const newM = [...pekerjaanSaatIni.mutasi_jabatan]; newM[midx].jabatan = e.target.value;
+                               setPekerjaanSaatIni({ ...pekerjaanSaatIni, mutasi_jabatan: newM });
+                             }} />
+                          </div>
+                          <div className="sm:col-span-1">
+                             <Label className="text-[9px] text-slate-400">Tahun / Periode</Label>
+                             <Input placeholder="2010-2015" className="h-9 text-sm" value={m.tahun} onChange={e => {
+                               const newM = [...pekerjaanSaatIni.mutasi_jabatan]; newM[midx].tahun = e.target.value;
+                               setPekerjaanSaatIni({ ...pekerjaanSaatIni, mutasi_jabatan: newM });
+                             }} />
+                          </div>
+                          <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-red-500" onClick={() => {
+                            const newM = pekerjaanSaatIni.mutasi_jabatan.filter((_, i) => i !== midx);
+                            setPekerjaanSaatIni({ ...pekerjaanSaatIni, mutasi_jabatan: newM });
+                          }}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                      {(!pekerjaanSaatIni.mutasi_jabatan || pekerjaanSaatIni.mutasi_jabatan.length === 0) && (
+                        <p className="text-[10px] text-slate-400 italic">Gunakan ini jika Anda pernah pindah bagian di perusahaan ini.</p>
+                      )}
+                    </div>
+
+                    {/* Upload Section: Pekerjaan Saat Ini */}
+                    <div className="col-span-1 sm:col-span-2 space-y-2 mt-2 pt-2 border-t border-slate-50">
+                      <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Upload Paklaring / Dokumen Verifikasi <span className="text-slate-400 font-normal italic ml-1">(Opsional)</span></Label>
+                      <div className="mt-1 flex items-center gap-3">
+                        <div className="relative group">
+                          <input 
+                            type="file" 
+                            multiple
+                            onChange={(e) => {
+                              const files = e.target.files ? Array.from(e.target.files) : [];
+                              setPekerjaanSaatIni({ ...pekerjaanSaatIni, file_bukti: files });
+                            }}
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                          />
+                          <Button variant="outline" size="sm" className="h-8 text-[11px] border-dashed border-slate-300 bg-white">
+                            <UploadCloud className="h-3 w-3 mr-2 text-blue-500" /> 
+                            {pekerjaanSaatIni.file_bukti && pekerjaanSaatIni.file_bukti.length > 0 
+                              ? `Update Berkas (${pekerjaanSaatIni.file_bukti.length})` 
+                              : 'Pilih Berkas Bukti (Multiple)'}
+                          </Button>
+                        </div>
+                        {pekerjaanSaatIni.file_bukti && pekerjaanSaatIni.file_bukti.length > 0 && (
+                          <span className="text-[10px] text-slate-500 italic truncate max-w-[250px]">
+                            {pekerjaanSaatIni.file_bukti.map((f: any) => f.name).join(', ')}
+                          </span>
+                        )}
+                      </div>
                     </div>
 
 
@@ -1019,6 +1241,34 @@ export default function PendaftaranPekerjaPage() {
                               <div className="space-y-1 col-span-1 sm:col-span-2">
                                 <Label className="text-[10px] text-slate-500 font-bold uppercase">Rekomendasi Dokter (Saran)</Label>
                                 <Input placeholder="Contoh: Istirahat cukup, hindari debu..." className="h-9 bg-slate-50/50 text-sm" value={med.rekomendasi} onChange={e => updateMed('rekomendasi', e.target.value)} />
+                              </div>
+
+                              <div className="space-y-2 col-span-1 sm:col-span-2 pt-2 border-t border-blue-50">
+                                <Label className="text-[10px] text-slate-500 font-bold uppercase">Upload Hasil Pemeriksaan <span className="text-slate-400 font-normal italic ml-1">(Opsional)</span></Label>
+                                <div className="mt-1 flex items-center gap-3">
+                                  <div className="relative group">
+                                    <input 
+                                      type="file" 
+                                      multiple
+                                      onChange={(e) => {
+                                        const files = e.target.files ? Array.from(e.target.files) : [];
+                                        updateMed('file_hasil', files);
+                                      }}
+                                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                    />
+                                    <Button variant="outline" size="sm" className="h-8 text-[11px] border-dashed border-slate-300 bg-white">
+                                      <UploadCloud className="h-3 w-3 mr-2 text-blue-500" /> 
+                                      {med.file_hasil && med.file_hasil.length > 0 
+                                        ? `Update Berkas (${med.file_hasil.length})` 
+                                        : 'Pilih Berkas Hasil Medis (Multiple)'}
+                                    </Button>
+                                  </div>
+                                  {med.file_hasil && med.file_hasil.length > 0 && (
+                                    <span className="text-[10px] text-slate-500 italic truncate max-w-[250px]">
+                                      {med.file_hasil.map((f: any) => f.name).join(', ')}
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                             </div>
                             <p className="text-[9px] text-slate-400 italic italic">Riwayat Medis Ini Untuk Pekerjaan Saat Ini.</p>
@@ -1119,21 +1369,42 @@ export default function PendaftaranPekerjaPage() {
                               <span className="bg-[#0ea5e9] text-white w-5 h-5 flex items-center justify-center rounded-full text-xs">{idx + 1}</span>
                               {item.nama_perusahaan || `Pengalaman #${idx + 1}`}
                             </h4>
-                            <Button variant="ghost" size="icon" className="text-slate-400 hover:text-red-500 hover:bg-red-50 h-8 w-8"
-                              onClick={() => setRiwayatLalu(riwayatLalu.filter((_, i) => i !== idx))}>
-                              <X className="h-4 w-4" />
-                            </Button>
+                            <div className="flex items-center gap-1">
+                              <Button variant="ghost" size="icon" className="text-slate-400 hover:text-blue-500 hover:bg-blue-50 h-8 w-8"
+                                onClick={() => {
+                                  const newR = [...riwayatLalu];
+                                  newR[idx].collapsed = !newR[idx].collapsed;
+                                  setRiwayatLalu(newR);
+                                }}>
+                                {item.collapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+                              </Button>
+                              <Button variant="ghost" size="icon" className="text-slate-400 hover:text-red-500 hover:bg-red-50 h-8 w-8"
+                                onClick={() => setRiwayatLalu(riwayatLalu.filter((_, i) => i !== idx))}>
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </div>
 
                           {/* Body: Data Pekerjaan */}
-                          <div className="p-5">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                              <div className="space-y-2 col-span-2 sm:col-span-1">
-                                <Label>Nama Perusahaan Sebelumnya</Label>
-                                <Input placeholder="Cth: PT Logam Terpadu" value={item.nama_perusahaan} onChange={(e) => {
-                                  const newR = [...riwayatLalu]; newR[idx].nama_perusahaan = e.target.value; setRiwayatLalu(newR);
-                                }} />
-                              </div>
+                          {!item.collapsed && (
+                            <div className="p-5 animate-in fade-in duration-300">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="space-y-2 col-span-2 sm:col-span-1">
+                                  <Label>
+                                    {(item.status_pekerjaan === 'Borongan' || item.status_pekerjaan === 'Harian Lepas') 
+                                      ? 'Nama Perusahaan / Proyek Sebelumnya' 
+                                      : 'Nama Perusahaan Sebelumnya'}
+                                  </Label>
+                                  <Input 
+                                    placeholder={(item.status_pekerjaan === 'Borongan' || item.status_pekerjaan === 'Harian Lepas') 
+                                      ? "Contoh: Proyek Pembangunan Jalan" 
+                                      : "Contoh: PT Logam Terpadu"} 
+                                    value={item.nama_perusahaan} 
+                                    onChange={(e) => {
+                                      const newR = [...riwayatLalu]; newR[idx].nama_perusahaan = e.target.value; setRiwayatLalu(newR);
+                                    }} 
+                                  />
+                                </div>
                               <div className="space-y-2 col-span-2 sm:col-span-1">
                                 <Label>Status Pekerjaan</Label>
                                 <Select value={item.status_pekerjaan} onValueChange={(v: any) => {
@@ -1170,17 +1441,130 @@ export default function PendaftaranPekerjaPage() {
                                 </div>
                               )}
 
+                              {(item.status_pekerjaan === 'Borongan' || item.status_pekerjaan === 'Harian Lepas') && (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 col-span-2 bg-blue-50/50 p-4 rounded-lg border border-blue-100 mt-2">
+                                  <div className="space-y-2 col-span-2">
+                                    <Label className="text-blue-700 font-bold">Tugas Spesifik / Detail Pekerjaan</Label>
+                                    <Input placeholder="Contoh: Kuli bangunan, Tukang las panggilan" className="h-11 bg-white border-blue-200" value={item.informal_data?.tugas_spesifik || ''} onChange={(e) => {
+                                      const newR = [...riwayatLalu]; newR[idx].informal_data = { ...newR[idx].informal_data, tugas_spesifik: e.target.value }; setRiwayatLalu(newR);
+                                    }} />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label className="text-blue-700 font-bold">Lama Bekerja</Label>
+                                    <div className="flex gap-2">
+                                      <Input type="number" placeholder="0" className="h-11 bg-white border-blue-200 w-24" value={item.informal_data?.lama_bekerja || ''} onChange={(e) => {
+                                        const newR = [...riwayatLalu]; newR[idx].informal_data = { ...newR[idx].informal_data, lama_bekerja: e.target.value }; setRiwayatLalu(newR);
+                                      }} />
+                                      <Select value={item.informal_data?.satuan_waktu || 'Bulan'} onValueChange={(v) => {
+                                        const newR = [...riwayatLalu]; newR[idx].informal_data = { ...newR[idx].informal_data, satuan_waktu: v }; setRiwayatLalu(newR);
+                                      }}>
+                                        <SelectTrigger className="h-11 bg-white border-blue-200"><SelectValue /></SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="Hari">Hari</SelectItem>
+                                          <SelectItem value="Bulan">Bulan</SelectItem>
+                                          <SelectItem value="Tahun">Tahun</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label className="text-blue-700 font-bold">Peserta BPJS BPU?</Label>
+                                    <Select value={item.informal_data?.bpjs_bpu || 'Tidak'} onValueChange={(v) => {
+                                      const newR = [...riwayatLalu]; newR[idx].informal_data = { ...newR[idx].informal_data, bpjs_bpu: v }; setRiwayatLalu(newR);
+                                    }}>
+                                      <SelectTrigger className="h-11 bg-white border-blue-200"><SelectValue placeholder="Pilih Status" /></SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="Ya">Ya, Terdaftar</SelectItem>
+                                        <SelectItem value="Tidak">Tidak</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                </div>
+                              )}
+
                               <div className="space-y-2 col-span-2 sm:col-span-1">
                                 <Label>Bagian / Departemen</Label>
-                                <Input placeholder="Contoh: Produksi / Logistik" value={item.bagian} onChange={(e) => {
-                                  const newR = [...riwayatLalu]; newR[idx].bagian = e.target.value; setRiwayatLalu(newR);
-                                }} />
+                                <Input 
+                                  placeholder={(item.status_pekerjaan === 'Borongan' || item.status_pekerjaan === 'Harian Lepas') 
+                                    ? "Contoh: Lapangan, Konstruksi, Bongkar Muat" 
+                                    : "Contoh: Produksi / Logistik"} 
+                                  value={item.bagian} 
+                                  onChange={(e) => {
+                                    const newR = [...riwayatLalu]; newR[idx].bagian = e.target.value; setRiwayatLalu(newR);
+                                  }} 
+                                />
                               </div>
                               <div className="space-y-2 col-span-2 sm:col-span-1">
                                 <Label>Jabatan / Posisi</Label>
-                                <Input placeholder="Contoh: Operator Produksi" value={item.jabatan} onChange={(e) => {
-                                  const newR = [...riwayatLalu]; newR[idx].jabatan = e.target.value; setRiwayatLalu(newR);
-                                }} />
+                                <Input 
+                                  placeholder={(item.status_pekerjaan === 'Borongan' || item.status_pekerjaan === 'Harian Lepas') 
+                                    ? "Contoh: Tukang Las, Kuli Bangunan, Sopir" 
+                                    : "Contoh: Operator Produksi"} 
+                                  value={item.jabatan} 
+                                  onChange={(e) => {
+                                    const newR = [...riwayatLalu]; newR[idx].jabatan = e.target.value; setRiwayatLalu(newR);
+                                  }} 
+                                />
+                              </div>
+
+                              {/* MUTASI JABATAN (Past Job) */}
+                              <div className="col-span-2 space-y-3 bg-slate-50/50 p-4 rounded-xl border border-slate-200/50 mt-2">
+                                <div className="flex items-center justify-between">
+                                  <Label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider flex items-center gap-2">
+                                    <RefreshCw className="h-3 w-3" /> Riwayat Mutasi / Perpindahan Bagian (Opsional)
+                                  </Label>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="h-7 text-[10px] text-blue-500 hover:bg-blue-50"
+                                    onClick={() => {
+                                      const newR = [...riwayatLalu];
+                                      newR[idx].informal_data = {
+                                        ...(newR[idx].informal_data || {}),
+                                        mutasi_jabatan: [...(newR[idx].informal_data?.mutasi_jabatan || []), { bagian: '', jabatan: '', tahun: '' }]
+                                      };
+                                      setRiwayatLalu(newR);
+                                    }}
+                                  >
+                                    <Plus className="h-3 w-3 mr-1" /> Tambah Mutasi
+                                  </Button>
+                                </div>
+                                
+                                {(item.informal_data?.mutasi_jabatan || []).map((m: any, midx: number) => (
+                                  <div key={midx} className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end animate-in fade-in slide-in-from-top-1">
+                                    <div className="sm:col-span-1">
+                                       <Label className="text-[9px] text-slate-400">Bagian</Label>
+                                       <Input placeholder="Produksi" className="h-9 text-sm" value={m.bagian} onChange={e => {
+                                         const newR = [...riwayatLalu]; 
+                                         newR[idx].informal_data.mutasi_jabatan[midx].bagian = e.target.value;
+                                         setRiwayatLalu(newR);
+                                       }} />
+                                    </div>
+                                    <div className="sm:col-span-1">
+                                       <Label className="text-[9px] text-slate-400">Jabatan</Label>
+                                       <Input placeholder="Staff" className="h-9 text-sm" value={m.jabatan} onChange={e => {
+                                         const newR = [...riwayatLalu]; 
+                                         newR[idx].informal_data.mutasi_jabatan[midx].jabatan = e.target.value;
+                                         setRiwayatLalu(newR);
+                                       }} />
+                                    </div>
+                                    <div className="sm:col-span-1">
+                                       <Label className="text-[9px] text-slate-400">Tahun / Periode</Label>
+                                       <Input placeholder="2010-2015" className="h-9 text-sm" value={m.tahun} onChange={e => {
+                                         const newR = [...riwayatLalu]; 
+                                         newR[idx].informal_data.mutasi_jabatan[midx].tahun = e.target.value;
+                                         setRiwayatLalu(newR);
+                                       }} />
+                                    </div>
+                                    <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-red-500" onClick={() => {
+                                      const newR = [...riwayatLalu];
+                                      newR[idx].informal_data.mutasi_jabatan = item.informal_data.mutasi_jabatan.filter((_: any, i: number) => i !== midx);
+                                      setRiwayatLalu(newR);
+                                    }}>
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                ))}
                               </div>
                               <div className="space-y-2">
                                 <Label>Tanggal Masuk</Label>
@@ -1408,13 +1792,12 @@ export default function PendaftaranPekerjaPage() {
                               })()}
                             </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
 
                 <div className="p-6 bg-red-50/30 border border-red-100 rounded-xl">
                   <h3 className="flex items-center text-sm font-bold text-red-500 mb-2 uppercase tracking-wider">
@@ -1612,6 +1995,36 @@ export default function PendaftaranPekerjaPage() {
           © {new Date().getFullYear()} ADVOKASI PENYAKIT AKIBAT KERJA (PAK) — HAK CIPTA DILINDUNGI
         </p>
       </main>
+      {/* Reset Confirmation Dialog */}
+      <AlertDialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
+        <AlertDialogContent className="rounded-2xl border-none shadow-2xl">
+          <AlertDialogHeader className="flex flex-col items-center justify-center text-center !text-center space-y-4">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-rose-50 border border-rose-100 shadow-sm mx-auto">
+              <RefreshCw className="h-8 w-8 text-rose-600" />
+            </div>
+            <div className="space-y-2 w-full">
+              <AlertDialogTitle className="text-2xl font-extrabold text-slate-900 tracking-tight text-center w-full">Reset Pendaftaran?</AlertDialogTitle>
+              <AlertDialogDescription className="text-slate-500 text-sm leading-relaxed max-w-[300px] mx-auto px-4 text-center">
+                Tindakan ini akan menghapus <span className="text-rose-600 font-bold underline underline-offset-4 decoration-rose-200">seluruh progres</span> pendaftaran Anda secara permanen.
+              </AlertDialogDescription>
+            </div>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="sm:justify-center gap-3 mt-4">
+            <AlertDialogCancel className="rounded-xl border-slate-200 text-slate-500 font-bold hover:bg-slate-50 px-6">
+              Lanjutkan Mengisi
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => {
+                localStorage.removeItem(STORAGE_KEY);
+                window.location.reload();
+              }}
+              className="rounded-xl bg-rose-600 text-white font-bold hover:bg-rose-700 shadow-lg shadow-rose-200 border-none px-6"
+            >
+              Ya, Reset Data
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

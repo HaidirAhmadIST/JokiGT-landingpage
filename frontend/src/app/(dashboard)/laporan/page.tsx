@@ -26,15 +26,19 @@ import {
   MoreHorizontal,
   Loader2,
   Search,
+  ArrowDownAZ,
+  ArrowUpAZ,
 } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, XAxis, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
+import { cn } from '@/lib/utils';
 
 export default function LaporanPage() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [isReviewOpen, setIsReviewOpen] = useState(false);
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
   const { data: reportData, isLoading } = useGetReportSummary();
   const { data: searchResults, isFetching: searching } = useSearchCases(searchQuery);
@@ -44,7 +48,13 @@ export default function LaporanPage() {
   const chartData = reportData?.chart_data || [];
   const sectorData = reportData?.sector_data || [];
   const recentSuccesses = reportData?.recent_successes || [];
-  const recentAdvocacy = searchResults || [];
+  
+  const recentAdvocacy = (searchResults || []).slice().sort((a: any, b: any) => {
+    const nameA = a.worker.toLowerCase();
+    const nameB = b.worker.toLowerCase();
+    if (sortOrder === 'asc') return nameA > nameB ? 1 : -1;
+    return nameA < nameB ? 1 : -1;
+  });
 
   return (
     <div className="animate-in fade-in duration-500 max-w-7xl mx-auto">
@@ -304,15 +314,33 @@ export default function LaporanPage() {
         <Card className="md:col-span-2 rounded-[20px] shadow-sm border-slate-100 p-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <h2 className="text-[17px] font-bold text-[#0f172a]">Pencarian Kasus Advokasi</h2>
-            <div className="relative w-full sm:w-64 print:hidden">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <Input
-                placeholder="Cari NIK atau Nama..."
-                className="pl-9 h-9 text-xs border-slate-200 focus:ring-[#0ea5e9]"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-              {searching && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-3 w-3 animate-spin text-slate-400" />}
+            <div className="flex items-center gap-2 w-full sm:w-auto print:hidden">
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input
+                  placeholder="Cari NIK atau Nama..."
+                  className="pl-9 h-10 text-xs border-slate-200 focus:ring-[#0ea5e9] rounded-xl"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                {searching && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-3 w-3 animate-spin text-slate-400" />}
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+                className={cn(
+                  "h-10 w-10 rounded-xl border border-slate-200 transition-all active:scale-95 shrink-0",
+                  "bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                )}
+                title="Urutkan A-Z"
+              >
+                {sortOrder === 'desc' ? (
+                  <ArrowUpAZ className="h-4 w-4" />
+                ) : (
+                  <ArrowDownAZ className="h-4 w-4" />
+                )}
+              </Button>
             </div>
           </div>
 

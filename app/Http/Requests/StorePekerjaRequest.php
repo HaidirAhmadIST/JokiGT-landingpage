@@ -58,6 +58,7 @@ class StorePekerjaRequest extends FormRequest
             'riwayat.*.tanggal_selesai_kontrak' => ['nullable', 'date', 'after_or_equal:riwayat.*.tgl_masuk'],
             'riwayat.*.jenis_pajanan' => ['nullable', 'string'],
             'riwayat.*.durasi_pajanan' => ['nullable', 'integer'],
+            'riwayat.*.informal_data' => ['nullable', 'array'],
 
             // Riwayat Medis (Baseline) Data (Optional)
             'riwayat_medis' => ['nullable', 'array'],

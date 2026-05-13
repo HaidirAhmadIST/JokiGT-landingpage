@@ -5,6 +5,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { MoreVertical, Eye, RefreshCw, Archive } from 'lucide-react';
 import { cn, formatHealthStatus } from '@/lib/utils';
 import { StatusAdvokasi } from '@/types';
+import { Pagination } from '@/components/ui/Pagination';
 
 const milestoneKeys = [
   'riwayat_pajanan',
@@ -28,7 +29,6 @@ const caseTypeLabels: Record<string, string> = {
   PAK: 'PAK (Penyakit Kerja)',
   K3: 'Kecelakaan K3',
   PHK: 'Kasus PHK',
-  JHT: 'Jaminan / JHT',
 };
 
 function ProgressDots({ level, total = 6 }: { level: number; total?: number }) {
@@ -148,7 +148,9 @@ export default function AdvokasiTable({
                     <span className="block truncate">{worker?.perusahaan?.nama_perusahaan || '-'}</span>
                   </TableCell>
                   <TableCell className="py-3 px-3 text-xs text-[#475569]">
-                    <span className="block truncate">{caseTypeLabels[c.jenis_kasus?.toUpperCase()]}</span>
+                    <span className="block truncate">
+                      {c.jenis_kasus ? (caseTypeLabels[c.jenis_kasus.toUpperCase()] || c.jenis_kasus.toUpperCase()) : '-'}
+                    </span>
                   </TableCell>
                   <TableCell className="py-3 px-3">
                     <div className="flex flex-col gap-0.5">
@@ -204,38 +206,14 @@ export default function AdvokasiTable({
         </Table>
       </div>
 
-      {/* Pagination Footer */}
-      <div className="border-t border-slate-100 p-4 px-6 flex items-center justify-between text-sm text-slate-500 font-medium">
-        <p className="text-xs font-bold text-[#94a3b8] tracking-wider uppercase">
-          MENAMPILKAN {totalCount > 0 ? (currentPage - 1) * perPage + 1 : 0}-{Math.min(currentPage * perPage, totalCount)} DARI {totalCount} KASUS
-        </p>
-        <div className="flex items-center gap-1">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-8 w-8 text-slate-400" 
-            disabled={currentPage === 1}
-            onClick={() => onPageChange(currentPage - 1)}
-          >
-            &lt;
-          </Button>
-          
-          <div className="flex items-center gap-1 px-2">
-            <span className="text-xs font-bold text-[#0284c7]">Halaman {currentPage}</span>
-            <span className="text-xs text-[#94a3b8]">dari {lastPage}</span>
-          </div>
-
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-8 w-8 text-slate-600 hover:bg-slate-100"
-            disabled={currentPage === lastPage || totalCount === 0}
-            onClick={() => onPageChange(currentPage + 1)}
-          >
-            &gt;
-          </Button>
-        </div>
-      </div>
+      <Pagination 
+        currentPage={currentPage}
+        total={totalCount}
+        perPage={perPage}
+        lastPage={lastPage}
+        onPageChange={onPageChange}
+        label="kasus"
+      />
     </>
   );
 }

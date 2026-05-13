@@ -39,7 +39,6 @@ const caseTypeLabels: Record<string, string> = {
   PAK: 'PAK (Penyakit Akibat Kerja)',
   K3: 'K3 (Kecelakaan Kerja)',
   PHK: 'PHK (Pemutusan Hubungan Kerja)',
-  JHT: 'JHT (Jaminan / JHT)',
 };
 
 // Helpers for Status Kesehatan
@@ -111,8 +110,8 @@ export default function AdvokasiDetailPage() {
   // Map backend data to UI structure
   const code = `ADV-${data.id.toString().padStart(5, '0')}`;
   const statusLabel = data.rehabilitasi_bpjskes ? 'SELESAI' : (data.status_detail || 'DALAM PROSES');
-  const normalizedType = data.jenis_kasus?.toUpperCase();
-  const title = caseTypeLabels[normalizedType] || normalizedType || 'Penyakit Akibat Kerja';
+  const normalizedType = data.jenis_kasus?.toUpperCase() || '';
+  const title = (normalizedType ? caseTypeLabels[normalizedType] : null) || normalizedType || 'Penyakit Akibat Kerja';
   
   const currentStages = [
     { name: 'Pajanan', status: data?.riwayat_pajanan ? 'Selesai' : 'Pending', icon: Search, done: !!data?.riwayat_pajanan, active: !data?.riwayat_pajanan },

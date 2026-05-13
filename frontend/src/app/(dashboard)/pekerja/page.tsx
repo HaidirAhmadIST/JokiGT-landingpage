@@ -10,9 +10,21 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import {
   Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle,
 } from '@/components/ui/sheet';
-import { Plus, ExternalLink, ChevronLeft, ChevronRight, AlertTriangle, Save, Users, Trash2 } from 'lucide-react';
+import { Plus, ExternalLink, ChevronLeft, ChevronRight, AlertTriangle, Save, Users, Trash2, Search, ArrowDownAZ, ArrowUpAZ } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRole } from '@/hooks/useRole';
+import { cn } from '@/lib/utils';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Pagination } from '@/components/ui/Pagination';
 
 export default function PekerjaPage() {
   const router = useRouter();
@@ -25,10 +37,16 @@ export default function PekerjaPage() {
   const [perPage] = useState(10);
   const [total, setTotal] = useState(0);
   const [lastPage, setLastPage] = useState(1);
+  const [sortField, setSortField] = useState('nama_lengkap');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
   // Bulk Edit Sheet State
   const [bulkOpen, setBulkOpen] = useState(false);
   const [bulkEdits, setBulkEdits] = useState<Record<number, { jenis_kelamin: string, tanggal_lahir: string }>>({});
+
+  // Delete Dialog State
+  const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -37,7 +55,9 @@ export default function PekerjaPage() {
         params: { 
           search,
           page: currentPage,
-          per_page: perPage 
+          per_page: perPage,
+          sort_by: sortField,
+          sort_dir: sortOrder
         } 
       });
       if (response.data.status === 'success') {
@@ -46,8 +66,10 @@ export default function PekerjaPage() {
         setTotal(result.total || 0);
         setLastPage(result.last_page || 1);
       }
-    } catch (error) {
-      toast.error('Gagal mengambil data pekerja. Cek koneksi server.');
+    } catch (error: any) {
+      if (error.response?.status !== 401) {
+        toast.error('Gagal mengambil data pekerja. Cek koneksi server.');
+      }
       console.error(error);
     } finally {
       setLoading(false);
@@ -56,7 +78,12 @@ export default function PekerjaPage() {
 
   useEffect(() => {
     fetchData();
-  }, [search, currentPage]);
+  }, [search, currentPage, sortField, sortOrder]);
+
+  const toggleSort = () => {
+    setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+    setSortField('nama_lengkap');
+  };
 
   // Find workers with incomplete data
   const incompleteWorkers = useMemo(() => {
@@ -104,15 +131,22 @@ export default function PekerjaPage() {
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('Hapus pekerja ini secara PERMANEN?')) return;
+  const handleDelete = async () => {
+    if (!deleteId) return;
     try {
-      await api.delete(`/pekerja/${id}`);
+      await api.delete(`/pekerja/${deleteId}`);
       toast.success('Pekerja dihapus secara permanen');
+      setIsDeleteDialogOpen(false);
+      setDeleteId(null);
       fetchData();
     } catch (e) {
       toast.error('Gagal menghapus');
     }
+  };
+
+  const confirmDelete = (id: number) => {
+    setDeleteId(id);
+    setIsDeleteDialogOpen(true);
   };
 
   return (
@@ -141,6 +175,37 @@ export default function PekerjaPage() {
             Tambah Pekerja
           </Button>
         </div>
+      </div>
+
+      {/* Minimalist Search & Sort Filter */}
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 flex items-center gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Cari pekerja berdasarkan nama atau NIK..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full h-11 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0ea5e9]/30 focus:border-[#0ea5e9] transition-all"
+          />
+        </div>
+
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={toggleSort}
+          className={cn(
+            "h-11 w-11 rounded-xl border border-slate-200 transition-all active:scale-95",
+            sortField === 'nama_lengkap' ? "bg-slate-800 text-white hover:bg-slate-900 border-transparent shadow-sm" : "bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+          )}
+          title="Urutkan A-Z"
+        >
+          {sortOrder === 'desc' ? (
+            <ArrowUpAZ className="h-5 w-5" />
+          ) : (
+            <ArrowDownAZ className="h-5 w-5" />
+          )}
+        </Button>
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
@@ -285,15 +350,15 @@ export default function PekerjaPage() {
                     </TableCell>
                     <TableCell className="text-right py-4 pr-4 w-12">
                       <div className="flex justify-end">
-                        {isSuperAdmin && (
                           <Button 
                             variant="ghost" 
-                            className="text-rose-500 hover:text-rose-700 hover:bg-rose-50 font-bold text-sm h-10 w-10 p-0 rounded-xl" 
-                            onClick={(e) => { e.stopPropagation(); handleDelete(p.id); }}
+                            size="icon" 
+                            className="h-8 w-8 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                            onClick={(e) => { e.stopPropagation(); confirmDelete(p.id); }}
+                            title="Hapus Permanen"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
-                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -303,41 +368,14 @@ export default function PekerjaPage() {
           </Table>
         </div>
         
-        {/* Pagination */}
-        <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between mt-2">
-          <p className="text-sm font-medium text-slate-500">
-            Menampilkan <span className="text-slate-900 font-bold">
-              {total > 0 ? (currentPage - 1) * perPage + 1 : 0}-
-              {Math.min(currentPage * perPage, total)}
-            </span> dari <span className="text-slate-900 font-bold">{total}</span> pekerja
-          </p>
-          <div className="flex items-center gap-2">
-            <Button 
-              variant="outline" 
-              size="icon" 
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-              className="h-9 w-9 rounded-lg border-slate-200 text-slate-600 disabled:opacity-30"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            
-            <div className="flex items-center gap-1 px-2">
-              <span className="text-sm font-bold text-slate-900">Halaman {currentPage}</span>
-              <span className="text-sm text-slate-400">dari {lastPage}</span>
-            </div>
-
-            <Button 
-              variant="outline" 
-              size="icon"
-              disabled={currentPage === lastPage || total === 0}
-              onClick={() => setCurrentPage(prev => Math.min(lastPage, prev + 1))}
-              className="h-9 w-9 rounded-lg border-slate-200 text-slate-600 disabled:opacity-30"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
+        <Pagination 
+          currentPage={currentPage}
+          total={total}
+          perPage={perPage}
+          lastPage={lastPage}
+          onPageChange={setCurrentPage}
+          label="pekerja"
+        />
       </div>
 
       {/* ===== Bulk Update Sheet ===== */}
@@ -459,6 +497,31 @@ export default function PekerjaPage() {
           </div>
         </SheetContent>
       </Sheet>
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent className="rounded-2xl border-none shadow-2xl">
+          <AlertDialogHeader>
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-rose-50 mb-2">
+              <Trash2 className="h-7 w-7 text-rose-500" />
+            </div>
+            <AlertDialogTitle className="text-xl font-black text-slate-900 text-center">Hapus Data Pekerja?</AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-500 text-center text-sm px-2">
+              Tindakan ini <span className="text-rose-600 font-bold">tidak dapat dibatalkan</span>. Semua riwayat kesehatan dan pajanan pekerja ini akan dihapus permanen dari sistem.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="sm:justify-center gap-3 mt-4">
+            <AlertDialogCancel className="rounded-xl border-slate-200 text-slate-500 font-bold hover:bg-slate-50 px-6">
+              Batalkan
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDelete}
+              className="rounded-xl bg-rose-600 text-white font-bold hover:bg-rose-700 shadow-lg shadow-rose-200 border-none px-6"
+            >
+              Ya, Hapus Permanen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -60,7 +60,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { simpanKasusSchema, SimpanKasusFormData } from '@/lib/validations/advokasi';
 
-const tabs = ['Semua Kasus', 'PAK', 'K3', 'PHK', 'JHT'];
+const tabs = ['Semua Kasus', 'PAK', 'K3', 'PHK'];
 
 
 export default function AdvokasiPage() {
@@ -138,7 +138,6 @@ export default function AdvokasiPage() {
     PAK: "Pekerja didiagnosa mengalami Penyakit Akibat Kerja (PAK) berupa [NAMA PENYAKIT]. Dilaporkan adanya pajanan [JENIS PAJANAN] di area kerja [NAMA AREA] yang berlangsung selama [DURASI]. Dibutuhkan pendampingan medis dan pelaporan ke pihak berwenang.",
     K3: "Terjadi kecelakaan kerja pada tanggal [TANGGAL] pukul [JAM] di lokasi [LOKASI]. Kejadian bermula saat [KRONOLOGI SINGKAT]. Kondisi pekerja saat ini [KONDISI].",
     PHK: "Pekerja mengalami perselisihan hubungan kerja terkait [ALASAN PHK]. Hak-hak pekerja seperti pesangon dan uang penggantian hak masih dalam tahap perundingan.",
-    JHT: "Pendampingan pengurusan klaim Jaminan Hari Tua (JHT) / Jaminan Pensiun bagi pekerja yang telah memasuki masa purna tugas atau kondisi tertentu.",
   };
 
   const handleCaseTypeSelect = (typeId: string) => {
@@ -170,7 +169,6 @@ export default function AdvokasiPage() {
     { id: 'PAK', label: 'PAK (Penyakit Kerja)', icon: Activity, desc: 'Penyakit akibat lingkungan kerja', color: 'text-rose-500', bg: 'bg-rose-50' },
     { id: 'K3', label: 'K3 (Kecelakaan)', icon: HardHat, desc: 'Kecelakaan saat bekerja', color: 'text-amber-500', bg: 'bg-amber-50' },
     { id: 'PHK', label: 'PHK (Kasus)', icon: Gavel, desc: 'Perselisihan hubungan kerja', color: 'text-blue-500', bg: 'bg-blue-50' },
-    { id: 'JHT', label: 'JHT (Jaminan)', icon: Coins, desc: 'Klaim jaminan sosial/tua', color: 'text-emerald-500', bg: 'bg-emerald-50' },
   ];
 
   return (
@@ -231,10 +229,10 @@ export default function AdvokasiPage() {
     onPageChange={setCurrentPage}
     isStaffOrAbove={isStaffOrAbove}
   />
-      </Card >
+      </Card>
 
     {/* ===== Add New Case Sheet ===== */ }
-    < Sheet open = { sheetOpen } onOpenChange = { setSheetOpen } >
+    <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
       <SheetContent className="sm:max-w-xl p-0 overflow-hidden flex flex-col bg-white border-l shadow-2xl">
         <SheetHeader className="px-8 py-6 border-b border-slate-100 bg-white z-10">
           <SheetTitle className="text-xl font-bold text-slate-900">Tambah Kasus Baru</SheetTitle>
@@ -423,7 +421,7 @@ export default function AdvokasiPage() {
           </Button>
         </div>
       </SheetContent>
-      </Sheet >
-    </div >
+      </Sheet>
+    </div>
   );
 }
