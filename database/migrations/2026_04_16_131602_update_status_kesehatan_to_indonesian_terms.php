@@ -44,6 +44,10 @@ return new class extends Migration
             $table->string('status_kesehatan', 50)->default('fit')->change();
         });
 
+        Schema::table('detail_medis', function (Blueprint $table) {
+            $table->string('status_kesehatan', 50)->default('fit')->change();
+        });
+
         DB::statement("UPDATE detail_medis SET status_kesehatan = 'fit' WHERE status_kesehatan = 'sehat'");
         DB::statement("UPDATE detail_medis SET status_kesehatan = 'fit_with_note' WHERE status_kesehatan = 'sehat_dengan_catatan'");
         DB::statement("UPDATE detail_medis SET status_kesehatan = 'unfit' WHERE status_kesehatan = 'tidak_sehat'");

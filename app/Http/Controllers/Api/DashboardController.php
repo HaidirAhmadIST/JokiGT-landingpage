@@ -16,22 +16,44 @@ class DashboardController extends Controller
     public function stats(): JsonResponse
     {
         try {
-            $totalPekerja = Pekerja::count();
-            $totalPerusahaan = Perusahaan::count();
+            $now = now();
+            $startOfThisMonth = $now->copy()->startOfMonth();
 
-            // Kasus Aktif: Ada jenis kasus dan belum selesai (rehabilitasi_bpjskes = false)
+            $calcTrend = function ($current, $previous) {
+                if ($previous == 0) return $current > 0 ? 100 : 0;
+                return round((($current - $previous) / $previous) * 100, 1);
+            };
+
+            // 1. Total Pekerja
+            $totalPekerja = Pekerja::count();
+            $totalPekerjaLastMonth = Pekerja::where('created_at', '<', $startOfThisMonth)->count();
+
+            // 2. Kasus Aktif
             $kasusAktif = StatusAdvokasi::whereNotNull('jenis_kasus')
                 ->where('rehabilitasi_bpjskes', false)
                 ->count();
+            $kasusAktifLastMonth = StatusAdvokasi::whereNotNull('jenis_kasus')
+                ->where('rehabilitasi_bpjskes', false)
+                ->where('created_at', '<', $startOfThisMonth)
+                ->count();
 
-            // Advokasi Selesai: Sudah sampai tahap akhir
+            // 3. Advokasi Selesai
             $advokasiSelesai = StatusAdvokasi::where('rehabilitasi_bpjskes', true)->count();
+            $advokasiSelesaiLastMonth = StatusAdvokasi::where('rehabilitasi_bpjskes', true)
+                ->where('created_at', '<', $startOfThisMonth)
+                ->count();
 
-            // Klaim Disetujui: Step kompensasi_bpjstk bernilai true
+            // 4. Klaim Disetujui
             $klaimDisetujui = StatusAdvokasi::where('kompensasi_bpjstk', true)->count();
+            $klaimDisetujuiLastMonth = StatusAdvokasi::where('kompensasi_bpjstk', true)
+                ->where('created_at', '<', $startOfThisMonth)
+                ->count();
 
-            // Statistik Kesehatan (Sehat, Catatan, Tidak Sehat)
-            // Mapping from DB 'status_kesehatan' to UI labels
+            // 5. Total Perusahaan
+            $totalPerusahaan = Perusahaan::count();
+            $totalPerusahaanLastMonth = Perusahaan::where('created_at', '<', $startOfThisMonth)->count();
+
+            // 6. Statistik Kesehatan
             $kesehatan = [
                 'fit' => Pekerja::where('status_kesehatan', 'sehat')->count(),
                 'note' => Pekerja::where('status_kesehatan', 'sehat_dengan_catatan')->count(),
@@ -42,14 +64,22 @@ class DashboardController extends Controller
                 'status' => 'success',
                 'data' => [
                     'total_pekerja' => $totalPekerja,
-                    'total_perusahaan' => $totalPerusahaan,
+                    'total_pekerja_new' => $totalPekerja - $totalPekerjaLastMonth,
                     'kasus_aktif' => $kasusAktif,
+                    'kasus_aktif_new' => $kasusAktif - $kasusAktifLastMonth,
                     'advokasi_selesai' => $advokasiSelesai,
+                    'advokasi_selesai_new' => $advokasiSelesai - $advokasiSelesaiLastMonth,
                     'klaim_disetujui' => $klaimDisetujui,
+                    'klaim_disetujui_new' => $klaimDisetujui - $klaimDisetujuiLastMonth,
+                    'total_perusahaan' => $totalPerusahaan,
+                    'total_perusahaan_new' => $totalPerusahaan - $totalPerusahaanLastMonth,
                     'kesehatan' => $kesehatan,
                 ]
             ]);
+
+
         } catch (\Exception $e) {
+
             return response()->json([
                 'status' => 'error',
                 'message' => 'Gagal mengambil statistik: ' . $e->getMessage()

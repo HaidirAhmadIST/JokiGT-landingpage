@@ -33,6 +33,7 @@ import {
 import { cn, formatHealthStatus } from '@/lib/utils';
 import SheetEditKasus from '@/components/SheetEditKasus';
 import { useGetAdvokasiDetail } from '@/hooks/useAdvokasi';
+import { useRole } from '@/hooks/useRole';
 
 const caseTypeLabels: Record<string, string> = {
   PAK: 'PAK (Penyakit Akibat Kerja)',
@@ -87,6 +88,7 @@ export default function AdvokasiDetailPage() {
   });
 
   const { data, isLoading: loading, refetch } = useGetAdvokasiDetail(id);
+  const { user, role, isStaffOrAbove } = useRole();
 
   if (loading) {
     return (
@@ -154,6 +156,18 @@ export default function AdvokasiDetailPage() {
     }
   };
 
+  const handleViewFile = async (url: string) => {
+    try {
+      const res = await api.get(url, { responseType: 'blob' });
+      const contentType = res.headers['content-type'] || 'application/pdf';
+      const blob = new Blob([res.data], { type: contentType });
+      const blobUrl = window.URL.createObjectURL(blob);
+      window.open(blobUrl, '_blank');
+    } catch (err) {
+      toast.error('Gagal membuka dokumen.');
+    }
+  };
+
   const handleUploadDoc = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!docForm.step_key || !docForm.file) {
@@ -172,7 +186,13 @@ export default function AdvokasiDetailPage() {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       if (resp.data.status === 'success') {
-        toast.success('Dokumen berhasil diunggah.');
+        const uploadedStep = docForm.step_key;
+        toast.success('Dokumen berhasil diunggah.', {
+          action: {
+            label: 'Lihat Dokumen',
+            onClick: () => handleViewFile(`/pekerja/${data.pekerja_id}/files/advokasi/${uploadedStep}`)
+          }
+        });
         setIsDocModalOpen(false);
         setDocForm({ step_key: '', file: null });
         refetch();
@@ -365,14 +385,56 @@ export default function AdvokasiDetailPage() {
             </div>
           </Card>
 
-          {/* Data Medis (Simplified) */}
           <Card className="rounded-[20px] shadow-sm border-slate-100 p-6">
             <div className="flex items-center gap-2 mb-5">
               <Stethoscope className="h-4 w-4 text-[#0284c7]" />
-              <h3 className="text-xs font-bold text-[#94a3b8] tracking-widest">DATA MEDIS</h3>
+              <h3 className="text-xs font-bold text-[#94a3b8] tracking-widest">DATA MEDIS & PAJANAN</h3>
             </div>
-            <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 text-amber-700 text-xs font-medium">
-              Data medis utama dapat diakses melalui profil pekerja. Kasus ini berkaitan dengan diagnosis yang melibatkan paparan di lingkungan kerja.
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Diagnosis Medis Terakhir</p>
+                  <div className="p-3.5 bg-slate-50 border border-slate-100 rounded-xl">
+                    <p className="text-sm font-extrabold text-slate-700 uppercase tracking-tight">
+                      {data.pekerja?.latest_detail_medis?.hasil_diagnosis || 'Belum ada data diagnosis'}
+                    </p>
+                    {data.pekerja?.latest_detail_medis?.tgl_pemeriksaan && (
+                      <p className="text-[10px] text-slate-400 font-bold mt-1 opacity-70 uppercase tracking-tight">
+                        Tgl Periksa: {new Date(data.pekerja.latest_detail_medis.tgl_pemeriksaan).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Status Kesehatan</p>
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-extrabold bg-blue-50 text-blue-700 border border-blue-100 uppercase tracking-wide">
+                    {data.pekerja?.latest_detail_medis?.status_kesehatan || 'Tidak Ada Data'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Faktor Risiko (Pajanan)</p>
+                  <div className="p-3.5 bg-rose-50 border border-rose-100 rounded-xl">
+                    <p className="text-sm font-extrabold text-rose-700 uppercase">
+                      {data.pekerja?.current_job?.jenis_pajanan || 'Tidak tercatat'}
+                    </p>
+                    <p className="text-[10px] text-rose-600 font-bold mt-1 opacity-80 uppercase tracking-tighter">
+                      Durasi Terpapar: {data.pekerja?.current_job?.durasi_pajanan || '-'}
+                    </p>
+                  </div>
+                </div>
+                {data.pekerja?.latest_detail_medis?.rekomendasi && (
+                  <div>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Rekomendasi Medis</p>
+                    <p className="text-[11px] text-slate-500 font-medium italic leading-relaxed">
+                      "{data.pekerja.latest_detail_medis.rekomendasi}"
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
           </Card>
         </div>
@@ -412,41 +474,47 @@ export default function AdvokasiDetailPage() {
           </Card>
 
           {/* Dokumen Bukti */}
-          <Card className="rounded-[20px] shadow-sm border-slate-100 p-6">
-            <div className="flex items-center gap-2 mb-5">
-              <FileStack className="h-4 w-4 text-[#0284c7]" />
-              <h3 className="text-xs font-bold text-[#94a3b8] tracking-widest">DOKUMEN BUKTI</h3>
-            </div>
-            <div className="space-y-4">
-              {documents.length === 0 ? (
-                <p className="text-xs text-slate-400 italic text-center py-4">Belum ada dokumen diunggah.</p>
-              ) : documents.map((doc: any, i: number) => (
-                <div key={i} className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
-                  <div className="h-10 w-10 rounded-lg flex items-center justify-center shrink-0 bg-red-50 text-red-500">
-                    <FileText className="h-5 w-5" />
+          {(isStaffOrAbove || (user && data?.pekerja?.user_id === user.id)) && (
+            <Card className="rounded-[20px] shadow-sm border-slate-100 p-6">
+              <div className="flex items-center gap-2 mb-5">
+                <FileStack className="h-4 w-4 text-[#0284c7]" />
+                <h3 className="text-xs font-bold text-[#94a3b8] tracking-widest">DOKUMEN BUKTI</h3>
+              </div>
+              <div className="space-y-4">
+                {documents.length === 0 ? (
+                  <p className="text-xs text-slate-400 italic text-center py-4">Belum ada dokumen diunggah.</p>
+                ) : documents.map((doc: any, i: number) => (
+                  <div key={i} className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                    <div className="h-10 w-10 rounded-lg flex items-center justify-center shrink-0 bg-red-50 text-red-500">
+                      <FileText className="h-5 w-5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-[#1e293b] truncate uppercase text-[11px]">{doc.name}</p>
+                      <p className="text-[10px] text-[#94a3b8] font-medium truncate">{doc.fileName}</p>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button 
+                        onClick={() => handleViewFile(`/pekerja/${data.pekerja_id}/files/advokasi/${doc.key}`)}
+                        className="p-1.5 text-slate-400 hover:text-slate-700 transition-colors"
+                      >
+                        <Download className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-[#1e293b] truncate uppercase text-[11px]">{doc.name}</p>
-                    <p className="text-[10px] text-[#94a3b8] font-medium truncate">{doc.fileName}</p>
-                  </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <button 
-                      onClick={() => window.open(`${process.env.NEXT_PUBLIC_API_URL}/pekerja/${data.pekerja_id}/files/advokasi/${doc.key}`, '_blank')}
-                      className="p-1.5 text-slate-400 hover:text-slate-700 transition-colors"
-                    >
-                      <Download className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <button 
-              onClick={() => setIsDocModalOpen(true)}
-              className="w-full mt-4 py-3 border-2 border-dashed border-slate-200 rounded-xl text-xs font-bold text-[#94a3b8] hover:border-[#0ea5e9] hover:text-[#0284c7] transition-all flex items-center justify-center gap-2"
-            >
-              <Upload className="h-4 w-4" /> KELOLA DOKUMEN
-            </button>
-          </Card>
+                ))}
+              </div>
+              
+              {/* Upload button - Only for the user who owns the record, not admin (as per request) */}
+              {user && data?.pekerja?.user_id === user.id && (
+                <button 
+                  onClick={() => setIsDocModalOpen(true)}
+                  className="w-full mt-4 py-3 border-2 border-dashed border-slate-200 rounded-xl text-xs font-bold text-[#94a3b8] hover:border-[#0ea5e9] hover:text-[#0284c7] transition-all flex items-center justify-center gap-2"
+                >
+                  <Upload className="h-4 w-4" /> KELOLA DOKUMEN
+                </button>
+              )}
+            </Card>
+          )}
         </div>
       </div>
 
@@ -475,7 +543,7 @@ export default function AdvokasiDetailPage() {
                 className="w-full h-11 rounded-xl bg-slate-50 border border-slate-200 px-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] cursor-pointer appearance-none"
                 style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
               >
-                <option value="" disabled>Pilih jenis dokumen</option>
+                <option value="" disabled hidden>Pilih jenis dokumen</option>
                 <option value="riwayat_pajanan">Bukti Pajanan</option>
                 <option value="persetujuan_dokter">Diagnosis Dokter</option>
                 <option value="perusahaan_lapor">Laporan Perusahaan</option>

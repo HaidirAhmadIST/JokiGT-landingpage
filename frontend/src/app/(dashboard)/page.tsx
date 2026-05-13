@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import Link from "next/link";
 import {
   Users,
+  Building2,
   ClipboardList,
   CheckCircle2,
   BadgeCheck,
@@ -19,16 +20,22 @@ import { toast } from 'sonner';
 
 interface DashboardStats {
   total_pekerja: number;
+  total_pekerja_new: number;
   total_perusahaan: number;
+  total_perusahaan_new: number;
   kasus_aktif: number;
+  kasus_aktif_new: number;
   advokasi_selesai: number;
+  advokasi_selesai_new: number;
   klaim_disetujui: number;
+  klaim_disetujui_new: number;
   kesehatan: {
     fit: number;
     note: number;
     unfit: number;
   };
 }
+
 
 export default function DashboardIndexPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -61,11 +68,12 @@ export default function DashboardIndexPage() {
       return <div className="h-9 w-20 bg-slate-200 rounded-lg animate-pulse" />;
     }
     return (
-      <h3 className="text-3xl font-extrabold text-[#0f172a] tabular-nums transition-all duration-300">
+      <h3 className="text-4xl font-extrabold text-[#0f172a] tabular-nums transition-all duration-300">
         {value.toLocaleString('id-ID')}
       </h3>
     );
   };
+
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 max-w-7xl mx-auto">
@@ -81,85 +89,87 @@ export default function DashboardIndexPage() {
       </div>
 
       {/* ── Metric Cards ── */}
-      <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
 
         {/* Card 1 — Total Pekerja */}
-        <Card className="rounded-[20px] shadow-sm border-slate-100 p-6 flex flex-col justify-between h-36 relative overflow-hidden group hover:shadow-md transition-all">
+        <Card className="rounded-[20px] shadow-sm border-slate-100 p-6 flex flex-col justify-between min-h-[152px] hover:shadow-md transition-all">
           <div className="flex justify-between items-start">
+            <p className="text-xs font-bold text-[#94a3b8] tracking-widest uppercase">Total Pekerja</p>
             <div className="bg-blue-50 text-blue-500 p-2.5 rounded-xl">
               <Users className="h-5 w-5" />
             </div>
-            {stats && stats.total_pekerja > 0 && (
-              <div className="flex items-center text-emerald-500 text-xs font-bold gap-1 bg-emerald-50 px-2 py-1 rounded-full">
-                <TrendingUp className="h-3 w-3" />
-                Live
-              </div>
+          </div>
+          <div className="flex items-end gap-2">
+            <StatValue value={stats?.total_pekerja ?? 0} loading={loading} />
+            {stats && stats.total_pekerja_new > 0 && (
+              <span className="text-xs font-bold text-emerald-500 mb-1.5 whitespace-nowrap">
+                (+{stats.total_pekerja_new})
+              </span>
             )}
           </div>
-          <div>
-            <p className="text-[#64748b] text-sm font-semibold mb-1">Total Pekerja</p>
-            <StatValue value={stats?.total_pekerja ?? 0} loading={loading} />
-          </div>
+          <p className="text-xs font-medium text-[#94a3b8]">Live monitoring</p>
         </Card>
 
         {/* Card 2 — Kasus Aktif */}
-        <Card className="rounded-[20px] shadow-sm border-slate-100 p-6 flex flex-col justify-between h-36 relative overflow-hidden group hover:shadow-md transition-all">
+        <Card className="rounded-[20px] shadow-sm border-slate-100 p-6 flex flex-col justify-between min-h-[152px] hover:shadow-md transition-all">
           <div className="flex justify-between items-start">
+            <p className="text-xs font-bold text-[#94a3b8] tracking-widest uppercase">Kasus Aktif</p>
             <div className="bg-orange-50 text-orange-500 p-2.5 rounded-xl">
               <ClipboardList className="h-5 w-5" />
             </div>
-            {stats && stats.kasus_aktif > 0 && (
-              <div className="flex items-center text-orange-500 text-xs font-bold gap-1 bg-orange-50 px-2 py-1 rounded-full">
-                <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
-                Proses
-              </div>
+          </div>
+          <div className="flex items-end gap-2">
+            <StatValue value={stats?.kasus_aktif ?? 0} loading={loading} />
+            {stats && stats.kasus_aktif_new > 0 && (
+              <span className="text-xs font-bold text-orange-500 mb-1.5 whitespace-nowrap">
+                (+{stats.kasus_aktif_new})
+              </span>
             )}
           </div>
-          <div>
-            <p className="text-[#64748b] text-sm font-semibold mb-1">Kasus Aktif</p>
-            <StatValue value={stats?.kasus_aktif ?? 0} loading={loading} />
-          </div>
+          <p className="text-xs font-medium text-[#94a3b8]">Sedang diproses</p>
         </Card>
 
         {/* Card 3 — Advokasi Selesai */}
-        <Card className="rounded-[20px] shadow-sm border-slate-100 p-6 flex flex-col justify-between h-36 relative overflow-hidden group hover:shadow-md transition-all">
+        <Card className="rounded-[20px] shadow-sm border-slate-100 p-6 flex flex-col justify-between min-h-[152px] hover:shadow-md transition-all">
           <div className="flex justify-between items-start">
+            <p className="text-xs font-bold text-[#94a3b8] tracking-widest uppercase">Advokasi Selesai</p>
             <div className="bg-emerald-50 text-emerald-500 p-2.5 rounded-xl">
               <CheckCircle2 className="h-5 w-5" />
             </div>
-            {stats && stats.advokasi_selesai > 0 && (
-              <div className="flex items-center text-emerald-500 text-xs font-bold gap-1 bg-emerald-50 px-2 py-1 rounded-full">
-                <CheckCircle2 className="h-3 w-3" />
-                Tuntas
-              </div>
+          </div>
+          <div className="flex items-end gap-2">
+            <StatValue value={stats?.advokasi_selesai ?? 0} loading={loading} />
+            {stats && stats.advokasi_selesai_new > 0 && (
+              <span className="text-xs font-bold text-emerald-500 mb-1.5 whitespace-nowrap">
+                (+{stats.advokasi_selesai_new})
+              </span>
             )}
           </div>
-          <div>
-            <p className="text-[#64748b] text-sm font-semibold mb-1">Advokasi Selesai</p>
-            <StatValue value={stats?.advokasi_selesai ?? 0} loading={loading} />
-          </div>
+          <p className="text-xs font-medium text-[#94a3b8]">Kasus tuntas</p>
         </Card>
 
         {/* Card 4 — Klaim Disetujui */}
-        <Card className="rounded-[20px] shadow-sm border-slate-100 p-6 flex flex-col justify-between h-36 relative overflow-hidden group hover:shadow-md transition-all">
+        <Card className="rounded-[20px] shadow-sm border-slate-100 p-6 flex flex-col justify-between min-h-[152px] hover:shadow-md transition-all">
           <div className="flex justify-between items-start">
+            <p className="text-xs font-bold text-[#94a3b8] tracking-widest uppercase">Klaim Disetujui</p>
             <div className="bg-indigo-50 text-indigo-500 p-2.5 rounded-xl">
               <BadgeCheck className="h-5 w-5" />
             </div>
-            {stats && stats.klaim_disetujui > 0 && (
-              <div className="flex items-center text-emerald-500 text-xs font-bold gap-1 bg-emerald-50 px-2 py-1 rounded-full">
-                <TrendingUp className="h-3 w-3" />
-                Approved
-              </div>
+          </div>
+          <div className="flex items-end gap-2">
+            <StatValue value={stats?.klaim_disetujui ?? 0} loading={loading} />
+            {stats && stats.klaim_disetujui_new > 0 && (
+              <span className="text-xs font-bold text-emerald-500 mb-1.5 whitespace-nowrap">
+                (+{stats.klaim_disetujui_new})
+              </span>
             )}
           </div>
-          <div>
-            <p className="text-[#64748b] text-sm font-semibold mb-1">Klaim Disetujui</p>
-            <StatValue value={stats?.klaim_disetujui ?? 0} loading={loading} />
-          </div>
+          <p className="text-xs font-medium text-[#94a3b8]">Approved claims</p>
         </Card>
 
       </div>
+
+
 
       {/* ── Middle Section: Bar Chart + ActivitySidebar ── */}
       <div className="grid gap-6 lg:grid-cols-3">
