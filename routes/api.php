@@ -21,8 +21,8 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register/complete', [RegistrationController::class, 'completeRegistration']);
 Route::post('/register', [AuthController::class, 'register']);
 Route::get('perusahaan', [PerusahaanController::class, 'index']);
+Route::post('perusahaan', [PerusahaanController::class, 'store']);
 Route::get('pekerja', [PekerjaController::class, 'index']);
-Route::post('pekerja', [PekerjaController::class, 'store']);
 
 
 // =========================================================================
@@ -41,7 +41,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     // Perusahaan Management
     Route::group(['middleware' => ['role:admin,petugas']], function () {
-        Route::post('perusahaan', [PerusahaanController::class, 'store']);
         Route::put('perusahaan/{perusahaan}', [PerusahaanController::class, 'update']);
         Route::patch('perusahaan/{id}/restore', [PerusahaanController::class, 'restore']);
     });

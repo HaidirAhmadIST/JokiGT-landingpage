@@ -33,9 +33,9 @@ return new class extends Migration
         DB::table('perusahaan')->where('status_pendamping', 'Dalam Pantauan')->update(['status_pendamping' => 'pending']);
         DB::table('perusahaan')->where('status_pendamping', 'Selesai')->update(['status_pendamping' => 'tidak_aktif']);
 
-        // 2. Revert to enum
+        // 2. Revert to string with default
         Schema::table('perusahaan', function (Blueprint $table) {
-            $table->enum('status_pendamping', ['aktif', 'tidak_aktif', 'pending'])->default('pending')->change();
+            $table->string('status_pendamping', 50)->default('pending')->change();
         });
     }
 };
