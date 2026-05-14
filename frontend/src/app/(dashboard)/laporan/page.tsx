@@ -33,6 +33,7 @@ import { Bar, BarChart, CartesianGrid, XAxis, Tooltip as RechartsTooltip, Respon
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import PriorityCasesCard from '@/components/dashboard/PriorityCasesCard';
 
 export default function LaporanPage() {
   const router = useRouter();
@@ -245,6 +246,21 @@ export default function LaporanPage() {
             )}
           </div>
           <p className="text-xs font-medium text-[#94a3b8]">Variasi tipe penyakit</p>
+        </Card>
+      </div>
+
+      {/* Priority Section for Reports */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="md:col-span-1">
+          <PriorityCasesCard />
+        </div>
+        <Card className="md:col-span-2 rounded-[20px] shadow-sm border-slate-100 p-8 bg-blue-50/30 flex flex-col justify-center">
+          <h2 className="text-xl font-bold text-[#0f172a] mb-2">Analisis Urgensi Advokasi</h2>
+          <p className="text-sm text-slate-600 leading-relaxed">
+            Data prioritas di samping menunjukkan kasus PAK yang mendekati batas waktu legal 5 tahun sejak berakhirnya hubungan kerja. 
+            Kegagalan penyelesaian dalam periode ini dapat mengakibatkan hilangnya hak kompensasi bagi pekerja. 
+            Segera lakukan koordinasi dengan BPJS Ketenagakerjaan dan Dinas Tenaga Kerja setempat.
+          </p>
         </Card>
       </div>
 

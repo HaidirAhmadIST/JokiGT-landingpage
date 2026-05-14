@@ -13,12 +13,15 @@ import { HeartPulse } from 'lucide-react';
 export interface RiwayatPemeriksaanItem {
   tanggal_pemeriksaan: string;
   tempat_pemeriksaan: string;
-  jenis_pemeriksaan: string;
+  tipe_lokasi: string; // 'Klinik Perusahaan' | 'Umum'
+  penanggung_jawab: string; // 'Pribadi' | 'Perusahaan' | 'BPJS'
+  alamat_pemeriksaan: string;
+  jenis_pemeriksaan: string[];
+  jenis_pemeriksaan_lainnya: string;
   dokter: string;
   status_kesehatan: string;
   hasil_diagnosis: string;
   rekomendasi: string;
-  file_hasil: File[];
   pendamping: string;
 }
 
@@ -48,7 +51,9 @@ export default function FormDetailMedis({ data, onChange }: FormDetailMedisProps
       {
         tanggal_pemeriksaan: '',
         tempat_pemeriksaan: '',
-        jenis_pemeriksaan: '',
+        tipe_lokasi: 'Umum',
+        penanggung_jawab: '',
+        jenis_pemeriksaan: [] as string[],
         dokter: '',
         status_kesehatan: 'sehat',
         hasil_diagnosis: '',
@@ -81,7 +86,7 @@ export default function FormDetailMedis({ data, onChange }: FormDetailMedisProps
               <HeartPulse className="w-6 h-6 text-red-500" />
             </div>
             <div>
-              <CardTitle className="text-xl font-bold text-gray-900">Detail Kesehatan & Gejala</CardTitle>
+              <CardTitle className="text-xl font-bold text-gray-900">Riwayat Kesehatan & Gejala</CardTitle>
               <CardDescription className="text-sm text-gray-500 mt-1">
                 Informasi baseline medis dan riwayat keluhan untuk penapisan PAK
               </CardDescription>
@@ -173,6 +178,270 @@ export default function FormDetailMedis({ data, onChange }: FormDetailMedisProps
         </CardContent>
       </Card>
 
+      {/* ---------------- BAGIAN 2: RIWAYAT PEMERIKSAAN / MCU ---------------- */}
+      <Card className="border border-gray-200 shadow-sm rounded-xl overflow-hidden">
+        <CardHeader className="p-6 bg-gray-50 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-white border border-gray-200 shadow-sm rounded-lg flex items-center justify-center">
+                <HeartPulse className="w-6 h-6 text-blue-500" />
+              </div>
+              <div>
+                <CardTitle className="text-xl font-bold text-gray-900">Riwayat Pemeriksaan / MCU</CardTitle>
+                <CardDescription className="text-sm text-gray-500 mt-1">
+                  Tambahkan riwayat pemeriksaan kesehatan atau MCU yang pernah Anda jalani
+                </CardDescription>
+              </div>
+            </div>
+            <Button 
+              type="button" 
+              variant="outline" 
+              size="sm" 
+              onClick={addPemeriksaan}
+              className="bg-white border-blue-200 text-blue-600 hover:bg-blue-50"
+            >
+              Tambah Pemeriksaan
+            </Button>
+          </div>
+        </CardHeader>
+        
+        <CardContent className="p-6">
+          {riwayat.length === 0 ? (
+            <div className="text-center py-10 border-2 border-dashed border-gray-200 rounded-xl bg-gray-50">
+              <p className="text-gray-400 text-sm">Belum ada riwayat pemeriksaan ditambahkan.</p>
+              <Button 
+                type="button" 
+                variant="link" 
+                onClick={addPemeriksaan}
+                className="text-blue-500 font-bold mt-2"
+              >
+                Klik di sini untuk menambah
+              </Button>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-6">
+              {riwayat.map((m, idx) => (
+                <div key={idx} className="relative p-5 border border-gray-200 rounded-xl bg-white shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
+                  <div className="absolute top-4 right-4">
+                    <Button 
+                      type="button" 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => removePemeriksaan(idx)}
+                      className="text-gray-400 hover:text-red-500 hover:bg-red-50 h-8 w-8 p-0"
+                    >
+                      ×
+                    </Button>
+                  </div>
+                  
+                  <h4 className="font-bold text-gray-700 mb-4 flex items-center gap-2">
+                    <span className="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs">
+                      {idx + 1}
+                    </span>
+                    Pemeriksaan #{idx + 1}
+                  </h4>
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                    {/* Row 1: Tanggal & Tempat */}
+                    <div className="space-y-2">
+                      <Label className="text-gray-600">Tanggal Pemeriksaan</Label>
+                      <Input 
+                        type="date" 
+                        value={m.tanggal_pemeriksaan || ''} 
+                        onChange={e => updatePemeriksaan(idx, 'tanggal_pemeriksaan', e.target.value)}
+                        className="bg-white border-gray-300 focus:ring-1 focus:ring-blue-500 h-10"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label className="text-gray-600">Tempat Pemeriksaan</Label>
+                      <Input 
+                        placeholder="Contoh: RS Siloam, Klinik Perusahaan" 
+                        value={m.tempat_pemeriksaan || ''} 
+                        onChange={e => updatePemeriksaan(idx, 'tempat_pemeriksaan', e.target.value)}
+                        className="bg-white border-gray-300 focus:ring-1 focus:ring-blue-500 h-10"
+                      />
+                    </div>
+
+                    {/* Row 2: Tipe Lokasi & Penanggung Jawab */}
+                    <div className="space-y-2">
+                      <Label className="text-gray-600">Fasilitas Kesehatan</Label>
+                      <Select 
+                        value={m.tipe_lokasi || 'Umum'} 
+                        onValueChange={v => {
+                          updatePemeriksaan(idx, 'tipe_lokasi', v);
+                          if (v !== 'Klinik Perusahaan') updatePemeriksaan(idx, 'penanggung_jawab', '');
+                        }}
+                      >
+                        <SelectTrigger className="bg-white border-gray-300 h-10">
+                          <SelectValue placeholder="Pilih Tipe" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Umum">Umum (RS/Klinik/Puskesmas)</SelectItem>
+                          <SelectItem value="Klinik Perusahaan">Klinik Perusahaan</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      {m.tipe_lokasi === 'Klinik Perusahaan' && (
+                        <div className="animate-in fade-in slide-in-from-top-1 duration-300">
+                          <Label className="text-gray-600">Tanggung Jawab Oleh</Label>
+                          <Select 
+                            value={m.penanggung_jawab || ''} 
+                            onValueChange={v => updatePemeriksaan(idx, 'penanggung_jawab', v)}
+                          >
+                            <SelectTrigger className="bg-white border-gray-300 h-10">
+                              <SelectValue placeholder="Pilih Penanggung Jawab" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Pribadi">Pribadi</SelectItem>
+                              <SelectItem value="Perusahaan">Perusahaan</SelectItem>
+                              <SelectItem value="BPJS">BPJS</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Row 3: Jenis Pemeriksaan (Full Width) */}
+                    <div className="space-y-3 md:col-span-2 bg-gray-50/30 p-4 rounded-xl border border-gray-100 mt-2">
+                      <Label className="text-gray-600 font-semibold">Jenis Pemeriksaan (Bisa pilih lebih dari satu)</Label>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                        {[
+                          { id: 'MCU Berkala', label: 'Pemeriksaan Kesehatan Rutin (MCU)' },
+                          { id: 'Rontgen Thorax', label: 'Rontgen Dada / Paru-paru' },
+                          { id: 'Spirometri', label: 'Tes Pernapasan/Tiup Alat Paru-paru (Spirometri)' },
+                          { id: 'Audiometri', label: 'Tes Pendengaran (Audiometri)' },
+                          { id: 'Tes Darah/Lab', label: 'Tes Laboratorium (Darah/Urine)' },
+                          { id: 'Lainnya', label: 'Lainnya (Sebutkan)' }
+                        ].map((opt) => (
+                          <div key={opt.id} className="flex items-start space-x-3 p-2.5 rounded-lg hover:bg-blue-50/50 transition-all border border-transparent hover:border-blue-100 group">
+                            <Checkbox 
+                              id={`jenis-${idx}-${opt.id}`}
+                              checked={(m.jenis_pemeriksaan || []).includes(opt.id)}
+                              onCheckedChange={(checked) => {
+                                const current = m.jenis_pemeriksaan || [];
+                                if (checked) {
+                                  updatePemeriksaan(idx, 'jenis_pemeriksaan', [...current, opt.id]);
+                                } else {
+                                  updatePemeriksaan(idx, 'jenis_pemeriksaan', current.filter(item => item !== opt.id));
+                                }
+                              }}
+                              className="mt-0.5 border-gray-300 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                            />
+                            <Label 
+                              htmlFor={`jenis-${idx}-${opt.id}`}
+                              className="text-xs leading-snug cursor-pointer text-gray-700 font-medium group-hover:text-blue-700 transition-colors"
+                            >
+                              {opt.label}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                      
+                      { (m.jenis_pemeriksaan || []).includes('Lainnya') && (
+                        <Input 
+                          placeholder="Sebutkan jenis pemeriksaan lainnya..." 
+                          value={m.jenis_pemeriksaan_lainnya || ''} 
+                          onChange={e => updatePemeriksaan(idx, 'jenis_pemeriksaan_lainnya', e.target.value)}
+                          className="bg-white border-gray-300 h-10 mt-3 animate-in slide-in-from-top-1 duration-200"
+                          autoFocus
+                        />
+                      )}
+                    </div>
+
+                    {/* Row 3: Alamat & Dokter */}
+                    <div className="space-y-2">
+                      <Label className="text-gray-600">Alamat Tempat Pemeriksaan</Label>
+                      <Input 
+                        placeholder="Alamat rumah sakit/klinik..." 
+                        value={m.alamat_pemeriksaan || ''} 
+                        onChange={e => updatePemeriksaan(idx, 'alamat_pemeriksaan', e.target.value)}
+                        className="bg-white border-gray-300 focus:ring-1 focus:ring-blue-500 h-10"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-gray-600">Dokter yang Memeriksa</Label>
+                      <Input 
+                        placeholder="Nama dokter..." 
+                        value={m.dokter || ''} 
+                        onChange={e => updatePemeriksaan(idx, 'dokter', e.target.value)}
+                        className="bg-white border-gray-300 focus:ring-1 focus:ring-blue-500 h-10"
+                      />
+                    </div>
+
+                    {/* Row 4: Status & Pendamping */}
+                    <div className="space-y-2">
+                      <Label className="text-gray-600">Status Kesehatan</Label>
+                      <Select 
+                        value={m.status_kesehatan || 'sehat'} 
+                        onValueChange={v => updatePemeriksaan(idx, 'status_kesehatan', v)}
+                      >
+                        <SelectTrigger className="bg-white border-gray-300 h-10">
+                          <SelectValue placeholder="Pilih Status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="sehat">Sehat</SelectItem>
+                          <SelectItem value="sehat_dengan_catatan">Sehat dengan Catatan</SelectItem>
+                          <SelectItem value="tidak_sehat">Tidak Sehat</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-gray-600">Pendamping / Penjamin</Label>
+                      <Select 
+                        value={m.pendamping || ''} 
+                        onValueChange={v => updatePemeriksaan(idx, 'pendamping', v)}
+                      >
+                        <SelectTrigger className="bg-white border-gray-300 h-10">
+                          <SelectValue placeholder="Pilih Pendamping" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Serikat">Serikat Pekerja / Buruh</SelectItem>
+                          <SelectItem value="Dokter">Dokter / Petugas Medis</SelectItem>
+                          <SelectItem value="Mandiri">Mandiri / Sendiri</SelectItem>
+                          <SelectItem value="Lainnya">Lainnya (Sebutkan)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      { (m.pendamping === 'Lainnya' || (m.pendamping && !['Serikat', 'Dokter', 'Mandiri'].includes(m.pendamping))) && (
+                        <Input 
+                          placeholder="Sebutkan pendamping lainnya..." 
+                          value={m.pendamping === 'Lainnya' ? '' : m.pendamping} 
+                          onChange={e => updatePemeriksaan(idx, 'pendamping', e.target.value)}
+                          className="bg-white border-gray-300 h-10 mt-2 animate-in slide-in-from-top-1 duration-200"
+                          autoFocus
+                        />
+                      )}
+                    </div>
+
+                    {/* Bottom: Diagnosis & Rekomendasi (Full Width) */}
+                    <div className="space-y-4 md:col-span-2 border-t border-gray-100 pt-4 mt-2">
+                      <div className="space-y-2">
+                        <Label className="text-gray-600">Hasil Diagnosis</Label>
+                        <Textarea 
+                          placeholder="Ringkasan hasil diagnosis dari dokter..." 
+                          value={m.hasil_diagnosis || ''} 
+                          onChange={e => updatePemeriksaan(idx, 'hasil_diagnosis', e.target.value)}
+                          className="bg-white border-gray-300 focus:ring-1 focus:ring-blue-500 min-h-[80px] resize-none"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-gray-600">Rekomendasi / Saran Dokter</Label>
+                        <Textarea 
+                          placeholder="Saran tindak lanjut dari dokter..." 
+                          value={m.rekomendasi || ''} 
+                          onChange={e => updatePemeriksaan(idx, 'rekomendasi', e.target.value)}
+                          className="bg-white border-gray-300 focus:ring-1 focus:ring-blue-500 min-h-[60px] resize-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

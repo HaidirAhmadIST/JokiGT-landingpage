@@ -57,7 +57,6 @@ interface PekerjaDetail {
   nik: string;
   nama_lengkap: string;
   status_kesehatan: string;
-  pas_foto?: string;
   riwayat_pekerja?: any[];
   status_advokasi?: any;
   detail_medis?: any[];
@@ -1091,22 +1090,14 @@ export default function PerusahaanPage() {
                                 {/* Avatar + Name + NIK */}
                                 <td className="py-3.5 px-2">
                                   <div className="flex items-center gap-3">
-                                    <div className="h-9 w-9 rounded-full bg-slate-100 overflow-hidden shrink-0 border-2 border-white shadow-sm">
-                                      {w.pas_foto ? (
+                                      <div className="h-9 w-9 rounded-full bg-slate-100 overflow-hidden shrink-0 border-2 border-white shadow-sm">
                                         <img
-                                          src={`${apiBaseUrl}/storage/profil/${w.pas_foto}`}
+                                          src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${w.nama_lengkap}`}
                                           alt={w.nama_lengkap}
                                           className="w-full h-full object-cover object-top"
                                           loading="lazy"
                                         />
-                                      ) : (
-                                        <div className="w-full h-full bg-gradient-to-br from-[#0ea5e9]/20 to-[#0284c7]/10 flex items-center justify-center">
-                                          <span className="text-[11px] font-extrabold text-[#0284c7]">
-                                            {w.nama_lengkap.split(' ').map(n => n[0]).slice(0, 2).join('')}
-                                          </span>
-                                        </div>
-                                      )}
-                                    </div>
+                                      </div>
                                     <div className="min-w-0">
                                       <p className="text-[13px] font-bold text-slate-800 truncate">{w.nama_lengkap}</p>
                                       <p className="text-[11px] text-slate-400 font-medium">NIK: {w.nik}</p>

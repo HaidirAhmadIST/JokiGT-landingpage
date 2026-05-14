@@ -111,9 +111,7 @@ export default function UserDashboardPage() {
   const hCfg = healthConfig[pekerja?.status_kesehatan ?? 'sehat'] ?? healthConfig.sehat;
   const done = adv ? STEPS.filter(s => (adv as any)[s.key]).length : 0;
   const pct  = Math.round((done / 6) * 100);
-  const photo = pekerja?.pas_foto 
-    ? `${API_BASE}/storage/profil/${pekerja.pas_foto}` 
-    : `https://api.dicebear.com/7.x/avataaars/svg?seed=${pekerja?.nama_lengkap || user?.nama || 'Pekerja'}`;
+  const photo = `https://api.dicebear.com/7.x/avataaars/svg?seed=${pekerja?.nama_lengkap || user?.nama || 'Pekerja'}`;
   const timeline = [
     { label: 'Terdaftar', at: pekerja?.created_at, icon: Shield, color: 'bg-slate-400' },
     ...STEPS.filter(s => adv && (adv as any)[s.key]).map(s => ({
@@ -949,16 +947,7 @@ export default function UserDashboardPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="photo" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pas Foto Baru (Opsional)</Label>
-              <Input 
-                id="photo"
-                type="file"
-                accept="image/*"
-                className="rounded-xl bg-slate-50 border-slate-200 h-11 cursor-pointer pt-2"
-                onChange={(e) => setProfileForm({...profileForm, pas_foto: e.target.files?.[0] || null})}
-              />
-            </div>
+
             <DialogFooter className="pt-2">
               <Button type="submit" disabled={profileLoading} className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black shadow-lg shadow-blue-100 transition-all">
                 {profileLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}

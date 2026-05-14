@@ -19,6 +19,7 @@ import { Card } from '@/components/ui/card';
 import ActivitySidebar from '@/components/ActivitySidebar';
 import AdvokasiBarChart from '@/components/AdvokasiBarChart';
 import StatCard from '@/components/dashboard/StatCard';
+import PriorityCasesCard from '@/components/dashboard/PriorityCasesCard';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
 
 export default function DashboardIndexPage() {
@@ -89,8 +90,11 @@ export default function DashboardIndexPage() {
           <AdvokasiBarChart />
         </Card>
 
-        {/* Activity Sidebar — 1/3 width */}
-        <ActivitySidebar />
+        {/* Right Column: Priority Cases + Activity Sidebar */}
+        <div className="flex flex-col gap-6">
+          <PriorityCasesCard />
+          <ActivitySidebar />
+        </div>
       </div>
 
       {/* ── Bottom Banner ── */}

@@ -20,6 +20,7 @@ class DetailMedisController extends Controller
         $validated = $request->validate([
             'riwayat_pekerja_id'  => 'required|exists:riwayat_pekerja,id',
             'jenis_pemeriksaan'   => 'required|string',
+            'tempat_pemeriksaan'  => 'nullable|string',
             'tanggal_pemeriksaan' => 'required|date',
             'status_kesehatan'    => 'required|string|in:sehat,sehat_dengan_catatan,tidak_sehat',
             'hasil_diagnosis'     => 'nullable|string',
@@ -31,11 +32,26 @@ class DetailMedisController extends Controller
         
         // Ownership check
         $user = auth()->user();
-        if (!$user->isAdmin() && !$user->isPetugas() && $user->pekerja->id !== $riwayat->pekerja_id) {
-            return response()->json(['status' => 'error', 'message' => 'Akses ditolak.'], 403);
+        if (!$user->isAdmin() && !$user->isPetugas()) {
+            if (!$user->pekerja || $user->pekerja->id !== $riwayat->pekerja_id) {
+                return response()->json(['status' => 'error', 'message' => 'Akses ditolak.'], 403);
+            }
         }
 
-        $medis = DetailMedis::create($validated);
+        // Map to DB columns
+        $data = [
+            'riwayat_pekerja_id' => $validated['riwayat_pekerja_id'],
+            'pekerja_id'         => $riwayat->pekerja_id,
+            'jenis_pemeriksa'    => $validated['jenis_pemeriksaan'],
+            'tempat_pemeriksa'   => $validated['tempat_pemeriksaan'] ?? null,
+            'tgl_pemeriksaan'    => $validated['tanggal_pemeriksaan'],
+            'status_kesehatan'   => $validated['status_kesehatan'],
+            'hasil_diagnosis'    => $validated['hasil_diagnosis'],
+            'rekomendasi'        => $validated['rekomendasi'],
+            'dokter_pemeriksa'   => $validated['dokter_pemeriksa'],
+        ];
+
+        $medis = DetailMedis::create($data);
 
         ActivityLog::record(
             'tambah_medis',
@@ -57,12 +73,15 @@ class DetailMedisController extends Controller
 
         // Ownership check
         $user = auth()->user();
-        if (!$user->isAdmin() && !$user->isPetugas() && $user->pekerja->id !== $riwayat->pekerja_id) {
-            return response()->json(['status' => 'error', 'message' => 'Akses ditolak.'], 403);
+        if (!$user->isAdmin() && !$user->isPetugas()) {
+            if (!$user->pekerja || $user->pekerja->id !== $riwayat->pekerja_id) {
+                return response()->json(['status' => 'error', 'message' => 'Akses ditolak.'], 403);
+            }
         }
 
         $validated = $request->validate([
             'jenis_pemeriksaan'   => 'sometimes|string',
+            'tempat_pemeriksaan'  => 'sometimes|nullable|string',
             'tanggal_pemeriksaan' => 'sometimes|date',
             'status_kesehatan'    => 'sometimes|string|in:sehat,sehat_dengan_catatan,tidak_sehat',
             'hasil_diagnosis'     => 'nullable|string',
@@ -70,7 +89,18 @@ class DetailMedisController extends Controller
             'dokter_pemeriksa'    => 'nullable|string',
         ]);
 
-        $medis->update($validated);
+        // Map to DB columns
+        $data = [];
+        if (isset($validated['jenis_pemeriksaan']))   $data['jenis_pemeriksa']  = $validated['jenis_pemeriksaan'];
+        if (isset($validated['tempat_pemeriksaan']))  $data['tempat_pemeriksa'] = $validated['tempat_pemeriksaan'];
+        if (isset($validated['tanggal_pemeriksaan'])) $data['tgl_pemeriksaan']   = $validated['tanggal_pemeriksaan'];
+        
+        $fields = ['status_kesehatan', 'hasil_diagnosis', 'rekomendasi', 'dokter_pemeriksa'];
+        foreach ($fields as $f) {
+            if (isset($validated[$f])) $data[$f] = $validated[$f];
+        }
+
+        $medis->update($data);
 
         ActivityLog::record(
             'update_medis',

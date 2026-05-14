@@ -152,7 +152,8 @@ class AdvokasiService
         return StatusAdvokasi::with([
             'pekerja.perusahaan', 
             'pekerja.user', 
-            'pekerja.riwayatPekerja', 
+            'pekerja.riwayatPekerja.detailMedis', 
+            'pekerja.detailMedis',
             'pekerja.currentJob',
             'pekerja.latestDetailMedis'
         ])->find($id);
@@ -249,5 +250,47 @@ class AdvokasiService
 
         $status->save();
         return $status;
+    }
+
+    /**
+     * Get prioritized cases based on the 5-year legal deadline for PAK advocacy.
+     *
+     * @param int $limit
+     * @return Collection
+     */
+    public function getPriorityCases(int $limit = 5): Collection
+    {
+        return StatusAdvokasi::with(['pekerja.perusahaan', 'pekerja.riwayatPekerja'])
+            ->where('jenis_kasus', 'PAK')
+            ->where('rehabilitasi_bpjskes', false) // Only active cases
+            ->get()
+            ->map(function ($case) {
+                $pekerja = $case->pekerja;
+                if (!$pekerja) return null;
+
+                // Find the relevant job record with a departure date
+                $latestJob = $pekerja->riwayatPekerja
+                    ->whereNotNull('tgl_keluar')
+                    ->sortByDesc('tgl_keluar')
+                    ->first();
+
+                if (!$latestJob) return null;
+
+                $tglKeluar = \Carbon\Carbon::parse($latestJob->tgl_keluar);
+                $deadline = $tglKeluar->copy()->addYears(5);
+                $daysRemaining = now()->diffInDays($deadline, false);
+
+                // Attach priority metadata
+                $case->days_remaining = $daysRemaining;
+                $case->deadline_date = $deadline->toDateString();
+                $case->latest_pajanan = $latestJob->jenis_pajanan;
+                $case->is_very_urgent = $daysRemaining <= 180; // Less than 6 months
+                
+                return $case;
+            })
+            ->filter(fn($c) => $c !== null && $c->days_remaining <= 365) // Within 1 year of deadline
+            ->sortBy('days_remaining')
+            ->take($limit)
+            ->values();
     }
 }

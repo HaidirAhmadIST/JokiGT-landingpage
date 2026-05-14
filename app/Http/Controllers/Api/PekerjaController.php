@@ -64,10 +64,10 @@ class PekerjaController extends Controller
 
             // Search filter
             if ($request->has('search')) {
-                $search = strtolower($request->search);
+                $search = $request->search;
                 $query->where(function($q) use ($search) {
-                    $q->whereRaw('LOWER(nama_lengkap) LIKE ?', ["%{$search}%"])
-                      ->orWhereRaw('LOWER(nik) LIKE ?', ["%{$search}%"]);
+                    $q->whereRaw('LOWER(nama_lengkap) LIKE LOWER(?)', ["%{$search}%"])
+                      ->orWhereRaw('LOWER(nik) LIKE LOWER(?)', ["%{$search}%"]);
                 });
             }
 

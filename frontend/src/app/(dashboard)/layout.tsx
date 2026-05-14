@@ -362,15 +362,11 @@ export default function DashboardLayout({
               className="h-9 w-9 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center font-bold text-sm border border-orange-100 outline-none hover:ring-2 hover:ring-orange-200 hover:ring-offset-1 transition-all shadow-sm cursor-pointer overflow-hidden"
               suppressHydrationWarning
             >
-               {mounted && user?.foto ? (
-                 <img 
-                   src={user.foto.startsWith('http') ? user.foto : `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '')}/storage/${user.foto}`} 
-                   alt={user.nama} 
-                   className="w-full h-full object-cover"
-                 />
-               ) : (
-                 <span>{mounted && user?.nama ? user.nama.charAt(0).toUpperCase() : 'A'}</span>
-               )}
+              <img 
+                src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.nama || 'Admin'}`} 
+                alt={user?.nama} 
+                className="w-full h-full object-cover" 
+              />
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56" align="end">
               <DropdownMenuGroup>

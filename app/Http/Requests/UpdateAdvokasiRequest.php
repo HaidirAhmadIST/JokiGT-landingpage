@@ -21,7 +21,7 @@ class UpdateAdvokasiRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
+        $rules = [
             // Boolean status fields
             'riwayat_pajanan' => ['nullable', 'boolean'],
             'persetujuan_dokter' => ['nullable', 'boolean'],
@@ -30,25 +30,27 @@ class UpdateAdvokasiRequest extends FormRequest
             'kompensasi_bpjstk' => ['nullable', 'boolean'],
             'rehabilitasi_bpjskes' => ['nullable', 'boolean'],
 
-            // Shared file upload fields (used in the registration loop)
+            // Shared file upload fields
             'step_key' => ['nullable', 'string', 'in:riwayat_pajanan,persetujuan_dokter,perusahaan_lapor,penetapan_pak,kompensasi_bpjstk,rehabilitasi_bpjskes'],
-            'file' => ['nullable', 'array', 'max:5'], // Optional: cap at 5 files per step
-            'file.*' => ['file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
-            
-            // Legacy/Specific file upload fields
-            'bukti_pajanan' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
-            'bukti_persetujuan_dokter' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
-            'bukti_perusahaan_lapor' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
-            'bukti_penetapan_pak' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
-            'bukti_kompensasi_bpjstk' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
-            'bukti_rehabilitasi_bpjskes' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
-
-            // Metadata fields for "Tambah Kasus" or updates
             'jenis_kasus' => ['nullable', 'string', 'in:pak,k3,phk,PAK,K3,PHK'],
             'tahap' => ['nullable', 'string', 'in:UPTD,BPJS,Pengadilan,uptd,bpjs,pengadilan'],
             'status_detail' => ['nullable', 'string', 'max:255'],
             'tanggal_pelaporan' => ['nullable', 'date'],
             'catatan' => ['nullable', 'string'],
         ];
+
+        // Handle flexible 'file' field (single or array)
+        if ($this->hasFile('file')) {
+            if (is_array($this->file('file'))) {
+                $rules['file'] = ['nullable', 'array', 'max:5'];
+                $rules['file.*'] = ['file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'];
+            } else {
+                $rules['file'] = ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'];
+            }
+        } else {
+            $rules['file'] = ['nullable'];
+        }
+
+        return $rules;
     }
 }

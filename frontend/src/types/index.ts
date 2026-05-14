@@ -18,7 +18,6 @@ export interface User {
   nama: string;
   email: string;
   role: UserRole;
-  foto?: string;
   /** ID Pekerja yang terhubung (hanya untuk role 'viewer') */
   pekerja_id?: number;
   pekerja?: PekerjaFull;
@@ -204,7 +203,6 @@ export interface PekerjaFull {
   alamat_ktp?: string;
   domisili?: string;
   whatsapp?: string;
-  pas_foto?: string;
   status_kesehatan?: HealthStatus;
   catatan_admin?: string;
   user_id?: number;
@@ -232,7 +230,6 @@ export interface Pekerja {
   alamat_ktp?: string;
   domisili?: string;
   whatsapp?: string;
-  pas_foto?: string;
   status_kesehatan?: HealthStatus;
   user_id?: number;
   perusahaan_id?: number;
@@ -240,6 +237,7 @@ export interface Pekerja {
   riwayat_pekerja?: RiwayatPekerja[];
   current_job?: RiwayatPekerja;
   latest_detail_medis?: DetailMedis;
+  detail_medis?: DetailMedis[];
   created_at: string;
   updated_at: string;
 }

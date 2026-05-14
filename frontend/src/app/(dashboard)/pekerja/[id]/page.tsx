@@ -544,7 +544,7 @@ export default function PekerjaDetailPage() {
               {/* Placeholder Avatar - replacing with an icon wrapper */}
               <div className="w-full h-full rounded-[26px] overflow-hidden bg-slate-100 border border-slate-200 relative">
                 <img
-                  src={data.pas_foto ? `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://127.0.0.1:8000'}/storage/profil/${data.pas_foto}` : `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.nama_lengkap}`}
+                  src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${data.nama_lengkap}`}
                   alt="avatar"
                   className="w-full h-full object-cover object-top"
                 />
@@ -1635,7 +1635,7 @@ export default function PekerjaDetailPage() {
                                 <span className="text-[11px] font-black uppercase tracking-tight">{p.trim()}</span>
                               </div>
                             )) : (
-                              <span className="text-slate-300 text-[11px] font-bold italic">Nihil Pajanan</span>
+                              <span className="text-slate-500 text-[11px] font-bold italic">Tidak Ada Pajanan</span>
                             )}
                           </div>
                         </td>
@@ -1695,7 +1695,7 @@ export default function PekerjaDetailPage() {
                   <tr>
                     <td colSpan={4} className="px-10 py-32 text-center bg-slate-50/30">
                       <Zap className="h-16 w-16 text-slate-100 mx-auto mb-5" />
-                      <h4 className="text-lg font-black text-slate-300 uppercase tracking-[0.4em]">BELUM ADA DATA PAJANAN</h4>
+                      <h4 className="text-lg font-black text-slate-500 uppercase tracking-[0.4em]">BELUM ADA DATA PAJANAN</h4>
                       <p className="text-sm text-slate-400 mt-2 font-medium">Lengkapi riwayat pekerjaan untuk memunculkan profil pajanan</p>
                     </td>
                   </tr>
