@@ -12,17 +12,9 @@ import {
   ChevronRight, Users, Loader2 
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import HeroSlider from '@/components/landing/HeroSlider';
 
-// Lazy load the Map to avoid SSR issues
-const IndonesiaMap = dynamic(() => import('@/components/dashboard/IndonesiaMap'), {
-  ssr: false,
-  loading: () => (
-    <div className="w-full h-[400px] flex flex-col items-center justify-center bg-slate-50/50 rounded-3xl border border-slate-100">
-      <Loader2 className="h-10 w-10 text-[#0284c7] animate-spin mb-3" />
-      <p className="text-sm font-bold text-slate-400 animate-pulse">Memuat Peta Sebaran Nasional...</p>
-    </div>
-  )
-});
+import { MapContainer } from '@/components/map/MapContainer';
 
 function CountUp({ end, duration = 2000 }: { end: number, duration?: number }) {
   const [count, setCount] = useState(0);
@@ -97,51 +89,9 @@ export default function LandingPage() {
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
-        {/* Background Decorations */}
-        <div className="absolute top-0 inset-x-0 h-[600px] bg-gradient-to-b from-blue-50 to-slate-50 pointer-events-none" />
-        <div className="absolute top-[-10%] right-[-5%] w-[600px] h-[600px] bg-blue-400/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute top-[20%] left-[-10%] w-[400px] h-[400px] bg-emerald-400/10 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="max-w-7xl mx-auto px-6 relative z-10 text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-100/50 border border-blue-200 text-blue-700 text-xs font-bold uppercase tracking-widest mb-8 animate-in slide-in-from-bottom-4 duration-700">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
-            </span>
-            Sistem Informasi Terpadu
-          </div>
-          
-          <h1 className="text-5xl md:text-7xl font-black text-[#0f172a] tracking-tight leading-[1.1] mb-6 animate-in slide-in-from-bottom-6 duration-700 delay-100">
-            Lindungi Hak & Kesehatan <br className="hidden md:block" />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0284c7] to-[#0ea5e9]">
-              Pekerja Anda
-            </span>
-          </h1>
-          
-          <p className="text-lg md:text-xl text-slate-500 max-w-2xl mx-auto font-medium leading-relaxed mb-10 animate-in slide-in-from-bottom-8 duration-700 delay-200">
-            Sistem manajemen terpadu untuk merekam riwayat pajanan, memantau kondisi medis, 
-            dan mengadvokasi Penyakit Akibat Kerja (PAK) secara transparan dan akurat.
-          </p>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-in slide-in-from-bottom-10 duration-700 delay-300">
-            <Link href="/pendaftaran" className="w-full sm:w-auto">
-              <Button size="lg" className="w-full rounded-full px-8 h-14 text-base font-bold bg-[#0284c7] hover:bg-[#0369a1] text-white shadow-xl shadow-blue-500/25 transition-all hover:scale-105">
-                Mulai Gratis
-              </Button>
-            </Link>
-            <Link 
-              href="/dashboard-admin" 
-              className="w-full sm:w-auto"
-              suppressHydrationWarning
-            >
-              <Button size="lg" variant="outline" className="w-full rounded-full px-8 h-14 text-base font-bold bg-white border-slate-200 text-slate-700 hover:bg-slate-50 transition-all hover:scale-105">
-                Masuk ke Dashboard
-              </Button>
-            </Link>
-          </div>
-        </div>
+      {/* Hero Section with Slider */}
+      <section className="pt-20 overflow-hidden">
+        <HeroSlider />
       </section>
 
       {/* Heat Map Section */}
@@ -162,44 +112,11 @@ export default function LandingPage() {
               <MapPin className="w-96 h-96" />
             </div>
 
-            <div className="relative z-10 w-full rounded-3xl overflow-hidden bg-white shadow-sm ring-1 ring-slate-100">
-              {loading ? (
-                <div className="w-full h-[400px] flex flex-col items-center justify-center bg-slate-50/50">
-                  <Loader2 className="h-10 w-10 text-[#0284c7] animate-spin mb-3" />
-                  <p className="text-sm font-bold text-slate-400">Memuat Data Wilayah...</p>
-                </div>
-              ) : (
-                <div className="p-4 md:p-8">
-                   <div className="flex items-center gap-2 mb-6">
-                     <span className="relative flex h-3 w-3">
-                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                       <span className="relative inline-flex rounded-full h-3 w-3 bg-rose-500"></span>
-                     </span>
-                     <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Live Map</h3>
-                   </div>
-                   <IndonesiaMap data={stats?.sebaran_wilayah || {}} />
-                </div>
-              )}
+            <div className="relative z-10 w-full">
+              <MapContainer />
             </div>
 
-            {/* Quick Stats below map */}
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-8">
-               {[
-                 { label: 'Total Pekerja', value: stats?.total_pekerja || 0, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
-                 { label: 'Kasus Aktif', value: stats?.kasus_aktif || 0, icon: Activity, color: 'text-amber-600', bg: 'bg-amber-50' },
-                 { label: 'Advokasi Selesai', value: stats?.advokasi_selesai || 0, icon: ShieldCheck, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-               ].map((item, i) => (
-                 <div key={i} className="bg-white rounded-2xl p-4 border border-slate-100 flex items-center gap-4">
-                   <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0", item.bg)}>
-                     <item.icon className={cn("h-5 w-5", item.color)} />
-                   </div>
-                   <div>
-                     <p className="text-xl font-black text-slate-800"><CountUp end={item.value} /></p>
-                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{item.label}</p>
-                   </div>
-                 </div>
-               ))}
-            </div>
+
           </div>
         </div>
       </section>
@@ -261,15 +178,11 @@ export default function LandingPage() {
               </h2>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-6">
+            <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
               {[
                 {
                   role: 'Pekerja',
                   desc: 'Laporkan keluhan kesehatan, riwayat pajanan kerja, dan pantau proses bantuan advokasi Anda secara mandiri.',
-                },
-                {
-                  role: 'Perusahaan',
-                  desc: 'Pastikan kepatuhan regulasi K3, pantau kesehatan lingkungan kerja, dan kelola data karyawan dengan baik.',
                 },
                 {
                   role: 'Admin / Advokat',

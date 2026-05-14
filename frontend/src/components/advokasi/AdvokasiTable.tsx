@@ -136,8 +136,12 @@ export default function AdvokasiTable({
                   </TableCell>
                   <TableCell className="py-3 px-3">
                     <div className="flex items-center gap-2 group/name text-left outline-none w-full transition-transform hover:translate-x-1">
-                      <div className="h-7 w-7 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-[10px] font-bold shrink-0 border border-slate-200 transition-all group-hover/name:border-[#0ea5e9] group-hover/name:bg-blue-50 group-hover/name:text-[#0284c7] group-hover/name:scale-110 group-hover/name:ring-2 group-hover/name:ring-blue-100">
-                        {initials}
+                      <div className="h-8 w-8 rounded-full overflow-hidden bg-slate-100 border border-slate-200 shrink-0 transition-all group-hover/name:border-[#0ea5e9] group-hover/name:bg-blue-50 group-hover/name:scale-110 group-hover/name:ring-2 group-hover/name:ring-blue-100">
+                        <img 
+                          src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${worker?.nama_lengkap || 'Guest'}`} 
+                          alt={worker?.nama_lengkap || 'User'} 
+                          className="w-full h-full object-cover object-top" 
+                        />
                       </div>
                       <span className="font-bold text-[#1e293b] text-xs group-hover/name:text-[#0284c7] transition-colors truncate">
                         {worker?.nama_lengkap}

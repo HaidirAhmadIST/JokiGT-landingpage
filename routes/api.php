@@ -87,6 +87,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     // Advokasi Stats (All can view)
     Route::get('advokasi/stats', [AdvokasiController::class, 'stats']);
+    Route::get('advokasi/priority', [AdvokasiController::class, 'priority']);
     Route::get('advokasi', [AdvokasiController::class, 'index']);
     Route::get('advokasi/{id}', [AdvokasiController::class, 'show']);
     Route::get('advokasi/{id}/pdf', [AdvokasiController::class, 'exportPdf']);

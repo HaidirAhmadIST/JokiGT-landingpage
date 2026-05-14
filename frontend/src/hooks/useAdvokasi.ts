@@ -9,6 +9,12 @@ const fetchAdvokasiStats = async () => {
   return data;
 };
 
+const fetchPriorityCases = async (limit: number = 5) => {
+  const { data } = await api.get('/advokasi/priority', { params: { limit } });
+  if (data.status !== 'success') throw new Error('Failed to fetch priority cases');
+  return data.data;
+};
+
 const fetchAdvokasiCases = async (params: any): Promise<any> => {
   const { data } = await api.get('/advokasi', { params });
   if (data.status !== 'success') throw new Error('Failed to fetch cases');
@@ -33,6 +39,13 @@ export const useGetAdvokasiStats = () => {
   return useQuery({
     queryKey: ['advokasi', 'stats'],
     queryFn: fetchAdvokasiStats,
+  });
+};
+
+export const useGetPriorityCases = (limit: number = 5) => {
+  return useQuery({
+    queryKey: ['advokasi', 'priority', limit],
+    queryFn: () => fetchPriorityCases(limit),
   });
 };
 

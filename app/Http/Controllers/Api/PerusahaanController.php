@@ -25,8 +25,8 @@ class PerusahaanController extends Controller
         }
 
         if ($request->has('search')) {
-            $search = strtolower($request->search);
-            $query->whereRaw('LOWER(nama_perusahaan) LIKE ?', ["%{$search}%"]);
+            $search = $request->search;
+            $query->whereRaw('LOWER(nama_perusahaan) LIKE LOWER(?)', ["%{$search}%"]);
         }
 
         if ($request->has('status') && $request->status) {

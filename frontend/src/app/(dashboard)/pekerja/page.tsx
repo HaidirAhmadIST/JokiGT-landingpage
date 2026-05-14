@@ -249,7 +249,7 @@ export default function PekerjaPage() {
                       <div className="flex items-center gap-3 w-full text-left group/worker transition-transform hover:translate-x-1">
                         <div className="w-8 h-8 rounded-full overflow-hidden bg-slate-100 border border-slate-200 shrink-0 transition-all group-hover/worker:border-[#0ea5e9] group-hover/worker:ring-2 group-hover/worker:ring-blue-100 group-hover/worker:scale-110">
                            <img 
-                             src={p.pas_foto ? `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://127.0.0.1:8000'}/storage/profil/${p.pas_foto}` : `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.nama_lengkap}`} 
+                             src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${p.nama_lengkap}`} 
                              alt="avatar" 
                              className="w-full h-full object-cover object-top" 
                            />
@@ -268,7 +268,7 @@ export default function PekerjaPage() {
                         if (p.perusahaan?.nama_perusahaan) return p.perusahaan.nama_perusahaan;
                         
                         const job = p.current_job;
-                        if (!job) return <span className="text-slate-300 italic">Tidak ada data</span>;
+                        if (!job) return <span className="text-slate-500 italic">Tidak ada data</span>;
 
                         if (job.status_pekerjaan === 'Outsourcing') {
                           return (
@@ -403,7 +403,7 @@ export default function PekerjaPage() {
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-100 border border-slate-200 shrink-0">
                       <img 
-                        src={p.pas_foto ? `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://127.0.0.1:8000'}/storage/profil/${p.pas_foto}` : `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.nama_lengkap}`} 
+                        src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${p.nama_lengkap}`} 
                         alt="avatar" 
                         className="w-full h-full object-cover object-top" 
                       />

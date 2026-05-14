@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { ShieldAlert, Eye, EyeOff } from 'lucide-react';
+import { ShieldAlert, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function LoginPage() {
@@ -59,13 +59,22 @@ export default function LoginPage() {
       }
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Gagal login. Periksa email dan password.');
+      setFormData({ email: '', password: '' }); // Clear inputs on error
       setLoading(false); // Only reset loading on error
     }
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
-      <Card className="w-full max-w-md shadow-lg border-t-4 border-t-primary">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 p-4">
+      <div className="w-full max-w-md mb-6 animate-in slide-in-from-left-4 duration-500">
+        <Link href="/" className="inline-flex items-center gap-2 text-slate-400 hover:text-primary transition-all font-black text-[10px] uppercase tracking-[0.2em] group">
+          <div className="p-1.5 rounded-full bg-white shadow-sm border border-slate-200 group-hover:border-primary/30 transition-all">
+            <ArrowLeft className="h-3 w-3" /> 
+          </div>
+          Kembali ke Landing Page
+        </Link>
+      </div>
+      <Card className="w-full max-w-md shadow-xl border-t-4 border-t-primary rounded-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-500">
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-4">
             <div className="bg-primary/10 p-3 rounded-full">

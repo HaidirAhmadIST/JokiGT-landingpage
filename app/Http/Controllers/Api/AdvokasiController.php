@@ -42,6 +42,15 @@ class AdvokasiController extends Controller
         ]);
     }
 
+    public function priority(Request $request): JsonResponse
+    {
+        $limit = $request->query('limit', 5);
+        return response()->json([
+            'status' => 'success',
+            'data' => $this->advokasiService->getPriorityCases((int)$limit)
+        ]);
+    }
+
     public function show(string $id): JsonResponse
     {
         $status = $this->advokasiService->getCaseDetails($id);
@@ -51,10 +60,20 @@ class AdvokasiController extends Controller
         return response()->json(['status' => 'success', 'data' => $status]);
     }
 
-    public function exportPdf(string $id)
+    public function exportPdf(Request $request, string $id)
     {
         $status = $this->advokasiService->getCaseDetails($id);
         if (!$status) return response()->json(['error' => 'Not found'], 404);
+
+        // Ownership check: viewer hanya bisa export data milik sendiri
+        $authUser = $request->user();
+        if ($authUser->role === 'viewer') {
+            $pekerja = $status->pekerja;
+            if (!$pekerja || (string)$pekerja->id !== (string)$authUser->pekerja()->value('id')) {
+                return response()->json(['status' => 'error', 'message' => 'Akses ditolak.'], 403);
+            }
+        }
+
         $pdf = Pdf::loadView('pdf.advokasi-detail', ['advokasi' => $status]);
         return $pdf->stream('Laporan.pdf');
     }

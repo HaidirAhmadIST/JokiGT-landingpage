@@ -34,10 +34,10 @@ class ActivityLogController extends Controller
         }
 
         if ($request->filled('search')) {
-            $search = strtolower($request->search);
+            $search = $request->search;
             $query->where(function($q) use ($search) {
-                $q->whereRaw('LOWER(description) LIKE ?', ["%{$search}%"])
-                  ->orWhereRaw('LOWER(user_name) LIKE ?', ["%{$search}%"]);
+                $q->whereRaw('LOWER(description) LIKE LOWER(?)', ["%{$search}%"])
+                  ->orWhereRaw('LOWER(user_name) LIKE LOWER(?)', ["%{$search}%"]);
             });
         }
 
@@ -92,10 +92,10 @@ class ActivityLogController extends Controller
             $query->where('action', $request->action);
         }
         if ($request->filled('search')) {
-            $search = strtolower($request->search);
+            $search = $request->search;
             $query->where(function($q) use ($search) {
-                $q->whereRaw('LOWER(description) LIKE ?', ["%{$search}%"])
-                  ->orWhereRaw('LOWER(user_name) LIKE ?', ["%{$search}%"]);
+                $q->whereRaw('LOWER(description) LIKE LOWER(?)', ["%{$search}%"])
+                  ->orWhereRaw('LOWER(user_name) LIKE LOWER(?)', ["%{$search}%"]);
             });
         }
         if ($request->filled('start_date')) {

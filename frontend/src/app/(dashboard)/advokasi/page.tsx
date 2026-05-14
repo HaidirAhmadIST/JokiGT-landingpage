@@ -55,6 +55,7 @@ import { useRole } from '@/hooks/useRole';
 import { Pekerja, StatusAdvokasi } from '@/types';
 import StatsCards from '@/components/advokasi/StatsCards';
 import AdvokasiTable from '@/components/advokasi/AdvokasiTable';
+import PriorityCasesCard from '@/components/dashboard/PriorityCasesCard';
 import { useGetAdvokasiCases, useGetAdvokasiStats, useUpdateAdvokasi } from '@/hooks/useAdvokasi';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -181,10 +182,13 @@ export default function AdvokasiPage() {
         </p>
       </div>
 
-      {/* Stats Cards */}
+      {/* Stats Cards - Row 1 */}
       <StatsCards summaryStats={summaryStats} />
 
-      {/* Table Section */}
+      {/* Priority Cases - Row 2 (Centered between Stats and Table) */}
+      <PriorityCasesCard />
+
+      {/* Table Section - Row 3 */}
       <Card className="rounded-[20px] shadow-sm border-slate-100 overflow-hidden">
         {/* Tabs + Actions */}
         <div className="px-6 pt-6 pb-0 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -218,20 +222,20 @@ export default function AdvokasiPage() {
           </div>
         </div>
 
-  {/* Table Content */ }
-  <AdvokasiTable
-    loading={loading}
-    filteredCases={filteredCases}
-    totalCount={totalCases}
-    currentPage={currentPage}
-    perPage={perPage}
-    lastPage={lastPage}
-    onPageChange={setCurrentPage}
-    isStaffOrAbove={isStaffOrAbove}
-  />
+        {/* Table Content */}
+        <AdvokasiTable
+          loading={loading}
+          filteredCases={filteredCases}
+          totalCount={totalCases}
+          currentPage={currentPage}
+          perPage={perPage}
+          lastPage={lastPage}
+          onPageChange={setCurrentPage}
+          isStaffOrAbove={isStaffOrAbove}
+        />
       </Card>
 
-    {/* ===== Add New Case Sheet ===== */ }
+      {/* ===== Add New Case Sheet ===== */}
     <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
       <SheetContent className="sm:max-w-xl p-0 overflow-hidden flex flex-col bg-white border-l shadow-2xl">
         <SheetHeader className="px-8 py-6 border-b border-slate-100 bg-white z-10">
@@ -292,13 +296,24 @@ export default function AdvokasiPage() {
                                 }}
                                 className="flex flex-col items-start py-3 px-4 cursor-pointer"
                               >
-                                <div className="flex items-center w-full justify-between">
-                                  <span className="font-bold text-slate-800">{worker.nama_lengkap}</span>
-                                  {formData.pekerja_id === worker.id.toString() && <Check className="h-4 w-4 text-emerald-500" />}
+                                <div className="flex items-center gap-3 w-full">
+                                  <div className="h-10 w-10 rounded-full overflow-hidden bg-slate-100 border border-slate-200 shrink-0">
+                                    <img 
+                                      src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${worker.nama_lengkap || 'Guest'}`} 
+                                      alt={worker.nama_lengkap} 
+                                      className="w-full h-full object-cover" 
+                                    />
+                                  </div>
+                                  <div className="flex flex-col flex-1 min-w-0">
+                                    <div className="flex items-center justify-between">
+                                      <span className="font-bold text-slate-800 truncate">{worker.nama_lengkap}</span>
+                                      {formData.pekerja_id === worker.id.toString() && <Check className="h-4 w-4 text-emerald-500 shrink-0 ml-2" />}
+                                    </div>
+                                    <span className="text-[10px] text-slate-400 font-medium mt-0.5 truncate">
+                                      NIK: {worker.nik} | {worker.perusahaan?.nama_perusahaan || 'Informal'}
+                                    </span>
+                                  </div>
                                 </div>
-                                <span className="text-[10px] text-slate-400 font-medium mt-0.5">
-                                  NIK: {worker.nik} | {worker.perusahaan?.nama_perusahaan || 'Informal'}
-                                </span>
                               </CommandItem>
                             ))}
                           </CommandGroup>

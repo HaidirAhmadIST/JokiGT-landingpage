@@ -19,7 +19,7 @@ export interface ProfileForm {
   tanggal_lahir: string;
   whatsapp: string;
   domisili: string;
-  pas_foto: File | null;
+
 }
 
 export interface AdvForm {
@@ -94,7 +94,7 @@ export function useUserDashboard() {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [profileForm, setProfileForm] = useState<ProfileForm>({
     nik: '', nama_lengkap: '', jenis_kelamin: '', tanggal_lahir: '',
-    whatsapp: '', domisili: '', pas_foto: null
+    whatsapp: '', domisili: ''
   });
   const [profileLoading, setProfileLoading] = useState(false);
 
@@ -190,7 +190,7 @@ export function useUserDashboard() {
     try {
       const fd = new FormData();
       fd.append('step_key', uploadForm.step_key);
-      fd.append('file', uploadForm.file);
+      fd.append('file[]', uploadForm.file);
       const res = await api.post(`/pekerja/${pekerja!.id}/advokasi`, fd, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
@@ -235,13 +235,7 @@ export function useUserDashboard() {
         whatsapp: profileForm.whatsapp,
         domisili: profileForm.domisili,
       });
-      if (profileForm.pas_foto) {
-        const fd = new FormData();
-        fd.append('pas_foto', profileForm.pas_foto);
-        await api.post(`/pekerja/${pekerja!.id}/foto`, fd, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
-      }
+
       toast.success('Profil berhasil diperbarui!');
       setIsProfileModalOpen(false);
       fetchData();
@@ -341,7 +335,7 @@ export function useUserDashboard() {
       tanggal_lahir: pekerja?.tanggal_lahir || '',
       whatsapp: pekerja?.whatsapp || '',
       domisili: pekerja?.domisili || '',
-      pas_foto: null
+
     });
     setIsProfileModalOpen(true);
   }, [pekerja]);

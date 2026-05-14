@@ -29,6 +29,7 @@ import {
   Search,
   Coins,
   Loader2,
+  RefreshCw,
 } from 'lucide-react';
 import { cn, formatHealthStatus } from '@/lib/utils';
 import SheetEditKasus from '@/components/SheetEditKasus';
@@ -122,8 +123,64 @@ export default function AdvokasiDetailPage() {
     { name: 'Rehabilitasi', status: data?.rehabilitasi_bpjskes ? 'Selesai' : 'Pending', icon: HeartPulse, done: !!data?.rehabilitasi_bpjskes, active: !!data?.kompensasi_bpjstk && !data?.rehabilitasi_bpjskes },
   ];
 
-  // Derived Data
-  const currentJob = data?.pekerja?.riwayat_pekerja?.find(r => !r.tgl_keluar) || data?.pekerja?.riwayat_pekerja?.[0];
+  // Derived Data & Robust Relation Access
+  const pekerja = data?.pekerja;
+  const riwayatList = pekerja?.riwayat_pekerja || (pekerja as any)?.riwayatPekerja || [];
+  const currentJob = pekerja?.current_job || (pekerja as any)?.currentJob || riwayatList.find((r: any) => !r.tgl_keluar) || riwayatList[0];
+  
+  // Robust Medical Data Resolution
+  const resolveLatestMedis = () => {
+    // 1. Try direct detail_medis array
+    const detailMedis = pekerja?.detail_medis || (pekerja as any)?.detailMedis;
+    if (detailMedis && detailMedis.length > 0) {
+      return [...detailMedis].sort((a, b) => 
+        new Date(b.tgl_pemeriksaan || b.tanggal_pemeriksaan).getTime() - new Date(a.tgl_pemeriksaan || a.tanggal_pemeriksaan).getTime()
+      )[0];
+    }
+
+    // 2. Try direct relation
+    const direct = pekerja?.latest_detail_medis || (pekerja as any)?.latestDetailMedis;
+    if (direct) return direct;
+
+    // 3. Fallback search in nested riwayat
+    if (riwayatList.length > 0) {
+      const allMedis: any[] = [];
+      riwayatList.forEach((r: any) => {
+        const nestedMedis = r.detail_medis || r.detailMedis;
+        if (nestedMedis) allMedis.push(...nestedMedis);
+      });
+      if (allMedis.length > 0) {
+        return allMedis.sort((a, b) => 
+          new Date(b.tgl_pemeriksaan || b.tanggal_pemeriksaan).getTime() - new Date(a.tgl_pemeriksaan || a.tanggal_pemeriksaan).getTime()
+        )[0];
+      }
+    }
+    return null;
+  };
+
+  const latestMedis = resolveLatestMedis();
+
+  // Collect all mutations from all riwayat records with improved robustness
+  const allMutations = riwayatList.flatMap((r: any) => {
+    const rawInfo = r.informal_data || r.informalData || {};
+    let info = {};
+    try {
+      info = typeof rawInfo === 'string' ? JSON.parse(rawInfo || '{}') : rawInfo;
+    } catch (e) {
+      console.error("Failed to parse informal_data", e);
+    }
+    
+    // @ts-ignore
+    const mutations = info?.mutasi_jabatan || info?.mutasiJabatan || [];
+    return Array.isArray(mutations) ? mutations.map((m: any) => ({
+      ...m,
+      perusahaan: r.nama_perusahaan || r.namaPerusahaan
+    })) : [];
+  }).sort((a: any, b: any) => {
+    const yearA = parseInt(a.tahun?.toString().split('-')[0] || '0');
+    const yearB = parseInt(b.tahun?.toString().split('-')[0] || '0');
+    return yearB - yearA;
+  });
 
   const documents = [
     { key: 'riwayat_pajanan', name: 'Bukti Pajanan', path: data.bukti_pajanan_path, fileName: data.bukti_pajanan_name, date: data.bukti_pajanan_at },
@@ -177,7 +234,7 @@ export default function AdvokasiDetailPage() {
     try {
       const formData = new FormData();
       formData.append('step_key', docForm.step_key);
-      formData.append('file', docForm.file);
+      formData.append('file[]', docForm.file);
       if (data.jenis_kasus) formData.append('jenis_kasus', data.jenis_kasus);
       if (data.tahap) formData.append('tahap', data.tahap);
 
@@ -304,16 +361,12 @@ export default function AdvokasiDetailPage() {
               <h3 className="text-xs font-bold text-[#94a3b8] tracking-widest">PROFIL PEKERJA</h3>
             </div>
             <div className="flex items-start gap-6">
-              <div className="h-20 w-20 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0 overflow-hidden relative">
-                {data.pekerja?.pas_foto ? (
-                  <img 
-                    src={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://127.0.0.1:8000'}/storage/profil/${data.pekerja.pas_foto}`}
-                    alt={data.pekerja?.nama_lengkap}
-                    className="w-full h-full object-cover object-top"
-                  />
-                ) : (
-                  <User2 className="h-10 w-10 text-slate-300" />
-                )}
+              <div className="h-20 w-20 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 shrink-0 relative shadow-sm">
+                <img 
+                  src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${data.pekerja?.nama_lengkap || 'Guest'}`}
+                  alt={data.pekerja?.nama_lengkap || 'Pekerja'}
+                  className="w-full h-full object-cover object-top"
+                />
               </div>
               <div className="grid grid-cols-2 gap-x-8 gap-y-4 flex-1">
                 <div>
@@ -396,21 +449,25 @@ export default function AdvokasiDetailPage() {
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Diagnosis Medis Terakhir</p>
                   <div className="p-3.5 bg-slate-50 border border-slate-100 rounded-xl">
                     <p className="text-sm font-extrabold text-slate-700 uppercase tracking-tight">
-                      {data.pekerja?.latest_detail_medis?.hasil_diagnosis || 'Belum ada data diagnosis'}
+                      {latestMedis?.hasil_diagnosis || 'Belum ada data diagnosis'}
                     </p>
-                    {data.pekerja?.latest_detail_medis?.tgl_pemeriksaan && (
+                    {latestMedis?.tgl_pemeriksaan && (
                       <p className="text-[10px] text-slate-400 font-bold mt-1 opacity-70 uppercase tracking-tight">
-                        Tgl Periksa: {new Date(data.pekerja.latest_detail_medis.tgl_pemeriksaan).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        Tgl Periksa: {new Date(latestMedis.tgl_pemeriksaan).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </p>
                     )}
                   </div>
                 </div>
                 <div>
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Status Kesehatan</p>
-                  <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-extrabold bg-blue-50 text-blue-700 border border-blue-100 uppercase tracking-wide">
-                    {data.pekerja?.latest_detail_medis?.status_kesehatan || 'Tidak Ada Data'}
+                  <span className={cn(
+                    "inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-extrabold uppercase tracking-wide border",
+                    (latestMedis?.status_kesehatan || data.pekerja?.status_kesehatan) ? "bg-blue-50 text-blue-700 border-blue-100" : "bg-slate-50 text-slate-500 border-slate-100"
+                  )}>
+                    {getStatusLabel(latestMedis?.status_kesehatan || data.pekerja?.status_kesehatan) || 'Tidak Ada Data'}
                   </span>
                 </div>
+
               </div>
 
               <div className="space-y-4">
@@ -425,15 +482,58 @@ export default function AdvokasiDetailPage() {
                     </p>
                   </div>
                 </div>
-                {data.pekerja?.latest_detail_medis?.rekomendasi && (
+                {latestMedis?.rekomendasi && (
                   <div>
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Rekomendasi Medis</p>
                     <p className="text-[11px] text-slate-500 font-medium italic leading-relaxed">
-                      "{data.pekerja.latest_detail_medis.rekomendasi}"
+                      "{latestMedis.rekomendasi}"
                     </p>
                   </div>
                 )}
               </div>
+            </div>
+
+            {/* Riwayat Mutasi Jabatan Section (Enhanced) */}
+            <div className="pt-8 mt-6 border-t border-slate-100">
+              <div className="flex items-center justify-between mb-5">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                  <RefreshCw className="h-3 w-3 text-[#0ea5e9]" /> Riwayat Mutasi Jabatan & Perpindahan Bagian
+                </p>
+                <span className="px-2.5 py-0.5 bg-blue-50 text-[#0284c7] text-[9px] font-bold rounded-full border border-blue-100">
+                  TOTAL {allMutations.length} RECORD
+                </span>
+              </div>
+              
+              {allMutations.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-6">
+                  {allMutations.map((m: any, idx: number) => (
+                    <div key={idx} className="flex items-start gap-4 relative">
+                      <div className="flex flex-col items-center shrink-0">
+                        <div className="h-8 w-8 rounded-xl bg-blue-50 flex items-center justify-center border border-blue-100 text-[#0284c7]">
+                          <RefreshCw className="h-4 w-4" />
+                        </div>
+                        {idx < allMutations.length - (allMutations.length % 2 === 0 ? 2 : 1) && (
+                          <div className="w-[1px] h-full bg-slate-100 my-2" />
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1 pt-0.5">
+                        <div className="flex justify-between items-start mb-1">
+                          <p className="text-sm font-bold text-slate-800 truncate uppercase tracking-tight">{m.bagian || '-'}</p>
+                          <span className="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded border border-slate-100">{m.tahun || '-'}</span>
+                        </div>
+                        <p className="text-xs text-slate-500 font-medium">Jabatan: <span className="text-slate-700 font-bold">{m.jabatan || '-'}</span></p>
+                        <p className="text-[10px] text-[#0284c7] font-bold mt-1.5 uppercase tracking-tighter opacity-70">Perusahaan: {m.perusahaan}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="py-10 text-center bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+                  <RefreshCw className="h-8 w-8 text-slate-200 mx-auto mb-2" />
+                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Belum Ada Riwayat Mutasi Terdaftar</p>
+                  <p className="text-[10px] text-slate-400 mt-1">Data mutasi pekerja akan muncul di sini jika telah diinput pada riwayat pekerjaan.</p>
+                </div>
+              )}
             </div>
           </Card>
         </div>

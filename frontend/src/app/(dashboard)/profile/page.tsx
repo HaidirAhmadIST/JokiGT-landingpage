@@ -102,32 +102,6 @@ export default function ProfilePage() {
     }
   };
 
-  const handleUploadFoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const formData = new FormData();
-    formData.append('foto', file);
-
-    setIsUploading(true);
-    try {
-      const res = await api.post('/profile/foto', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      if (res.data.status === 'success') {
-        const updatedUser = { ...user, foto: res.data.data.foto_url };
-        setUser(updatedUser);
-        localStorage.setItem('user', JSON.stringify(updatedUser));
-        toast.success('Foto profil berhasil diperbarui!');
-        window.location.reload();
-      }
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Gagal mengunggah foto');
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
   const handleChangePassword = async () => {
     if (passwordForm.new_password !== passwordForm.new_password_confirmation) {
       toast.error('Konfirmasi password tidak cocok');
@@ -162,26 +136,12 @@ export default function ProfilePage() {
         <div className="shrink-0 flex flex-col items-center">
           <div className="relative group">
             <div className="h-40 w-40 md:h-48 md:w-48 rounded-full bg-slate-50 border-4 border-white shadow-xl flex items-center justify-center text-6xl font-black text-[#0ea5e9] overflow-hidden">
-              {avatarUrl ? (
-                <img src={avatarUrl} alt={user?.nama} className="w-full h-full object-cover" />
-              ) : (
-                user?.nama?.charAt(0).toUpperCase() || 'A'
-              )}
+              <img 
+                src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.nama || 'Admin'}`} 
+                alt={user?.nama} 
+                className="w-full h-full object-cover" 
+              />
             </div>
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              className="hidden" 
-              accept="image/*" 
-              onChange={handleUploadFoto}
-            />
-            <button 
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isUploading}
-              className="absolute bottom-2 right-2 p-3 bg-white rounded-full shadow-lg border border-slate-100 text-slate-500 hover:text-[#0ea5e9] transition-colors disabled:opacity-50"
-            >
-              {isUploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5" />}
-            </button>
           </div>
         </div>
 

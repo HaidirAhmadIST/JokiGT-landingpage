@@ -20,7 +20,7 @@ interface PekerjaWizardProps {
 export default function PekerjaWizard({ onSuccess, onCancel, perusahaanList }: PekerjaWizardProps) {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [pasFoto, setPasFoto] = useState<File | null>(null);
+
   
   // Step 1: Base Data
   const [baseData, setBaseData] = useState({
@@ -66,12 +66,7 @@ export default function PekerjaWizard({ onSuccess, onCancel, perusahaanList }: P
 
       const uploadPromises: Promise<any>[] = [];
 
-      // Handle Pas Foto (Single)
-      if (pasFoto) {
-        const formData = new FormData();
-        formData.append('pas_foto', pasFoto);
-        uploadPromises.push(api.post(`/pekerja/${newPekerjaId}/foto`, formData));
-      }
+
 
       // Handle Riwayat Files (Multiple -> PDF)
       const savedRiwayat = response.data.data.riwayat_pekerja || [];
@@ -187,8 +182,7 @@ export default function PekerjaWizard({ onSuccess, onCancel, perusahaanList }: P
                 </Select>
               </div>
               <div className="space-y-2 col-span-2">
-                <Label>Pas Foto KTP (Opsional, Max 2MB, JPG/PNG)</Label>
-                <Input type="file" accept="image/jpeg, image/png, image/jpg" onChange={(e) => setPasFoto(e.target.files?.[0] || null)} />
+
               </div>
             </div>
           </div>
