@@ -31,6 +31,8 @@ export interface DataMedis {
   alergi: string;
   riwayat_operasi: string;
   obat_rutin: string;
+  apd_disediakan?: string;
+  jenis_apd_sendiri?: string;
   riwayat_pemeriksaan: RiwayatPemeriksaanItem[];
 }
 
@@ -173,6 +175,33 @@ export default function FormDetailMedis({ data, onChange }: FormDetailMedisProps
               value={data.obat_rutin || ''}
               onChange={e => onChange('obat_rutin', e.target.value)}
             />
+          </div>
+          {/* APD Section */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+            <div className="space-y-2">
+              <Label htmlFor="apd_disediakan" className="text-gray-700 font-medium">
+                APD yang Disediakan Perusahaan
+              </Label>
+              <Input
+                id="apd_disediakan"
+                placeholder="Contoh: Masker N95, Kacamata..."
+                className="bg-white border-gray-300 focus-visible:ring-1 focus-visible:ring-blue-500 focus-visible:border-blue-500 h-11"
+                value={data.apd_disediakan || ''}
+                onChange={e => onChange('apd_disediakan', e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="jenis_apd_sendiri" className="text-gray-700 font-medium">
+                APD yang Dibawa Mandiri
+              </Label>
+              <Input
+                id="jenis_apd_sendiri"
+                placeholder="Contoh: Masker kain sendiri..."
+                className="bg-white border-gray-300 focus-visible:ring-1 focus-visible:ring-blue-500 focus-visible:border-blue-500 h-11"
+                value={data.jenis_apd_sendiri || ''}
+                onChange={e => onChange('jenis_apd_sendiri', e.target.value)}
+              />
+            </div>
           </div>
 
         </CardContent>

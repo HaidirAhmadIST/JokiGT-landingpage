@@ -722,19 +722,13 @@ export default function PendaftaranPekerjaPage() {
 
             <div className="flex flex-col items-center">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${step >= 2 ? 'bg-[#0ea5e9] text-white' : 'bg-slate-200 text-slate-500'}`}>2</div>
-              <span className={`text-xs font-semibold mt-2 text-center ${step >= 2 ? 'text-[#0ea5e9]' : 'text-slate-400'}`}>RIWAYAT <br />PEKERJAAN</span>
+              <span className={`text-xs font-semibold mt-2 text-center ${step >= 2 ? 'text-[#0ea5e9]' : 'text-slate-400'}`}>PEMETAAN <br />BAHAYA</span>
             </div>
             <div className={`w-12 h-[2px] mx-2 -mt-6 ${step >= 3 ? 'bg-[#0ea5e9]' : 'bg-slate-200'}`} />
 
             <div className="flex flex-col items-center">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${step >= 3 ? 'bg-[#0ea5e9] text-white' : 'bg-slate-200 text-slate-500'}`}>3</div>
               <span className={`text-xs font-semibold mt-2 text-center ${step >= 3 ? 'text-[#0ea5e9]' : 'text-slate-400'}`}>RIWAYAT <br />KESEHATAN</span>
-            </div>
-            <div className={`w-12 h-[2px] mx-2 -mt-6 ${step >= 4 ? 'bg-[#0ea5e9]' : 'bg-slate-200'}`} />
-
-            <div className="flex flex-col items-center">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${step >= 4 ? 'bg-[#0ea5e9] text-white' : 'bg-slate-200 text-slate-500'}`}>4</div>
-              <span className={`text-xs font-semibold mt-2 text-center ${step >= 4 ? 'text-[#0ea5e9]' : 'text-slate-400'}`}>KONFIRMASI<br />DATA</span>
             </div>
           </div>
         </div>
@@ -900,45 +894,27 @@ export default function PendaftaranPekerjaPage() {
                   </div>
                 </div>
 
-                <div className="pt-4">
-                  <Button className="w-full h-12 text-base bg-[#0ea5e9] hover:bg-[#0284c7]" onClick={handleLanjut}>
-                    Lanjut ke Langkah 2 <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* STEP 2: RIWAYAT */}
-          {step === 2 && (
-            <div className="animate-in fade-in slide-in-from-right-8 duration-500">
-              <div className="text-center mb-10">
-                <h2 className="text-2xl font-bold text-slate-900">Riwayat Pekerjaan & Kesehatan</h2>
-                <p className="text-slate-500 mt-2 text-sm max-w-md mx-auto">
-                  Lengkapi informasi pengalaman kerja dan riwayat pajanan bahaya di tempat kerja Anda.
-                </p>
-              </div>
-
-              <div className="space-y-8">
-
-
-                {/* Riwayat Sebelumnya */}
-                <div>
+                {/* Section 4: Riwayat Pekerjaan (FULL VERSION) */}
+                <div className="pt-4 border-t border-slate-100">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-bold text-slate-800">Riwayat Pekerjaan Sebelumnya</h3>
-                    <Button variant="ghost" size="sm" className="text-[#0ea5e9] hover:text-[#0284c7] hover:bg-blue-50" onClick={() => setRiwayatLalu([...riwayatLalu, emptyRiwayatItem()])}>
+                    <h3 className="flex items-center text-sm font-bold text-[#0ea5e9] uppercase tracking-wider">
+                      <Briefcase className="h-4 w-4 mr-2" /> Riwayat Pekerjaan
+                    </h3>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="text-[#0ea5e9] hover:text-[#0284c7] hover:bg-blue-50 font-bold" 
+                      onClick={() => setRiwayatLalu([...riwayatLalu, emptyRiwayatItem()])}
+                    >
                       <Plus className="h-4 w-4 mr-1" /> Tambah Riwayat
                     </Button>
                   </div>
 
                   {riwayatLalu.length === 0 ? (
-                    <div className="border border-dashed border-slate-200 rounded-xl p-8 text-center bg-slate-50 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => setRiwayatLalu([emptyRiwayatItem()])}>
+                    <div className="p-8 border border-dashed border-slate-200 rounded-xl bg-slate-50/50 text-center flex flex-col items-center justify-center cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => setRiwayatLalu([emptyRiwayatItem()])}>
                       <Plus className="h-8 w-8 text-slate-300 mb-2" />
-                      <p className="text-sm text-slate-500 max-w-[250px]">
-                        Belum ada Riwayat Pekerjaan Ditambahkan.
-                      </p>
-                      <p className="text-xs text-slate-400 mt-1">
-                        (Tekan <strong>Tambah Riwayat</strong> jika ada pengalaman kerja sebelumnya)
+                      <p className="text-sm text-slate-400 font-medium">
+                        Belum ada riwayat pekerjaan ditambahkan. Klik tombol di atas atau bagian ini untuk menambah.
                       </p>
                     </div>
                   ) : (
@@ -969,8 +945,7 @@ export default function PendaftaranPekerjaPage() {
 
                           {/* Body: Data Pekerjaan */}
                           {!item.collapsed && (
-                            <>
-                              <div className="p-5 animate-in fade-in duration-300">
+                            <div className="p-5 animate-in fade-in duration-300">
                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div className="space-y-2 col-span-2 sm:col-span-1">
                                   <Label>Nama Perusahaan Sebelumnya</Label>
@@ -992,326 +967,321 @@ export default function PendaftaranPekerjaPage() {
                                     }} 
                                   />
                                 </div>
-                              <div className="space-y-2 col-span-2 sm:col-span-1">
-                                <Label>Status Pekerjaan</Label>
-                                <Select value={item.status_pekerjaan} onValueChange={(v: any) => {
-                                  const newR = [...riwayatLalu]; 
-                                  newR[idx].status_pekerjaan = v;
-                                  if (v === 'Outsourcing') newR[idx].tgl_keluar = '';
-                                  setRiwayatLalu(newR);
-                                }}>
-                                  <SelectTrigger className="h-11 w-full"><SelectValue placeholder="Pilih Status" /></SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="PKWTT">1. PKWTT (Pekerja Tetap)</SelectItem>
-                                    <SelectItem value="PKWT">2. PKWT (Pekerja Kontrak)</SelectItem>
-                                    <SelectItem value="Outsourcing">3. Pekerja Outsourcing/Alih Daya</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-
-                              {item.status_pekerjaan === 'Outsourcing' && (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 col-span-2 bg-orange-50/50 p-4 rounded-lg border border-orange-100 mt-2">
-                                  <div className="space-y-2 col-span-2">
-                                    <Label className="text-orange-700">Nama Perusahaan Penyalur</Label>
-                                    <Input placeholder="Contoh: PT Sumber Daya Manusia" className="h-11 bg-white border-orange-200 focus-visible:ring-orange-400" value={item.nama_agen_penyalur || ''} onChange={(e) => {
-                                      const newR = [...riwayatLalu]; newR[idx].nama_agen_penyalur = e.target.value; setRiwayatLalu(newR);
-                                    }} />
-                                  </div>
-                                  <div className="space-y-2">
-                                    <Label className="text-orange-700">Tanggal Masuk</Label>
-                                    <Input type="date" className="h-11 bg-white text-slate-500 border-orange-200 focus-visible:ring-orange-400" value={item.tgl_masuk || ''} onChange={(e) => {
-                                      const newR = [...riwayatLalu]; newR[idx].tgl_masuk = e.target.value; setRiwayatLalu(newR);
-                                    }} />
-                                  </div>
-                                  <div className="space-y-2">
-                                    <Label className="text-orange-700">Tanggal Selesai Kontrak</Label>
-                                    <Input type="date" className="h-11 bg-white text-slate-500 border-orange-200 focus-visible:ring-orange-400" value={item.tanggal_selesai_kontrak || ''} onChange={(e) => {
-                                      const newR = [...riwayatLalu]; newR[idx].tanggal_selesai_kontrak = e.target.value; setRiwayatLalu(newR);
-                                    }} />
-                                  </div>
-                                </div>
-                              )}
-
-
-
-                              <div className="space-y-2 col-span-2 sm:col-span-1">
-                                <Label>Bagian / Departemen</Label>
-                                <Input 
-                                  placeholder="Contoh: Produksi / Logistik" 
-                                  value={item.bagian} 
-                                  onChange={(e) => {
-                                    const newR = [...riwayatLalu]; newR[idx].bagian = e.target.value; setRiwayatLalu(newR);
-                                  }} 
-                                />
-                              </div>
-                              <div className="space-y-2 col-span-2 sm:col-span-1">
-                                <Label>Jabatan / Posisi</Label>
-                                <Input 
-                                  placeholder="Contoh: Operator Produksi" 
-                                  value={item.jabatan} 
-                                  onChange={(e) => {
-                                    const newR = [...riwayatLalu]; newR[idx].jabatan = e.target.value; setRiwayatLalu(newR);
-                                  }} 
-                                />
-                              </div>
-
-                              {/* MUTASI JABATAN (Past Job) */}
-                              <div className="col-span-2 space-y-3 bg-slate-50/50 p-4 rounded-xl border border-slate-200/50 mt-2">
-                                <div className="flex items-center justify-between">
-                                  <Label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider flex items-center gap-2">
-                                    <RefreshCw className="h-3 w-3" /> Riwayat Mutasi / Perpindahan Bagian (Opsional)
-                                  </Label>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="sm" 
-                                    className="h-7 text-[10px] text-blue-500 hover:bg-blue-50"
-                                    onClick={() => {
-                                      const newR = [...riwayatLalu];
-                                      newR[idx].informal_data = {
-                                        ...(newR[idx].informal_data || {}),
-                                        mutasi_jabatan: [...(newR[idx].informal_data?.mutasi_jabatan || []), { bagian: '', jabatan: '', tahun_mulai: '', tahun_selesai: '' }]
-                                      };
-                                      setRiwayatLalu(newR);
-                                    }}
-                                  >
-                                    <Plus className="h-3 w-3 mr-1" /> Tambah Mutasi
-                                  </Button>
-                                </div>
-                                
-                                {(item.informal_data?.mutasi_jabatan || []).map((m: any, midx: number) => (
-                                  <div key={midx} className="grid grid-cols-1 sm:grid-cols-5 gap-3 items-end animate-in fade-in slide-in-from-top-1">
-                                    <div className="sm:col-span-1">
-                                       <Label className="text-[9px] text-slate-400">Bagian</Label>
-                                       <Input placeholder="Produksi" className="h-9 text-sm" value={m.bagian || ''} onChange={e => {
-                                         const newR = [...riwayatLalu]; 
-                                         newR[idx].informal_data.mutasi_jabatan[midx].bagian = e.target.value;
-                                         setRiwayatLalu(newR);
-                                       }} />
-                                    </div>
-                                    <div className="sm:col-span-1">
-                                       <Label className="text-[9px] text-slate-400">Jabatan</Label>
-                                       <Input placeholder="Staff" className="h-9 text-sm" value={m.jabatan || ''} onChange={e => {
-                                         const newR = [...riwayatLalu]; 
-                                         newR[idx].informal_data.mutasi_jabatan[midx].jabatan = e.target.value;
-                                         setRiwayatLalu(newR);
-                                       }} />
-                                    </div>
-                                    <div className="sm:col-span-1">
-                                       <Label className="text-[9px] text-slate-400">Tahun Mulai</Label>
-                                       <Input placeholder="2010" className="h-9 text-sm" value={m.tahun_mulai || ''} onChange={e => {
-                                         const newR = [...riwayatLalu]; 
-                                         newR[idx].informal_data.mutasi_jabatan[midx].tahun_mulai = e.target.value;
-                                         setRiwayatLalu(newR);
-                                       }} />
-                                    </div>
-                                    <div className="sm:col-span-1">
-                                       <Label className="text-[9px] text-slate-400">Tahun Selesai</Label>
-                                       <Input placeholder="2015" className="h-9 text-sm" value={m.tahun_selesai || ''} onChange={e => {
-                                         const newR = [...riwayatLalu]; 
-                                         newR[idx].informal_data.mutasi_jabatan[midx].tahun_selesai = e.target.value;
-                                         setRiwayatLalu(newR);
-                                       }} />
-                                    </div>
-                                    <div className="flex justify-center">
-                                      <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-red-500" onClick={() => {
-                                        const newR = [...riwayatLalu];
-                                        newR[idx].informal_data.mutasi_jabatan = item.informal_data.mutasi_jabatan.filter((_: any, i: number) => i !== midx);
-                                        setRiwayatLalu(newR);
-                                      }}>
-                                        <Trash2 className="h-4 w-4" />
-                                      </Button>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                              {item.status_pekerjaan !== 'Outsourcing' && (
-                                <div className="space-y-2">
-                                  <Label>Tanggal Masuk</Label>
-                                  <Input type="date" value={item.tgl_masuk} onChange={(e) => {
-                                    const newR = [...riwayatLalu]; newR[idx].tgl_masuk = e.target.value; setRiwayatLalu(newR);
-                                  }} />
-                                </div>
-                              )}
-                              {item.status_pekerjaan !== 'Outsourcing' && item.status_pekerjaan !== 'PKWTT' && (
-                                <div className="space-y-2">
-                                  <Label>Tanggal Keluar</Label>
-                                  <Input type="date" value={item.tgl_keluar} onChange={(e) => {
-                                    const newR = [...riwayatLalu]; newR[idx].tgl_keluar = e.target.value; setRiwayatLalu(newR);
-                                  }} />
-                                </div>
-                              )}
-
-
-
-
-
-                              <div className="space-y-2 col-span-1 sm:col-span-2">
-                                <Label>Deskripsikan pekerjaan anda</Label>
-                                <Textarea 
-                                  placeholder="Contoh: Mengoperasikan mesin cetak, melakukan pengecekan kualitas produk secara rutin..." 
-                                  className="min-h-[80px] bg-white resize-none"
-                                  value={item.deskripsi_pekerjaan} 
-                                  onChange={(e) => {
+                                <div className="space-y-2 col-span-2 sm:col-span-1">
+                                  <Label>Status Pekerjaan</Label>
+                                  <Select value={item.status_pekerjaan} onValueChange={(v: any) => {
                                     const newR = [...riwayatLalu]; 
-                                    newR[idx].deskripsi_pekerjaan = e.target.value; 
+                                    newR[idx].status_pekerjaan = v;
+                                    if (v === 'Outsourcing') newR[idx].tgl_keluar = '';
                                     setRiwayatLalu(newR);
-                                  }} 
-                                />
-                              </div>
-
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 col-span-1 sm:col-span-2 mt-2">
-                                <div className="space-y-2">
-                                  <Label className="text-xs text-slate-600 flex items-center gap-1.5">
-                                    <div className="h-1.5 w-1.5 rounded-full bg-blue-500" />
-                                    APD yang Disediakan Perusahaan
-                                  </Label>
-                                  <Input 
-                                    placeholder="Contoh: Masker N95, Kacamata..." 
-                                    className="h-9 bg-white text-sm"
-                                    value={item.informal_data?.apd_disediakan || ''}
-                                    onChange={(e) => {
-                                      const newR = [...riwayatLalu];
-                                      newR[idx].informal_data = { ...newR[idx].informal_data, apd_disediakan: e.target.value };
-                                      setRiwayatLalu(newR);
-                                    }}
-                                  />
+                                  }}>
+                                    <SelectTrigger className="h-11 w-full"><SelectValue placeholder="Pilih Status" /></SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="PKWTT">1. PKWTT (Pekerja Tetap)</SelectItem>
+                                      <SelectItem value="PKWT">2. PKWT (Pekerja Kontrak)</SelectItem>
+                                      <SelectItem value="Outsourcing">3. Pekerja Outsourcing/Alih Daya</SelectItem>
+                                    </SelectContent>
+                                  </Select>
                                 </div>
-                                <div className="space-y-2">
-                                  <Label className="text-xs text-slate-600 flex items-center gap-1.5">
-                                    <div className="h-1.5 w-1.5 rounded-full bg-slate-400" />
-                                    APD yang Dibawa Mandiri
-                                  </Label>
-                                  <Input 
-                                    placeholder="Contoh: Masker kain sendiri..." 
-                                    className="h-9 bg-white text-sm"
-                                    value={item.informal_data?.jenis_apd_sendiri || ''}
-                                    onChange={(e) => {
-                                      const newR = [...riwayatLalu];
-                                      newR[idx].informal_data = { ...newR[idx].informal_data, jenis_apd_sendiri: e.target.value };
-                                      setRiwayatLalu(newR);
-                                    }}
-                                  />
-                                </div>
-                              </div>
 
-                              <div className="space-y-6 col-span-1 sm:col-span-2 mt-4 pt-4 border-t border-slate-100">
-                                {/* Baris 1: Pajanan & Durasi */}
-                                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
-                                  {/* Kolom 1: Jenis Pajanan */}
-                                  <div className="md:col-span-8 space-y-3">
-                                    <Label className="text-[11px] font-bold text-slate-700 uppercase tracking-tight">Jenis Pajanan Bahaya di Pekerjaan Ini (Bisa Pilih Lebih dari Satu)</Label>
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
-                                      {pajananOptions.map((opt) => {
-                                        const currentPajanan = item.jenis_pajanan ? item.jenis_pajanan.split(',').map((s: string) => s.trim()) : [];
-                                        const isChecked = currentPajanan.includes(opt);
-                                        return (
-                                          <div key={opt} className={`flex items-center space-x-2 p-2 rounded-lg border transition-all cursor-pointer ${isChecked ? 'bg-blue-50 border-blue-200' : 'bg-white border-slate-100 hover:border-blue-200'}`} onClick={() => {
-                                            let newPajanan;
-                                            if (isChecked) {
-                                              newPajanan = currentPajanan.filter((p: string) => p !== opt).join(', ');
-                                            } else {
-                                              newPajanan = [...currentPajanan, opt].join(', ');
-                                            }
-                                            const newR = [...riwayatLalu]; newR[idx].jenis_pajanan = newPajanan; setRiwayatLalu(newR);
-                                          }}>
-                                            <Checkbox 
-                                              id={`pajanan-past-${idx}-${opt}`} 
-                                              checked={isChecked}
-                                              onCheckedChange={() => {}} 
-                                            />
-                                            <label
-                                              htmlFor={`pajanan-past-${idx}-${opt}`}
-                                              className="text-[9px] font-bold text-slate-600 leading-tight cursor-pointer"
-                                            >
-                                              {opt}
-                                            </label>
-                                          </div>
-                                        );
-                                      })}
+                                {item.status_pekerjaan === 'Outsourcing' && (
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 col-span-2 bg-orange-50/50 p-4 rounded-lg border border-orange-100 mt-2">
+                                    <div className="space-y-2 col-span-2">
+                                      <Label className="text-orange-700">Nama Perusahaan Penyalur</Label>
+                                      <Input placeholder="Contoh: PT Sumber Daya Manusia" className="h-11 bg-white border-orange-200 focus-visible:ring-orange-400" value={item.nama_agen_penyalur || ''} onChange={(e) => {
+                                        const newR = [...riwayatLalu]; newR[idx].nama_agen_penyalur = e.target.value; setRiwayatLalu(newR);
+                                      }} />
                                     </div>
-                                  </div>
-
-                                  {/* Kolom 2: Durasi Pajanan */}
-                                  <div className="md:col-span-4 space-y-2">
-                                    <Label className="text-[10px] font-bold text-slate-700 uppercase tracking-tighter leading-tight">Durasi Pajanan (Tahun)</Label>
-                                    <Input 
-                                      placeholder="Contoh: 2" 
-                                      type="number" 
-                                      className="h-11 bg-white border-slate-200 focus:border-blue-400 font-bold text-slate-700 text-[10px] px-2" 
-                                      value={item.durasi_pajanan} 
-                                      onChange={e => {
-                                        const newR = [...riwayatLalu]; newR[idx].durasi_pajanan = e.target.value; setRiwayatLalu(newR);
-                                      }} 
-                                    />
-                                  </div>
-                                </div>
-
-                                {/* Baris 2: Upload Paklaring (Dipindah ke Bawah) */}
-                                {item.status_pekerjaan !== 'Outsourcing' && (
-                                  <div className="pt-4 border-t border-slate-50 space-y-3">
-                                    <Label className="text-slate-800 font-bold text-sm">Upload Paklaring / Dokumen Verifikasi <span className="text-slate-400 font-normal italic ml-1">(Opsional)</span></Label>
-                                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                                      <div className="relative group w-full sm:w-auto">
-                                        <input 
-                                          type="file" 
-                                          multiple
-                                          onChange={(e) => {
-                                            const files = e.target.files ? Array.from(e.target.files) : [];
-                                            const newR = [...riwayatLalu];
-                                            newR[idx].file_bukti = files;
-                                            setRiwayatLalu(newR);
-                                          }}
-                                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                                        />
-                                        <Button variant="outline" size="sm" className="w-full sm:w-[250px] h-14 flex items-center justify-center border-dashed border-slate-300 hover:border-blue-400 hover:bg-blue-50 transition-all gap-3">
-                                          <div className="bg-blue-100 p-2 rounded-full">
-                                            <UploadCloud className="h-4 w-4 text-blue-600" /> 
-                                          </div>
-                                          <div className="flex flex-col items-start">
-                                            <span className="text-11px] font-bold text-slate-700">
-                                              {item.file_bukti?.length > 0 ? 'Update Berkas Bukti' : 'Pilih Berkas Bukti'}
-                                            </span>
-                                            <span className="text-[9px] text-slate-500 font-normal">Format: PDF, JPG (Multiple)</span>
-                                          </div>
-                                        </Button>
-                                      </div>
-                                      {item.file_bukti?.length > 0 && (
-                                        <div className="flex items-center gap-2 bg-blue-50 border border-blue-100 px-3 py-2 rounded-lg">
-                                          <div className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
-                                          <p className="text-[10px] text-blue-700 font-bold truncate max-w-[300px]">
-                                            {item.file_bukti.length} file dipilih: {item.file_bukti.map((f: any) => f.name).join(', ')}
-                                          </p>
-                                        </div>
-                                      )}
+                                    <div className="space-y-2">
+                                      <Label className="text-orange-700">Tanggal Masuk</Label>
+                                      <Input type="date" className="h-11 bg-white text-slate-500 border-orange-200 focus-visible:ring-orange-400" value={item.tgl_masuk || ''} onChange={(e) => {
+                                        const newR = [...riwayatLalu]; newR[idx].tgl_masuk = e.target.value; setRiwayatLalu(newR);
+                                      }} />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label className="text-orange-700">Tanggal Selesai Kontrak</Label>
+                                      <Input type="date" className="h-11 bg-white text-slate-500 border-orange-200 focus-visible:ring-orange-400" value={item.tanggal_selesai_kontrak || ''} onChange={(e) => {
+                                        const newR = [...riwayatLalu]; newR[idx].tanggal_selesai_kontrak = e.target.value; setRiwayatLalu(newR);
+                                      }} />
                                     </div>
                                   </div>
                                 )}
+
+                                <div className="space-y-2 col-span-2 sm:col-span-1">
+                                  <Label>Bagian / Departemen</Label>
+                                  <Input 
+                                    placeholder="Contoh: Produksi / Logistik" 
+                                    value={item.bagian} 
+                                    onChange={(e) => {
+                                      const newR = [...riwayatLalu]; newR[idx].bagian = e.target.value; setRiwayatLalu(newR);
+                                    }} 
+                                  />
+                                </div>
+                                <div className="space-y-2 col-span-2 sm:col-span-1">
+                                  <Label>Jabatan / Posisi</Label>
+                                  <Input 
+                                    placeholder="Contoh: Operator Produksi" 
+                                    value={item.jabatan} 
+                                    onChange={(e) => {
+                                      const newR = [...riwayatLalu]; newR[idx].jabatan = e.target.value; setRiwayatLalu(newR);
+                                    }} 
+                                  />
+                                </div>
+
+                                {/* MUTASI JABATAN */}
+                                <div className="col-span-2 space-y-3 bg-slate-50/50 p-4 rounded-xl border border-slate-200/50 mt-2">
+                                  <div className="flex items-center justify-between">
+                                    <Label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider flex items-center gap-2">
+                                      <RefreshCw className="h-3 w-3" /> Riwayat Mutasi / Perpindahan Bagian (Opsional)
+                                    </Label>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm" 
+                                      className="h-7 text-[10px] text-blue-500 hover:bg-blue-50"
+                                      onClick={() => {
+                                        const newR = [...riwayatLalu];
+                                        newR[idx].informal_data = {
+                                          ...(newR[idx].informal_data || {}),
+                                          mutasi_jabatan: [...(newR[idx].informal_data?.mutasi_jabatan || []), { bagian: '', jabatan: '', tahun_mulai: '', tahun_selesai: '' }]
+                                        };
+                                        setRiwayatLalu(newR);
+                                      }}
+                                    >
+                                      <Plus className="h-3 w-3 mr-1" /> Tambah Mutasi
+                                    </Button>
+                                  </div>
+                                  
+                                  {(item.informal_data?.mutasi_jabatan || []).map((m: any, midx: number) => (
+                                    <div key={midx} className="grid grid-cols-1 sm:grid-cols-5 gap-3 items-end animate-in fade-in slide-in-from-top-1">
+                                      <div className="sm:col-span-1">
+                                         <Label className="text-[9px] text-slate-400">Bagian</Label>
+                                         <Input placeholder="Produksi" className="h-9 text-sm" value={m.bagian || ''} onChange={e => {
+                                           const newR = [...riwayatLalu]; 
+                                           newR[idx].informal_data.mutasi_jabatan[midx].bagian = e.target.value;
+                                           setRiwayatLalu(newR);
+                                         }} />
+                                      </div>
+                                      <div className="sm:col-span-1">
+                                         <Label className="text-[9px] text-slate-400">Jabatan</Label>
+                                         <Input placeholder="Staff" className="h-9 text-sm" value={m.jabatan || ''} onChange={e => {
+                                           const newR = [...riwayatLalu]; 
+                                           newR[idx].informal_data.mutasi_jabatan[midx].jabatan = e.target.value;
+                                           setRiwayatLalu(newR);
+                                         }} />
+                                      </div>
+                                      <div className="sm:col-span-1">
+                                         <Label className="text-[9px] text-slate-400">Tahun Mulai</Label>
+                                         <Input placeholder="2010" className="h-9 text-sm" value={m.tahun_mulai || ''} onChange={e => {
+                                           const newR = [...riwayatLalu]; 
+                                           newR[idx].informal_data.mutasi_jabatan[midx].tahun_mulai = e.target.value;
+                                           setRiwayatLalu(newR);
+                                         }} />
+                                      </div>
+                                      <div className="sm:col-span-1">
+                                         <Label className="text-[9px] text-slate-400">Tahun Selesai</Label>
+                                         <Input placeholder="2015" className="h-9 text-sm" value={m.tahun_selesai || ''} onChange={e => {
+                                           const newR = [...riwayatLalu]; 
+                                           newR[idx].informal_data.mutasi_jabatan[midx].tahun_selesai = e.target.value;
+                                           setRiwayatLalu(newR);
+                                         }} />
+                                      </div>
+                                      <div className="flex justify-center">
+                                        <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-red-500" onClick={() => {
+                                          const newR = [...riwayatLalu];
+                                          newR[idx].informal_data.mutasi_jabatan = item.informal_data.mutasi_jabatan.filter((_: any, i: number) => i !== midx);
+                                          setRiwayatLalu(newR);
+                                        }}>
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+
+                                {item.status_pekerjaan !== 'Outsourcing' && (
+                                  <div className="space-y-2">
+                                    <Label>Tanggal Masuk</Label>
+                                    <Input type="date" value={item.tgl_masuk} onChange={(e) => {
+                                      const newR = [...riwayatLalu]; newR[idx].tgl_masuk = e.target.value; setRiwayatLalu(newR);
+                                    }} />
+                                  </div>
+                                )}
+                                {item.status_pekerjaan !== 'Outsourcing' && item.status_pekerjaan !== 'PKWTT' && (
+                                  <div className="space-y-2">
+                                    <Label>Tanggal Keluar</Label>
+                                    <Input type="date" value={item.tgl_keluar} onChange={(e) => {
+                                      const newR = [...riwayatLalu]; newR[idx].tgl_keluar = e.target.value; setRiwayatLalu(newR);
+                                    }} />
+                                  </div>
+                                )}
+
+                                <div className="space-y-2 col-span-1 sm:col-span-2">
+                                  <Label>Deskripsikan pekerjaan anda</Label>
+                                  <Textarea 
+                                    placeholder="Contoh: Mengoperasikan mesin cetak, melakukan pengecekan kualitas produk secara rutin..." 
+                                    className="min-h-[80px] bg-white resize-none"
+                                    value={item.deskripsi_pekerjaan} 
+                                    onChange={(e) => {
+                                      const newR = [...riwayatLalu]; 
+                                      newR[idx].deskripsi_pekerjaan = e.target.value; 
+                                      setRiwayatLalu(newR);
+                                    }} 
+                                  />
+                                </div>
+
+
+
+
+
+                                  {item.status_pekerjaan !== 'Outsourcing' && (
+                                    <div className="pt-4 border-t border-slate-50 space-y-3">
+                                      <Label className="text-slate-800 font-bold text-sm">Upload Paklaring / Dokumen Verifikasi <span className="text-slate-400 font-normal italic ml-1">(Opsional)</span></Label>
+                                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                                        <div className="relative group w-full sm:w-auto">
+                                          <input 
+                                            type="file" 
+                                            multiple
+                                            onChange={(e) => {
+                                              const files = e.target.files ? Array.from(e.target.files) : [];
+                                              const newR = [...riwayatLalu];
+                                              newR[idx].file_bukti = files;
+                                              setRiwayatLalu(newR);
+                                            }}
+                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                          />
+                                          <Button variant="outline" size="sm" className="w-full sm:w-[250px] h-14 flex items-center justify-center border-dashed border-slate-300 hover:border-blue-400 hover:bg-blue-50 transition-all gap-3">
+                                            <div className="bg-blue-100 p-2 rounded-full">
+                                              <UploadCloud className="h-4 w-4 text-blue-600" /> 
+                                            </div>
+                                            <div className="flex flex-col items-start">
+                                              <span className="text-[11px] font-bold text-slate-700">
+                                                {item.file_bukti?.length > 0 ? 'Update Berkas Bukti' : 'Pilih Berkas Bukti'}
+                                              </span>
+                                              <span className="text-[9px] text-slate-500 font-normal">Format: PDF, JPG (Multiple)</span>
+                                            </div>
+                                          </Button>
+                                        </div>
+                                        {item.file_bukti?.length > 0 && (
+                                          <div className="flex items-center gap-2 bg-blue-50 border border-blue-100 px-3 py-2 rounded-lg">
+                                            <div className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
+                                            <p className="text-[10px] text-blue-700 font-bold truncate max-w-[300px]">
+                                              {item.file_bukti.length} file dipilih: {item.file_bukti.map((f: any) => f.name).join(', ')}
+                                            </p>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
                               </div>
-                            </div>
-                        </>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
 
-            <div className="pt-4 border-t border-slate-100">
-              <div className="pt-4 flex gap-4">
-                <Button variant="outline" className="w-1/3 h-12 text-slate-600 bg-slate-50 border-slate-200" onClick={handleKembali}>
-                  <ArrowLeft className="mr-2 h-4 w-4" /> Kembali
-                </Button>
-                <Button className="w-2/3 h-12 text-base bg-[#0ea5e9] hover:bg-[#0284c7]" onClick={handleLanjut}>
-                  Lanjut ke Langkah 3 <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
+                <div className="pt-4">
+                  <Button className="w-full h-12 text-base bg-[#0ea5e9] hover:bg-[#0284c7]" onClick={handleLanjut}>
+                    Lanjut ke Langkah 2 <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
-      )}
+          )}
 
-          {/* STEP 3: MEDIS */}
+          {/* STEP 2: PEMETAAN BAHAYA */}
+          {step === 2 && (
+            <div className="animate-in fade-in slide-in-from-right-8 duration-500">
+              <div className="text-center mb-10">
+                <h2 className="text-2xl font-bold text-slate-900">Pemetaan Bahaya & Resiko Kerja</h2>
+                <p className="text-slate-500 mt-2 text-sm max-w-md mx-auto">
+                  Lengkapi informasi riwayat pajanan bahaya di tempat kerja Anda untuk deteksi dini Penyakit Akibat Kerja.
+                </p>
+              </div>
+
+              <div className="space-y-8">
+                <div className="bg-white border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
+                  <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                      <Zap className="h-4 w-4 text-amber-500" /> Identifikasi Pajanan Bahaya
+                    </h3>
+                  </div>
+                  <div className="p-8 space-y-8">
+                    <div className="space-y-4">
+                      <Label className="text-sm font-bold text-slate-700">Jenis Pajanan Bahaya yang Pernah Dialami (Bisa Pilih Lebih dari Satu)</Label>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                        {pajananOptions.map((opt) => {
+                          const currentPajanan = pekerjaanSaatIni.jenis_pajanan ? pekerjaanSaatIni.jenis_pajanan.split(',').map((s: string) => s.trim()) : [];
+                          const isChecked = currentPajanan.includes(opt);
+                          return (
+                            <div 
+                              key={opt} 
+                              className={`flex flex-col items-center justify-center gap-3 p-4 rounded-xl border transition-all cursor-pointer text-center h-24 ${isChecked ? 'bg-blue-50 border-blue-300 ring-2 ring-blue-100' : 'bg-white border-slate-200 hover:border-blue-200'}`}
+                              onClick={() => {
+                                let newPajanan;
+                                if (isChecked) {
+                                  newPajanan = currentPajanan.filter((p: string) => p !== opt).join(', ');
+                                } else {
+                                  newPajanan = [...currentPajanan, opt].join(', ');
+                                }
+                                setPekerjaanSaatIni({ ...pekerjaanSaatIni, jenis_pajanan: newPajanan });
+                              }}
+                            >
+                              <div className={`p-2 rounded-lg ${isChecked ? 'bg-blue-500 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                                <Checkbox 
+                                  id={`pajanan-step2-${opt}`} 
+                                  checked={isChecked}
+                                  onCheckedChange={() => {}} 
+                                  className="hidden"
+                                />
+                                <ShieldAlert className="h-5 w-5" />
+                              </div>
+                              <label
+                                htmlFor={`pajanan-step2-${opt}`}
+                                className={`text-[10px] font-bold leading-tight cursor-pointer ${isChecked ? 'text-blue-700' : 'text-slate-500'}`}
+                              >
+                                {opt}
+                              </label>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="pt-6 border-t border-slate-100">
+                      <div className="max-w-xs space-y-3">
+                        <Label className="text-sm font-bold text-slate-700">Total Durasi Pajanan (Tahun)</Label>
+                        <div className="relative">
+                          <Input 
+                            placeholder="Contoh: 5" 
+                            type="number" 
+                            className="h-12 bg-white border-slate-200 focus:border-blue-400 font-bold text-lg px-4" 
+                            value={pekerjaanSaatIni.durasi_pajanan} 
+                            onChange={e => setPekerjaanSaatIni({ ...pekerjaanSaatIni, durasi_pajanan: e.target.value })} 
+                          />
+                          <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium">Tahun</div>
+                        </div>
+                        <p className="text-[10px] text-slate-400 italic">Masukkan estimasi total lamanya terpapar bahaya tersebut di lingkungan kerja.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-8 border-t border-slate-100 mt-10">
+                <div className="flex gap-4">
+                  <Button variant="outline" className="w-1/3 h-12 text-slate-600 bg-slate-50 border-slate-200" onClick={handleKembali}>
+                    <ArrowLeft className="mr-2 h-4 w-4" /> Kembali
+                  </Button>
+                  <Button className="w-2/3 h-12 text-base bg-[#0ea5e9] hover:bg-[#0284c7]" onClick={handleLanjut}>
+                    Lanjut ke Langkah 3 <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {step === 3 && (
             <div className="animate-in fade-in slide-in-from-right-8 duration-500">
               <FormDetailMedis
@@ -1323,42 +1293,9 @@ export default function PendaftaranPekerjaPage() {
                 <Button variant="outline" className="w-1/3 h-12 text-slate-600 bg-slate-50 border-slate-200" onClick={handleKembali}>
                   <ArrowLeft className="mr-2 h-4 w-4" /> Kembali
                 </Button>
-                <Button className="w-2/3 h-12 text-base bg-[#0ea5e9] hover:bg-[#0284c7]" onClick={handleLanjut}>
-                  Lanjut ke Langkah 4 <ArrowRight className="ml-2 h-4 w-4" />
+                <Button className="w-2/3 h-12 text-base bg-[#0ea5e9] hover:bg-[#0284c7]" onClick={handleSubmit} disabled={loading}>
+                   <Save className="mr-2 h-4 w-4" /> {loading ? (Object.keys(duplicateWarning).length > 0 ? 'Memperbarui...' : 'Menyimpan...') : 'Selesai & Simpan'}
                 </Button>
-              </div>
-            </div>
-          )}
-
-          {/* STEP 4: KONFIRMASI */}
-          {step === 4 && (
-            <div className="animate-in fade-in slide-in-from-right-8 duration-500">
-              <div className="text-center mb-10">
-                <h2 className="text-2xl font-bold text-slate-900">Konfirmasi Pendaftaran</h2>
-                <p className="text-slate-500 mt-2 text-sm max-w-md mx-auto">
-                  Pastikan semua data yang telah Anda masukkan sudah benar sebelum menyimpan.
-                </p>
-              </div>
-
-              <div className="space-y-8">
-                <div className="p-8 bg-blue-50 border border-blue-100 shadow-sm rounded-xl text-center">
-                  <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <CheckCircle className="h-8 w-8" />
-                  </div>
-                  <h3 className="text-lg font-bold text-slate-800 mb-2">Siap untuk Disimpan</h3>
-                  <p className="text-sm text-slate-600">
-                    Klik tombol Selesai & Simpan di bawah ini untuk mengirimkan formulir rekam jejak PAK Anda.
-                  </p>
-                </div>
-
-                <div className="pt-4 flex gap-4">
-                  <Button variant="outline" className="w-1/3 h-12 text-slate-600 bg-slate-50 border-slate-200" onClick={handleKembali}>
-                    <ArrowLeft className="mr-2 h-4 w-4" /> Kembali
-                  </Button>
-                  <Button className="w-2/3 h-12 text-base bg-[#0ea5e9] hover:bg-[#0284c7]" onClick={handleSubmit} disabled={loading}>
-                    <Save className="mr-2 h-4 w-4" /> {loading ? (Object.keys(duplicateWarning).length > 0 ? 'Memperbarui...' : 'Menyimpan...') : 'Selesai & Simpan'}
-                  </Button>
-                </div>
               </div>
             </div>
           )}
