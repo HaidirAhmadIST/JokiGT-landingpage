@@ -59,8 +59,7 @@ export default function LoginPage() {
       }
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Gagal login. Periksa Nomor Telepon dan password.');
-      setWhatsapp('');
-      setPassword('');
+      setFormData({ whatsapp: '', password: '' });
       setLoading(false); // Only reset loading on error
     }
   };
@@ -96,8 +95,8 @@ export default function LoginPage() {
                 type="text" 
                 placeholder="Contoh: 08123456789" 
                 required 
-                value={whatsapp}
-                onChange={(e) => setWhatsapp(e.target.value)}
+                value={formData.whatsapp}
+                onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
               />
             </div>
             <div className="space-y-2">
