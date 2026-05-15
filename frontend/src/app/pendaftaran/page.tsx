@@ -103,16 +103,11 @@ export default function PendaftaranPekerjaPage() {
   ];
   // Pajanan Options
   const pajananOptions = [
-    'Bising',
-    'Getaran',
-    'Debu Silika',
-    'Uap Benzena',
-    'Panas',
-    'Bahan Kimia',
-    'Radiasi',
-    'Ergonomi',
-    'Biologi',
-    'Psikososial',
+    { label: 'Faktor Fisika', desc: 'Bising, Getaran, Panas, Radiasi, Cahaya' },
+    { label: 'Faktor Kimia', desc: 'Debu Silika, Uap Benzena, Gas, Cairan Kimia' },
+    { label: 'Faktor Biologi', desc: 'Virus, Bakteri, Jamur, Limbah Medis' },
+    { label: 'Faktor Ergonomi', desc: 'Posisi Janggal, Gerakan Repetitif, Beban Berat' },
+    { label: 'Faktor Psikososial', desc: 'Stres Kerja, Beban Kerja Berlebih, Jam Kerja Panjang' },
   ];
 
   const [apdData, setApdData] = useState(
@@ -1237,36 +1232,31 @@ export default function PendaftaranPekerjaPage() {
                       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
                         {pajananOptions.map((opt) => {
                           const currentPajanan = pekerjaanSaatIni.jenis_pajanan ? pekerjaanSaatIni.jenis_pajanan.split(',').map((s: string) => s.trim()) : [];
-                          const isChecked = currentPajanan.includes(opt);
+                          const isChecked = currentPajanan.includes(opt.label);
                           return (
                             <div 
-                              key={opt} 
-                              className={`flex flex-col items-center justify-center gap-3 p-4 rounded-xl border transition-all cursor-pointer text-center h-24 ${isChecked ? 'bg-blue-50 border-blue-300 ring-2 ring-blue-100' : 'bg-white border-slate-200 hover:border-blue-200'}`}
+                              key={opt.label} 
+                              className={`flex flex-col items-start p-4 rounded-xl border transition-all cursor-pointer col-span-2 sm:col-span-1 md:col-span-2 ${isChecked ? 'bg-blue-50 border-blue-300 ring-2 ring-blue-100' : 'bg-white border-slate-200 hover:border-blue-200'}`}
                               onClick={() => {
                                 let newPajanan;
                                 if (isChecked) {
-                                  newPajanan = currentPajanan.filter((p: string) => p !== opt).join(', ');
+                                  newPajanan = currentPajanan.filter((p: string) => p !== opt.label).join(', ');
                                 } else {
-                                  newPajanan = [...currentPajanan, opt].join(', ');
+                                  newPajanan = [...currentPajanan, opt.label].join(', ');
                                 }
                                 setPekerjaanSaatIni({ ...pekerjaanSaatIni, jenis_pajanan: newPajanan });
                               }}
                             >
-                              <div className={`p-2 rounded-lg ${isChecked ? 'bg-blue-500 text-white' : 'bg-slate-100 text-slate-400'}`}>
-                                <Checkbox 
-                                  id={`pajanan-step2-${opt}`} 
-                                  checked={isChecked}
-                                  onCheckedChange={() => {}} 
-                                  className="hidden"
-                                />
-                                <ShieldAlert className="h-5 w-5" />
+                              <div className="flex items-center gap-3 mb-2 w-full">
+                                <div className={`p-2 rounded-lg ${isChecked ? 'bg-blue-500 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                                  <ShieldAlert className="h-4 w-4" />
+                                </div>
+                                <span className={`text-xs font-bold ${isChecked ? 'text-blue-700' : 'text-slate-700'}`}>{opt.label}</span>
+                                {isChecked && <Check className="h-3 w-3 ml-auto text-blue-500" />}
                               </div>
-                              <label
-                                htmlFor={`pajanan-step2-${opt}`}
-                                className={`text-[10px] font-bold leading-tight cursor-pointer ${isChecked ? 'text-blue-700' : 'text-slate-500'}`}
-                              >
-                                {opt}
-                              </label>
+                              <p className={`text-[10px] leading-relaxed text-left font-medium ${isChecked ? 'text-blue-600/80' : 'text-slate-400'}`}>
+                                {opt.desc}
+                              </p>
                             </div>
                           );
                         })}
