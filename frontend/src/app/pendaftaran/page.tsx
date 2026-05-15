@@ -25,6 +25,7 @@ import {
 import { cn, formatHealthStatus } from '@/lib/utils';
 import FormDetailMedis, { type DataMedis } from '@/components/FormDetailMedis';
 import { PROVINCES } from '@/lib/provinces';
+import { HazardIdentification } from '@/components/registration/HazardIdentification';
 
 const STORAGE_KEY = 'REKAM_JEJAK_FORM_DATA';
 
@@ -60,6 +61,7 @@ export default function PendaftaranPekerjaPage() {
     deskripsi_pekerjaan: '',
     jenis_pajanan: '',
     durasi_pajanan: '',
+    pajanan_details: {} as Record<string, any>,
     file_bukti: [] as File[],
     collapsed: false,
     riwayat_pemeriksaan: [] as any[],
@@ -139,6 +141,7 @@ export default function PendaftaranPekerjaPage() {
     tanggal_selesai_kontrak: '',
     jenis_pajanan: '',
     durasi_pajanan: '',
+    pajanan_details: {} as Record<string, any>,
     nama_perusahaan_baru: '',
     // Informal Data
     tugas_spesifik: '',
@@ -443,6 +446,7 @@ export default function PendaftaranPekerjaPage() {
             jenis_apd_sendiri: pekerjaanSaatIni.jenis_apd_sendiri,
             lokasi_proyek: pekerjaanSaatIni.lokasi_proyek,
             mutasi_jabatan: pekerjaanSaatIni.mutasi_jabatan,
+            pajanan_details: pekerjaanSaatIni.pajanan_details,
           },
           riwayat_pemeriksaan: (pekerjaanSaatIni.riwayat_pemeriksaan || []).filter(
             (m: any) => m.tanggal_pemeriksaan && m.hasil_diagnosis
@@ -472,6 +476,7 @@ export default function PendaftaranPekerjaPage() {
             ...r.informal_data,
             apd_disediakan: r.informal_data?.apd_disediakan || '',
             jenis_apd_sendiri: r.informal_data?.jenis_apd_sendiri || '',
+            pajanan_details: r.pajanan_details || {},
           },
           riwayat_pemeriksaan: (r.riwayat_pemeriksaan || []).filter(
             (m: any) => m.tanggal_pemeriksaan && m.hasil_diagnosis
@@ -1228,79 +1233,28 @@ export default function PendaftaranPekerjaPage() {
                 <div className="bg-white border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
                   <div className="p-6 border-b border-slate-100 bg-slate-50/50">
                     <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                      <Zap className="h-4 w-4 text-amber-500" /> Identifikasi Pajanan Bahaya
+                      Identifikasi Pajanan Bahaya
                     </h3>
                   </div>
-                  <div className="p-8 space-y-8">
-                    <div className="space-y-4">
-                      <Label className="text-sm font-bold text-slate-700">Jenis Pajanan Bahaya yang Pernah Dialami (Bisa Pilih Lebih dari Satu)</Label>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                        {pajananOptions.map((opt) => {
-                          const currentPajanan = pekerjaanSaatIni.jenis_pajanan ? pekerjaanSaatIni.jenis_pajanan.split(',').map((s: string) => s.trim()) : [];
-                          const isChecked = currentPajanan.includes(opt);
-                          return (
-                            <div 
-                              key={opt} 
-                              className={`flex flex-col items-center justify-center gap-3 p-4 rounded-xl border transition-all cursor-pointer text-center h-24 ${isChecked ? 'bg-blue-50 border-blue-300 ring-2 ring-blue-100' : 'bg-white border-slate-200 hover:border-blue-200'}`}
-                              onClick={() => {
-                                let newPajanan;
-                                if (isChecked) {
-                                  newPajanan = currentPajanan.filter((p: string) => p !== opt).join(', ');
-                                } else {
-                                  newPajanan = [...currentPajanan, opt].join(', ');
-                                }
-                                setPekerjaanSaatIni({ ...pekerjaanSaatIni, jenis_pajanan: newPajanan });
-                              }}
-                            >
-                              <div className={`p-2 rounded-lg ${isChecked ? 'bg-blue-500 text-white' : 'bg-slate-100 text-slate-400'}`}>
-                                <Checkbox 
-                                  id={`pajanan-step2-${opt}`} 
-                                  checked={isChecked}
-                                  onCheckedChange={() => {}} 
-                                  className="hidden"
-                                />
-                                <ShieldAlert className="h-5 w-5" />
-                              </div>
-                              <label
-                                htmlFor={`pajanan-step2-${opt}`}
-                                className={`text-[10px] font-bold leading-tight cursor-pointer ${isChecked ? 'text-blue-700' : 'text-slate-500'}`}
-                              >
-                                {opt}
-                              </label>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    <div className="pt-6 border-t border-slate-100">
-                      <div className="max-w-xs space-y-3">
-                        <Label className="text-sm font-bold text-slate-700">Total Durasi Pajanan (Tahun)</Label>
-                        <div className="relative">
-                          <Input 
-                            placeholder="Contoh: 5" 
-                            type="number" 
-                            className="h-12 bg-white border-slate-200 focus:border-blue-400 font-bold text-lg px-4" 
-                            value={pekerjaanSaatIni.durasi_pajanan} 
-                            onChange={e => setPekerjaanSaatIni({ ...pekerjaanSaatIni, durasi_pajanan: e.target.value })} 
-                          />
-                          <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium">Tahun</div>
-                        </div>
-                        <p className="text-[10px] text-slate-400 italic">Masukkan estimasi total lamanya terpapar bahaya tersebut di lingkungan kerja.</p>
-                      </div>
-                    </div>
+                  <div className="p-8">
+                    <HazardIdentification
+                      value={pekerjaanSaatIni.jenis_pajanan}
+                      onChange={(val) => setPekerjaanSaatIni({ ...pekerjaanSaatIni, jenis_pajanan: val })}
+                      initialDetails={pekerjaanSaatIni.pajanan_details}
+                      onDetailsChange={(details) => setPekerjaanSaatIni({ ...pekerjaanSaatIni, pajanan_details: details })}
+                    />
                   </div>
                 </div>
-              </div>
 
-              <div className="pt-8 border-t border-slate-100 mt-10">
-                <div className="flex gap-4">
-                  <Button variant="outline" className="w-1/3 h-12 text-slate-600 bg-slate-50 border-slate-200" onClick={handleKembali}>
-                    <ArrowLeft className="mr-2 h-4 w-4" /> Kembali
-                  </Button>
-                  <Button className="w-2/3 h-12 text-base bg-[#0ea5e9] hover:bg-[#0284c7]" onClick={handleLanjut}>
-                    Lanjut ke Langkah 3 <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
+                <div className="pt-8 border-t border-slate-100 mt-10">
+                  <div className="flex gap-4">
+                    <Button variant="outline" className="w-1/3 h-12 text-slate-600 bg-slate-50 border-slate-200" onClick={handleKembali}>
+                      <ArrowLeft className="mr-2 h-4 w-4" /> Kembali
+                    </Button>
+                    <Button className="w-2/3 h-12 text-base bg-[#0ea5e9] hover:bg-[#0284c7]" onClick={handleLanjut}>
+                      Lanjut ke Langkah 3 <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
