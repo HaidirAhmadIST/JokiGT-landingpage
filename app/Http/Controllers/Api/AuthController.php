@@ -22,7 +22,7 @@ class AuthController extends Controller
         if (!$user || !Hash::check($request->password, $user->password)) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Nomor WhatsApp atau password salah.'
+                'message' => 'Nomor Telepon atau password salah.'
             ], 401);
         }
 

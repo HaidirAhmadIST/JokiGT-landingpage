@@ -19,6 +19,8 @@ class RegistrationController extends Controller
         $validator = Validator::make($request->all(), [
             'whatsapp' => 'required|string|exists:users,whatsapp',
             'password' => 'required|string|min:8|confirmed',
+        ], [], [
+            'whatsapp' => 'Nomor Telepon',
         ]);
 
         if ($validator->fails()) {

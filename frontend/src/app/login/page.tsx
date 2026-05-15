@@ -58,8 +58,9 @@ export default function LoginPage() {
         return;
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Gagal login. Periksa nomor WhatsApp dan password.');
-      setFormData({ whatsapp: '', password: '' }); // Clear inputs on error
+      toast.error(error.response?.data?.message || 'Gagal login. Periksa Nomor Telepon dan password.');
+      setWhatsapp('');
+      setPassword('');
       setLoading(false); // Only reset loading on error
     }
   };
@@ -83,20 +84,20 @@ export default function LoginPage() {
           </div>
           <CardTitle className="text-2xl font-bold">Sistem Rekam Jejak PAK</CardTitle>
           <CardDescription>
-            Masukkan nomor WhatsApp dan password Anda untuk masuk ke sistem.
+            Masuk menggunakan Nomor Telepon yang terdaftar untuk masuk ke sistem.
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleLogin}>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="whatsapp">Nomor WhatsApp</Label>
+              <Label htmlFor="whatsapp">Nomor Telepon</Label>
               <Input 
                 id="whatsapp" 
                 type="text" 
                 placeholder="Contoh: 08123456789" 
                 required 
-                value={formData.whatsapp}
-                onChange={(e) => setFormData({...formData, whatsapp: e.target.value})}
+                value={whatsapp}
+                onChange={(e) => setWhatsapp(e.target.value)}
               />
             </div>
             <div className="space-y-2">

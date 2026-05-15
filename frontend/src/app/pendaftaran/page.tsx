@@ -333,8 +333,9 @@ export default function PendaftaranPekerjaPage() {
       );
 
       if (match) {
-        setDuplicateWarning(prev => ({ ...prev, [field]: `Data ${field.toUpperCase()} sudah terdaftar. Melanjutkan akan memperbarui data pekerja yang ada.` }));
-        toast.info(`Pekerja dengan ${field.toUpperCase()} ini sudah terdaftar.`, {
+        const label = field === 'nik' ? 'Nomor Kartu Pegawai' : 'Nomor Telepon';
+        setDuplicateWarning(prev => ({ ...prev, [field]: `${label} ini sudah terdaftar. Melanjutkan akan memperbarui data pekerja yang ada.` }));
+        toast.info(`${label} ini sudah terdaftar.`, {
           description: "Anda tetap bisa melanjutkan untuk memperbarui datanya.",
           duration: 5000
         });
@@ -363,7 +364,7 @@ export default function PendaftaranPekerjaPage() {
       return;
     }
     if (!baseData.whatsapp) {
-      toast.error("Nomor WhatsApp wajib diisi untuk login!");
+      toast.error("Nomor Telepon wajib diisi!");
       scrollToField('whatsapp', 1);
       return;
     }
@@ -835,7 +836,7 @@ export default function PendaftaranPekerjaPage() {
                   </h3>
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="whatsapp">Nomor WhatsApp (Gunakan untuk Login)</Label>
+                      <Label htmlFor="whatsapp">Nomor Telepon (Gunakan untuk Login)</Label>
                       <div className="flex">
                         <span className="inline-flex items-center px-4 rounded-l-lg border border-r-0 border-slate-200 bg-slate-50 text-slate-500 sm:text-sm">
                           +62
