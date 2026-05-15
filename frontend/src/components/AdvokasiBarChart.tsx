@@ -16,6 +16,7 @@ import {
 import { Loader2, Users, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -181,13 +182,16 @@ export default function AdvokasiBarChart() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
+  const [hazardFilter, setHazardFilter] = useState<string>('all');
 
-  const fetchStats = useCallback(async (withWorkers = false) => {
+  const fetchStats = useCallback(async (withWorkers = false, currentHazard = 'all') => {
     if (!withWorkers) setLoading(true);
     try {
-      const res = await api.get('/advokasi/stats', { 
-        params: { include_workers: withWorkers } 
-      });
+      const params: any = { include_workers: withWorkers };
+      if (currentHazard !== 'all') {
+        params.hazard = currentHazard;
+      }
+      const res = await api.get('/advokasi/stats', { params });
       if (res.data.status === 'success') {
         setStats(res.data.data);
         setTotal(res.data.total);
@@ -201,8 +205,8 @@ export default function AdvokasiBarChart() {
   }, []);
 
   useEffect(() => {
-    fetchStats(false); // Initial load without workers
-  }, [fetchStats]);
+    fetchStats(false, hazardFilter); // Initial load without workers
+  }, [fetchStats, hazardFilter]);
 
   const toggleStep = async (key: string) => {
     if (expandedKey === key) {
@@ -214,7 +218,7 @@ export default function AdvokasiBarChart() {
     const step = stats.find(s => s.key === key);
     if (step && step.jumlah > 0 && (!step.pekerja || step.pekerja.length === 0)) {
       toast.loading('Memuat daftar pekerja...', { id: 'fetch-workers' });
-      await fetchStats(true);
+      await fetchStats(true, hazardFilter);
       toast.dismiss('fetch-workers');
     }
     
@@ -234,11 +238,25 @@ export default function AdvokasiBarChart() {
             Jumlah pekerja yang telah menyelesaikan setiap tahap proses
           </p>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <div className="w-2.5 h-2.5 rounded-full bg-[#0ea5e9]" />
-          <span className="text-xs font-bold text-[#64748b]">
-            {loading ? '—' : `${total} Pekerja Aktif`}
-          </span>
+        <div className="flex items-center gap-3 shrink-0">
+          <Select value={hazardFilter} onValueChange={setHazardFilter}>
+            <SelectTrigger className="h-8 text-xs font-bold bg-white w-[140px] focus:ring-0 focus:ring-offset-0">
+              <SelectValue placeholder="Pilih Hazard" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Semua Hazard</SelectItem>
+              <SelectItem value="Kimia">Kimia</SelectItem>
+              <SelectItem value="Fisik">Fisik (Bising/Getaran)</SelectItem>
+              <SelectItem value="Biologi">Biologi</SelectItem>
+              <SelectItem value="Psikososial">Psikososial</SelectItem>
+            </SelectContent>
+          </Select>
+          <div className="flex items-center gap-2">
+            <div className="w-2.5 h-2.5 rounded-full bg-[#0ea5e9]" />
+            <span className="text-xs font-bold text-[#64748b]">
+              {loading ? '—' : `${total} Pekerja Aktif`}
+            </span>
+          </div>
         </div>
       </div>
 

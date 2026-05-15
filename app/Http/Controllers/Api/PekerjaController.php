@@ -128,7 +128,7 @@ class PekerjaController extends Controller
                 && $existingPekerja->user_id
                 && $request->user()?->role === 'viewer'
             ) {
-                $newUser = User::where('email', $request->email)->first();
+                $newUser = User::where('whatsapp', $request->whatsapp)->first();
                 if ($newUser && $existingPekerja->user_id !== $newUser->id) {
                     return response()->json([
                         'status'  => 'error',

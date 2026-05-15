@@ -2,6 +2,7 @@
 
 import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import Map, { Source, Layer, MapMouseEvent, NavigationControl } from 'react-map-gl/maplibre';
+import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { MapTooltip } from './MapTooltip';
 import mockProvincesData from '@/data/mock-provinces.json';
@@ -161,6 +162,7 @@ export const RiskMap: React.FC<RiskMapProps> = ({ onProvinceClick }) => {
         {/* Inner Map Box (Slightly padded to simulate inner boundary) */}
         <div className="flex-1 relative m-0.5 border border-black">
           <Map
+            mapLib={maplibregl}
             initialViewState={{
               longitude: 118.0, 
               latitude: -2.5,

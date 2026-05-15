@@ -190,7 +190,7 @@ export default function UserDashboardPage() {
                 Selamat datang kembali. Berikut adalah ringkasan rekam jejak kesehatan dan progres advokasi Anda hari ini.
               </p>
               <p className="text-[11px] font-bold text-white/60 bg-white/10 w-fit px-3 py-1 rounded-full border border-white/10">
-                NIK: {pekerja?.nik ?? '-'}
+                No. Kartu Pegawai: {pekerja?.nik ?? '-'}
               </p>
             </div>
             {adv && (

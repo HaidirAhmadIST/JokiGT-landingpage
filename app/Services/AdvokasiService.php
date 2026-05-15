@@ -15,20 +15,29 @@ class AdvokasiService
      * Get aggregate statistics and worker status breakdown for advocacy.
      *
      * @param bool $includeWorkers Whether to include detailed worker lists for each step
+     * @param string|null $hazard Optional hazard/exposure filter
      * @return array
      */
-    public function getStats(bool $includeWorkers = false): array
+    public function getStats(bool $includeWorkers = false, ?string $hazard = null): array
     {
         $now = now();
         $startOfThisMonth = $now->copy()->startOfMonth();
 
-        $totalAll = StatusAdvokasi::whereNotNull('jenis_kasus')->count();
-        $totalLastMonth = StatusAdvokasi::whereNotNull('jenis_kasus')
+        $baseQuery = StatusAdvokasi::whereNotNull('jenis_kasus');
+        
+        if ($hazard) {
+            $baseQuery->whereHas('pekerja.riwayatPekerja', function ($q) use ($hazard) {
+                $q->where('jenis_pajanan', 'LIKE', '%' . $hazard . '%');
+            });
+        }
+
+        $totalAll = (clone $baseQuery)->count();
+        $totalLastMonth = (clone $baseQuery)
             ->where('created_at', '<', $startOfThisMonth)
             ->count();
         
-        $selesaiAll = StatusAdvokasi::where('rehabilitasi_bpjskes', true)->count();
-        $selesaiLastMonth = StatusAdvokasi::where('rehabilitasi_bpjskes', true)
+        $selesaiAll = (clone $baseQuery)->where('rehabilitasi_bpjskes', true)->count();
+        $selesaiLastMonth = (clone $baseQuery)->where('rehabilitasi_bpjskes', true)
             ->where('created_at', '<', $startOfThisMonth)
             ->count();
 
@@ -63,6 +72,12 @@ class AdvokasiService
         foreach ($steps as $step) {
             $col = $step['column'];
             $query = StatusAdvokasi::where($col, true);
+            
+            if ($hazard) {
+                $query->whereHas('pekerja.riwayatPekerja', function ($q) use ($hazard) {
+                    $q->where('jenis_pajanan', 'LIKE', '%' . $hazard . '%');
+                });
+            }
             
             $count = $query->count();
             $workers = [];

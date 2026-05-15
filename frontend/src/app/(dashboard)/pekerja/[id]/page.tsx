@@ -556,7 +556,7 @@ export default function PekerjaDetailPage() {
 
             <div>
               <h1 className="text-3xl font-extrabold tracking-tight text-[#1e293b]">{data.nama_lengkap}</h1>
-              <p className="text-slate-500 font-medium tracking-wide mt-1 text-sm">NIK: {data.nik}</p>
+              <p className="text-slate-500 font-medium tracking-wide mt-1 text-sm">No. Kartu Pegawai: {data.nik}</p>
               <p className="text-slate-400 text-[13px] mt-1.5 flex items-center gap-1.5 flex-wrap">
                 {data.jenis_kelamin && (
                   <span className="inline-flex items-center gap-1">

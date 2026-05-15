@@ -23,7 +23,8 @@ class AdvokasiController extends Controller
     public function stats(Request $request): JsonResponse
     {
         $includeWorkers = filter_var($request->query('include_workers', false), FILTER_VALIDATE_BOOLEAN);
-        $stats = $this->advokasiService->getStats($includeWorkers);
+        $hazard = $request->query('hazard', null);
+        $stats = $this->advokasiService->getStats($includeWorkers, $hazard);
         
         return response()->json([
             'status'  => 'success',

@@ -16,7 +16,7 @@ import { toast } from 'sonner';
 export default function LoginPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [formData, setFormData] = useState({ whatsapp: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -58,8 +58,8 @@ export default function LoginPage() {
         return;
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Gagal login. Periksa email dan password.');
-      setFormData({ email: '', password: '' }); // Clear inputs on error
+      toast.error(error.response?.data?.message || 'Gagal login. Periksa Nomor Telepon dan password.');
+      setFormData({ whatsapp: '', password: '' });
       setLoading(false); // Only reset loading on error
     }
   };
@@ -83,20 +83,20 @@ export default function LoginPage() {
           </div>
           <CardTitle className="text-2xl font-bold">Sistem Rekam Jejak PAK</CardTitle>
           <CardDescription>
-            Masukkan email dan password Anda untuk masuk ke sistem.
+            Masuk menggunakan Nomor Telepon yang terdaftar untuk masuk ke sistem.
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleLogin}>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="whatsapp">Nomor Telepon</Label>
               <Input 
-                id="email" 
-                type="email" 
-                placeholder="admin@example.com" 
+                id="whatsapp" 
+                type="text" 
+                placeholder="Contoh: 08123456789" 
                 required 
-                value={formData.email}
-                onChange={(e) => setFormData({...formData, email: e.target.value})}
+                value={formData.whatsapp}
+                onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
               />
             </div>
             <div className="space-y-2">

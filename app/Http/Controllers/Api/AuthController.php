@@ -17,12 +17,12 @@ class AuthController extends Controller
      */
     public function login(LoginRequest $request): JsonResponse
     {
-        $user = User::where('email', $request->email)->first();
+        $user = User::where('whatsapp', $request->whatsapp)->first();
 
         if (!$user || !Hash::check($request->password, $user->password)) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Email atau password salah.'
+                'message' => 'Nomor Telepon atau password salah.'
             ], 401);
         }
 
@@ -49,6 +49,7 @@ class AuthController extends Controller
                 'user' => [
                     'id' => $user->id,
                     'nama' => $user->nama,
+                    'whatsapp' => $user->whatsapp,
                     'email' => $user->email,
                     'role' => $user->role,
                 ],

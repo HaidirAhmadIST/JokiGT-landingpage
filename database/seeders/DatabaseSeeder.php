@@ -35,5 +35,19 @@ class DatabaseSeeder extends Seeder
                 'role'     => 'petugas',
             ]
         );
+
+        // Sample Perusahaan
+        $perusahaans = [
+            ['nama_perusahaan' => 'PT. Aneka Tambang', 'status_pendamping' => 'aktif'],
+            ['nama_perusahaan' => 'PT. Bukit Asam', 'status_pendamping' => 'aktif'],
+            ['nama_perusahaan' => 'PT. Freeport Indonesia', 'status_pendamping' => 'aktif'],
+        ];
+
+        foreach ($perusahaans as $p) {
+            \App\Models\Perusahaan::updateOrCreate(
+                ['nama_perusahaan' => $p['nama_perusahaan']],
+                $p
+            );
+        }
     }
 }

@@ -24,7 +24,8 @@ class StorePekerjaRequest extends FormRequest
     {
         return [
             // User Data
-            'email' => ['required', 'string', 'email'],
+            'email' => ['nullable', 'string', 'email'],
+            'whatsapp' => ['required', 'string'],
             'password' => ['required', 'string', 'min:8'],
             
             // Pekerja Data
@@ -36,13 +37,13 @@ class StorePekerjaRequest extends FormRequest
                     return !in_array($status, ['Borongan', 'Harian Lepas', 'Outsourcing']);
                 }),
             ],
-            'nik' => ['required', 'string', 'size:16'],
+            'nik' => ['required', 'string', 'max:100'],
             'nama_lengkap' => ['required', 'string', 'max:255'],
             'status_kesehatan' => ['required', 'in:sehat,sehat_dengan_catatan,tidak_sehat'],
             'catatan_admin' => ['nullable', 'string'],
             'tanggal_lahir' => ['nullable', 'date'],
             'jenis_kelamin' => ['nullable', 'in:L,P'],
-            'whatsapp' => ['nullable', 'string'],
+            // whatsapp is already defined above
             'domisili' => ['nullable', 'string'],
 
             // Riwayat Pekerja Data (Optional)

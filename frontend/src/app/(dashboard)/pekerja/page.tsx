@@ -183,7 +183,7 @@ export default function PekerjaPage() {
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <input
             type="text"
-            placeholder="Cari pekerja berdasarkan nama atau NIK..."
+            placeholder="Cari berdasarkan Nama atau Nomor Kartu Pegawai..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full h-11 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0ea5e9]/30 focus:border-[#0ea5e9] transition-all"
@@ -215,7 +215,7 @@ export default function PekerjaPage() {
               <TableRow className="border-b border-slate-100 hover:bg-transparent">
                 <TableHead className="text-[11px] font-bold text-slate-400 tracking-widest uppercase bg-transparent w-12 pl-4 pr-1">NO.</TableHead>
                 <TableHead className="text-[11px] font-bold text-slate-400 tracking-widest uppercase bg-transparent w-[22%]">NAMA PEKERJA</TableHead>
-                <TableHead className="text-[11px] font-bold text-slate-400 tracking-widest uppercase bg-transparent w-[14%]">NIK</TableHead>
+                <TableHead className="text-[11px] font-bold text-slate-400 tracking-widest uppercase bg-transparent w-[14%]">NO. KARTU PEGAWAI</TableHead>
                 <TableHead className="text-[11px] font-bold text-slate-400 tracking-widest uppercase bg-transparent w-[18%]">PERUSAHAAN</TableHead>
                 <TableHead className="text-[11px] font-bold text-slate-400 tracking-widest uppercase bg-transparent w-[15%]">LOKASI / UNIT</TableHead>
                 <TableHead className="text-[11px] font-bold text-slate-400 tracking-widest uppercase bg-transparent w-[12%]">STATUS</TableHead>
@@ -410,7 +410,7 @@ export default function PekerjaPage() {
                     </div>
                     <div>
                       <p className="font-bold text-slate-900 text-sm">{p.nama_lengkap}</p>
-                      <p className="text-xs text-slate-500">NIK: {p.nik}</p>
+                      <p className="text-xs text-slate-500">No. Kartu: {p.nik}</p>
                     </div>
                     {/* Missing indicator */}
                     <div className="ml-auto flex gap-1.5">
