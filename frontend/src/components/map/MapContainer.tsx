@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { Loader2 } from 'lucide-react';
 import { RiskMap } from './RiskMap';
 import { MapSidebar, ProvinceData } from './MapSidebar';
 
@@ -8,6 +9,27 @@ export const MapContainer: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedProvinceData, setSelectedProvinceData] = useState<ProvinceData | null>(null);
+  const [isInView, setIsInView] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Lazy load map when in view
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsInView(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.1, rootMargin: '200px' }
+    );
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
 
   // Simulated API Call
   const fetchProvinceReports = async (provinceId: string, properties: any) => {
@@ -84,8 +106,18 @@ export const MapContainer: React.FC = () => {
   };
 
   return (
-    <div className="relative h-[80vh] w-full overflow-hidden rounded-3xl border border-slate-200 shadow-xl lg:h-[700px]">
-      <RiskMap onProvinceClick={handleProvinceClick} />
+    <div 
+      ref={containerRef}
+      className="relative h-[80vh] w-full overflow-hidden rounded-3xl border border-slate-200 shadow-xl lg:h-[700px] bg-slate-50"
+    >
+      {isInView ? (
+        <RiskMap onProvinceClick={handleProvinceClick} />
+      ) : (
+        <div className="w-full h-full flex flex-col items-center justify-center">
+          <Loader2 className="h-10 w-10 text-[#0284c7] animate-spin mb-4" />
+          <p className="text-slate-500 font-bold">Menyiapkan Visualisasi Peta...</p>
+        </div>
+      )}
       
       <MapSidebar 
         isOpen={isSidebarOpen} 

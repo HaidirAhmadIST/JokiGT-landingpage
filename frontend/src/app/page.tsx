@@ -14,7 +14,16 @@ import {
 import { cn } from '@/lib/utils';
 import HeroSlider from '@/components/landing/HeroSlider';
 
-import { MapContainer } from '@/components/map/MapContainer';
+const MapContainer = dynamic(() => import('@/components/map/MapContainer').then(mod => mod.MapContainer), {
+  ssr: false,
+  loading: () => (
+    <div className="h-[80vh] lg:h-[700px] w-full bg-slate-100 animate-pulse rounded-3xl flex flex-col items-center justify-center border border-slate-200">
+      <Loader2 className="h-10 w-10 text-[#0284c7] animate-spin mb-4" />
+      <p className="text-slate-500 font-bold">Memuat Peta Interaktif...</p>
+      <p className="text-slate-400 text-xs mt-2 text-center px-4">Mengoptimalkan performa untuk perangkat Anda</p>
+    </div>
+  )
+});
 
 function CountUp({ end, duration = 2000 }: { end: number, duration?: number }) {
   const [count, setCount] = useState(0);
