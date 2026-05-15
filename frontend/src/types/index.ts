@@ -16,7 +16,8 @@ export type UserRole = 'admin' | 'petugas' | 'viewer';
 export interface User {
   id: number;
   nama: string;
-  email: string;
+  email?: string;
+  whatsapp: string;
   role: UserRole;
   /** ID Pekerja yang terhubung (hanya untuk role 'viewer') */
   pekerja_id?: number;

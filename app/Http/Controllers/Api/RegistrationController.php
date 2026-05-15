@@ -17,7 +17,7 @@ class RegistrationController extends Controller
     public function completeRegistration(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'email' => 'required|email|exists:users,email',
+            'whatsapp' => 'required|string|exists:users,whatsapp',
             'password' => 'required|string|min:8|confirmed',
         ]);
 
@@ -29,7 +29,7 @@ class RegistrationController extends Controller
             ], 422);
         }
 
-        $user = User::where('email', $request->email)->first();
+        $user = User::where('whatsapp', $request->whatsapp)->first();
 
         if (!$user) {
             return response()->json([

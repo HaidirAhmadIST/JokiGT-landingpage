@@ -65,55 +65,77 @@ export default function DashboardLayout({
 
   useEffect(() => {
     const initUser = async () => {
+      console.log('[Layout] Initializing user...');
       try {
-        // 1. Try to load from local storage first for speed
-        const storedUser = localStorage.getItem('user');
+        const token = Cookies.get('auth_token');
         let userData = null;
 
+        // 1. Coba ambil dari localStorage untuk UI instan jika ada
+        const storedUser = localStorage.getItem('user');
         if (storedUser) {
           try {
-            userData = JSON.parse(storedUser);
+            const parsed = JSON.parse(storedUser);
+            if (parsed) {
+              console.log('[Layout] Found user in localStorage:', parsed.role);
+              userData = parsed;
+              setUser(parsed);
+            }
           } catch (e) {
-            console.error('Failed to parse stored user', e);
+            console.error('[Layout] Failed to parse stored user', e);
           }
         }
 
-        // 2. If no valid stored user, try to fetch from server
-        if (!userData) {
-          const token = Cookies.get('auth_token');
-          if (token) {
-            try {
-              const res = await api.get('/me');
-              userData = res.data.data;
-              if (userData) {
-                if (userData.role === 'viewer' && userData.pekerja?.id) {
-                  userData.pekerja_id = userData.pekerja.id;
-                }
-                localStorage.setItem('user', JSON.stringify(userData));
+        // 2. SELALU verifikasi ke server jika ada token untuk memastikan sesi valid
+        if (token) {
+          console.log('[Layout] Verifying token with server...');
+          try {
+            const res = await api.get('/me');
+            const freshData = res.data.data;
+            if (freshData) {
+              console.log('[Layout] Token verified. Role:', freshData.role);
+              if (freshData.role === 'viewer' && freshData.pekerja?.id) {
+                freshData.pekerja_id = freshData.pekerja.id;
               }
-            } catch (err) {
-              console.error('Failed to fetch user in layout', err);
+              userData = freshData;
+              setUser(freshData);
+              localStorage.setItem('user', JSON.stringify(freshData));
+            }
+          } catch (err: any) {
+            console.error('[Layout] Auth verification failed:', err.message);
+            // Jika Unauthorized, hapus data lokal
+            if (err.response?.status === 401) {
+              console.warn('[Layout] Session expired (401). Clearing storage.');
+              localStorage.removeItem('user');
+              Cookies.remove('auth_token', { path: '/' });
+              userData = null;
+              setUser(null);
             }
           }
         }
 
-        if (userData) {
-          setUser(userData);
-          // Only redirect if we're not already on the correct dashboard
-          if (userData.role === 'viewer' && !window.location.pathname.startsWith('/dashboard-user')) {
-            router.push('/dashboard-user');
+        // 3. Evaluasi akhir: Jika tetap tidak ada user, arahkan ke login
+        if (!userData) {
+          console.log('[Layout] No user found. Redirecting to login...');
+          if (pathname !== '/login' && pathname !== '/pendaftaran') {
+            router.push('/login');
           }
         } else {
-          // No user data found after all checks, go to login
-          router.push('/login');
+          // Redirect role viewer ke dashboard user jika nyasar ke admin
+          if (userData.role === 'viewer' && !pathname.startsWith('/dashboard-user')) {
+            console.log('[Layout] Redirecting viewer to user dashboard...');
+            router.push('/dashboard-user');
+          }
         }
+      } catch (criticalError) {
+        console.error('[Layout] Critical auth error:', criticalError);
       } finally {
+        console.log('[Layout] Initialization complete. Mounting component.');
         setMounted(true);
       }
     };
 
     initUser();
-  }, [router]);
+  }, [router, pathname]);
 
   // Click outside to close search dropdown
   useEffect(() => {

@@ -13,10 +13,7 @@ const nextConfig: NextConfig = {
     ],
   },
   experimental: {
-    // @ts-ignore Next.js 15+ turbopack root config types might be incomplete
-    turbopack: {
-      root: path.resolve(__dirname),
-    },
+    // Other experimental features can go here
   },
 };
 

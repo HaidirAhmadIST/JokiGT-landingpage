@@ -33,9 +33,9 @@ export default function PendaftaranPekerjaPage() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [perusahaanList, setPerusahaanList] = useState<any[]>([]);
-  const [duplicateWarning, setDuplicateWarning] = useState<{ nik?: string; email?: string }>({});
-  // Email locked to the logged-in user's account
-  const [lockedEmail, setLockedEmail] = useState<string | null>(null);
+  const [duplicateWarning, setDuplicateWarning] = useState<{ nik?: string; whatsapp?: string }>({});
+  // WhatsApp locked to the logged-in user's account
+  const [lockedWhatsapp, setLockedWhatsapp] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
   const [wasRestored, setWasRestored] = useState(false);
@@ -215,9 +215,9 @@ export default function PendaftaranPekerjaPage() {
       const storedUser = localStorage.getItem('user');
       if (storedUser) {
         const parsedUser = JSON.parse(storedUser);
-        if (parsedUser?.email) {
-          setLockedEmail(parsedUser.email);
-          setBaseData(prev => ({ ...prev, email: parsedUser.email }));
+        if (parsedUser?.whatsapp) {
+          setLockedWhatsapp(parsedUser.whatsapp);
+          setBaseData(prev => ({ ...prev, whatsapp: parsedUser.whatsapp }));
         }
       }
     } catch {}
@@ -324,12 +324,12 @@ export default function PendaftaranPekerjaPage() {
     }, step === targetStep ? 0 : 300);
   };
 
-  const checkDuplicate = async (field: 'nik' | 'email', value: string) => {
+  const checkDuplicate = async (field: 'nik' | 'whatsapp', value: string) => {
     if (!value || value.length < 5) return;
     try {
       const res = await api.get(`/pekerja?search=${encodeURIComponent(value)}`);
       const match = res.data.data.data.find((p: any) =>
-        field === 'nik' ? p.nik === value : p.user?.email.toLowerCase() === value.toLowerCase()
+        field === 'nik' ? p.nik === value : p.user?.whatsapp === value
       );
 
       if (match) {
@@ -358,13 +358,13 @@ export default function PendaftaranPekerjaPage() {
       return;
     }
     if (!baseData.nik) {
-      toast.error("NIK wajib diisi!");
+      toast.error("Nomor Kartu Pegawai wajib diisi!");
       scrollToField('nik', 1);
       return;
     }
-    if (!baseData.email) {
-      toast.error("Email wajib diisi!");
-      scrollToField('email', 1);
+    if (!baseData.whatsapp) {
+      toast.error("Nomor WhatsApp wajib diisi untuk login!");
+      scrollToField('whatsapp', 1);
       return;
     }
     if (!baseData.password || baseData.password.length < 8) {
@@ -414,7 +414,9 @@ export default function PendaftaranPekerjaPage() {
             }
           } else {
             console.error("API Error details:", errP.response?.data);
-            const errorMsg = errP.response?.data?.message || errP.message;
+            const errorMsg = errP.response?.data?.message || 
+                            (errP.response?.data?.errors ? Object.values(errP.response.data.errors).flat()[0] : null) || 
+                            errP.message;
             toast.error(`Gagal mendaftarkan perusahaan baru: ${errorMsg}`, { id: 'create-perusahaan' });
             setLoading(false);
             return;
@@ -622,7 +624,7 @@ export default function PendaftaranPekerjaPage() {
           // AUTO-LOGIN: Set user session and redirect to dashboard
           const userData = {
             id: response.data.data.user_id,
-            email: baseData.email,
+            whatsapp: baseData.whatsapp,
             nama_lengkap: baseData.nama_lengkap,
             role: 'viewer',
             pekerja_id: response.data.data.id
@@ -644,9 +646,9 @@ export default function PendaftaranPekerjaPage() {
           const fieldMap: any = {
             'nik': { id: 'nik', s: 1 },
             'nama_lengkap': { id: 'nama_lengkap', s: 1 },
+            'whatsapp': { id: 'whatsapp', s: 1 },
             'email': { id: 'email', s: 1 },
             'perusahaan_id': { id: 'perusahaan_id', s: 1 },
-            'whatsapp': { id: 'whatsapp', s: 1 },
             'domisili': { id: 'domisili', s: 1 },
             'status_pekerjaan': { id: 'status_pekerjaan', s: 2 }
           };
@@ -688,20 +690,28 @@ export default function PendaftaranPekerjaPage() {
           <Button
             variant="ghost"
             size="sm"
+            className="text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 px-3 hidden sm:flex items-center gap-2"
+            onClick={() => router.push('/')}
+          >
+            Kembali ke Beranda
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
             className="text-xs font-bold text-red-500 hover:text-red-600 hover:bg-red-50 px-3"
             onClick={() => setIsResetDialogOpen(true)}
           >
             Hapus Sesi / Reset
           </Button>
 
-          {lockedEmail && (
+          {lockedWhatsapp && (
             <Button
               variant="outline"
               size="sm"
               className="text-xs font-bold border-slate-200 text-slate-600 hover:bg-slate-50"
               onClick={handleLogout}
             >
-              Logout ({lockedEmail})
+              Logout ({lockedWhatsapp})
             </Button>
           )}
 
@@ -771,18 +781,17 @@ export default function PendaftaranPekerjaPage() {
                   </h3>
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="nama_lengkap">Nama Lengkap (Sesuai KTP)</Label>
+                      <Label htmlFor="nama_lengkap">Nama Lengkap</Label>
                       <Input id="nama_lengkap" placeholder="Masukkan nama lengkap" className="h-11" value={baseData.nama_lengkap} onChange={e => setBaseData({ ...baseData, nama_lengkap: e.target.value })} />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="nik">Nomor Induk Kependudukan / NIK</Label>
+                      <Label htmlFor="nik">Nomor Kartu Pegawai</Label>
                       <Input
                         id="nik"
-                        placeholder="Masukkan NIK 16 Digit"
-                        maxLength={16}
+                        placeholder="Masukkan Nomor Kartu Pegawai"
                         className={`h-11 ${duplicateWarning.nik ? 'border-amber-400 bg-amber-50/30' : ''}`}
                         value={baseData.nik}
-                        onChange={e => setBaseData({ ...baseData, nik: e.target.value.replace(/\D/g, '') })}
+                        onChange={e => setBaseData({ ...baseData, nik: e.target.value })}
                         onBlur={(e) => checkDuplicate('nik', e.target.value)}
                       />
                       {duplicateWarning.nik && <p className="text-[10px] text-amber-600 font-medium">{duplicateWarning.nik}</p>}
@@ -826,30 +835,36 @@ export default function PendaftaranPekerjaPage() {
                   </h3>
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="whatsapp">Nomor WhatsApp</Label>
+                      <Label htmlFor="whatsapp">Nomor WhatsApp (Gunakan untuk Login)</Label>
                       <div className="flex">
                         <span className="inline-flex items-center px-4 rounded-l-lg border border-r-0 border-slate-200 bg-slate-50 text-slate-500 sm:text-sm">
                           +62
                         </span>
-                        <Input id="whatsapp" placeholder="8123456xxx" className="rounded-l-none h-11" value={baseData.whatsapp} onChange={e => setBaseData({ ...baseData, whatsapp: e.target.value.replace(/\D/g, '') })} />
+                        <Input 
+                          id="whatsapp" 
+                          placeholder="8123456xxx" 
+                          className={cn("rounded-l-none h-11", duplicateWarning.whatsapp ? 'border-amber-400 bg-amber-50/30' : '', lockedWhatsapp ? "bg-slate-50 cursor-not-allowed" : "")}
+                          readOnly={!!lockedWhatsapp}
+                          value={baseData.whatsapp} 
+                          onChange={e => setBaseData({ ...baseData, whatsapp: e.target.value.replace(/\D/g, '') })} 
+                          onBlur={(e) => checkDuplicate('whatsapp', e.target.value)}
+                        />
                       </div>
+                      {duplicateWarning.whatsapp && <p className="text-[10px] text-amber-600 font-medium">{duplicateWarning.whatsapp}</p>}
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="email">Alamat Email</Label>
+                      <Label htmlFor="email">Alamat Email (Opsional)</Label>
                       <div className="relative">
                         <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                         <Input
                           id="email"
                           type="email"
                           placeholder="contoh@email.com"
-                          className={cn("h-11 pl-10", lockedEmail ? "bg-slate-50 cursor-not-allowed" : "")}
-                          readOnly={!!lockedEmail}
+                          className="h-11 pl-10"
                           value={baseData.email}
                           onChange={e => setBaseData({ ...baseData, email: e.target.value })}
-                          onBlur={(e) => checkDuplicate('email', e.target.value)}
                         />
                       </div>
-                      {duplicateWarning.email && <p className="text-[10px] text-amber-600 font-medium">{duplicateWarning.email}</p>}
                     </div>
 
                     <div className="space-y-2">
@@ -987,9 +1002,17 @@ export default function PendaftaranPekerjaPage() {
                                 {item.status_pekerjaan === 'Outsourcing' && (
                                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 col-span-2 bg-orange-50/50 p-4 rounded-lg border border-orange-100 mt-2">
                                     <div className="space-y-2 col-span-2">
-                                      <Label className="text-orange-700">Nama Perusahaan Penyalur</Label>
+                                      <Label className="text-orange-700">Nama Perusahaan Penyalur / Agency</Label>
                                       <Input placeholder="Contoh: PT Sumber Daya Manusia" className="h-11 bg-white border-orange-200 focus-visible:ring-orange-400" value={item.nama_agen_penyalur || ''} onChange={(e) => {
                                         const newR = [...riwayatLalu]; newR[idx].nama_agen_penyalur = e.target.value; setRiwayatLalu(newR);
+                                      }} />
+                                    </div>
+                                    <div className="space-y-2 col-span-2">
+                                      <Label className="text-orange-700">Alamat Perusahaan Penyalur / Agency</Label>
+                                      <Input placeholder="Masukkan alamat lengkap kantor agency" className="h-11 bg-white border-orange-200 focus-visible:ring-orange-400" value={item.informal_data?.alamat_perusahaan || ''} onChange={(e) => {
+                                        const newR = [...riwayatLalu]; 
+                                        newR[idx].informal_data = { ...(newR[idx].informal_data || {}), alamat_perusahaan: e.target.value };
+                                        setRiwayatLalu(newR);
                                       }} />
                                     </div>
                                     <div className="space-y-2">
