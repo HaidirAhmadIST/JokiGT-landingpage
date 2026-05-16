@@ -362,8 +362,8 @@ export default function PendaftaranPekerjaPage() {
       scrollToField('nik', 1);
       return;
     }
-    if (!baseData.whatsapp) {
-      toast.error("Nomor Telepon wajib diisi!");
+    if (!baseData.whatsapp && !baseData.email) {
+      toast.error("Wajib mengisi setidaknya satu: Nomor Telepon atau Email!");
       scrollToField('whatsapp', 1);
       return;
     }
@@ -838,7 +838,10 @@ export default function PendaftaranPekerjaPage() {
                   </h3>
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="whatsapp">Nomor Telepon (Gunakan untuk Login)</Label>
+                      <Label htmlFor="whatsapp" className="flex items-center gap-1.5">
+                        Nomor Telepon
+                        <span className="text-[10px] text-slate-400 font-normal italic">(Opsional jika Email diisi)</span>
+                      </Label>
                       <div className="flex">
                         <span className="inline-flex items-center px-4 rounded-l-lg border border-r-0 border-slate-200 bg-slate-50 text-slate-500 sm:text-sm">
                           +62
@@ -856,7 +859,10 @@ export default function PendaftaranPekerjaPage() {
                       {duplicateWarning.whatsapp && <p className="text-[10px] text-amber-600 font-medium">{duplicateWarning.whatsapp}</p>}
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="email">Alamat Email (Opsional)</Label>
+                      <Label htmlFor="email" className="flex items-center gap-1.5">
+                        Alamat Email
+                        <span className="text-[10px] text-slate-400 font-normal italic">(Opsional jika No. Telp diisi)</span>
+                      </Label>
                       <div className="relative">
                         <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                         <Input
@@ -1176,6 +1182,7 @@ export default function PendaftaranPekerjaPage() {
                                     }} 
                                   />
                                 </div>
+                              </div>
 
 
 
@@ -1217,18 +1224,18 @@ export default function PendaftaranPekerjaPage() {
                                             </p>
                                           </div>
                                         )}
-                                      </div>
                                     </div>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
 
                 <div className="pt-4">
                   <Button className="w-full h-12 text-base bg-[#0ea5e9] hover:bg-[#0284c7]" onClick={handleLanjut}>
@@ -1305,44 +1312,41 @@ export default function PendaftaranPekerjaPage() {
                         <p className="text-[10px] text-slate-400 italic font-medium">Informasi ini membantu dokter okupasi dalam menganalisis risiko kesehatan Anda secara lebih akurat.</p>
                       </div>
 
-                      {/* Pertanyaan K3 & P2K3 */}
+
+
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-6 border-t border-slate-100">
                         <div className="space-y-3">
-                          <Label className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                            <Zap className="h-4 w-4 text-amber-500" /> Apakah Anda pernah mendapatkan Pelatihan/Training K3?
-                          </Label>
+                          <Label className="text-sm font-bold text-slate-700">Pernah Ikut Pelatihan K3?</Label>
                           <Select 
                             value={pekerjaanSaatIni.training_k3 || ''} 
                             onValueChange={v => setPekerjaanSaatIni({ ...pekerjaanSaatIni, training_k3: v })}
                           >
-                            <SelectTrigger className="h-11 bg-white border-slate-200 rounded-xl focus:ring-blue-400">
+                            <SelectTrigger className="h-12 bg-white border-slate-200">
                               <SelectValue placeholder="Pilih Jawaban" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="Pernah">Pernah (Sudah dilatih)</SelectItem>
+                              <SelectItem value="Pernah">Ya, Pernah</SelectItem>
                               <SelectItem value="Belum Pernah">Belum Pernah</SelectItem>
                             </SelectContent>
                           </Select>
+                          <p className="text-[10px] text-slate-400 italic">Pelatihan mengenai keselamatan dan kesehatan di lingkungan kerja.</p>
                         </div>
 
                         <div className="space-y-3">
-                          <Label className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                            <ShieldAlert className="h-4 w-4 text-[#0ea5e9]" /> Apakah ada P2K3 di tempat kerja Anda?
-                          </Label>
+                          <Label className="text-sm font-bold text-slate-700">Ada P2K3 di Perusahaan?</Label>
                           <Select 
                             value={pekerjaanSaatIni.ada_p2k3 || ''} 
                             onValueChange={v => setPekerjaanSaatIni({ ...pekerjaanSaatIni, ada_p2k3: v })}
                           >
-                            <SelectTrigger className="h-11 bg-white border-slate-200 rounded-xl focus:ring-blue-400">
+                            <SelectTrigger className="h-12 bg-white border-slate-200">
                               <SelectValue placeholder="Pilih Jawaban" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="Ada">Ada (Aktif)</SelectItem>
-                              <SelectItem value="Tidak Ada">Tidak Ada</SelectItem>
-                              <SelectItem value="Tidak Tahu">Tidak Tahu</SelectItem>
+                              <SelectItem value="Ada">Ya, Ada</SelectItem>
+                              <SelectItem value="Tidak Ada">Tidak Ada / Tidak Tahu</SelectItem>
                             </SelectContent>
                           </Select>
-                          <p className="text-[10px] text-slate-400 italic font-medium">P2K3 adalah Panitia Pembina Keselamatan dan Kesehatan Kerja.</p>
+                          <p className="text-[10px] text-slate-400 italic">Panitia Pembina Keselamatan dan Kesehatan Kerja (P2K3).</p>
                         </div>
                       </div>
 

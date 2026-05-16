@@ -32,18 +32,29 @@ class PekerjaService
      */
     public function createOrUpdateUser(array $data): User
     {
-        $user = User::where('whatsapp', $data['whatsapp'])->first();
+        $user = null;
+        
+        // Coba cari berdasarkan whatsapp jika ada
+        if (!empty($data['whatsapp'])) {
+            $user = User::where('whatsapp', $data['whatsapp'])->first();
+        }
+        
+        // Jika tidak ketemu, coba cari berdasarkan email jika ada
+        if (!$user && !empty($data['email'])) {
+            $user = User::where('email', $data['email'])->first();
+        }
 
         if ($user) {
             $user->update([
                 'nama'     => $data['nama_lengkap'],
+                'whatsapp' => $data['whatsapp'] ?? $user->whatsapp,
                 'email'    => $data['email'] ?? $user->email,
                 'password' => Hash::make($data['password']),
             ]);
         } else {
             $user = User::create([
                 'nama'     => $data['nama_lengkap'],
-                'whatsapp' => $data['whatsapp'],
+                'whatsapp' => $data['whatsapp'] ?? null,
                 'email'    => $data['email'] ?? null,
                 'password' => Hash::make($data['password']),
                 'role'     => 'viewer',

@@ -1752,10 +1752,11 @@ export default function PekerjaDetailPage() {
                   onChange={(e) => setRiwayatForm({...riwayatForm, jenis_pajanan: e.target.value})}
                 >
                   <option value="">Pilih Pajanan</option>
-                  <option value="Kimia">Kimia</option>
-                  <option value="Fisik">Fisik</option>
-                  <option value="Biologi">Biologi</option>
-                  <option value="Psikososial">Psikososial</option>
+                  <option value="Faktor Fisika">Faktor Fisika</option>
+                  <option value="Faktor Kimia">Faktor Kimia</option>
+                  <option value="Faktor Biologi">Faktor Biologi</option>
+                  <option value="Faktor Ergonomi">Faktor Ergonomi</option>
+                  <option value="Faktor Psikososial">Faktor Psikososial</option>
                 </select>
               </div>
               <div className="space-y-2">

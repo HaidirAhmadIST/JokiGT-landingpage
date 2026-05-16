@@ -245,10 +245,11 @@ export default function AdvokasiBarChart() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Semua Hazard</SelectItem>
-              <SelectItem value="Kimia">Kimia</SelectItem>
-              <SelectItem value="Fisik">Fisik (Bising/Getaran)</SelectItem>
-              <SelectItem value="Biologi">Biologi</SelectItem>
-              <SelectItem value="Psikososial">Psikososial</SelectItem>
+              <SelectItem value="Faktor Fisika">Faktor Fisika</SelectItem>
+              <SelectItem value="Faktor Kimia">Faktor Kimia</SelectItem>
+              <SelectItem value="Faktor Biologi">Faktor Biologi</SelectItem>
+              <SelectItem value="Faktor Ergonomi">Faktor Ergonomi</SelectItem>
+              <SelectItem value="Faktor Psikososial">Faktor Psikososial</SelectItem>
             </SelectContent>
           </Select>
           <div className="flex items-center gap-2">

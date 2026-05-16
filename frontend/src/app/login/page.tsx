@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Cookies from 'js-cookie';
@@ -16,7 +16,7 @@ import { toast } from 'sonner';
 export default function LoginPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({ whatsapp: '', password: '' });
+  const [formData, setFormData] = useState({ identifier: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -52,18 +52,30 @@ export default function LoginPage() {
           window.location.href = '/dashboard-admin';
         }
         
-        // Note: We DON'T call setLoading(false) here because we want the 
-        // button to stay in "Masuk..." state while the router is navigating.
-        // The page will be replaced soon anyway.
         return;
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Gagal login. Periksa Nomor Telepon dan password.');
-      setWhatsapp('');
-      setPassword('');
+      toast.error(error.response?.data?.message || 'Gagal login. Periksa kembali No. Telp/Email dan password.');
+      setFormData({ identifier: '', password: '' });
       setLoading(false); // Only reset loading on error
     }
   };
+
+  // Safe cleanup for leftover Radix UI portals/pointer-events after redirection
+  useEffect(() => {
+    document.body.style.pointerEvents = '';
+    document.documentElement.style.pointerEvents = '';
+    document.body.style.overflow = '';
+    document.documentElement.style.overflow = '';
+    
+    // Hide any leftover backdrops from Shadcn Dialog/Sheet
+    const backdrops = document.querySelectorAll('.fixed.inset-0.bg-black\\/80');
+    backdrops.forEach(el => {
+      if (el instanceof HTMLElement) {
+        el.style.display = 'none';
+      }
+    });
+  }, []);
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 p-4">
@@ -84,20 +96,20 @@ export default function LoginPage() {
           </div>
           <CardTitle className="text-2xl font-bold">Sistem Rekam Jejak PAK</CardTitle>
           <CardDescription>
-            Masuk menggunakan Nomor Telepon yang terdaftar untuk masuk ke sistem.
+            Masuk menggunakan No. Telp atau Email yang terdaftar untuk masuk ke sistem.
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleLogin}>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="whatsapp">Nomor Telepon</Label>
+              <Label htmlFor="identifier">No. Telp / Email</Label>
               <Input 
-                id="whatsapp" 
+                id="identifier" 
                 type="text" 
-                placeholder="Contoh: 08123456789" 
+                placeholder="Contoh: 0812... atau admin@email.com" 
                 required 
-                value={whatsapp}
-                onChange={(e) => setWhatsapp(e.target.value)}
+                value={formData.identifier}
+                onChange={(e) => setFormData({ ...formData, identifier: e.target.value })}
               />
             </div>
             <div className="space-y-2">

@@ -22,8 +22,8 @@ class LoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'whatsapp' => ['required', 'string'],
-            'password' => ['required', 'string'],
+            'identifier' => ['required', 'string'],
+            'password'   => ['required', 'string'],
         ];
     }
 }

@@ -24,8 +24,8 @@ class StorePekerjaRequest extends FormRequest
     {
         return [
             // User Data
-            'email' => ['nullable', 'string', 'email'],
-            'whatsapp' => ['required', 'string'],
+            'email' => ['nullable', 'required_without:whatsapp', 'string', 'email'],
+            'whatsapp' => ['nullable', 'required_without:email', 'string'],
             'password' => ['required', 'string', 'min:8'],
             
             // Pekerja Data

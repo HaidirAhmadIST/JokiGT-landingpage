@@ -1088,10 +1088,11 @@ export default function UserDashboardPage() {
                   <SelectValue placeholder="Pilih Jenis Pajanan..." />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl border-slate-100">
-                  <SelectItem value="Kimia" className="font-bold text-slate-700">Kimia</SelectItem>
-                  <SelectItem value="Fisik" className="font-bold text-slate-700">Fisik (Bising/Getaran)</SelectItem>
-                  <SelectItem value="Biologi" className="font-bold text-slate-700">Biologi</SelectItem>
-                  <SelectItem value="Psikososial" className="font-bold text-slate-700">Psikososial</SelectItem>
+                  <SelectItem value="Faktor Fisika" className="font-bold text-slate-700">Faktor Fisika</SelectItem>
+                  <SelectItem value="Faktor Kimia" className="font-bold text-slate-700">Faktor Kimia</SelectItem>
+                  <SelectItem value="Faktor Biologi" className="font-bold text-slate-700">Faktor Biologi</SelectItem>
+                  <SelectItem value="Faktor Ergonomi" className="font-bold text-slate-700">Faktor Ergonomi</SelectItem>
+                  <SelectItem value="Faktor Psikososial" className="font-bold text-slate-700">Faktor Psikososial</SelectItem>
                 </SelectContent>
               </Select>
             </div>

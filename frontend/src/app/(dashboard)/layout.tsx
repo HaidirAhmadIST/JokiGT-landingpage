@@ -64,18 +64,20 @@ export default function DashboardLayout({
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
+
     const initUser = async () => {
       console.log('[Layout] Initializing user...');
       try {
         const token = Cookies.get('auth_token');
         let userData = null;
 
-        // 1. Coba ambil dari localStorage untuk UI instan jika ada
+        // 1. Ambil dari localStorage untuk UI instan
         const storedUser = localStorage.getItem('user');
         if (storedUser) {
           try {
             const parsed = JSON.parse(storedUser);
-            if (parsed) {
+            if (parsed && isMounted) {
               console.log('[Layout] Found user in localStorage:', parsed.role);
               userData = parsed;
               setUser(parsed);
@@ -85,13 +87,20 @@ export default function DashboardLayout({
           }
         }
 
-        // 2. SELALU verifikasi ke server jika ada token untuk memastikan sesi valid
+        // 2. Verifikasi ke server jika ada token
         if (token) {
           console.log('[Layout] Verifying token with server...');
           try {
-            const res = await api.get('/me');
+            // Tambahkan timeout agar tidak hang selamanya jika server bermasalah
+            const mePromise = api.get('/me');
+            const timeoutPromise = new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Timeout')), 5000)
+            );
+
+            const res = await Promise.race([mePromise, timeoutPromise]) as any;
             const freshData = res.data.data;
-            if (freshData) {
+            
+            if (freshData && isMounted) {
               console.log('[Layout] Token verified. Role:', freshData.role);
               if (freshData.role === 'viewer' && freshData.pekerja?.id) {
                 freshData.pekerja_id = freshData.pekerja.id;
@@ -102,39 +111,40 @@ export default function DashboardLayout({
             }
           } catch (err: any) {
             console.error('[Layout] Auth verification failed:', err.message);
-            // Jika Unauthorized, hapus data lokal
-            if (err.response?.status === 401) {
-              console.warn('[Layout] Session expired (401). Clearing storage.');
+            if (err.response?.status === 401 || err.message === 'Timeout') {
+              console.warn('[Layout] Session invalid or timeout. Clearing state.');
               localStorage.removeItem('user');
               Cookies.remove('auth_token', { path: '/' });
               userData = null;
-              setUser(null);
+              if (isMounted) setUser(null);
             }
           }
         }
 
-        // 3. Evaluasi akhir: Jika tetap tidak ada user, arahkan ke login
-        if (!userData) {
-          console.log('[Layout] No user found. Redirecting to login...');
+        // 3. Evaluasi akhir
+        if (!userData && isMounted) {
+          console.log('[Layout] No user found. Redirecting...');
           if (pathname !== '/login' && pathname !== '/pendaftaran') {
-            router.push('/login');
+            router.replace('/login'); // Gunakan replace agar tidak menumpuk history
           }
-        } else {
-          // Redirect role viewer ke dashboard user jika nyasar ke admin
+        } else if (userData && isMounted) {
           if (userData.role === 'viewer' && !pathname.startsWith('/dashboard-user')) {
             console.log('[Layout] Redirecting viewer to user dashboard...');
-            router.push('/dashboard-user');
+            router.replace('/dashboard-user');
           }
         }
       } catch (criticalError) {
         console.error('[Layout] Critical auth error:', criticalError);
       } finally {
-        console.log('[Layout] Initialization complete. Mounting component.');
-        setMounted(true);
+        if (isMounted) {
+          console.log('[Layout] Initialization complete. Mounting component.');
+          setMounted(true);
+        }
       }
     };
 
     initUser();
+    return () => { isMounted = false; };
   }, [router, pathname]);
 
   // Click outside to close search dropdown
