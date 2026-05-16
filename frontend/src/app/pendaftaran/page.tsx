@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Bell, Globe, User, ShieldAlert, ArrowRight, ArrowLeft, Plus, UploadCloud, Save, CheckCircle, X, Activity, Info, Briefcase, HeartPulse, ClipboardList, Zap, Trash2, RefreshCw, Eye, EyeOff, Lock, Mail, ChevronDown, ChevronUp } from 'lucide-react';
+import { Bell, Globe, User, ShieldAlert, ArrowRight, ArrowLeft, Plus, UploadCloud, Save, CheckCircle, Check, X, Activity, Info, Briefcase, HeartPulse, ClipboardList, Zap, Trash2, RefreshCw, Eye, EyeOff, Lock, Mail, ChevronDown, ChevronUp } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -145,7 +145,8 @@ export default function PendaftaranPekerjaPage() {
     lokasi_proyek: [] as string[],
     riwayat_pemeriksaan: [] as any[],
     mutasi_jabatan: [] as { bagian: string; jabatan: string; tahun: string }[],
-    file_bukti: [] as File[]
+    file_bukti: [] as File[],
+    deskripsi_pajanan: '',
   });
 
   const [baseData, setBaseData] = useState({
@@ -438,6 +439,7 @@ export default function PendaftaranPekerjaPage() {
             jenis_apd_sendiri: pekerjaanSaatIni.jenis_apd_sendiri,
             lokasi_proyek: pekerjaanSaatIni.lokasi_proyek,
             mutasi_jabatan: pekerjaanSaatIni.mutasi_jabatan,
+            deskripsi_pajanan: pekerjaanSaatIni.deskripsi_pajanan,
           },
           riwayat_pemeriksaan: (pekerjaanSaatIni.riwayat_pemeriksaan || []).filter(
             (m: any) => m.tanggal_pemeriksaan && m.hasil_diagnosis
@@ -1230,7 +1232,7 @@ export default function PendaftaranPekerjaPage() {
                     <div className="space-y-4">
                       <Label className="text-sm font-bold text-slate-700">Jenis Pajanan Bahaya yang Pernah Dialami (Bisa Pilih Lebih dari Satu)</Label>
                       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                        {pajananOptions.map((opt) => {
+                        {pajananOptions.map((opt, idx) => {
                           const currentPajanan = pekerjaanSaatIni.jenis_pajanan ? pekerjaanSaatIni.jenis_pajanan.split(',').map((s: string) => s.trim()) : [];
                           const isChecked = currentPajanan.includes(opt.label);
                           return (
@@ -1248,11 +1250,11 @@ export default function PendaftaranPekerjaPage() {
                               }}
                             >
                               <div className="flex items-center gap-3 mb-2 w-full">
-                                <div className={`p-2 rounded-lg ${isChecked ? 'bg-blue-500 text-white' : 'bg-slate-100 text-slate-400'}`}>
-                                  <ShieldAlert className="h-4 w-4" />
+                                <div className={`h-8 w-8 rounded-lg flex items-center justify-center text-xs font-bold transition-all ${isChecked ? 'bg-blue-500 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                                  {idx + 1}
                                 </div>
                                 <span className={`text-xs font-bold ${isChecked ? 'text-blue-700' : 'text-slate-700'}`}>{opt.label}</span>
-                                {isChecked && <Check className="h-3 w-3 ml-auto text-blue-500" />}
+                                {isChecked && <Check className="h-4 w-4 ml-auto text-blue-500" />}
                               </div>
                               <p className={`text-[10px] leading-relaxed text-left font-medium ${isChecked ? 'text-blue-600/80' : 'text-slate-400'}`}>
                                 {opt.desc}
@@ -1263,7 +1265,17 @@ export default function PendaftaranPekerjaPage() {
                       </div>
                     </div>
 
-                    <div className="pt-6 border-t border-slate-100">
+                    <div className="pt-6 border-t border-slate-100 space-y-6">
+                      <div className="space-y-3">
+                        <Label className="text-sm font-bold text-slate-700">Ceritakan Detail Pajanan Bahaya (Opsional)</Label>
+                        <textarea 
+                          className="w-full min-h-[120px] p-4 rounded-xl border border-slate-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 outline-none transition-all text-sm text-slate-600 placeholder:text-slate-400 font-medium bg-slate-50/30"
+                          placeholder="Ceritakan lebih detail mengenai jenis bahaya yang Anda alami, kondisi lingkungan kerja, atau beban kerja harian Anda..."
+                          value={pekerjaanSaatIni.deskripsi_pajanan || ''}
+                          onChange={e => setPekerjaanSaatIni({ ...pekerjaanSaatIni, deskripsi_pajanan: e.target.value })}
+                        />
+                        <p className="text-[10px] text-slate-400 italic font-medium">Informasi ini membantu dokter okupasi dalam menganalisis risiko kesehatan Anda secara lebih akurat.</p>
+                      </div>
                       <div className="max-w-xs space-y-3">
                         <Label className="text-sm font-bold text-slate-700">Total Durasi Pajanan (Tahun)</Label>
                         <div className="relative">

@@ -312,24 +312,20 @@ export default function FormDetailMedis({ data, onChange }: FormDetailMedisProps
                     </div>
 
                     <div className="space-y-2">
-                      {m.tipe_lokasi === 'Klinik Perusahaan' && (
-                        <div className="animate-in fade-in slide-in-from-top-1 duration-300">
-                          <Label className="text-gray-600">Tanggung Jawab Oleh</Label>
-                          <Select 
-                            value={m.penanggung_jawab || ''} 
-                            onValueChange={v => updatePemeriksaan(idx, 'penanggung_jawab', v)}
-                          >
-                            <SelectTrigger className="bg-white border-gray-300 h-10">
-                              <SelectValue placeholder="Pilih Penanggung Jawab" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="Pribadi">Pribadi</SelectItem>
-                              <SelectItem value="Perusahaan">Perusahaan</SelectItem>
-                              <SelectItem value="BPJS">BPJS</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      )}
+                      <Label className="text-gray-600">Opsi Pembiayaan</Label>
+                      <Select 
+                        value={m.penanggung_jawab || ''} 
+                        onValueChange={v => updatePemeriksaan(idx, 'penanggung_jawab', v)}
+                      >
+                        <SelectTrigger className="bg-white border-gray-300 h-10">
+                          <SelectValue placeholder="Pilih Pembiayaan" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Mandiri">Mandiri</SelectItem>
+                          <SelectItem value="BPJS">BPJS</SelectItem>
+                          <SelectItem value="Perusahaan">Perusahaan</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
 
                     {/* Row 3: Jenis Pemeriksaan (Full Width) */}
