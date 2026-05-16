@@ -147,6 +147,8 @@ export default function PendaftaranPekerjaPage() {
     mutasi_jabatan: [] as { bagian: string; jabatan: string; tahun: string }[],
     file_bukti: [] as File[],
     deskripsi_pajanan: '',
+    training_k3: '',
+    ada_p2k3: '',
   });
 
   const [baseData, setBaseData] = useState({
@@ -441,6 +443,8 @@ export default function PendaftaranPekerjaPage() {
             lokasi_proyek: pekerjaanSaatIni.lokasi_proyek,
             mutasi_jabatan: pekerjaanSaatIni.mutasi_jabatan,
             deskripsi_pajanan: pekerjaanSaatIni.deskripsi_pajanan,
+            training_k3: pekerjaanSaatIni.training_k3,
+            ada_p2k3: pekerjaanSaatIni.ada_p2k3,
           },
           riwayat_pemeriksaan: (pekerjaanSaatIni.riwayat_pemeriksaan || []).filter(
             (m: any) => m.tanggal_pemeriksaan && m.hasil_diagnosis
@@ -1216,6 +1220,8 @@ export default function PendaftaranPekerjaPage() {
                                       </div>
                                     </div>
                                   )}
+                                </div>
+                              )}
                             </div>
                           ))}
                         </div>
@@ -1298,7 +1304,49 @@ export default function PendaftaranPekerjaPage() {
                         />
                         <p className="text-[10px] text-slate-400 italic font-medium">Informasi ini membantu dokter okupasi dalam menganalisis risiko kesehatan Anda secara lebih akurat.</p>
                       </div>
-                      <div className="max-w-xs space-y-3">
+
+                      {/* Pertanyaan K3 & P2K3 */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-6 border-t border-slate-100">
+                        <div className="space-y-3">
+                          <Label className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                            <Zap className="h-4 w-4 text-amber-500" /> Apakah Anda pernah mendapatkan Pelatihan/Training K3?
+                          </Label>
+                          <Select 
+                            value={pekerjaanSaatIni.training_k3 || ''} 
+                            onValueChange={v => setPekerjaanSaatIni({ ...pekerjaanSaatIni, training_k3: v })}
+                          >
+                            <SelectTrigger className="h-11 bg-white border-slate-200 rounded-xl focus:ring-blue-400">
+                              <SelectValue placeholder="Pilih Jawaban" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Pernah">Pernah (Sudah dilatih)</SelectItem>
+                              <SelectItem value="Belum Pernah">Belum Pernah</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-3">
+                          <Label className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                            <ShieldAlert className="h-4 w-4 text-[#0ea5e9]" /> Apakah ada P2K3 di tempat kerja Anda?
+                          </Label>
+                          <Select 
+                            value={pekerjaanSaatIni.ada_p2k3 || ''} 
+                            onValueChange={v => setPekerjaanSaatIni({ ...pekerjaanSaatIni, ada_p2k3: v })}
+                          >
+                            <SelectTrigger className="h-11 bg-white border-slate-200 rounded-xl focus:ring-blue-400">
+                              <SelectValue placeholder="Pilih Jawaban" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Ada">Ada (Aktif)</SelectItem>
+                              <SelectItem value="Tidak Ada">Tidak Ada</SelectItem>
+                              <SelectItem value="Tidak Tahu">Tidak Tahu</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <p className="text-[10px] text-slate-400 italic font-medium">P2K3 adalah Panitia Pembina Keselamatan dan Kesehatan Kerja.</p>
+                        </div>
+                      </div>
+
+                      <div className="max-w-xs space-y-3 pt-6 border-t border-slate-100">
                         <Label className="text-sm font-bold text-slate-700">Total Durasi Pajanan (Tahun)</Label>
                         <div className="relative">
                           <Input 
