@@ -204,6 +204,7 @@ export default function PendaftaranPekerjaPage() {
   );
 
   const [isRestored, setIsRestored] = useState(false);
+  const [skipRiwayat, setSkipRiwayat] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
@@ -911,28 +912,50 @@ export default function PendaftaranPekerjaPage() {
                 <div className="pt-4 border-t border-slate-100">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="flex items-center text-sm font-bold text-[#0ea5e9] uppercase tracking-wider">
-                      <Briefcase className="h-4 w-4 mr-2" /> Riwayat Pekerjaan
+                      <Briefcase className="h-4 w-4 mr-2" /> Riwayat Pekerjaan Sebelumnya
                     </h3>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="text-[#0ea5e9] hover:text-[#0284c7] hover:bg-blue-50 font-bold" 
-                      onClick={() => setRiwayatLalu([...riwayatLalu, emptyRiwayatItem()])}
-                    >
-                      <Plus className="h-4 w-4 mr-1" /> Tambah Riwayat
-                    </Button>
+                    {!skipRiwayat && (
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-[#0ea5e9] hover:text-[#0284c7] hover:bg-blue-50 font-bold" 
+                        onClick={() => setRiwayatLalu([...riwayatLalu, emptyRiwayatItem()])}
+                      >
+                        <Plus className="h-4 w-4 mr-1" /> Tambah Riwayat
+                      </Button>
+                    )}
                   </div>
 
-                  {riwayatLalu.length === 0 ? (
-                    <div className="p-8 border border-dashed border-slate-200 rounded-xl bg-slate-50/50 text-center flex flex-col items-center justify-center cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => setRiwayatLalu([emptyRiwayatItem()])}>
-                      <Plus className="h-8 w-8 text-slate-300 mb-2" />
-                      <p className="text-sm text-slate-400 font-medium">
-                        Belum ada riwayat pekerjaan ditambahkan. Klik tombol di atas atau bagian ini untuk menambah.
-                      </p>
+                  {/* Checkbox Skip Riwayat */}
+                  <div className={`flex items-center gap-3 mb-6 p-4 rounded-xl border transition-all ${skipRiwayat ? 'bg-blue-50 border-blue-200' : 'bg-slate-50 border-slate-100'}`}>
+                    <Checkbox 
+                      id="skip-riwayat" 
+                      checked={skipRiwayat} 
+                      onCheckedChange={(checked) => {
+                        setSkipRiwayat(!!checked);
+                        if (checked) setRiwayatLalu([]);
+                      }} 
+                    />
+                    <div className="grid gap-0.5">
+                      <Label htmlFor="skip-riwayat" className="text-sm font-bold text-slate-700 cursor-pointer">
+                        Saya belum pernah bekerja di perusahaan lain sebelumnya
+                      </Label>
+                      <p className="text-[10px] text-slate-500">Centang jika ini adalah pekerjaan pertama Anda atau Anda belum pernah pindah perusahaan.</p>
                     </div>
-                  ) : (
-                    <div className="space-y-6">
-                      {riwayatLalu.map((item, idx) => (
+                  </div>
+
+                  {!skipRiwayat && (
+                    <>
+                      {riwayatLalu.length === 0 ? (
+                        <div className="p-8 border border-dashed border-slate-200 rounded-xl bg-slate-50/50 text-center flex flex-col items-center justify-center cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => setRiwayatLalu([emptyRiwayatItem()])}>
+                          <Plus className="h-8 w-8 text-slate-300 mb-2" />
+                          <p className="text-sm text-slate-400 font-medium">
+                            Belum ada riwayat pekerjaan ditambahkan. Klik tombol di atas atau bagian ini untuk menambah.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="space-y-6">
+                          {riwayatLalu.map((item, idx) => (
                         <div key={idx} className="bg-white border border-slate-200 shadow-sm rounded-xl overflow-hidden">
                           {/* Header Card Pekerjaan */}
                           <div className="flex items-center justify-between px-5 py-3 bg-slate-50 border-b border-slate-200">
@@ -1193,14 +1216,13 @@ export default function PendaftaranPekerjaPage() {
                                       </div>
                                     </div>
                                   )}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
 
                 <div className="pt-4">
                   <Button className="w-full h-12 text-base bg-[#0ea5e9] hover:bg-[#0284c7]" onClick={handleLanjut}>
