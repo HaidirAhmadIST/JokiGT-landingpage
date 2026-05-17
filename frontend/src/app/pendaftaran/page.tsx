@@ -961,7 +961,7 @@ export default function PendaftaranPekerjaPage() {
                       <Label>Nama Perusahaan Tempat Bekerja Sekarang</Label>
                       <Select 
                         value={pekerjaanSaatIni.nama_perusahaan} 
-                        onValueChange={(v) => setPekerjaanSaatIni({ ...pekerjaanSaatIni, nama_perusahaan: v })}
+                        onValueChange={(v) => setPekerjaanSaatIni({ ...pekerjaanSaatIni, nama_perusahaan: v || '' })}
                       >
                         <SelectTrigger className="h-11">
                           <SelectValue placeholder="Cari atau Pilih Perusahaan" />
@@ -1033,7 +1033,7 @@ export default function PendaftaranPekerjaPage() {
                       <Label>Status Pekerjaan</Label>
                       <Select 
                         value={pekerjaanSaatIni.status_pekerjaan} 
-                        onValueChange={(v) => setPekerjaanSaatIni({ ...pekerjaanSaatIni, status_pekerjaan: v })}
+                        onValueChange={(v) => setPekerjaanSaatIni({ ...pekerjaanSaatIni, status_pekerjaan: v || '' })}
                       >
                         <SelectTrigger className="h-11">
                           <SelectValue placeholder="Pilih Status" />
@@ -1074,7 +1074,7 @@ export default function PendaftaranPekerjaPage() {
                       <Label>BPJS Ketenagakerjaan</Label>
                       <Select 
                         value={pekerjaanSaatIni.bpjs_bpu} 
-                        onValueChange={(v) => setPekerjaanSaatIni({ ...pekerjaanSaatIni, bpjs_bpu: v })}
+                        onValueChange={(v) => setPekerjaanSaatIni({ ...pekerjaanSaatIni, bpjs_bpu: v || '' })}
                       >
                         <SelectTrigger className="h-11">
                           <SelectValue placeholder="Pilih Jenis BPJS" />
