@@ -239,7 +239,7 @@ export default function AdvokasiBarChart() {
           </p>
         </div>
         <div className="flex items-center gap-3 shrink-0">
-          <Select value={hazardFilter} onValueChange={setHazardFilter}>
+          <Select value={hazardFilter} onValueChange={v => setHazardFilter(v || 'all')}>
             <SelectTrigger className="h-8 text-xs font-bold bg-white w-[140px] focus:ring-0 focus:ring-offset-0">
               <SelectValue placeholder="Pilih Hazard" />
             </SelectTrigger>

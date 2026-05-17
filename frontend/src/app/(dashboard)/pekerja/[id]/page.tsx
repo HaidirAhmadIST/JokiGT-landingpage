@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import {
   ArrowLeft, Printer, Pin, Mail, Phone, MapPin,
   Briefcase, ShieldAlert, CheckCircle2, Circle, Edit3,
-  Download, Image as ImageIcon, Activity, FileText, FileCheck, ClipboardList, HeartPulse, HardHat, Zap, Building2, User, RefreshCw, Plus, History as TenureIcon
+  Download, Image as ImageIcon, Activity, FileText, FileCheck, ClipboardList, HeartPulse, HardHat, Zap, Building2, User, RefreshCw, Plus, History as TenureIcon, Stethoscope
 } from 'lucide-react';
 import { format, differenceInYears, differenceInMonths, parseISO } from 'date-fns';
 import { id as localeID } from 'date-fns/locale';
@@ -586,6 +586,16 @@ export default function PekerjaDetailPage() {
                     ? 'PEKERJA LAPANGAN' 
                     : (currentJob?.bagian || currentJob?.jabatan || 'PEKERJA')}
                 </span>
+
+                {/* Status Keanggotaan Organisasi Badge */}
+                <span className={`px-3 py-1 rounded-md tracking-widest uppercase flex items-center ${
+                  data.anggota_organisasi 
+                    ? 'bg-emerald-100 text-emerald-700' 
+                    : 'bg-slate-100 text-slate-600'
+                }`}>
+                  <User className="h-2.5 w-2.5 mr-1" />
+                  {data.anggota_organisasi ? 'Anggota Organisasi' : 'Bukan Anggota'}
+                </span>
                 
                 {/* Hanya tampilkan status jika tidak sama dengan label pertama */}
                 {currentJob?.status_pekerjaan && currentJob?.status_pekerjaan !== currentJob?.bagian && currentJob?.status_pekerjaan !== currentJob?.jabatan && (
@@ -680,6 +690,28 @@ export default function PekerjaDetailPage() {
           {/* LEFT COLUMN (Wider) */}
           <div className="lg:col-span-8 space-y-6">
             
+            {/* Diagnosa Awal */}
+            <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6">
+               <h3 className="text-sm font-bold text-[#1e293b] flex items-center mb-6">
+                 <Stethoscope className="h-4 w-4 text-[#0ea5e9] mr-2" /> Diagnosa Awal
+               </h3>
+               
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
+                 <div>
+                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Keluhan Utama / Apa yang dialami</p>
+                   <p className="text-sm font-semibold text-slate-700 leading-relaxed whitespace-pre-wrap">
+                      {data.riwayat_medis?.keluhan_utama || 'Tidak ada keluhan utama yang tercatat'}
+                   </p>
+                 </div>
+                 <div>
+                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Diagnosa Dokter</p>
+                   <p className="text-sm font-semibold text-slate-700 leading-relaxed whitespace-pre-wrap">
+                      {data.riwayat_medis?.diagnosa_dokter || 'Tidak ada diagnosa dokter yang tercatat'}
+                   </p>
+                 </div>
+               </div>
+            </div>
+
             {/* Profil Medis Dasar (Baseline) */}
             <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6">
                <h3 className="text-sm font-bold text-[#1e293b] flex items-center mb-6">

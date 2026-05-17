@@ -15,12 +15,18 @@ use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\RegistrationController;
 use App\Http\Controllers\Api\RiwayatPekerjaController;
 use App\Http\Controllers\Api\DetailMedisController;
+use App\Http\Controllers\Api\GoogleAuthController;
+use App\Http\Controllers\Api\OtpController;
 
 
 // =========================================================================
 
 
 Route::post('/login', [AuthController::class, 'login']);
+Route::get('/auth/google/redirect', [GoogleAuthController::class, 'redirectToGoogle']);
+Route::get('/auth/google/callback', [GoogleAuthController::class, 'handleGoogleCallback']);
+Route::post('/auth/whatsapp/send-otp', [OtpController::class, 'sendOtp']);
+Route::post('/auth/whatsapp/verify-otp', [OtpController::class, 'verifyOtp']);
 Route::post('/register/complete', [RegistrationController::class, 'completeRegistration']);
 Route::post('/register', [AuthController::class, 'register']);
 Route::get('perusahaan', [PerusahaanController::class, 'index']);

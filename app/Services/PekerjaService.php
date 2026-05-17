@@ -49,14 +49,14 @@ class PekerjaService
                 'nama'     => $data['nama_lengkap'],
                 'whatsapp' => $data['whatsapp'] ?? $user->whatsapp,
                 'email'    => $data['email'] ?? $user->email,
-                'password' => Hash::make($data['password']),
+                'password' => isset($data['password']) ? Hash::make($data['password']) : $user->password,
             ]);
         } else {
             $user = User::create([
                 'nama'     => $data['nama_lengkap'],
                 'whatsapp' => $data['whatsapp'] ?? null,
                 'email'    => $data['email'] ?? null,
-                'password' => Hash::make($data['password']),
+                'password' => Hash::make($data['password'] ?? \Illuminate\Support\Str::random(16)),
                 'role'     => 'viewer',
             ]);
         }
@@ -89,6 +89,7 @@ class PekerjaService
             'jenis_kelamin'   => $data['jenis_kelamin'] ?? null,
             'whatsapp'        => $data['whatsapp'] ?? null,
             'domisili'        => $data['domisili'] ?? null,
+            'anggota_organisasi' => $data['anggota_organisasi'] ?? $data['is_anggota'] ?? false,
         ];
 
         if ($pekerja) {

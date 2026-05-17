@@ -26,7 +26,7 @@ class StorePekerjaRequest extends FormRequest
             // User Data
             'email' => ['nullable', 'required_without:whatsapp', 'string', 'email'],
             'whatsapp' => ['nullable', 'required_without:email', 'string'],
-            'password' => ['required', 'string', 'min:8'],
+            'password' => ['nullable', 'string', 'min:8'],
             
             // Pekerja Data
             'perusahaan_id' => [
@@ -41,10 +41,11 @@ class StorePekerjaRequest extends FormRequest
             'nama_lengkap' => ['required', 'string', 'max:255'],
             'status_kesehatan' => ['required', 'in:sehat,sehat_dengan_catatan,tidak_sehat'],
             'catatan_admin' => ['nullable', 'string'],
-            'tanggal_lahir' => ['nullable', 'date'],
             'jenis_kelamin' => ['nullable', 'in:L,P'],
             // whatsapp is already defined above
             'domisili' => ['nullable', 'string'],
+            'anggota_organisasi' => ['nullable', 'boolean'],
+            'is_anggota' => ['nullable', 'boolean'],
 
             // Riwayat Pekerja Data (Optional)
             'riwayat' => ['nullable', 'array'],
@@ -63,6 +64,8 @@ class StorePekerjaRequest extends FormRequest
 
             // Riwayat Medis (Baseline) Data (Optional)
             'riwayat_medis' => ['nullable', 'array'],
+            'riwayat_medis.keluhan_utama' => ['nullable', 'string'],
+            'riwayat_medis.diagnosa_dokter' => ['nullable', 'string'],
             'riwayat_medis.golongan_darah' => ['nullable', 'in:A,B,AB,O'],
             'riwayat_medis.rhesus' => ['nullable', 'in:+,-'],
             'riwayat_medis.riwayat_penyakit' => ['nullable', 'array'],

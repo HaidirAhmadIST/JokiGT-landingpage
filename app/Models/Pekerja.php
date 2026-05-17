@@ -35,6 +35,7 @@ class Pekerja extends Model
         'whatsapp',
         'domisili',
         'pas_foto',
+        'anggota_organisasi',
     ];
 
     // =========================================================================

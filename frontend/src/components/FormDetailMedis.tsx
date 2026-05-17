@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { HeartPulse } from 'lucide-react';
+import { HeartPulse, Stethoscope } from 'lucide-react';
 
 export interface RiwayatPemeriksaanItem {
   tanggal_pemeriksaan: string;
@@ -26,6 +26,8 @@ export interface RiwayatPemeriksaanItem {
 }
 
 export interface DataMedis {
+  keluhan_utama?: string;
+  diagnosa_dokter?: string;
   golongan_darah: string;
   riwayat_penyakit: string;
   alergi: string;
@@ -80,6 +82,51 @@ export default function FormDetailMedis({ data, onChange }: FormDetailMedisProps
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-500 mt-6">
       
+      {/* ---------------- BAGIAN 0: DIAGNOSA AWAL ---------------- */}
+      <Card className="border border-gray-200 shadow-sm rounded-xl overflow-hidden">
+        <CardHeader className="p-6 bg-gray-50 border-b border-gray-200">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-white border border-gray-200 shadow-sm rounded-lg flex items-center justify-center">
+              <Stethoscope className="w-6 h-6 text-blue-500" />
+            </div>
+            <div>
+              <CardTitle className="text-xl font-bold text-gray-900">Diagnosa Awal</CardTitle>
+              <CardDescription className="text-sm text-gray-500 mt-1">
+                Informasi keluhan utama yang dialami dan diagnosa medis (jika ada)
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        
+        <CardContent className="p-6 flex flex-col gap-5">
+          <div className="space-y-2">
+            <Label htmlFor="keluhan_utama" className="text-gray-700 font-medium">
+              Keluhan Utama / Apa yang Anda alami? <span className="text-red-500 ml-0.5">*</span>
+            </Label>
+            <Textarea
+              id="keluhan_utama"
+              placeholder="Ceritakan dengan singkat keluhan kesehatan atau gejala yang Anda alami..."
+              className="bg-white border-gray-300 focus-visible:ring-1 focus-visible:ring-blue-500 focus-visible:border-blue-500 min-h-[100px] resize-none"
+              value={data.keluhan_utama || ''}
+              onChange={e => onChange('keluhan_utama', e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="diagnosa_dokter" className="text-gray-700 font-medium">
+              Diagnosa Dokter <span className="text-gray-400 text-xs italic font-normal">(Opsional)</span>
+            </Label>
+            <Textarea
+              id="diagnosa_dokter"
+              placeholder="Tuliskan diagnosa dari dokter jika Anda sudah pernah memeriksakan diri..."
+              className="bg-white border-gray-300 focus-visible:ring-1 focus-visible:ring-blue-500 focus-visible:border-blue-500 min-h-[100px] resize-none"
+              value={data.diagnosa_dokter || ''}
+              onChange={e => onChange('diagnosa_dokter', e.target.value)}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
       {/* ---------------- BAGIAN 1: DETAIL KESEHATAN BASELINE & GEJALA ---------------- */}
       <Card className="border border-gray-200 shadow-sm rounded-xl overflow-hidden">
         <CardHeader className="p-6 bg-gray-50 border-b border-gray-200">
@@ -439,17 +486,8 @@ export default function FormDetailMedis({ data, onChange }: FormDetailMedisProps
                       )}
                     </div>
 
-                    {/* Bottom: Diagnosis & Rekomendasi (Full Width) */}
+                    {/* Bottom: Rekomendasi (Full Width) */}
                     <div className="space-y-4 md:col-span-2 border-t border-gray-100 pt-4 mt-2">
-                      <div className="space-y-2">
-                        <Label className="text-gray-600">Hasil Diagnosis</Label>
-                        <Textarea 
-                          placeholder="Ringkasan hasil diagnosis dari dokter..." 
-                          value={m.hasil_diagnosis || ''} 
-                          onChange={e => updatePemeriksaan(idx, 'hasil_diagnosis', e.target.value)}
-                          className="bg-white border-gray-300 focus:ring-1 focus:ring-blue-500 min-h-[80px] resize-none"
-                        />
-                      </div>
                       <div className="space-y-2">
                         <Label className="text-gray-600">Rekomendasi / Saran Dokter</Label>
                         <Textarea 

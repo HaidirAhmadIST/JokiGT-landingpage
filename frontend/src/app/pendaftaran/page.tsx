@@ -155,7 +155,6 @@ export default function PendaftaranPekerjaPage() {
     nik: '',
     nama_lengkap: '',
     email: '',
-    password: '',
     perusahaan_id: '',
     status_kesehatan: 'sehat',
     catatan_admin: '',
@@ -163,9 +162,12 @@ export default function PendaftaranPekerjaPage() {
     jenis_kelamin: '',
     whatsapp: '',
     domisili: '',
+    is_anggota: null as boolean | null,
   });
 
   const [detailMedisData, setDetailMedisData] = useState<DataMedis>({
+    keluhan_utama: '',
+    diagnosa_dokter: '',
     golongan_darah: '',
     riwayat_penyakit: '',
     alergi: '',
@@ -173,8 +175,6 @@ export default function PendaftaranPekerjaPage() {
     obat_rutin: '',
     riwayat_pemeriksaan: []
   });
-
-  const [showPassword, setShowPassword] = useState(false);
 
   const handleDetailMedisChange = (field: keyof DataMedis, value: any) => {
     setDetailMedisData(prev => ({ ...prev, [field]: value }));
@@ -207,6 +207,59 @@ export default function PendaftaranPekerjaPage() {
 
   const [isRestored, setIsRestored] = useState(false);
   const [skipRiwayat, setSkipRiwayat] = useState(false);
+
+  // WhatsApp OTP Verification States for Registration Page
+  const [isWaVerified, setIsWaVerified] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
+
+  const sendRegOtpCode = async () => {
+    if (!baseData.whatsapp) {
+      toast.error("Nomor WhatsApp wajib diisi!");
+      return;
+    }
+    setSendingOtp(true);
+    try {
+      const formattedWa = baseData.whatsapp.trim().replace(/[^0-9]/g, '');
+      const res = await api.post('/auth/whatsapp/send-otp', { whatsapp: formattedWa });
+      if (res.data.status === 'success') {
+        toast.success(res.data.message);
+        setOtpSent(true);
+        if (res.data.data?.debug_otp) {
+          console.log("Local Dev OTP Code:", res.data.data.debug_otp);
+          toast.info(`[DEV MODE] OTP Code: ${res.data.data.debug_otp} (Lihat console log)`, { duration: 10000 });
+        }
+      } else {
+        toast.error(res.data.message || "Gagal mengirim OTP.");
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Gagal mengirim OTP. Pastikan nomor WhatsApp Anda aktif.");
+    } finally {
+      setSendingOtp(false);
+    }
+  };
+
+  const verifyRegOtpCode = async () => {
+    if (!otpCode || otpCode.length !== 6) {
+      toast.error("Kode verifikasi harus tepat 6 digit!");
+      return;
+    }
+    setVerifyingOtp(true);
+    try {
+      const formattedWa = baseData.whatsapp.trim().replace(/[^0-9]/g, '');
+      const res = await api.post('/auth/whatsapp/verify-otp', { whatsapp: formattedWa, otp: otpCode });
+      if (res.data.status === 'success') {
+        toast.success("Nomor WhatsApp berhasil diverifikasi!");
+        setIsWaVerified(true);
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Kode verifikasi salah atau kedaluwarsa.");
+    } finally {
+      setVerifyingOtp(false);
+    }
+  };
 
   useEffect(() => {
     setIsMounted(true);
@@ -245,23 +298,32 @@ export default function PendaftaranPekerjaPage() {
           return map[s] ?? 'sehat';
         };
 
-        if (parsed.riwayatLalu) {
+        if (parsed.riwayatLalu && Array.isArray(parsed.riwayatLalu)) {
           setRiwayatLalu(parsed.riwayatLalu.map((r: any) => ({
             ...r,
             file_bukti: [],
             riwayat_pemeriksaan: (r.riwayat_pemeriksaan || []).map((m: any) => ({
               ...m,
               file_hasil: [],
-              status_kesehatan: normalizeStatus(m.status_kesehatan)
+              status_kesehatan: normalizeStatus(m?.status_kesehatan)
             }))
           })));
         }
-        if (parsed.apdData) setApdData(parsed.apdData);
-        if (parsed.advokasiData) {
+        
+        if (parsed.apdData && Array.isArray(parsed.apdData)) {
+          const isValidApd = parsed.apdData.every((item: any) => item && typeof item === 'object' && 'name' in item);
+          if (isValidApd) {
+            setApdData(parsed.apdData);
+          } else {
+            console.warn("Stale or invalid apdData format in localStorage, keeping default apdData.");
+          }
+        }
+        
+        if (parsed.advokasiData && Array.isArray(parsed.advokasiData)) {
           setAdvokasiData(parsed.advokasiData.map((d: any) => ({
             ...d,
             file: null,
-            status: d.status || 'Tidak',
+            status: d?.status || 'Tidak',
           })));
         }
 
@@ -308,7 +370,44 @@ export default function PendaftaranPekerjaPage() {
     fetchPerusahaan();
   }, []);
 
-  const handleLanjut = () => setStep(step + 1);
+  const handleLanjut = () => {
+    if (step === 1) {
+      if (!baseData.nama_lengkap) {
+        toast.error("Nama Lengkap wajib diisi!");
+        scrollToField('nama_lengkap', 1);
+        return;
+      }
+      if (!baseData.nik) {
+        toast.error("Nomor Kartu Pegawai wajib diisi!");
+        scrollToField('nik', 1);
+        return;
+      }
+      if (baseData.is_anggota === null) {
+        toast.error("Silakan tentukan status keanggotaan organisasi Anda!");
+        scrollToField('is-anggota-selector', 1);
+        return;
+      }
+      if (baseData.is_anggota === false) {
+        if (!baseData.whatsapp) {
+          toast.error("Nomor WhatsApp wajib diisi!");
+          scrollToField('whatsapp', 1);
+          return;
+        }
+        if (!isWaVerified) {
+          toast.error("Nomor WhatsApp Anda belum diverifikasi! Silakan verifikasi OTP terlebih dahulu.");
+          scrollToField('otp-verification-section', 1);
+          return;
+        }
+      } else {
+        if (!baseData.email) {
+          toast.error("Alamat Email wajib diisi untuk Anggota!");
+          scrollToField('email', 1);
+          return;
+        }
+      }
+    }
+    setStep(step + 1);
+  };
   const handleKembali = () => setStep(step - 1);
 
   const scrollToField = (fieldId: string, targetStep: number) => {
@@ -367,9 +466,10 @@ export default function PendaftaranPekerjaPage() {
       scrollToField('whatsapp', 1);
       return;
     }
-    if (!baseData.password || baseData.password.length < 8) {
-      toast.error("Password minimal 8 karakter!");
-      scrollToField('password', 1);
+
+    if (!detailMedisData.keluhan_utama) {
+      toast.error("Keluhan Utama wajib diisi!");
+      scrollToField('keluhan_utama', 3);
       return;
     }
     setLoading(true);
@@ -447,7 +547,7 @@ export default function PendaftaranPekerjaPage() {
             ada_p2k3: pekerjaanSaatIni.ada_p2k3,
           },
           riwayat_pemeriksaan: (pekerjaanSaatIni.riwayat_pemeriksaan || []).filter(
-            (m: any) => m.tanggal_pemeriksaan && m.hasil_diagnosis
+            (m: any) => m.tanggal_pemeriksaan
           ).map((m: any) => ({
             tanggal_pemeriksaan: m.tanggal_pemeriksaan,
             tempat_pemeriksaan: m.tempat_pemeriksaan,
@@ -456,7 +556,7 @@ export default function PendaftaranPekerjaPage() {
             jenis_pemeriksaan_lainnya: m.jenis_pemeriksaan_lainnya,
             dokter: m.dokter,
             status_kesehatan: m.status_kesehatan,
-            hasil_diagnosis: m.hasil_diagnosis,
+            hasil_diagnosis: m.hasil_diagnosis || '',
             rekomendasi: m.rekomendasi,
             pendamping: m.pendamping,
           })),
@@ -476,7 +576,7 @@ export default function PendaftaranPekerjaPage() {
             jenis_apd_sendiri: r.informal_data?.jenis_apd_sendiri || '',
           },
           riwayat_pemeriksaan: (r.riwayat_pemeriksaan || []).filter(
-            (m: any) => m.tanggal_pemeriksaan && m.hasil_diagnosis
+            (m: any) => m.tanggal_pemeriksaan
           ).map((m: any) => ({
             tanggal_pemeriksaan: m.tanggal_pemeriksaan,
             tempat_pemeriksaan: m.tempat_pemeriksaan,
@@ -484,7 +584,7 @@ export default function PendaftaranPekerjaPage() {
             jenis_pemeriksaan: m.jenis_pemeriksaan,
             dokter: m.dokter,
             status_kesehatan: m.status_kesehatan,
-            hasil_diagnosis: m.hasil_diagnosis,
+            hasil_diagnosis: m.hasil_diagnosis || '',
             rekomendasi: m.rekomendasi,
             pendamping: m.pendamping,
           })),
@@ -493,7 +593,7 @@ export default function PendaftaranPekerjaPage() {
 
       // Pemeriksaan Mandiri (tidak terikat pekerjaan tertentu)
       const validMedisRecords = detailMedisData.riwayat_pemeriksaan
-        .filter((m: any) => m.tanggal_pemeriksaan && m.hasil_diagnosis);
+        .filter((m: any) => m.tanggal_pemeriksaan);
 
       const finalMedis = validMedisRecords.map((m: any) => ({
         tanggal_pemeriksaan: m.tanggal_pemeriksaan,
@@ -503,14 +603,16 @@ export default function PendaftaranPekerjaPage() {
         jenis_pemeriksaan_lainnya: m.jenis_pemeriksaan_lainnya,
         dokter: m.dokter,
         status_kesehatan: m.status_kesehatan,
-        hasil_diagnosis: m.hasil_diagnosis,
+        hasil_diagnosis: m.hasil_diagnosis || '',
         rekomendasi: m.rekomendasi,
         pendamping: m.pendamping,
       }));
 
       // Mapped Riwayat Medis (Baseline)
-      const hasRiwayatMedis = detailMedisData.golongan_darah || detailMedisData.riwayat_penyakit || detailMedisData.alergi || detailMedisData.obat_rutin || detailMedisData.riwayat_operasi;
+      const hasRiwayatMedis = detailMedisData.golongan_darah || detailMedisData.riwayat_penyakit || detailMedisData.alergi || detailMedisData.obat_rutin || detailMedisData.riwayat_operasi || detailMedisData.keluhan_utama || detailMedisData.diagnosa_dokter;
       const finalRiwayatMedis = hasRiwayatMedis ? {
+        keluhan_utama: detailMedisData.keluhan_utama || '',
+        diagnosa_dokter: detailMedisData.diagnosa_dokter || '',
         golongan_darah: detailMedisData.golongan_darah,
         riwayat_penyakit: detailMedisData.riwayat_penyakit ? detailMedisData.riwayat_penyakit.split(',').map((s: string) => s.trim()).filter(Boolean) : [],
         alergi: detailMedisData.alergi ? detailMedisData.alergi.split(',').map((s: string) => s.trim()).filter(Boolean) : [],
@@ -837,67 +939,157 @@ export default function PendaftaranPekerjaPage() {
                     <ShieldAlert className="h-4 w-4 mr-2" /> Kontak & Alamat
                   </h3>
                   <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="whatsapp" className="flex items-center gap-1.5">
-                        Nomor Telepon
-                        <span className="text-[10px] text-slate-400 font-normal italic">(Opsional jika Email diisi)</span>
-                      </Label>
-                      <div className="flex">
-                        <span className="inline-flex items-center px-4 rounded-l-lg border border-r-0 border-slate-200 bg-slate-50 text-slate-500 sm:text-sm">
-                          +62
-                        </span>
-                        <Input 
-                          id="whatsapp" 
-                          placeholder="8123456xxx" 
-                          className={cn("rounded-l-none h-11", duplicateWarning.whatsapp ? 'border-amber-400 bg-amber-50/30' : '', lockedWhatsapp ? "bg-slate-50 cursor-not-allowed" : "")}
-                          readOnly={!!lockedWhatsapp}
-                          value={baseData.whatsapp} 
-                          onChange={e => setBaseData({ ...baseData, whatsapp: e.target.value.replace(/\D/g, '') })} 
-                          onBlur={(e) => checkDuplicate('whatsapp', e.target.value)}
-                        />
-                      </div>
-                      {duplicateWarning.whatsapp && <p className="text-[10px] text-amber-600 font-medium">{duplicateWarning.whatsapp}</p>}
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="email" className="flex items-center gap-1.5">
-                        Alamat Email
-                        <span className="text-[10px] text-slate-400 font-normal italic">(Opsional jika No. Telp diisi)</span>
-                      </Label>
-                      <div className="relative">
-                        <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                        <Input
-                          id="email"
-                          type="email"
-                          placeholder="contoh@email.com"
-                          className="h-11 pl-10"
-                          value={baseData.email}
-                          onChange={e => setBaseData({ ...baseData, email: e.target.value })}
-                        />
+                    {/* Opsi Keanggotaan Organisasi */}
+                    <div id="is-anggota-selector" className="space-y-2.5">
+                      <Label className="text-slate-700 font-bold">Apakah Anda Anggota Organisasi? <span className="text-red-500">*</span></Label>
+                      <div className="grid grid-cols-2 gap-3 p-1.5 bg-slate-50 rounded-xl border border-slate-200/60">
+                        <button 
+                          type="button"
+                          onClick={() => {
+                            setBaseData(prev => ({ ...prev, is_anggota: true }));
+                            setIsWaVerified(false);
+                            setOtpSent(false);
+                          }}
+                          className={`py-2.5 px-3 text-xs font-bold rounded-lg transition-all ${
+                            baseData.is_anggota === true 
+                              ? "bg-[#0ea5e9] text-white shadow-sm border border-[#0ea5e9]/50" 
+                              : "text-slate-500 hover:text-slate-800 bg-white border border-slate-200"
+                          }`}
+                        >
+                          Ya, Anggota
+                        </button>
+                        <button 
+                          type="button"
+                          onClick={() => {
+                            setBaseData(prev => ({ ...prev, is_anggota: false }));
+                            setIsWaVerified(false);
+                            setOtpSent(false);
+                          }}
+                          className={`py-2.5 px-3 text-xs font-bold rounded-lg transition-all ${
+                            baseData.is_anggota === false 
+                              ? "bg-[#0ea5e9] text-white shadow-sm border border-[#0ea5e9]/50" 
+                              : "text-slate-500 hover:text-slate-800 bg-white border border-slate-200"
+                          }`}
+                        >
+                          Bukan Anggota
+                        </button>
                       </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="password">Password (Minimal 8 Karakter)</Label>
-                      <div className="relative">
-                        <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                        <Input
-                          id="password"
-                          type={showPassword ? "text" : "password"}
-                          placeholder="Buat password untuk masuk"
-                          className="h-11 pl-10 pr-10"
-                          value={baseData.password}
-                          onChange={e => setBaseData({ ...baseData, password: e.target.value })}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
-                        >
-                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </button>
+                    {/* Jika Opsi Keanggotaan Terpilih */}
+                    {baseData.is_anggota !== null && (
+                      <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                        {/* WA Input */}
+                        <div className="space-y-2">
+                          <Label htmlFor="whatsapp" className="flex items-center gap-1.5 font-semibold">
+                            Nomor WhatsApp Aktif <span className="text-red-500">*</span>
+                          </Label>
+                          <div className="flex">
+                            <span className="inline-flex items-center px-4 rounded-l-lg border border-r-0 border-slate-200 bg-slate-50 text-slate-500 sm:text-sm font-bold">
+                              +62
+                            </span>
+                            <Input 
+                              id="whatsapp" 
+                              placeholder="8123456xxx" 
+                              className={cn("rounded-l-none h-11", duplicateWarning.whatsapp ? 'border-amber-400 bg-amber-50/30' : '', lockedWhatsapp ? "bg-slate-50 cursor-not-allowed" : "")}
+                              readOnly={!!lockedWhatsapp || isWaVerified}
+                              value={baseData.whatsapp} 
+                              onChange={e => setBaseData({ ...baseData, whatsapp: e.target.value.replace(/\D/g, '') })} 
+                              onBlur={(e) => checkDuplicate('whatsapp', e.target.value)}
+                            />
+                          </div>
+                          {duplicateWarning.whatsapp && <p className="text-[10px] text-amber-600 font-medium">{duplicateWarning.whatsapp}</p>}
+                        </div>
+
+                        {/* Jika BUKAN Anggota -> Wajib Verifikasi WA OTP */}
+                        {baseData.is_anggota === false && (
+                          <div id="otp-verification-section" className="space-y-4 p-4 bg-slate-50 rounded-xl border border-slate-200/60 mt-2">
+                            <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                              Silakan kirim dan verifikasi nomor WhatsApp Anda untuk melanjutkan pengisian formulir.
+                            </p>
+                            {!isWaVerified ? (
+                              <div className="space-y-3.5">
+                                {!otpSent ? (
+                                  <Button 
+                                    type="button"
+                                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-11 rounded-lg transition-all" 
+                                    onClick={sendRegOtpCode}
+                                    disabled={sendingOtp || !baseData.whatsapp}
+                                  >
+                                    {sendingOtp ? 'Mengirim Kode...' : 'Kirim Kode Verifikasi WhatsApp'}
+                                  </Button>
+                                ) : (
+                                  <div className="space-y-3 animate-in zoom-in-95 duration-200">
+                                    <div className="space-y-2">
+                                      <Label htmlFor="reg_otp" className="text-xs font-bold text-slate-600">Masukkan Kode Verifikasi 6-Digit</Label>
+                                      <Input 
+                                        id="reg_otp" 
+                                        type="text"
+                                        maxLength={6} 
+                                        className="text-center text-xl font-black tracking-[0.3em] h-11"
+                                        placeholder="******" 
+                                        value={otpCode}
+                                        onChange={(e) => setOtpCode(e.target.value.replace(/[^0-9]/g, ''))}
+                                      />
+                                      <p className="text-[10px] text-slate-400 mt-1">Kode OTP telah dikirimkan ke nomor +62{baseData.whatsapp}</p>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                      <Button 
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => {
+                                          setOtpSent(false);
+                                          setOtpCode('');
+                                        }}
+                                        className="rounded-lg font-bold"
+                                      >
+                                        Ubah Nomor
+                                      </Button>
+                                      <Button 
+                                        type="button"
+                                        className="bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-lg" 
+                                        onClick={verifyRegOtpCode}
+                                        disabled={verifyingOtp}
+                                      >
+                                        {verifyingOtp ? 'Memverifikasi...' : 'Verifikasi OTP'}
+                                      </Button>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2 text-emerald-600 bg-emerald-50 border border-emerald-200 p-3.5 rounded-lg text-xs font-bold animate-in fade-in duration-300">
+                                <span className="w-5 h-5 flex items-center justify-center bg-emerald-500 text-white rounded-full text-[10px] font-black">✓</span>
+                                Nomor WhatsApp Berhasil Diverifikasi!
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Jika ANGGOTA -> Tampilkan Email & Password */}
+                        {baseData.is_anggota === true && (
+                          <div className="space-y-4 pt-1 animate-in fade-in slide-in-from-top-2 duration-300">
+                            <div className="space-y-2">
+                              <Label htmlFor="email" className="flex items-center gap-1.5 font-semibold">
+                                Alamat Email <span className="text-red-500">*</span>
+                              </Label>
+                              <div className="relative">
+                                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                <Input
+                                  id="email"
+                                  type="email"
+                                  placeholder="contoh@email.com"
+                                  className="h-11 pl-10"
+                                  value={baseData.email}
+                                  onChange={e => setBaseData({ ...baseData, email: e.target.value })}
+                                />
+                              </div>
+                            </div>
+
+                          </div>
+                        )}
                       </div>
-                      <p className="text-[10px] text-slate-400 font-medium ml-1">Gunakan password ini untuk masuk ke dashboard nanti.</p>
-                    </div>
+                    )}
                     <div className="space-y-2">
                       <Label>Provinsi Domisili</Label>
                       <Select 
@@ -1183,53 +1375,9 @@ export default function PendaftaranPekerjaPage() {
                                   />
                                 </div>
                               </div>
-
-
-
-
-
-                                  {item.status_pekerjaan !== 'Outsourcing' && (
-                                    <div className="pt-4 border-t border-slate-50 space-y-3">
-                                      <Label className="text-slate-800 font-bold text-sm">Upload Paklaring / Dokumen Verifikasi <span className="text-slate-400 font-normal italic ml-1">(Opsional)</span></Label>
-                                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                                        <div className="relative group w-full sm:w-auto">
-                                          <input 
-                                            type="file" 
-                                            multiple
-                                            onChange={(e) => {
-                                              const files = e.target.files ? Array.from(e.target.files) : [];
-                                              const newR = [...riwayatLalu];
-                                              newR[idx].file_bukti = files;
-                                              setRiwayatLalu(newR);
-                                            }}
-                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                                          />
-                                          <Button variant="outline" size="sm" className="w-full sm:w-[250px] h-14 flex items-center justify-center border-dashed border-slate-300 hover:border-blue-400 hover:bg-blue-50 transition-all gap-3">
-                                            <div className="bg-blue-100 p-2 rounded-full">
-                                              <UploadCloud className="h-4 w-4 text-blue-600" /> 
-                                            </div>
-                                            <div className="flex flex-col items-start">
-                                              <span className="text-[11px] font-bold text-slate-700">
-                                                {item.file_bukti?.length > 0 ? 'Update Berkas Bukti' : 'Pilih Berkas Bukti'}
-                                              </span>
-                                              <span className="text-[9px] text-slate-500 font-normal">Format: PDF, JPG (Multiple)</span>
-                                            </div>
-                                          </Button>
-                                        </div>
-                                        {item.file_bukti?.length > 0 && (
-                                          <div className="flex items-center gap-2 bg-blue-50 border border-blue-100 px-3 py-2 rounded-lg">
-                                            <div className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
-                                            <p className="text-[10px] text-blue-700 font-bold truncate max-w-[300px]">
-                                              {item.file_bukti.length} file dipilih: {item.file_bukti.map((f: any) => f.name).join(', ')}
-                                            </p>
-                                          </div>
-                                        )}
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </div>
+                            </div>
+                          )}
+                        </div>
                         ))}
                       </div>
                     )}
@@ -1319,7 +1467,7 @@ export default function PendaftaranPekerjaPage() {
                           <Label className="text-sm font-bold text-slate-700">Pernah Ikut Pelatihan K3?</Label>
                           <Select 
                             value={pekerjaanSaatIni.training_k3 || ''} 
-                            onValueChange={v => setPekerjaanSaatIni({ ...pekerjaanSaatIni, training_k3: v })}
+                            onValueChange={v => setPekerjaanSaatIni({ ...pekerjaanSaatIni, training_k3: v || '' })}
                           >
                             <SelectTrigger className="h-12 bg-white border-slate-200">
                               <SelectValue placeholder="Pilih Jawaban" />
@@ -1336,7 +1484,7 @@ export default function PendaftaranPekerjaPage() {
                           <Label className="text-sm font-bold text-slate-700">Ada P2K3 di Perusahaan?</Label>
                           <Select 
                             value={pekerjaanSaatIni.ada_p2k3 || ''} 
-                            onValueChange={v => setPekerjaanSaatIni({ ...pekerjaanSaatIni, ada_p2k3: v })}
+                            onValueChange={v => setPekerjaanSaatIni({ ...pekerjaanSaatIni, ada_p2k3: v || '' })}
                           >
                             <SelectTrigger className="h-12 bg-white border-slate-200">
                               <SelectValue placeholder="Pilih Jawaban" />

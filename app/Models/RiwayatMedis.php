@@ -22,6 +22,8 @@ class RiwayatMedis extends Model
      */
     protected $fillable = [
         'pekerja_id',
+        'keluhan_utama',
+        'diagnosa_dokter',
         'golongan_darah',
         'rhesus',
         'riwayat_penyakit',

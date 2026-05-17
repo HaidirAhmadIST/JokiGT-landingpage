@@ -175,6 +175,8 @@ export interface StatusAdvokasi {
 export interface RiwayatMedis {
   id: number;
   pekerja_id: number;
+  keluhan_utama?: string;
+  diagnosa_dokter?: string;
   golongan_darah?: string;
   rhesus?: string;
   riwayat_penyakit?: string | string[];
@@ -208,6 +210,7 @@ export interface PekerjaFull {
   catatan_admin?: string;
   user_id?: number;
   perusahaan_id?: number;
+  anggota_organisasi?: boolean;
   user?: User;
   perusahaan?: Perusahaan;
   riwayat_pekerja?: RiwayatPekerja[];
@@ -234,6 +237,7 @@ export interface Pekerja {
   status_kesehatan?: HealthStatus;
   user_id?: number;
   perusahaan_id?: number;
+  anggota_organisasi?: boolean;
   perusahaan?: Perusahaan;
   riwayat_pekerja?: RiwayatPekerja[];
   current_job?: RiwayatPekerja;
