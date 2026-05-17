@@ -35,7 +35,7 @@ export default function PekerjaWizard({ onSuccess, onCancel, perusahaanList }: P
 
   // Step 2: Riwayat Pekerjaan (Array)
   const [riwayat, setRiwayat] = useState<any[]>([
-    { nama_perusahaan: '', deskripsi_usaha: '', bagian: '', deskripsi_pekerjaan: '', tgl_masuk: '', tgl_keluar: '', file_bukti: [] as File[] }
+    { nama_perusahaan: '', deskripsi_usaha: '', bagian: '', deskripsi_pekerjaan: '', tgl_masuk: '', tgl_keluar: '' }
   ]);
 
   // Step 3: Detail Medis (Array)
@@ -68,21 +68,6 @@ export default function PekerjaWizard({ onSuccess, onCancel, perusahaanList }: P
 
 
 
-      // Handle Riwayat Files (Multiple -> PDF)
-      const savedRiwayat = response.data.data.riwayat_pekerja || [];
-      for (let i = 0; i < filteredRiwayat.length; i++) {
-        if (filteredRiwayat[i].file_bukti && filteredRiwayat[i].file_bukti.length > 0) {
-          const riwayatId = savedRiwayat[i]?.id;
-          if (riwayatId) {
-            const formData = new FormData();
-            const files = (filteredRiwayat[i].file_bukti || []).filter((file: any) => file instanceof File);
-            files.forEach((file: File) => {
-              formData.append('file_bukti[]', file);
-            });
-            uploadPromises.push(api.post(`/riwayat-pekerja/${riwayatId}/file`, formData));
-          }
-        }
-      }
 
       // Handle Medis Files (Multiple -> PDF)
       const savedMedis = response.data.data.detail_medis || [];
@@ -192,7 +177,7 @@ export default function PekerjaWizard({ onSuccess, onCancel, perusahaanList }: P
           <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
             <div className="flex items-center justify-between border-b pb-2">
               <h3 className="font-semibold text-lg">Riwayat Pekerjaan</h3>
-              <Button size="sm" variant="outline" onClick={() => setRiwayat([...riwayat, { nama_perusahaan: '', deskripsi_usaha: '', bagian: '', deskripsi_pekerjaan: '', tgl_masuk: '', tgl_keluar: '', file_bukti: [] }])}>
+              <Button size="sm" variant="outline" onClick={() => setRiwayat([...riwayat, { nama_perusahaan: '', deskripsi_usaha: '', bagian: '', deskripsi_pekerjaan: '', tgl_masuk: '', tgl_keluar: '' }])}>
                 + Tambah Riwayat
               </Button>
             </div>
@@ -241,20 +226,6 @@ export default function PekerjaWizard({ onSuccess, onCancel, perusahaanList }: P
                     <Input value={item.deskripsi_pekerjaan} onChange={(e) => {
                       const newR = [...riwayat]; newR[idx].deskripsi_pekerjaan = e.target.value; setRiwayat(newR);
                     }} placeholder="Jelaskan tugas dan tanggung jawab utama Anda..." />
-                  </div>
-                  <div className="space-y-2 col-span-2">
-                    <Label>Unggah Bukti Paklaring / Kontrak (Multiple)</Label>
-                    <div className="flex items-center gap-3">
-                      <Input type="file" multiple onChange={(e) => {
-                        const files = e.target.files ? Array.from(e.target.files) : [];
-                        const newR = [...riwayat]; newR[idx].file_bukti = files; setRiwayat(newR);
-                      }} />
-                      {item.file_bukti?.length > 0 && (
-                        <span className="text-[10px] text-slate-500 italic truncate max-w-[150px]">
-                          {item.file_bukti.length} file dipilih
-                        </span>
-                      )}
-                    </div>
                   </div>
                 </CardContent>
               </Card>

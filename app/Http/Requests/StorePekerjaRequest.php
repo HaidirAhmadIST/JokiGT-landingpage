@@ -51,7 +51,9 @@ class StorePekerjaRequest extends FormRequest
             'riwayat' => ['nullable', 'array'],
             'riwayat.*.status_pekerjaan' => ['nullable', 'string'],
             'riwayat.*.nama_perusahaan' => ['required', 'string'],
+            'riwayat.*.alamat_perusahaan' => ['nullable', 'string'],
             'riwayat.*.nama_agen_penyalur' => ['nullable', 'string'],
+            'riwayat.*.alamat_agen_penyalur' => ['nullable', 'string'],
             'riwayat.*.deskripsi_usaha' => ['nullable', 'string'],
             'riwayat.*.bagian' => ['nullable', 'string'],
             'riwayat.*.jabatan' => ['nullable', 'string'],
@@ -77,7 +79,7 @@ class StorePekerjaRequest extends FormRequest
             'medis' => ['nullable', 'array'],
             'medis.*.tanggal_pemeriksaan' => ['required', 'date', 'before_or_equal:today'],
             'medis.*.tempat_pemeriksaan' => ['required', 'string', 'max:255'],
-            'medis.*.jenis_pemeriksaan' => ['required', 'in:Rawat Jalan,Rawat Inap,MCU,MCU Berkala,Rontgen Thorax,Spirometri,Audiometri,Tes Darah/Lab,IGD,Lainnya'],
+            'medis.*.jenis_pemeriksaan' => ['required'], // Allowing more flexible clinical terms as requested by client
             'medis.*.dokter' => ['required', 'string', 'max:255'],
             'medis.*.status_kesehatan' => ['required', 'in:sehat,sehat_dengan_catatan,tidak_sehat'],
             'medis.*.hasil_diagnosis' => ['required', 'string'],

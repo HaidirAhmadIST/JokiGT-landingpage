@@ -186,7 +186,7 @@ class PekerjaService
         return [
             'tgl_pemeriksaan'    => $m['tanggal_pemeriksaan'] ?? null,
             'tempat_pemeriksa'   => $m['tempat_pemeriksaan']  ?? null,
-            'jenis_pemeriksa'    => $m['jenis_pemeriksaan']   ?? null,
+            'jenis_pemeriksa'    => isset($m['jenis_pemeriksaan']) ? (is_array($m['jenis_pemeriksaan']) ? implode(', ', $m['jenis_pemeriksaan']) : $m['jenis_pemeriksaan']) : null,
             'dokter_pemeriksa'   => $m['dokter']              ?? null,
             'status_kesehatan'   => $m['status_kesehatan']    ?? 'sehat',
             'hasil_diagnosis'    => $m['hasil_diagnosis']     ?? null,
