@@ -119,6 +119,13 @@ export function useUserDashboard() {
   });
   const [medisLoading, setMedisLoading] = useState(false);
 
+  // ── Inbox / Persetujuan State ──────────────────────────────────────────────
+  const [requests, setRequests] = useState<any[]>([]);
+  const [pendingCount, setPendingCount] = useState(0);
+  const [isInboxOpen, setIsInboxOpen] = useState(false);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [activeTab, setActiveTab] = useState<'PENDING' | 'APPROVED' | 'REJECTED' | 'ALL'>('ALL');
+
   // ── Data Fetching ──────────────────────────────────────────────────────────
 
   /**
@@ -164,6 +171,56 @@ export function useUserDashboard() {
   }, [selectedRiwayatId, router]);
 
   useEffect(() => { fetchData(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const fetchRequests = useCallback(async () => {
+    try {
+      const res = await api.get('/approval-requests');
+      if (res.data.status === 'success') {
+        const rawData = res.data.data;
+        const sorted = rawData.sort((a: any, b: any) => 
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+        setRequests(sorted);
+
+        // Count new updates since last opened
+        const lastOpened = localStorage.getItem(`lastInboxOpened_viewer_${user?.id}`);
+        const lastOpenedTime = lastOpened ? new Date(lastOpened).getTime() : 0;
+        
+        // For customer, any update (completed/in progress) is a notification
+        const unread = sorted.filter((r: any) => 
+          new Date(r.updated_at).getTime() > lastOpenedTime
+        );
+        setPendingCount(unread.length);
+      }
+    } catch (err) {
+      console.warn("Failed to fetch customer requests", err);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (user?.role === 'viewer') {
+      fetchRequests();
+      const interval = setInterval(fetchRequests, 15000);
+      return () => clearInterval(interval);
+    }
+  }, [user, fetchRequests]);
+
+  useEffect(() => {
+    if (isInboxOpen && user) {
+      localStorage.setItem(`lastInboxOpened_viewer_${user.id}`, new Date().toISOString());
+      setPendingCount(0);
+    }
+  }, [isInboxOpen, user]);
+
+  // Auto-select request matching query param or default to first
+  useEffect(() => {
+    if (requests.length > 0 && !selectedId) {
+      const matches = requests.filter(r => activeTab === 'ALL' || r.status === activeTab);
+      if (matches.length > 0) {
+        setSelectedId(matches[0].id);
+      }
+    }
+  }, [requests, activeTab, selectedId]);
 
   // ── Handlers ───────────────────────────────────────────────────────────────
 
@@ -417,6 +474,8 @@ export function useUserDashboard() {
     // Medis
     isMedisModalOpen, setIsMedisModalOpen, medisForm, setMedisForm,
     medisLoading, handleUpdateMedis, openMedisAdd, openMedisEdit,
+    // Inbox / Persetujuan
+    requests, pendingCount, isInboxOpen, setIsInboxOpen, selectedId, setSelectedId, activeTab, setActiveTab, fetchRequests,
     // Utils
     logout, handleViewFile, fetchData,
   };

@@ -20,9 +20,40 @@ class ApprovalRequestController extends Controller
         
         $query = ApprovalRequest::with(['requester', 'responder'])->latest();
         
-        // If they are not Superadmin (admin role), only return their own requests
-        if ($user->role !== 'admin') {
+        // Role-based filtering
+        if ($user->role === 'petugas') {
             $query->where('requester_id', $user->id);
+        } elseif ($user->role === 'viewer') {
+            $pekerjaId = $user->pekerja()->value('id');
+            if (!$pekerjaId) {
+                return response()->json([
+                    'status' => 'success',
+                    'data' => [],
+                ]);
+            }
+
+            $query->where(function($q) use ($pekerjaId) {
+                // Pekerja
+                $q->where(function($sub) use ($pekerjaId) {
+                    $sub->where('model_type', 'Pekerja')
+                        ->where('model_id', $pekerjaId);
+                })
+                // StatusAdvokasi
+                ->orWhere(function($sub) use ($pekerjaId) {
+                    $sub->where('model_type', 'StatusAdvokasi')
+                        ->whereIn('model_id', \App\Models\StatusAdvokasi::where('pekerja_id', $pekerjaId)->pluck('id'));
+                })
+                // DetailMedis
+                ->orWhere(function($sub) use ($pekerjaId) {
+                    $sub->where('model_type', 'DetailMedis')
+                        ->whereIn('model_id', \App\Models\DetailMedis::where('pekerja_id', $pekerjaId)->pluck('id'));
+                })
+                // RiwayatPekerja
+                ->orWhere(function($sub) use ($pekerjaId) {
+                    $sub->where('model_type', 'RiwayatPekerja')
+                        ->whereIn('model_id', \App\Models\RiwayatPekerja::where('pekerja_id', $pekerjaId)->pluck('id'));
+                });
+            });
         }
         
         return response()->json([
