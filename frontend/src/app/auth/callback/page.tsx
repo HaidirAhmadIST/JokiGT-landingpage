@@ -36,6 +36,11 @@ export default function AuthCallbackPage() {
         // 3. Smart Routing: Check if viewer profile has a worker record
         const checkWorkerProfile = async () => {
           try {
+            if (user.role === 'admin' || user.role === 'petugas') {
+              window.location.href = '/dashboard-admin';
+              return;
+            }
+
             // Fetch current authenticated user details
             const meRes = await api.get('/me');
             const pekerja = meRes.data.data?.pekerja;

@@ -17,11 +17,13 @@ import {
 import { Activity, HardHat, Gavel, Coins, Stethoscope, FileText, Scale, HeartPulse, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useRole } from '@/hooks/useRole';
 
 interface SheetEditKasusProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   data: {
+    id?: number;
     pekerja_id: number;
     jenis_kasus?: string;
     tahap?: string;
@@ -53,6 +55,8 @@ interface AdminAdvokasiFormData {
 }
 
 export default function SheetEditKasus({ open, onOpenChange, data, onSuccess }: SheetEditKasusProps) {
+  const { user, isSuperAdmin } = useRole();
+  const [changeReason, setChangeReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<AdminAdvokasiFormData>({
     jenis_kasus: '',
@@ -105,6 +109,37 @@ export default function SheetEditKasus({ open, onOpenChange, data, onSuccess }: 
     e.preventDefault();
     if (!formData.jenis_kasus) {
       toast.error('Mohon pilih jenis kasus.');
+      return;
+    }
+
+    if (!isSuperAdmin) {
+      if (!changeReason.trim()) {
+        toast.error('Alasan mengubah data wajib diisi sebagai Admin Staff.');
+        return;
+      }
+      setIsSubmitting(true);
+      try {
+        await api.post('/approval-requests', {
+          action: 'UPDATE',
+          model_type: 'StatusAdvokasi',
+          model_id: data.id,
+          payload: formData,
+          reason: changeReason
+        });
+        
+        toast.success('Permintaan perubahan detail kasus telah dikirim ke Superadmin untuk persetujuan.');
+        setChangeReason('');
+        onSuccess();
+        onOpenChange(false);
+      } catch (err: unknown) {
+        let errorMessage = 'Gagal mengajukan permohonan perubahan.';
+        if (axios.isAxiosError(err)) {
+          errorMessage = err.response?.data?.message || errorMessage;
+        }
+        toast.error(errorMessage);
+      } finally {
+        setIsSubmitting(false);
+      }
       return;
     }
 
@@ -295,6 +330,28 @@ export default function SheetEditKasus({ open, onOpenChange, data, onSuccess }: 
                 />
               </div>
             </div>
+
+            {/* Section 04: Approval Request (Only for Admin Staff) */}
+            {!isSuperAdmin && (
+              <div className="space-y-4 pt-4 border-t border-slate-100">
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-amber-500 text-white text-[10px] font-bold">!</span>
+                  <h3 className="text-xs font-bold text-amber-600 uppercase tracking-widest">Pengajuan Persetujuan</h3>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-slate-600 uppercase">Alasan Mengubah Data (Wajib)</Label>
+                  <Textarea 
+                    placeholder="Berikan penjelasan mengapa Anda ingin mengubah detail kasus ini kepada Superadmin..." 
+                    className="min-h-[80px] bg-amber-50/20 border-amber-200 focus-visible:ring-amber-500 rounded-xl"
+                    value={changeReason} 
+                    onChange={(e) => setChangeReason(e.target.value)} 
+                  />
+                  <p className="text-[10px] text-slate-400 font-semibold leading-relaxed">
+                    Sebagai Admin Staff, Anda memerlukan persetujuan dari Superadmin untuk memodifikasi detail kasus advokasi ini.
+                  </p>
+                </div>
+              </div>
+            )}
           </form>
         </div>
 

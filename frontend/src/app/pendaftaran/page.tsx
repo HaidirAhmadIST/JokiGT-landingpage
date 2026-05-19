@@ -380,6 +380,8 @@ export default function PendaftaranPekerjaPage() {
   }, []);
 
   const handleLanjut = () => {
+    // TEMPORARILY DISABLED VALIDATION BEFORE ENTERING STEP 2 (PEMETAAN BAHAYA/RESIKO)
+    /*
     if (step === 1) {
       if (!baseData.nama_lengkap) {
         toast.error("Nama Lengkap wajib diisi!");
@@ -415,6 +417,7 @@ export default function PendaftaranPekerjaPage() {
         }
       }
     }
+    */
     setStep(step + 1);
   };
   const handleKembali = () => setStep(step - 1);

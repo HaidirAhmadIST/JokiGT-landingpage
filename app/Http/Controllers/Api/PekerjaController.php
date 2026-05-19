@@ -124,12 +124,9 @@ class PekerjaController extends Controller
 
             // Cek keamanan: NIK tidak boleh diklaim oleh user lain
             $existingPekerja = Pekerja::where('nik', $request->nik)->first();
-            if ($existingPekerja
-                && $existingPekerja->user_id
-                && $request->user()?->role === 'viewer'
-            ) {
+            if ($existingPekerja && $existingPekerja->user_id) {
                 $newUser = User::where('whatsapp', $request->whatsapp)->first();
-                if ($newUser && $existingPekerja->user_id !== $newUser->id) {
+                if (!$newUser || $existingPekerja->user_id !== $newUser->id) {
                     return response()->json([
                         'status'  => 'error',
                         'message' => 'NIK ini sudah terdaftar dengan akun lain. Hubungi admin jika ini kesalahan.',

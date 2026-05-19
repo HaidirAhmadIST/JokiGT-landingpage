@@ -47,6 +47,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/profile/foto', [AuthController::class, 'uploadFoto']);
     Route::post('/logout', [AuthController::class, 'logout']);
 
+    // Approval Requests
+    Route::get('approval-requests', [\App\Http\Controllers\Api\ApprovalRequestController::class, 'index']);
+    Route::post('approval-requests', [\App\Http\Controllers\Api\ApprovalRequestController::class, 'store']);
+    Route::post('approval-requests/{id}/respond', [\App\Http\Controllers\Api\ApprovalRequestController::class, 'respond'])->middleware('role:admin');
+
     // Dashboard
     // Route::get('dashboard/stats', [DashboardController::class, 'stats']); // Moved to public routes
 

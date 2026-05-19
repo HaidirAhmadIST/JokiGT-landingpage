@@ -29,7 +29,7 @@ import { Pagination } from '@/components/ui/Pagination';
 export default function PekerjaPage() {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
-  const { isSuperAdmin, isStaffOrAbove, loading: roleLoading } = useRole();
+  const { user, isSuperAdmin, isStaffOrAbove, loading: roleLoading } = useRole();
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -47,6 +47,8 @@ export default function PekerjaPage() {
   // Delete Dialog State
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [deleteReason, setDeleteReason] = useState('');
+  const [requestingDeleteApproval, setRequestingDeleteApproval] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -133,6 +135,33 @@ export default function PekerjaPage() {
 
   const handleDelete = async () => {
     if (!deleteId) return;
+
+    if (!isSuperAdmin) {
+      if (!deleteReason.trim()) {
+        toast.error('Mohon tuliskan alasan penghapusan.');
+        return;
+      }
+      setRequestingDeleteApproval(true);
+      try {
+        await api.post('/approval-requests', {
+          action: 'DELETE',
+          model_type: 'Pekerja',
+          model_id: deleteId,
+          reason: deleteReason
+        });
+        
+        toast.success('Permintaan penghapusan pekerja telah dikirim ke Superadmin untuk persetujuan.');
+        setIsDeleteDialogOpen(false);
+        setDeleteId(null);
+        setDeleteReason('');
+      } catch (err: any) {
+        toast.error(err.response?.data?.message || 'Gagal mengirim permintaan persetujuan.');
+      } finally {
+        setRequestingDeleteApproval(false);
+      }
+      return;
+    }
+
     try {
       await api.delete(`/pekerja/${deleteId}`);
       toast.success('Pekerja dihapus secara permanen');
@@ -499,25 +528,49 @@ export default function PekerjaPage() {
       </Sheet>
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent className="rounded-2xl border-none shadow-2xl">
+        <AlertDialogContent className="rounded-2xl border-none shadow-2xl bg-white">
           <AlertDialogHeader>
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-rose-50 mb-2">
               <Trash2 className="h-7 w-7 text-rose-500" />
             </div>
-            <AlertDialogTitle className="text-xl font-black text-slate-900 text-center">Hapus Data Pekerja?</AlertDialogTitle>
+            <AlertDialogTitle className="text-xl font-black text-slate-900 text-center">
+              {isSuperAdmin ? 'Hapus Data Pekerja?' : 'Ajukan Penghapusan Pekerja?'}
+            </AlertDialogTitle>
             <AlertDialogDescription className="text-slate-500 text-center text-sm px-2">
-              Tindakan ini <span className="text-rose-600 font-bold">tidak dapat dibatalkan</span>. Semua riwayat kesehatan dan pajanan pekerja ini akan dihapus permanen dari sistem.
+              {isSuperAdmin 
+                ? 'Tindakan ini tidak dapat dibatalkan. Semua riwayat kesehatan dan pajanan pekerja ini akan dihapus permanen dari sistem.'
+                : 'Sebagai Admin Staff, Anda memerlukan persetujuan Superadmin untuk menghapus data. Harap berikan alasan Anda di bawah ini.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
+
+          {!isSuperAdmin && (
+            <div className="py-2 space-y-1.5 text-left">
+              <Label className="text-xs font-bold text-slate-600 uppercase tracking-wide">Alasan Penghapusan</Label>
+              <Input
+                placeholder="Tuliskan alasan mengapa data ini perlu dihapus..."
+                value={deleteReason}
+                onChange={(e) => setDeleteReason(e.target.value)}
+                className="h-11 rounded-xl bg-slate-50 border-slate-200 text-slate-800 text-sm focus-visible:ring-rose-500 focus-visible:border-rose-500"
+              />
+            </div>
+          )}
+
           <AlertDialogFooter className="sm:justify-center gap-3 mt-4">
-            <AlertDialogCancel className="rounded-xl border-slate-200 text-slate-500 font-bold hover:bg-slate-50 px-6">
+            <AlertDialogCancel 
+              onClick={() => { setDeleteReason(''); setDeleteId(null); }}
+              className="rounded-xl border-slate-200 text-slate-500 font-bold hover:bg-slate-50 px-6"
+            >
               Batalkan
             </AlertDialogCancel>
             <AlertDialogAction 
-              onClick={handleDelete}
+              onClick={(e) => {
+                e.preventDefault();
+                handleDelete();
+              }}
+              disabled={requestingDeleteApproval}
               className="rounded-xl bg-rose-600 text-white font-bold hover:bg-rose-700 shadow-lg shadow-rose-200 border-none px-6"
             >
-              Ya, Hapus Permanen
+              {requestingDeleteApproval ? 'Mengirim...' : isSuperAdmin ? 'Ya, Hapus Permanen' : 'Kirim Pengajuan'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

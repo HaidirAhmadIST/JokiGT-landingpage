@@ -52,6 +52,12 @@ export default function LoginPage() {
       if (response.data.status === 'success') {
         const { token, user } = response.data.data;
         
+        if (user.role === 'admin') {
+          toast.error('Akun Superadmin tidak diizinkan masuk dari sini. Silakan gunakan link khusus Superadmin.');
+          setLoading(false);
+          return;
+        }
+
         // Store auth info
         Cookies.set('auth_token', token, { expires: 7, path: '/' });
         localStorage.setItem('user', JSON.stringify(user));
@@ -130,6 +136,12 @@ export default function LoginPage() {
       if (res.data.status === 'success') {
         const { token, user } = res.data.data;
         
+        if (user.role === 'admin') {
+          toast.error('Akun Superadmin tidak diizinkan masuk dari sini. Silakan gunakan link khusus Superadmin.');
+          setVerifyingOtp(false);
+          return;
+        }
+
         // Store auth info
         Cookies.set('auth_token', token, { expires: 7, path: '/' });
         localStorage.setItem('user', JSON.stringify(user));

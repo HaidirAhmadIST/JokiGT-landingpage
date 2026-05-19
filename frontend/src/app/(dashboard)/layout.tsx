@@ -32,8 +32,11 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
-
-import { FileText } from 'lucide-react';
+import { FileText, Mail, MailOpen, Inbox, CheckCircle, XCircle, Clock, ShieldAlert } from 'lucide-react';
+import { toast } from 'sonner';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { cn } from '@/lib/utils';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard-admin', icon: LayoutDashboard },
@@ -54,6 +57,189 @@ export default function DashboardLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [mounted, setMounted] = useState(false);
+
+  // Approval Inbox and Notification states
+  const [requests, setRequests] = useState<any[]>([]);
+  const [pendingCount, setPendingCount] = useState(0);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [activeTab, setActiveTab] = useState<'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED'>('PENDING');
+  const [isInboxOpen, setIsInboxOpen] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [isRejectOpen, setIsRejectOpen] = useState(false);
+  const [submittingResponse, setSubmittingResponse] = useState(false);
+
+  const fetchRequests = async () => {
+    try {
+      const res = await api.get('/approval-requests');
+      if (res.data.status === 'success') {
+        let rawData = res.data.data;
+        
+        // Filter: Staff only sees their own requests, Admin sees all
+        if (user?.role === 'petugas') {
+          rawData = rawData.filter((r: any) => r.requester_id === user.id);
+        }
+
+        const sorted = rawData.sort((a: any, b: any) => 
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+        setRequests(sorted);
+        
+        // Count for notification badge
+        if (user?.role === 'admin') {
+          const pending = sorted.filter((r: any) => r.status === 'PENDING');
+          setPendingCount(pending.length);
+        } else if (user?.role === 'petugas') {
+          const lastOpened = localStorage.getItem(`lastInboxOpened_${user.id}`);
+          const lastOpenedTime = lastOpened ? new Date(lastOpened).getTime() : 0;
+          
+          const newResolved = sorted.filter((r: any) => 
+            r.status !== 'PENDING' && 
+            new Date(r.updated_at).getTime() > lastOpenedTime
+          );
+          setPendingCount(newResolved.length);
+        }
+      }
+    } catch (err) {
+      console.warn("Failed to fetch requests", err);
+    }
+  };
+
+  useEffect(() => {
+    if (user?.role === 'admin' || user?.role === 'petugas') {
+      fetchRequests();
+      
+      const interval = setInterval(fetchRequests, 15000);
+      return () => clearInterval(interval);
+    }
+  }, [user]);
+
+  const handleApprove = async (id: number) => {
+    setSubmittingResponse(true);
+    try {
+      const res = await api.post(`/approval-requests/${id}/respond`, {
+        status: 'APPROVED'
+      });
+      if (res.data.status === 'success') {
+        toast.success('Permintaan disetujui dan tindakan berhasil dijalankan.');
+        fetchRequests();
+        router.refresh();
+        if (typeof window !== 'undefined') {
+          window.location.reload();
+        }
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Gagal menyetujui permintaan.');
+    } finally {
+      setSubmittingResponse(false);
+    }
+  };
+
+  const handleRejectSubmit = async () => {
+    if (!rejectionReason.trim()) {
+      toast.error('Alasan penolakan wajib diisi.');
+      return;
+    }
+    if (!selectedId) return;
+
+    setSubmittingResponse(true);
+    try {
+      const res = await api.post(`/approval-requests/${selectedId}/respond`, {
+        status: 'REJECTED',
+        rejection_reason: rejectionReason
+      });
+      if (res.data.status === 'success') {
+        toast.success('Permintaan berhasil ditolak.');
+        setIsRejectOpen(false);
+        setRejectionReason('');
+        fetchRequests();
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Gagal menolak permintaan.');
+    } finally {
+      setSubmittingResponse(false);
+    }
+  };
+
+  const selectedRequest = requests.find(req => req.id === selectedId);
+
+  // Auto-select request matching query param if provided
+  useEffect(() => {
+    if (typeof window !== 'undefined' && requests.length > 0) {
+      const params = new URLSearchParams(window.location.search);
+      const urlId = params.get('id');
+      if (urlId) {
+        setSelectedId(Number(urlId));
+        setActiveTab('ALL');
+        setIsInboxOpen(true);
+      } else if (!selectedId) {
+        // Default select first item matching activeTab if no selection
+        const matches = requests.filter(r => activeTab === 'ALL' || r.status === activeTab);
+        if (matches.length > 0) {
+          setSelectedId(matches[0].id);
+        }
+      }
+    }
+  }, [requests]);
+
+  // Clear notification badge count when inbox is opened
+  useEffect(() => {
+    if (isInboxOpen && user) {
+      localStorage.setItem(`lastInboxOpened_${user.id}`, new Date().toISOString());
+      if (user.role === 'petugas') {
+        setPendingCount(0);
+      }
+    }
+  }, [isInboxOpen, user]);
+
+  const getActionBadge = (action: string) => {
+    switch (action) {
+      case 'CREATE':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[9px] font-black uppercase bg-emerald-50 text-emerald-700 border border-emerald-100">
+            Tambah
+          </span>
+        );
+      case 'UPDATE':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[9px] font-black uppercase bg-blue-50 text-blue-700 border border-blue-100">
+            Ubah
+          </span>
+        );
+      case 'DELETE':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[9px] font-black uppercase bg-rose-50 text-rose-700 border border-rose-100">
+            Hapus
+          </span>
+        );
+      default:
+        return null;
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'PENDING':
+        return (
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[8px] font-black uppercase bg-amber-50 text-amber-600 border border-amber-100">
+            Pending
+          </span>
+        );
+      case 'APPROVED':
+        return (
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[8px] font-black uppercase bg-emerald-50 text-emerald-600 border border-emerald-100">
+            Disetujui
+          </span>
+        );
+      case 'REJECTED':
+        return (
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[8px] font-black uppercase bg-rose-50 text-rose-600 border border-rose-100">
+            Ditolak
+          </span>
+        );
+      default:
+        return null;
+    }
+  };
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
@@ -83,7 +269,7 @@ export default function DashboardLayout({
               setUser(parsed);
             }
           } catch (e) {
-            console.error('[Layout] Failed to parse stored user', e);
+            console.warn('[Layout] Failed to parse stored user', e);
           }
         }
 
@@ -110,7 +296,7 @@ export default function DashboardLayout({
               localStorage.setItem('user', JSON.stringify(freshData));
             }
           } catch (err: any) {
-            console.error('[Layout] Auth verification failed:', err.message);
+            console.warn('[Layout] Auth verification failed:', err.message);
             if (err.response?.status === 401 || err.message === 'Timeout') {
               console.warn('[Layout] Session invalid or timeout. Clearing state.');
               localStorage.removeItem('user');
@@ -389,6 +575,21 @@ export default function DashboardLayout({
 
         {/* Right Actions */}
         <div className="flex items-center gap-x-5 shrink-0">
+          {/* Email/Inbox Icon for Admin & Staff */}
+          {(user?.role === 'admin' || user?.role === 'petugas') && (
+            <button
+              onClick={() => setIsInboxOpen(true)}
+              className="relative h-9 w-9 flex items-center justify-center rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-800 transition-all outline-none border-none cursor-pointer"
+            >
+              <Mail className="h-[18px] w-[18px]" />
+              {pendingCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[9px] font-bold text-white ring-2 ring-white animate-bounce">
+                  {pendingCount}
+                </span>
+              )}
+            </button>
+          )}
+
           <DropdownMenu>
             <DropdownMenuTrigger 
               className="h-9 w-9 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center font-bold text-sm border border-orange-100 outline-none hover:ring-2 hover:ring-orange-200 hover:ring-offset-1 transition-all shadow-sm cursor-pointer overflow-hidden"
@@ -507,6 +708,330 @@ export default function DashboardLayout({
             {children}
           </div>
         </main>
+
+        {/* FLOATING ACTION KOTAK MASUK (EMAIL BOX OVERLAY) */}
+        <Dialog open={isInboxOpen} onOpenChange={setIsInboxOpen}>
+          <DialogContent className="sm:max-w-7xl sm:w-[92vw] sm:h-[86vh] bg-white rounded-3xl border border-slate-100 shadow-2xl overflow-hidden p-0 flex flex-col backdrop-blur-md">
+            
+            {/* Native Window Titlebar */}
+            <div className="px-6 py-4.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="h-8 w-8 rounded-lg bg-[#0ea5e9]/10 text-[#0ea5e9] flex items-center justify-center">
+                  <Inbox className="h-4.5 w-4.5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-extrabold text-slate-800 tracking-tight">Kotak Masuk Persetujuan</h3>
+                  <p className="text-[10px] text-slate-400 font-medium">
+                    {user?.role === 'admin' 
+                      ? 'Kelola dan eksekusi permohonan modifikasi data secara real-time.' 
+                      : 'Pantau status pengajuan persetujuan modifikasi data Anda.'}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={cn(
+                  "px-2 py-0.5 rounded-full text-[9px] font-bold",
+                  user?.role === 'admin' ? "bg-rose-100 text-rose-700" : "bg-sky-100 text-sky-700"
+                )}>
+                  {user?.role === 'admin' ? `${pendingCount} Tertunda` : `${pendingCount} Pembaruan`}
+                </span>
+              </div>
+            </div>
+
+            {/* Content Area - Double Pane */}
+            <div className="flex-1 flex overflow-hidden min-h-0">
+              
+              {/* Left Pane - List of Messages */}
+              <div className="w-80 border-r border-slate-100 flex flex-col shrink-0 bg-white">
+                {/* Search / Filter tabs */}
+                <div className="grid grid-cols-4 p-2 bg-slate-50 border-b border-slate-100 shrink-0">
+                  {(['PENDING', 'APPROVED', 'REJECTED', 'ALL'] as const).map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => {
+                        setActiveTab(tab);
+                        const matches = requests.filter(r => tab === 'ALL' || r.status === tab);
+                        if (matches.length > 0) {
+                          setSelectedId(matches[0].id);
+                        } else {
+                          setSelectedId(null);
+                        }
+                      }}
+                      className={cn(
+                        "py-1.5 text-[9px] font-black rounded-lg transition-all cursor-pointer",
+                        activeTab === tab
+                          ? "bg-white text-slate-800 shadow-sm border border-slate-200/50"
+                          : "text-slate-400 hover:text-slate-700"
+                      )}
+                    >
+                      {tab === 'PENDING' ? 'Pending' : tab === 'APPROVED' ? 'Setuju' : tab === 'REJECTED' ? 'Tolak' : 'Semua'}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Inbox Scroll Area */}
+                <div className="flex-1 overflow-y-auto divide-y divide-slate-50">
+                  {requests.filter(r => activeTab === 'ALL' || r.status === activeTab).length === 0 ? (
+                    <div className="p-8 text-center text-slate-400">
+                      <MailOpen className="h-8 w-8 mx-auto mb-2 text-slate-200" />
+                      <p className="text-xs font-bold uppercase tracking-wider">Inbox Kosong</p>
+                      <p className="text-[10px] text-slate-400 mt-1">Tidak ada permohonan.</p>
+                    </div>
+                  ) : (
+                    requests
+                      .filter(r => activeTab === 'ALL' || r.status === activeTab)
+                      .map((req: any) => (
+                        <button
+                          key={req.id}
+                          onClick={() => setSelectedId(req.id)}
+                          className={cn(
+                            "w-full p-4 flex flex-col gap-2 hover:bg-slate-50 transition-all text-left border-l-4 border-b border-slate-50 last:border-b-0 cursor-pointer",
+                            selectedId === req.id 
+                              ? "bg-sky-50/40 border-l-[#0ea5e9]" 
+                              : "border-l-transparent"
+                          )}
+                        >
+                          <div className="flex justify-between items-center">
+                            <span className="text-[9px] font-extrabold text-[#0284c7] uppercase">
+                              REQ-{req.id.toString().padStart(4, '0')}
+                            </span>
+                            <span className="text-[9px] text-slate-400 font-medium">
+                              {new Date(req.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+                            </span>
+                          </div>
+
+                          <p className="text-xs font-extrabold text-slate-800 line-clamp-1">
+                            {req.requester?.nama || 'Admin Staff'} meminta {req.action === 'DELETE' ? 'Penghapusan' : req.action === 'UPDATE' ? 'Perubahan' : 'Penambahan'}
+                          </p>
+
+                          <p className="text-[10px] text-slate-400 line-clamp-2 leading-relaxed">
+                            {req.reason}
+                          </p>
+
+                          <div className="flex justify-between items-center pt-1 mt-1 shrink-0">
+                            {getActionBadge(req.action)}
+                            {getStatusBadge(req.status)}
+                          </div>
+                        </button>
+                      ))
+                  )}
+                </div>
+              </div>
+
+              {/* Right Pane - Message Details */}
+              <div className="flex-1 flex flex-col bg-slate-50/30 overflow-hidden">
+                {selectedRequest ? (
+                  <div className="flex-1 flex flex-col overflow-hidden">
+                    
+                    {/* Detail Header */}
+                    <div className="p-6 border-b border-slate-100 flex justify-between items-start shrink-0 bg-white">
+                      <div className="flex gap-3">
+                        <div className="h-10 w-10 rounded-lg bg-sky-100 text-[#0284c7] flex items-center justify-center shrink-0">
+                          <UserIcon className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-xs font-extrabold text-slate-800">
+                              {selectedRequest.requester?.nama || 'Admin Staff'}
+                            </h3>
+                            <span className="px-2 py-0.5 bg-slate-100 text-slate-500 rounded text-[8px] font-bold uppercase tracking-wider">
+                              Staff
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-slate-400 font-medium mt-0.5">
+                            {selectedRequest.requester?.email} • {new Date(selectedRequest.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })} • {new Date(selectedRequest.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col items-end gap-1.5 shrink-0">
+                        <span className="text-[10px] font-black text-slate-400">
+                          ID: REQ-{selectedRequest.id.toString().padStart(4, '0')}
+                        </span>
+                        <div className="flex gap-2">
+                          {getActionBadge(selectedRequest.action)}
+                          {getStatusBadge(selectedRequest.status)}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Detail Body Scroll Area */}
+                    <div className="flex-1 p-6 overflow-y-auto space-y-6">
+                      
+                      {/* 1. Alasan Permohonan */}
+                      <div className="space-y-2">
+                        <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest">ALASAN TINDAKAN</h4>
+                        <div className="bg-[#f0f9ff]/60 border border-sky-100 rounded-xl p-4">
+                          <p className="text-xs text-slate-700 leading-relaxed font-semibold italic">
+                            "{selectedRequest.reason}"
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* 2. Target Obyek */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">JENIS MODEL</h4>
+                          <p className="text-xs font-extrabold text-slate-800">{selectedRequest.model_type}</p>
+                        </div>
+                        <div>
+                          <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">TARGET RECORD ID</h4>
+                          <p className="text-xs font-extrabold text-slate-800">#{selectedRequest.model_id || 'BARU'}</p>
+                        </div>
+                      </div>
+
+                      {/* 3. Detail Data (Payload) */}
+                      {selectedRequest.payload && Object.keys(selectedRequest.payload).length > 0 && (
+                        <div className="space-y-2">
+                          <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest">DETAIL PERUBAHAN DATA</h4>
+                          <div className="border border-slate-100 rounded-xl overflow-hidden shadow-sm bg-white">
+                            <table className="w-full text-left border-collapse">
+                              <thead>
+                                <tr className="bg-slate-50 border-b border-slate-100">
+                                  <th className="px-4 py-2.5 text-[9px] font-extrabold text-slate-500 uppercase tracking-wider">Field Nama</th>
+                                  <th className="px-4 py-2.5 text-[9px] font-extrabold text-slate-500 uppercase tracking-wider">Nilai Baru</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-50 text-[11px] font-semibold text-slate-700">
+                                {Object.entries(selectedRequest.payload).map(([key, val]) => (
+                                  <tr key={key} className="hover:bg-slate-50/50">
+                                    <td className="px-4 py-2.5 font-bold text-[#0284c7]">{key}</td>
+                                    <td className="px-4 py-2.5 font-medium whitespace-pre-wrap max-w-md">
+                                      {typeof val === 'boolean' 
+                                        ? (val ? 'TRUE (Selesai/Aktif)' : 'FALSE (Belum)') 
+                                        : val === null || val === '' 
+                                          ? '-' 
+                                          : JSON.stringify(val, null, 2)}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 4. Respon Log (Jika sudah diproses) */}
+                      {selectedRequest.status !== 'PENDING' && (
+                        <div className="pt-6 border-t border-slate-100 space-y-4">
+                          <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest">LOG PERSETUJUAN</h4>
+                          <div className={cn(
+                            "p-4 rounded-xl border flex gap-4 items-start",
+                            selectedRequest.status === 'APPROVED' 
+                              ? "bg-emerald-50/40 border-emerald-100 text-emerald-800" 
+                              : "bg-rose-50/40 border-rose-100 text-rose-800"
+                          )}>
+                            <div className={cn(
+                              "p-2 rounded-lg shrink-0",
+                              selectedRequest.status === 'APPROVED' ? "bg-emerald-100 text-emerald-600" : "bg-rose-100 text-rose-600"
+                            )}>
+                              {selectedRequest.status === 'APPROVED' ? <CheckCircle className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+                            </div>
+                            <div>
+                              <p className="text-xs font-extrabold">
+                                Permintaan ini telah {selectedRequest.status === 'APPROVED' ? 'DISETUJUI' : 'DITOLAK'} oleh {selectedRequest.responder?.nama || 'Superadmin'}
+                              </p>
+                              {selectedRequest.rejection_reason && (
+                                <p className="text-xs font-bold text-rose-700 mt-2 bg-rose-100/50 p-2.5 rounded-lg border border-rose-200/50 italic">
+                                  Alasan Penolakan: "{selectedRequest.rejection_reason}"
+                                </p>
+                              )}
+                              <p className="text-[9px] text-slate-400 font-bold mt-2 uppercase">
+                                Selesai diproses pada: {new Date(selectedRequest.updated_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })} • {new Date(selectedRequest.updated_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Detail Footer Actions */}
+                    {selectedRequest.status === 'PENDING' && (
+                      <div className="p-6 border-t border-slate-100 bg-white shrink-0">
+                        {user?.role === 'admin' ? (
+                          <div className="flex justify-end gap-3">
+                            <Button 
+                              variant="outline" 
+                              onClick={() => setIsRejectOpen(true)}
+                              disabled={submittingResponse}
+                              className="h-11 px-6 font-bold text-rose-600 border-rose-200 hover:bg-rose-50 hover:text-rose-700 rounded-xl cursor-pointer"
+                            >
+                              Tolak Permintaan
+                            </Button>
+                            <Button 
+                              onClick={() => handleApprove(selectedRequest.id)}
+                              disabled={submittingResponse}
+                              className="h-11 px-6 font-bold bg-[#0284c7] hover:bg-[#0369a1] text-white shadow-sm rounded-xl cursor-pointer"
+                            >
+                              Setujui & Eksekusi
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex gap-3 p-4 bg-amber-50/60 border border-amber-100 rounded-2xl items-center text-amber-800">
+                            <Clock className="h-5 w-5 text-amber-500 shrink-0 animate-spin" style={{ animationDuration: '3s' }} />
+                            <div className="text-left">
+                              <p className="text-xs font-black uppercase tracking-wider">Menunggu Persetujuan</p>
+                              <p className="text-[10px] font-semibold text-amber-700/90 mt-0.5">
+                                Permintaan ini sedang ditinjau oleh Superadmin. Anda akan diberitahu begitu status diperbarui.
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                  </div>
+                ) : (
+                  <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
+                    <MailOpen className="h-10 w-10 text-slate-200 mb-2" />
+                    <p className="text-xs font-extrabold text-slate-400 uppercase tracking-widest">Tidak Ada Pesan Terpilih</p>
+                    <p className="text-[10px] text-slate-400 mt-1 max-w-xs leading-relaxed">
+                      Pilih salah satu item permohonan persetujuan dari daftar kotak masuk di sebelah kiri untuk melihat detail.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* REJECTION REASON DIALOG */}
+        <Dialog open={isRejectOpen} onOpenChange={setIsRejectOpen}>
+          <DialogContent className="sm:max-w-md bg-white rounded-2xl border border-slate-100 shadow-2xl">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-bold text-slate-900">Alasan Penolakan Permintaan</DialogTitle>
+              <DialogDescription className="text-xs text-slate-400">
+                Berikan alasan penolakan secara tertulis agar Admin Staff pemohon mengetahui kendala pada data tersebut.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-3">
+              <Textarea 
+                placeholder="Tuliskan alasan penolakan..." 
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                className="min-h-[100px] resize-none bg-slate-50 border border-slate-200 focus-visible:ring-rose-500 rounded-xl"
+              />
+            </div>
+            <DialogFooter className="flex gap-2">
+              <Button 
+                type="button" 
+                variant="ghost" 
+                onClick={() => setIsRejectOpen(false)}
+                className="rounded-xl font-bold text-slate-500 hover:text-slate-700 cursor-pointer"
+              >
+                Batal
+              </Button>
+              <Button 
+                type="button" 
+                onClick={handleRejectSubmit} 
+                disabled={submittingResponse}
+                className="bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold cursor-pointer"
+              >
+                Kirim Penolakan
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
         
       </div>
     </div>
