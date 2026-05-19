@@ -167,7 +167,7 @@ class AdvokasiController extends Controller
                 \App\Models\ActivityLog::record(
                     'create_approval_request',
                     "Mengajukan permintaan persetujuan untuk pembaruan data advokasi",
-                    'viewer',
+                    'sistem',
                     $approvalRequest,
                     [],
                     $authUser
