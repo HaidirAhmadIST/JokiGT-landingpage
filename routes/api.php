@@ -50,7 +50,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // Approval Requests
     Route::get('approval-requests', [\App\Http\Controllers\Api\ApprovalRequestController::class, 'index']);
     Route::post('approval-requests', [\App\Http\Controllers\Api\ApprovalRequestController::class, 'store']);
-    Route::post('approval-requests/{id}/respond', [\App\Http\Controllers\Api\ApprovalRequestController::class, 'respond'])->middleware('role:admin');
+    Route::post('approval-requests/{id}/respond', [\App\Http\Controllers\Api\ApprovalRequestController::class, 'respond'])->middleware('role:admin,petugas');
 
     // Dashboard
     // Route::get('dashboard/stats', [DashboardController::class, 'stats']); // Moved to public routes

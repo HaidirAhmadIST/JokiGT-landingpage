@@ -20,9 +20,13 @@ class ApprovalRequestController extends Controller
         
         $query = ApprovalRequest::with(['requester', 'responder'])->latest();
         
-        // Role-based filtering
         if ($user->role === 'petugas') {
-            $query->where('requester_id', $user->id);
+            $query->where(function($q) use ($user) {
+                $q->where('requester_id', $user->id)
+                  ->orWhereHas('requester', function($sub) {
+                      $sub->where('role', 'viewer');
+                  });
+            });
         } elseif ($user->role === 'viewer') {
             $pekerjaId = $user->pekerja()->value('id');
             if (!$pekerjaId) {
@@ -115,7 +119,14 @@ class ApprovalRequestController extends Controller
         ]);
 
         $user = $request->user();
-        $approvalRequest = ApprovalRequest::findOrFail($id);
+        $approvalRequest = ApprovalRequest::with('requester')->findOrFail($id);
+
+        if ($user->role === 'petugas' && (!$approvalRequest->requester || $approvalRequest->requester->role !== 'viewer')) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Akses ditolak. Staff hanya dapat menyetujui permintaan dari Pekerja.',
+            ], 403);
+        }
 
         if ($approvalRequest->status !== 'PENDING') {
             return response()->json([
