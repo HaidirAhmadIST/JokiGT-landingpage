@@ -12,6 +12,16 @@ trait HandlesPdfUploads
      */
     protected function processAndStoreFiles(array $files, string $folder, string $id): string
     {
+        // If GD extension is not loaded, we cannot perform PDF compilation from images.
+        // In this case, fallback to saving the first uploaded file in its original format.
+        if (!extension_loaded('gd')) {
+            $file = $files[0];
+            $extension = strtolower($file->getClientOriginalExtension());
+            $filename = $folder . '_' . $id . '_' . time() . '.' . $extension;
+            $path = $folder . '/' . $filename;
+            Storage::disk('private')->put($path, file_get_contents($file->getRealPath()));
+            return $path;
+        }
         // If single file and already PDF, just store it directly to save resources
         if (count($files) === 1 && $files[0]->getClientOriginalExtension() === 'pdf') {
             $filename = $folder . '_' . $id . '_' . time() . '.pdf';
