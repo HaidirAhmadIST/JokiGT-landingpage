@@ -394,7 +394,12 @@ export default function UserDashboardPage() {
             <div className="flex items-start min-w-[700px]">
               {STEPS.map((step, i) => {
                 const isDone = !!(adv?.[step.key]);
-                const isActive = !isDone && (i === 0 || !!(adv?.[STEPS[i-1]?.key]));
+                const isPending = requests.some(r => 
+                  r.model_type === 'StatusAdvokasi' && 
+                  r.status === 'PENDING' && 
+                  r.payload?.step_key === step.key
+                );
+                const isActive = !isDone && !isPending && (i === 0 || !!(adv?.[STEPS[i-1]?.key]));
                 const Icon = step.icon;
                 return (
                   <div key={step.key} className="flex items-start flex-1 last:flex-none">
@@ -402,16 +407,17 @@ export default function UserDashboardPage() {
                       <div className={cn(
                         "h-12 w-12 rounded-full flex items-center justify-center border-[3px] transition-all duration-500",
                         isDone ? step.color + " border-transparent text-white shadow-lg" : 
+                        isPending ? "bg-white border-amber-500 text-amber-500 shadow-lg shadow-amber-100 animate-pulse" :
                         isActive ? "bg-white border-[#0284c7] text-[#0284c7] shadow-lg shadow-sky-100" : 
                         "bg-slate-50 border-slate-200 text-slate-300"
                       )}>
-                        {isDone ? <CheckCircle2 className="h-6 w-6" /> : <Icon className="h-5 w-5" />}
+                        {isDone ? <CheckCircle2 className="h-6 w-6" /> : isPending ? <Clock className="h-5 w-5 text-amber-500" /> : <Icon className="h-5 w-5" />}
                       </div>
-                      <p className={cn("text-[10px] font-black mt-3 text-center uppercase tracking-tight", (isDone || isActive ? "text-slate-800" : "text-slate-400"))}>
+                      <p className={cn("text-[10px] font-black mt-3 text-center uppercase tracking-tight", (isDone || isPending || isActive ? "text-slate-800" : "text-slate-400"))}>
                         {step.label}
                       </p>
-                      <p className={cn("text-[9px] font-bold mt-1", (isDone ? "text-emerald-500" : isActive ? "text-[#0284c7] animate-pulse" : "text-slate-300"))}>
-                        {isDone ? 'Selesai' : isActive ? 'Di Proses' : 'Menunggu'}
+                      <p className={cn("text-[9px] font-bold mt-1", (isDone ? "text-emerald-500" : isPending ? "text-amber-500" : isActive ? "text-[#0284c7] animate-pulse" : "text-slate-300"))}>
+                        {isDone ? 'Selesai' : isPending ? 'Konfirmasi' : isActive ? 'Di Proses' : 'Menunggu'}
                       </p>
                     </div>
                     {i < STEPS.length - 1 && (
@@ -435,7 +441,12 @@ export default function UserDashboardPage() {
             <div className="space-y-4">
               {STEPS.map((step, i) => {
                 const isDone = !!(adv?.[step.key]);
-                const isActive = !isDone && (i === 0 || !!(adv?.[STEPS[i-1]?.key]));
+                const isPending = requests.some(r => 
+                  r.model_type === 'StatusAdvokasi' && 
+                  r.status === 'PENDING' && 
+                  r.payload?.step_key === step.key
+                );
+                const isActive = !isDone && !isPending && (i === 0 || !!(adv?.[STEPS[i-1]?.key]));
                 const docKey = DOC_KEYS.find(d => d.key === step.key);
                 const hasDoc = docKey ? (adv?.[docKey.pathKey] as string | undefined) : undefined;
                 const docDate = docKey ? (adv?.[docKey.dateKey] as string | undefined) : undefined;
@@ -444,29 +455,32 @@ export default function UserDashboardPage() {
                   <div key={step.key} className={cn(
                     "flex flex-col sm:flex-row sm:items-center gap-4 p-4 rounded-2xl border transition-all",
                     isDone ? "bg-emerald-50/40 border-emerald-100" :
+                    isPending ? "bg-amber-50/40 border-amber-100 ring-1 ring-amber-500/10 shadow-sm animate-pulse" :
                     isActive ? "bg-blue-50/40 border-blue-100 ring-1 ring-blue-500/10 shadow-sm" :
                     "bg-slate-50/50 border-slate-100 opacity-60"
                   )}>
                     <div className={cn(
                       "h-12 w-12 rounded-xl flex items-center justify-center shrink-0 shadow-sm",
                       isDone ? step.color + " text-white" :
+                      isPending ? "bg-white border-2 border-amber-500 text-amber-500" :
                       isActive ? "bg-white border-2 border-blue-500 text-blue-600" :
                       "bg-slate-200 text-slate-400"
                     )}>
-                      {isDone ? <CheckCircle2 className="h-6 w-6" /> : <Icon className="h-5 w-5" />}
+                      {isDone ? <CheckCircle2 className="h-6 w-6" /> : isPending ? <Clock className="h-5 w-5 text-amber-500" /> : <Icon className="h-5 w-5" />}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-3 mb-1">
-                        <h4 className={cn("text-sm font-black", (isDone ? "text-slate-800" : isActive ? "text-blue-700" : "text-slate-400"))}>
+                        <h4 className={cn("text-sm font-black", (isDone ? "text-slate-800" : isPending ? "text-amber-700" : isActive ? "text-blue-700" : "text-slate-400"))}>
                           {docKey?.name ?? step.label}
                         </h4>
                         <span className={cn(
                           "text-[9px] font-black px-2 py-0.5 rounded-full border uppercase tracking-wider",
                           isDone ? "bg-emerald-100 text-emerald-700 border-emerald-200" :
+                          isPending ? "bg-amber-100 text-amber-700 border-amber-200" :
                           isActive ? "bg-blue-100 text-blue-700 border-blue-200" :
                           "bg-slate-100 text-slate-400 border-slate-200"
                         )}>
-                          {isDone ? 'SELESAI' : isActive ? 'DI PROSES' : 'MENUNGGU'}
+                          {isDone ? 'SELESAI' : isPending ? 'KONFIRMASI' : isActive ? 'DI PROSES' : 'MENUNGGU'}
                         </span>
                       </div>
                       <div className="flex items-center gap-3">
@@ -475,6 +489,7 @@ export default function UserDashboardPage() {
                             <Calendar className="h-3 w-3" /> {fmt(docDate)}
                           </div>
                         )}
+                        {isPending && <p className="text-[10px] text-amber-600 font-bold italic">Menunggu konfirmasi berkas oleh Admin</p>}
                         {isActive && !hasDoc && <p className="text-[10px] text-blue-500 font-bold italic">Unggah dokumen untuk memulai</p>}
                         {isActive && hasDoc && <p className="text-[10px] text-emerald-600 font-bold italic">Dokumen terunggah</p>}
                       </div>

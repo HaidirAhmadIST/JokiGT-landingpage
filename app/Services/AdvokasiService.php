@@ -175,6 +175,14 @@ class AdvokasiService
     }
 
     /**
+     * Store upload files for advocacy proof documents without updating database status immediately.
+     */
+    public function storeProofFiles(array $files, string $pekerja_id): string
+    {
+        return $this->processAndStoreFiles($files, 'bukti_advokasi', $pekerja_id);
+    }
+
+    /**
      * Update an advocacy case's metadata, milestones, and handle file uploads.
      *
      * @param string $pekerja_id
@@ -261,6 +269,21 @@ class AdvokasiService
         if ($user) {
             // If admin/petugas updates, set to true. If viewer (owner) updates, set to false.
             $status->is_admin_note = in_array($user->role, ['admin', 'petugas']);
+        }
+
+        // 5. Direct path, name, and date updates (useful for approval execution payload)
+        foreach ($validColumns as $sKey => $colPath) {
+            if (isset($data[$colPath])) {
+                $status->{$colPath} = $data[$colPath];
+            }
+            $colName = str_replace('_path', '_name', $colPath);
+            if (isset($data[$colName])) {
+                $status->{$colName} = $data[$colName];
+            }
+            $colAt = $dateColumns[$sKey];
+            if (isset($data[$colAt])) {
+                $status->{$colAt} = $data[$colAt];
+            }
         }
 
         $status->save();

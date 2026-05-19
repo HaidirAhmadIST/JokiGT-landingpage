@@ -252,16 +252,11 @@ export function useUserDashboard() {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       if (res.data.status === 'success') {
-        const uploadedStep = uploadForm.step_key;
-        toast.success('Dokumen berhasil diunggah!', {
-          action: {
-            label: 'Lihat Dokumen',
-            onClick: () => handleViewFile(`/pekerja/${pekerja!.id}/files/advokasi/${uploadedStep}`),
-          },
-        });
+        toast.success(res.data.message || 'Dokumen berhasil diunggah untuk persetujuan.');
         setUploadModal(false);
         setUploadForm({ step_key: '', file: null });
         fetchData();
+        fetchRequests();
       }
     } catch (err: unknown) {
       const error = err as any;
@@ -269,7 +264,7 @@ export function useUserDashboard() {
     } finally {
       setUploading(false);
     }
-  }, [uploadForm, pekerja, fetchData, handleViewFile]);
+  }, [uploadForm, pekerja, fetchData, fetchRequests]);
 
   /** Logout: hapus token dan redirect ke halaman login. */
   const logout = useCallback(async () => {
@@ -309,17 +304,18 @@ export function useUserDashboard() {
     e.preventDefault();
     setAdvLoading(true);
     try {
-      await api.post(`/pekerja/${pekerja!.id}/advokasi`, advForm);
-      toast.success('Detail advokasi diperbarui!');
+      const res = await api.post(`/pekerja/${pekerja!.id}/advokasi`, advForm);
+      toast.success(res.data.message || 'Detail advokasi diperbarui!');
       setIsAdvModalOpen(false);
       fetchData();
+      fetchRequests();
     } catch (err: unknown) {
       const error = err as any;
       toast.error(error.response?.data?.message || 'Gagal memperbarui advokasi.');
     } finally {
       setAdvLoading(false);
     }
-  }, [advForm, pekerja, fetchData]);
+  }, [advForm, pekerja, fetchData, fetchRequests]);
 
   /** Memperbarui data pajanan (jenis, durasi, APD) untuk satu riwayat pekerjaan. */
   const handleUpdateExposure = useCallback(async (e: React.FormEvent) => {
