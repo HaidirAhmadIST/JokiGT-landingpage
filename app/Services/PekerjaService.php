@@ -88,8 +88,10 @@ class PekerjaService
             'tanggal_lahir'   => $data['tanggal_lahir'] ?? null,
             'jenis_kelamin'   => $data['jenis_kelamin'] ?? null,
             'whatsapp'        => $data['whatsapp'] ?? null,
+            'no_hp'           => $data['no_hp'] ?? null,
             'domisili'        => $data['domisili'] ?? null,
             'anggota_organisasi' => $data['anggota_organisasi'] ?? $data['is_anggota'] ?? false,
+            'nama_serikat' => $data['nama_serikat'] ?? null,
         ];
 
         if ($pekerja) {

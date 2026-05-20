@@ -33,9 +33,11 @@ class Pekerja extends Model
         'tanggal_lahir',
         'jenis_kelamin',
         'whatsapp',
+        'no_hp',
         'domisili',
         'pas_foto',
         'anggota_organisasi',
+        'nama_serikat',
     ];
 
     // =========================================================================

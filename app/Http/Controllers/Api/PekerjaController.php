@@ -243,7 +243,8 @@ class PekerjaController extends Controller
 
         $pekerja->update($request->only([
             'nama_lengkap', 'nik', 'perusahaan_id', 'status_kesehatan',
-            'catatan_admin', 'tanggal_lahir', 'jenis_kelamin', 'whatsapp', 'domisili',
+            'catatan_admin', 'tanggal_lahir', 'jenis_kelamin', 'whatsapp', 'no_hp', 'domisili',
+            'anggota_organisasi', 'nama_serikat',
         ]));
 
         ActivityLog::record(

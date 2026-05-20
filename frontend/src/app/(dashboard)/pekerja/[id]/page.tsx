@@ -594,7 +594,9 @@ export default function PekerjaDetailPage() {
                     : 'bg-slate-100 text-slate-600'
                 }`}>
                   <User className="h-2.5 w-2.5 mr-1" />
-                  {data.anggota_organisasi ? 'Anggota Organisasi' : 'Bukan Anggota'}
+                  {data.anggota_organisasi 
+                    ? `Anggota Serikat${data.nama_serikat ? ` (${data.nama_serikat})` : ''}` 
+                    : 'Bukan Anggota Serikat'}
                 </span>
                 
                 {/* Hanya tampilkan status jika tidak sama dengan label pertama */}

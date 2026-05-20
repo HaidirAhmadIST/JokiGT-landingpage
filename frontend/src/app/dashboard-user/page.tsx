@@ -999,16 +999,62 @@ export default function UserDashboardPage() {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="wa" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nomor WhatsApp</Label>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="wa" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nomor WhatsApp</Label>
+                <Input 
+                  id="wa"
+                  placeholder="Contoh: 08123456789"
+                  className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500"
+                  value={profileForm.whatsapp}
+                  onChange={(e) => setProfileForm({...profileForm, whatsapp: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="no_hp_edit" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">No. HP/Telp Lain</Label>
+                <Input 
+                  id="no_hp_edit"
+                  placeholder="Contoh: 08123456789"
+                  className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500"
+                  value={profileForm.no_hp || ''}
+                  onChange={(e) => setProfileForm({...profileForm, no_hp: e.target.value})}
+                />
+              </div>
+            </div>
+             <div className="space-y-2">
+              <Label htmlFor="jalan" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nama Jalan / Alamat Rumah</Label>
               <Input 
-                id="wa"
-                placeholder="Contoh: 08123456789"
+                id="jalan"
+                placeholder="Contoh: Jl. Merdeka No. 10"
                 className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500"
-                value={profileForm.whatsapp}
-                onChange={(e) => setProfileForm({...profileForm, whatsapp: e.target.value})}
+                value={profileForm.jalan || ''}
+                onChange={(e) => setProfileForm({...profileForm, jalan: e.target.value})}
               />
             </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="rt" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">RT</Label>
+                <Input 
+                  id="rt"
+                  placeholder="Contoh: 001"
+                  className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500"
+                  value={profileForm.rt || ''}
+                  onChange={(e) => setProfileForm({...profileForm, rt: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="rw" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">RW</Label>
+                <Input 
+                  id="rw"
+                  placeholder="Contoh: 002"
+                  className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500"
+                  value={profileForm.rw || ''}
+                  onChange={(e) => setProfileForm({...profileForm, rw: e.target.value})}
+                />
+              </div>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="addr" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Provinsi Domisili</Label>
               <Select 
@@ -1025,6 +1071,70 @@ export default function UserDashboardPage() {
                 </SelectContent>
               </Select>
             </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="kabupaten" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Kabupaten/Kota</Label>
+                <Input 
+                  id="kabupaten"
+                  placeholder="Contoh: Kota Bandung"
+                  className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500"
+                  value={profileForm.kabupaten || ''}
+                  onChange={(e) => setProfileForm({...profileForm, kabupaten: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="kecamatan" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Kecamatan</Label>
+                <Input 
+                  id="kecamatan"
+                  placeholder="Contoh: Coblong"
+                  className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500"
+                  value={profileForm.kecamatan || ''}
+                  onChange={(e) => setProfileForm({...profileForm, kecamatan: e.target.value})}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2.5">
+              <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Apakah Anda Anggota Serikat? <span className="text-red-500">*</span></Label>
+              <div className="grid grid-cols-2 gap-3 p-1 bg-slate-50 rounded-xl border border-slate-200">
+                <button 
+                  type="button"
+                  onClick={() => setProfileForm({ ...profileForm, anggota_organisasi: true })}
+                  className={`py-2 px-3 text-xs font-bold rounded-lg transition-all ${
+                    profileForm.anggota_organisasi === true 
+                      ? "bg-blue-600 text-white shadow-sm border border-blue-600/50" 
+                      : "text-slate-500 hover:text-slate-800 bg-white border border-slate-200"
+                  }`}
+                >
+                  Ya
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => setProfileForm({ ...profileForm, anggota_organisasi: false })}
+                  className={`py-2 px-3 text-xs font-bold rounded-lg transition-all ${
+                    profileForm.anggota_organisasi === false 
+                      ? "bg-blue-600 text-white shadow-sm border border-blue-600/50" 
+                      : "text-slate-500 hover:text-slate-800 bg-white border border-slate-200"
+                  }`}
+                >
+                  Tidak
+                </button>
+              </div>
+            </div>
+
+            {profileForm.anggota_organisasi === true && (
+              <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                <Label htmlFor="nama_serikat_edit" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nama Serikat Pekerja <span className="text-red-500">*</span></Label>
+                <Input 
+                  id="nama_serikat_edit"
+                  placeholder="Masukkan nama serikat pekerja Anda"
+                  className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500"
+                  value={profileForm.nama_serikat || ''}
+                  onChange={e => setProfileForm({ ...profileForm, nama_serikat: e.target.value })}
+                />
+              </div>
+            )}
 
             <DialogFooter className="pt-2">
               <Button type="submit" disabled={profileLoading} className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black shadow-lg shadow-blue-100 transition-all">

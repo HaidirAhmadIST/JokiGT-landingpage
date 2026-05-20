@@ -206,11 +206,13 @@ export interface PekerjaFull {
   alamat_ktp?: string;
   domisili?: string;
   whatsapp?: string;
+  no_hp?: string;
   status_kesehatan?: HealthStatus;
   catatan_admin?: string;
   user_id?: number;
   perusahaan_id?: number;
   anggota_organisasi?: boolean;
+  nama_serikat?: string;
   user?: User;
   perusahaan?: Perusahaan;
   riwayat_pekerja?: RiwayatPekerja[];
@@ -234,10 +236,12 @@ export interface Pekerja {
   alamat_ktp?: string;
   domisili?: string;
   whatsapp?: string;
+  no_hp?: string;
   status_kesehatan?: HealthStatus;
   user_id?: number;
   perusahaan_id?: number;
   anggota_organisasi?: boolean;
+  nama_serikat?: string;
   perusahaan?: Perusahaan;
   riwayat_pekerja?: RiwayatPekerja[];
   current_job?: RiwayatPekerja;

@@ -46,6 +46,8 @@ class StorePekerjaRequest extends FormRequest
             'domisili' => ['nullable', 'string'],
             'anggota_organisasi' => ['nullable', 'boolean'],
             'is_anggota' => ['nullable', 'boolean'],
+            'nama_serikat' => ['nullable', 'string', 'max:255'],
+            'no_hp' => ['nullable', 'string', 'max:100'],
 
             // Riwayat Pekerja Data (Optional)
             'riwayat' => ['nullable', 'array'],

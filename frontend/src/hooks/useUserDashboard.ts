@@ -18,8 +18,15 @@ export interface ProfileForm {
   jenis_kelamin: string;
   tanggal_lahir: string;
   whatsapp: string;
+  no_hp: string;
   domisili: string;
-
+  kabupaten: string;
+  kecamatan: string;
+  jalan: string;
+  rt: string;
+  rw: string;
+  anggota_organisasi: boolean;
+  nama_serikat: string;
 }
 
 export interface AdvForm {
@@ -94,7 +101,8 @@ export function useUserDashboard() {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [profileForm, setProfileForm] = useState<ProfileForm>({
     nik: '', nama_lengkap: '', jenis_kelamin: '', tanggal_lahir: '',
-    whatsapp: '', domisili: ''
+    whatsapp: '', no_hp: '', domisili: '', kabupaten: '', kecamatan: '',
+    jalan: '', rt: '', rw: '', anggota_organisasi: false, nama_serikat: ''
   });
   const [profileLoading, setProfileLoading] = useState(false);
 
@@ -279,13 +287,25 @@ export function useUserDashboard() {
     e.preventDefault();
     setProfileLoading(true);
     try {
+      const alamatLengkap = [
+        profileForm.jalan ? profileForm.jalan : null,
+        profileForm.rt ? `RT ${profileForm.rt}` : null,
+        profileForm.rw ? `RW ${profileForm.rw}` : null,
+        profileForm.kecamatan ? `Kecamatan ${profileForm.kecamatan}` : null,
+        profileForm.kabupaten ? `Kabupaten/Kota ${profileForm.kabupaten}` : null,
+        profileForm.domisili ? `Provinsi ${profileForm.domisili}` : null
+      ].filter(Boolean).join(', ');
+
       await api.put(`/pekerja/${pekerja!.id}`, {
         nik: profileForm.nik,
         nama_lengkap: profileForm.nama_lengkap,
         jenis_kelamin: profileForm.jenis_kelamin,
         tanggal_lahir: profileForm.tanggal_lahir,
         whatsapp: profileForm.whatsapp,
-        domisili: profileForm.domisili,
+        no_hp: profileForm.no_hp,
+        domisili: alamatLengkap,
+        anggota_organisasi: profileForm.anggota_organisasi,
+        nama_serikat: profileForm.anggota_organisasi ? profileForm.nama_serikat : null,
       });
 
       toast.success('Profil berhasil diperbarui!');
@@ -381,14 +401,54 @@ export function useUserDashboard() {
   // ── Openers (shorthand untuk set form & open modal) ──────────────────────
 
   const openProfileEdit = useCallback(() => {
+    const fullDomisili = pekerja?.domisili || '';
+    
+    // Default values
+    let jalan = '';
+    let rt = '';
+    let rw = '';
+    let kecamatan = '';
+    let kabupaten = '';
+    let domisili = ''; // province
+    
+    if (fullDomisili) {
+      const parts = fullDomisili.split(',').map(s => s.trim());
+      parts.forEach(part => {
+        if (part.startsWith('RT ')) {
+          rt = part.replace('RT ', '');
+        } else if (part.startsWith('RW ')) {
+          rw = part.replace('RW ', '');
+        } else if (part.startsWith('Kecamatan ')) {
+          kecamatan = part.replace('Kecamatan ', '');
+        } else if (part.startsWith('Kabupaten/Kota ')) {
+          kabupaten = part.replace('Kabupaten/Kota ', '');
+        } else if (part.startsWith('Provinsi ')) {
+          domisili = part.replace('Provinsi ', '');
+        } else {
+          if (jalan) {
+            jalan = jalan + ', ' + part;
+          } else {
+            jalan = part;
+          }
+        }
+      });
+    }
+
     setProfileForm({
       nik: pekerja?.nik || '',
       nama_lengkap: pekerja?.nama_lengkap || '',
       jenis_kelamin: pekerja?.jenis_kelamin || '',
       tanggal_lahir: pekerja?.tanggal_lahir || '',
       whatsapp: pekerja?.whatsapp || '',
-      domisili: pekerja?.domisili || '',
-
+      no_hp: pekerja?.no_hp || '',
+      domisili: domisili,
+      kabupaten: kabupaten,
+      kecamatan: kecamatan,
+      jalan: jalan,
+      rt: rt,
+      rw: rw,
+      anggota_organisasi: !!pekerja?.anggota_organisasi,
+      nama_serikat: pekerja?.nama_serikat || '',
     });
     setIsProfileModalOpen(true);
   }, [pekerja]);

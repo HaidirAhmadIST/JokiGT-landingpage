@@ -167,10 +167,15 @@ export default function PendaftaranPekerjaPage() {
     tanggal_lahir: '',
     jenis_kelamin: '',
     whatsapp: '',
+    no_hp: '',
     domisili: '',
     kabupaten: '',
     kecamatan: '',
+    jalan: '',
+    rt: '',
+    rw: '',
     is_anggota: null as boolean | null,
+    nama_serikat: '',
   });
 
   const [detailMedisData, setDetailMedisData] = useState<DataMedis>({
@@ -554,6 +559,8 @@ export default function PendaftaranPekerjaPage() {
           ...pekerjaanSaatIni,
           nama_perusahaan: pekerjaanSaatIni.nama_perusahaan_baru || pekerjaanSaatIni.nama_perusahaan,
           tgl_keluar: null, // Current job
+          tgl_masuk: pekerjaanSaatIni.tgl_masuk || null,
+          tanggal_selesai_kontrak: pekerjaanSaatIni.tanggal_selesai_kontrak || null,
           // Masukkan data APD ke dalam informal_data agar tersimpan di DB
           informal_data: {
             tugas_spesifik: pekerjaanSaatIni.tugas_spesifik,
@@ -645,8 +652,11 @@ export default function PendaftaranPekerjaPage() {
       } : null;
 
       const performSubmit = async (pId: string | null, riwayatData: any[]) => {
-        // Gabungkan domisili, kabupaten, dan kecamatan menjadi satu string
+        // Gabungkan jalan, rt, rw, kecamatan, kabupaten, dan domisili menjadi satu string
         const alamatLengkap = [
+          baseData.jalan ? baseData.jalan : null,
+          baseData.rt ? `RT ${baseData.rt}` : null,
+          baseData.rw ? `RW ${baseData.rw}` : null,
           baseData.kecamatan ? `Kecamatan ${baseData.kecamatan}` : null,
           baseData.kabupaten ? `Kabupaten/Kota ${baseData.kabupaten}` : null,
           baseData.domisili ? `Provinsi ${baseData.domisili}` : null
@@ -922,6 +932,56 @@ export default function PendaftaranPekerjaPage() {
                       />
                       {duplicateWarning.nik && <p className="text-[10px] text-amber-600 font-medium">{duplicateWarning.nik}</p>}
                     </div>
+
+                    {/* Opsi Keanggotaan Serikat */}
+                    <div id="is-anggota-selector" className="space-y-2.5">
+                      <Label className="text-slate-700 font-bold">Apakah Anda Anggota Serikat? <span className="text-red-500">*</span></Label>
+                      <div className="grid grid-cols-2 gap-3 p-1.5 bg-slate-50 rounded-xl border border-slate-200/60">
+                        <button 
+                          type="button"
+                          onClick={() => {
+                            setBaseData(prev => ({ ...prev, is_anggota: true }));
+                            setIsWaVerified(false);
+                            setOtpSent(false);
+                          }}
+                          className={`py-2.5 px-3 text-xs font-bold rounded-lg transition-all ${
+                            baseData.is_anggota === true 
+                              ? "bg-[#0ea5e9] text-white shadow-sm border border-[#0ea5e9]/50" 
+                              : "text-slate-500 hover:text-slate-800 bg-white border border-slate-200"
+                          }`}
+                        >
+                          Ya, Anggota Serikat
+                        </button>
+                        <button 
+                          type="button"
+                          onClick={() => {
+                            setBaseData(prev => ({ ...prev, is_anggota: false }));
+                            setIsWaVerified(false);
+                            setOtpSent(false);
+                          }}
+                          className={`py-2.5 px-3 text-xs font-bold rounded-lg transition-all ${
+                            baseData.is_anggota === false 
+                              ? "bg-[#0ea5e9] text-white shadow-sm border border-[#0ea5e9]/50" 
+                              : "text-slate-500 hover:text-slate-800 bg-white border border-slate-200"
+                          }`}
+                        >
+                          Bukan Anggota Serikat
+                        </button>
+                      </div>
+                    </div>
+
+                    {baseData.is_anggota === true && (
+                      <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                        <Label htmlFor="nama_serikat">Nama Serikat Pekerja <span className="text-red-500">*</span></Label>
+                        <Input 
+                          id="nama_serikat"
+                          placeholder="Masukkan nama serikat pekerja Anda"
+                          className="h-11"
+                          value={baseData.nama_serikat || ''}
+                          onChange={e => setBaseData({ ...baseData, nama_serikat: e.target.value })}
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -960,42 +1020,6 @@ export default function PendaftaranPekerjaPage() {
                     <ShieldAlert className="h-4 w-4 mr-2" /> Kontak & Alamat
                   </h3>
                   <div className="space-y-4">
-                    {/* Opsi Keanggotaan Organisasi */}
-                    <div id="is-anggota-selector" className="space-y-2.5">
-                      <Label className="text-slate-700 font-bold">Apakah Anda Anggota Organisasi? <span className="text-red-500">*</span></Label>
-                      <div className="grid grid-cols-2 gap-3 p-1.5 bg-slate-50 rounded-xl border border-slate-200/60">
-                        <button 
-                          type="button"
-                          onClick={() => {
-                            setBaseData(prev => ({ ...prev, is_anggota: true }));
-                            setIsWaVerified(false);
-                            setOtpSent(false);
-                          }}
-                          className={`py-2.5 px-3 text-xs font-bold rounded-lg transition-all ${
-                            baseData.is_anggota === true 
-                              ? "bg-[#0ea5e9] text-white shadow-sm border border-[#0ea5e9]/50" 
-                              : "text-slate-500 hover:text-slate-800 bg-white border border-slate-200"
-                          }`}
-                        >
-                          Ya, Anggota
-                        </button>
-                        <button 
-                          type="button"
-                          onClick={() => {
-                            setBaseData(prev => ({ ...prev, is_anggota: false }));
-                            setIsWaVerified(false);
-                            setOtpSent(false);
-                          }}
-                          className={`py-2.5 px-3 text-xs font-bold rounded-lg transition-all ${
-                            baseData.is_anggota === false 
-                              ? "bg-[#0ea5e9] text-white shadow-sm border border-[#0ea5e9]/50" 
-                              : "text-slate-500 hover:text-slate-800 bg-white border border-slate-200"
-                          }`}
-                        >
-                          Bukan Anggota
-                        </button>
-                      </div>
-                    </div>
 
                     {/* Jika Opsi Keanggotaan Terpilih */}
                     {baseData.is_anggota !== null && (
@@ -1020,6 +1044,25 @@ export default function PendaftaranPekerjaPage() {
                             />
                           </div>
                           {duplicateWarning.whatsapp && <p className="text-[10px] text-amber-600 font-medium">{duplicateWarning.whatsapp}</p>}
+                        </div>
+
+                        {/* No HP Alternatif Input */}
+                        <div className="space-y-2">
+                          <Label htmlFor="no_hp" className="flex items-center gap-1.5 font-semibold">
+                            Nomor HP/Telepon Lain Yang Bisa Dihubungi <span className="text-slate-400 font-normal text-xs">(Opsional)</span>
+                          </Label>
+                          <div className="flex">
+                            <span className="inline-flex items-center px-4 rounded-l-lg border border-r-0 border-slate-200 bg-slate-50 text-slate-500 sm:text-sm font-bold">
+                              +62
+                            </span>
+                            <Input 
+                              id="no_hp" 
+                              placeholder="8123456xxx" 
+                              className="rounded-l-none h-11"
+                              value={baseData.no_hp || ''} 
+                              onChange={e => setBaseData({ ...baseData, no_hp: e.target.value.replace(/\D/g, '') })} 
+                            />
+                          </div>
                         </div>
 
                         {/* Jika BUKAN Anggota -> Wajib Verifikasi WA OTP */}
@@ -1111,6 +1154,40 @@ export default function PendaftaranPekerjaPage() {
                         )}
                       </div>
                     )}
+                    <div className="space-y-2">
+                      <Label htmlFor="jalan">Nama Jalan / Alamat Rumah</Label>
+                      <Input
+                        id="jalan"
+                        placeholder="Contoh: Jl. Diponegoro No. 123"
+                        className="h-11"
+                        value={baseData.jalan || ''}
+                        onChange={e => setBaseData({ ...baseData, jalan: e.target.value })}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="rt">RT</Label>
+                        <Input
+                          id="rt"
+                          placeholder="Contoh: 001"
+                          className="h-11"
+                          value={baseData.rt || ''}
+                          onChange={e => setBaseData({ ...baseData, rt: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="rw">RW</Label>
+                        <Input
+                          id="rw"
+                          placeholder="Contoh: 002"
+                          className="h-11"
+                          value={baseData.rw || ''}
+                          onChange={e => setBaseData({ ...baseData, rw: e.target.value })}
+                        />
+                      </div>
+                    </div>
+
                     <div className="space-y-2">
                       <Label>Provinsi Domisili</Label>
                       <Select 
@@ -1248,6 +1325,29 @@ export default function PendaftaranPekerjaPage() {
                       </Select>
                     </div>
 
+                    {pekerjaanSaatIni.status_pekerjaan === 'PKWT' && (
+                      <>
+                        <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                          <Label className="text-blue-600 font-bold">Tanggal Mulai Kontrak</Label>
+                          <Input 
+                            type="date"
+                            className="h-11 border-blue-200 focus-visible:ring-blue-400 block w-full text-slate-500"
+                            value={pekerjaanSaatIni.tgl_masuk}
+                            onChange={(e) => setPekerjaanSaatIni({ ...pekerjaanSaatIni, tgl_masuk: e.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                          <Label className="text-blue-600 font-bold">Tanggal Selesai Kontrak</Label>
+                          <Input 
+                            type="date"
+                            className="h-11 border-blue-200 focus-visible:ring-blue-400 block w-full text-slate-500"
+                            value={pekerjaanSaatIni.tanggal_selesai_kontrak}
+                            onChange={(e) => setPekerjaanSaatIni({ ...pekerjaanSaatIni, tanggal_selesai_kontrak: e.target.value })}
+                          />
+                        </div>
+                      </>
+                    )}
+
                     {pekerjaanSaatIni.status_pekerjaan === 'Outsourcing' && (
                       <>
                         <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
@@ -1286,6 +1386,91 @@ export default function PendaftaranPekerjaPage() {
                           <SelectItem value="Tidak Ada">Tidak Ada</SelectItem>
                         </SelectContent>
                       </Select>
+                    </div>
+
+                    {/* Riwayat Mutasi Jabatan Section */}
+                    <div className="col-span-1 sm:col-span-2 pt-4 border-t border-slate-100 mt-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <Label className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
+                          <RefreshCw className="h-4 w-4 text-blue-500" /> Riwayat Mutasi Jabatan / Bagian (Opsional)
+                        </Label>
+                        <Button 
+                          type="button" 
+                          variant="ghost" 
+                          size="sm" 
+                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 font-bold text-xs h-8"
+                          onClick={() => setPekerjaanSaatIni(prev => ({
+                            ...prev,
+                            mutasi_jabatan: [...(prev.mutasi_jabatan || []), { bagian: '', jabatan: '', tahun: '' }]
+                          }))}
+                        >
+                          <Plus className="h-3.5 w-3.5 mr-1" /> Tambah Mutasi
+                        </Button>
+                      </div>
+
+                      {(!pekerjaanSaatIni.mutasi_jabatan || pekerjaanSaatIni.mutasi_jabatan.length === 0) ? (
+                        <p className="text-xs text-slate-400 italic">Belum ada riwayat mutasi jabatan ditambahkan.</p>
+                      ) : (
+                        <div className="space-y-3.5">
+                          {(pekerjaanSaatIni.mutasi_jabatan || []).map((mut, idx) => (
+                            <div key={idx} className="grid grid-cols-12 gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200/60 items-end animate-in fade-in duration-200">
+                              <div className="col-span-5 space-y-1">
+                                <Label className="text-[10px] font-bold text-slate-500 uppercase">Bagian / Departemen Baru</Label>
+                                <Input 
+                                  placeholder="Contoh: Logistik" 
+                                  className="h-9 bg-white text-xs"
+                                  value={mut.bagian}
+                                  onChange={(e) => {
+                                    const newMut = [...pekerjaanSaatIni.mutasi_jabatan];
+                                    newMut[idx].bagian = e.target.value;
+                                    setPekerjaanSaatIni({ ...pekerjaanSaatIni, mutasi_jabatan: newMut });
+                                  }}
+                                />
+                              </div>
+                              <div className="col-span-4 space-y-1">
+                                <Label className="text-[10px] font-bold text-slate-500 uppercase">Jabatan Baru</Label>
+                                <Input 
+                                  placeholder="Contoh: Supervisor" 
+                                  className="h-9 bg-white text-xs"
+                                  value={mut.jabatan}
+                                  onChange={(e) => {
+                                    const newMut = [...pekerjaanSaatIni.mutasi_jabatan];
+                                    newMut[idx].jabatan = e.target.value;
+                                    setPekerjaanSaatIni({ ...pekerjaanSaatIni, mutasi_jabatan: newMut });
+                                  }}
+                                />
+                              </div>
+                              <div className="col-span-2 space-y-1">
+                                <Label className="text-[10px] font-bold text-slate-500 uppercase">Tahun</Label>
+                                <Input 
+                                  placeholder="2024" 
+                                  className="h-9 bg-white text-xs text-center"
+                                  value={mut.tahun}
+                                  onChange={(e) => {
+                                    const newMut = [...pekerjaanSaatIni.mutasi_jabatan];
+                                    newMut[idx].tahun = e.target.value;
+                                    setPekerjaanSaatIni({ ...pekerjaanSaatIni, mutasi_jabatan: newMut });
+                                  }}
+                                />
+                              </div>
+                              <div className="col-span-1 flex justify-center pb-0.5">
+                                <Button 
+                                  type="button" 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-9 w-9 text-slate-400 hover:text-red-500 hover:bg-red-50"
+                                  onClick={() => {
+                                    const newMut = pekerjaanSaatIni.mutasi_jabatan.filter((_, i) => i !== idx);
+                                    setPekerjaanSaatIni({ ...pekerjaanSaatIni, mutasi_jabatan: newMut });
+                                  }}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

@@ -211,7 +211,7 @@ export default function LoginPage() {
         <CardContent className="space-y-6">
           {/* TABS SELECTOR */}
           <div className="space-y-2.5">
-            <Label className="text-slate-500 font-bold text-xs uppercase tracking-wider block text-center">Apakah Anda Anggota Organisasi?</Label>
+            <Label className="text-slate-500 font-bold text-xs uppercase tracking-wider block text-center">Apakah Anda Anggota Serikat?</Label>
             <div className="grid grid-cols-2 gap-3 p-1.5 bg-slate-100 rounded-xl border border-slate-200/60">
               <button 
                 type="button"
@@ -225,7 +225,7 @@ export default function LoginPage() {
                     : "text-slate-500 hover:text-slate-800"
                 }`}
               >
-                Ya, Anggota
+                Ya, Anggota Serikat
               </button>
               <button 
                 type="button"
@@ -236,7 +236,7 @@ export default function LoginPage() {
                     : "text-slate-500 hover:text-slate-800"
                 }`}
               >
-                Bukan Anggota
+                Bukan Anggota Serikat
               </button>
             </div>
           </div>
@@ -246,7 +246,7 @@ export default function LoginPage() {
             <div className="pt-2 text-center space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
               <div className="p-4 bg-blue-50/50 border border-blue-100/60 rounded-xl">
                 <p className="text-xs text-blue-600 font-medium leading-relaxed">
-                  Anggota organisasi masuk instan dan aman menggunakan email Gmail yang terdaftar.
+                  Anggota serikat masuk instan dan aman menggunakan email Gmail yang terdaftar.
                 </p>
               </div>
               <Button 
