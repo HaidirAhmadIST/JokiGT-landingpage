@@ -28,6 +28,7 @@ Route::get('/auth/google/callback', [GoogleAuthController::class, 'handleGoogleC
 Route::post('/auth/whatsapp/send-otp', [OtpController::class, 'sendOtp']);
 Route::post('/auth/whatsapp/verify-otp', [OtpController::class, 'verifyOtp']);
 Route::post('/register/complete', [RegistrationController::class, 'completeRegistration']);
+Route::get('/serikat', [RegistrationController::class, 'listSerikat']);
 Route::post('/register', [AuthController::class, 'register']);
 Route::get('perusahaan', [PerusahaanController::class, 'index']);
 Route::post('perusahaan', [PerusahaanController::class, 'store']);

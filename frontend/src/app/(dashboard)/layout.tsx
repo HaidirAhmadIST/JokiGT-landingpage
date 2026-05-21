@@ -38,13 +38,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 
-const navigation = [
-  { name: 'Dashboard', href: '/dashboard-admin', icon: LayoutDashboard },
-  { name: 'Pekerja', href: '/pekerja', icon: Users },
-  { name: 'Perusahaan', href: '/perusahaan', icon: Building2 },
-  { name: 'Advokasi', href: '/advokasi', icon: ShieldCheck },
-  { name: 'Laporan', href: '/laporan', icon: FileText },
-  { name: 'Aktivitas', href: '/aktivitas', icon: History },
+const ALL_NAVIGATION = [
+  { name: 'Dashboard', href: '/dashboard-admin', icon: LayoutDashboard, roles: ['admin', 'petugas'] },
+  { name: 'Pekerja', href: '/pekerja', icon: Users, roles: ['admin', 'petugas'] },
+  { name: 'Perusahaan', href: '/perusahaan', icon: Building2, roles: ['admin', 'petugas'] },
+  { name: 'Advokasi', href: '/advokasi', icon: ShieldCheck, roles: ['admin', 'petugas'] },
+  { name: 'Laporan', href: '/laporan', icon: FileText, roles: ['admin'] },
+  { name: 'Aktivitas', href: '/aktivitas', icon: History, roles: ['admin'] },
 ];
 
 export default function DashboardLayout({
@@ -462,14 +462,18 @@ export default function DashboardLayout({
                       <Shield className="h-5 w-5" />
                     </div>
                     <div>
-                      <p className="text-[11px] font-extrabold text-slate-800 tracking-wider">ADMIN PANEL</p>
-                      <p className="text-[10px] text-slate-500 font-medium">Mode Manajemen</p>
+                      <p className="text-[11px] font-extrabold text-slate-800 tracking-wider">
+                        {user?.role === 'petugas' ? 'UNION STAFF' : 'ADMIN PANEL'}
+                      </p>
+                      <p className="text-[10px] text-slate-500 font-medium">
+                        {user?.role === 'petugas' && user?.serikat ? user.serikat : 'Mode Manajemen'}
+                      </p>
                     </div>
                  </div>
                </div>
 
                <nav className="flex-1 space-y-1 mt-2">
-                {navigation.map((item) => {
+                {ALL_NAVIGATION.filter(item => !user?.role || item.roles.includes(user.role)).map((item) => {
                   const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
                   return (
                     <Link
@@ -611,7 +615,7 @@ export default function DashboardLayout({
                       <div className="flex items-center gap-1.5 mt-2">
                         <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                         <p className="text-[10px] leading-none uppercase font-bold text-slate-500 tracking-wider">
-                          {user?.role === 'admin' ? 'Super Admin' : (user?.role || 'Super Admin')}
+                          {user?.role === 'admin' ? 'Super Admin' : user?.role === 'petugas' ? `Staff Serikat${user?.serikat ? ' · ' + user.serikat : ''}` : (user?.role || 'Super Admin')}
                         </p>
                       </div>
                     </div>
@@ -658,15 +662,19 @@ export default function DashboardLayout({
                     <Shield className="h-4 w-4" />
                   </div>
                   <div className={`min-w-0 transition-opacity duration-200 ${sidebarWidth < 160 ? 'opacity-0' : 'opacity-100'}`}>
-                    <p className="text-[10px] font-extrabold text-[#1e293b] tracking-wider truncate">ADMIN PANEL</p>
-                    <p className="text-[9px] text-slate-500 font-medium mt-0.5">Mode Manajemen</p>
+                    <p className="text-[10px] font-extrabold text-[#1e293b] tracking-wider truncate">
+                      {user?.role === 'petugas' ? 'UNION STAFF' : 'ADMIN PANEL'}
+                    </p>
+                    <p className="text-[9px] text-slate-500 font-medium mt-0.5 truncate">
+                      {user?.role === 'petugas' && user?.serikat ? user.serikat : 'Mode Manajemen'}
+                    </p>
                   </div>
                </div>
              </div>
 
              {/* Navigation Links */}
              <nav className="flex flex-col space-y-1">
-              {navigation.map((item) => {
+              {ALL_NAVIGATION.filter(item => !user?.role || item.roles.includes(user.role)).map((item) => {
                 const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
                 return (
                   <Link

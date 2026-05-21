@@ -56,6 +56,16 @@ class PekerjaController extends Controller
 
             $query = Pekerja::withSummary();
 
+            // Petugas HANYA bisa melihat pekerja dari perusahaannya sendiri
+            if ($user && $user->isPetugas()) {
+                if (!$user->perusahaan_id) {
+                    // Jika petugas tidak memiliki perusahaan_id, jangan tampilkan apa-apa
+                    $query->where('id', '<', 0);
+                } else {
+                    $query->where('perusahaan_id', $user->perusahaan_id);
+                }
+            }
+
             // Filter by company
             if ($request->has('perusahaan_id')) {
                 $query->where('perusahaan_id', $request->input('perusahaan_id'));
@@ -210,9 +220,8 @@ class PekerjaController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Pekerja tidak ditemukan.'], 404);
         }
 
-        // Cegah IDOR: pastikan user hanya bisa mengakses data miliknya
-        // (kecuali admin/petugas yang punya akses penuh)
-        if ($request->user() && $request->user()->isViewer()) {
+        // Cegah IDOR: terapkan policy ketat untuk melihat detail
+        if ($request->user()) {
             $this->authorize('view', $pekerja);
         }
 
@@ -233,12 +242,9 @@ class PekerjaController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Pekerja tidak ditemukan.'], 404);
         }
 
-        // Allow Admin, Petugas, or the Owner (the worker themselves)
-        $user = auth()->user();
-        $isOwner = $user && ($user->id === $pekerja->user_id);
-
-        if (!$user->isAdmin() && !$user->isPetugas() && !$isOwner) {
-            return response()->json(['status' => 'error', 'message' => 'Anda tidak memiliki izin untuk mengubah data ini.'], 403);
+        // Otorisasi ketat via Policy
+        if ($request->user()) {
+            $this->authorize('update', $pekerja);
         }
 
         $pekerja->update($request->only([
@@ -308,6 +314,11 @@ class PekerjaController extends Controller
 
         if (!$pekerja) {
             return response()->json(['status' => 'error', 'message' => 'Pekerja tidak ditemukan.'], 404);
+        }
+
+        // Otorisasi super ketat: pastikan user punya hak delete (HANYA Admin)
+        if ($request->user()) {
+            $this->authorize('delete', $pekerja);
         }
 
         if ($request->user()->role === 'admin') {

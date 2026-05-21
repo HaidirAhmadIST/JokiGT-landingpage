@@ -221,33 +221,6 @@ export default function FormDetailMedis({ data, onChange }: FormDetailMedisProps
             />
           </div>
 
-          {/* APD Section */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-            <div className="space-y-2">
-              <Label htmlFor="apd_disediakan" className="text-gray-700 font-medium">
-                APD yang Disediakan Perusahaan
-              </Label>
-              <Input
-                id="apd_disediakan"
-                placeholder="Contoh: Masker N95, Kacamata..."
-                className="bg-white border-gray-300 focus-visible:ring-1 focus-visible:ring-blue-500 focus-visible:border-blue-500 h-11"
-                value={data.apd_disediakan || ''}
-                onChange={e => onChange('apd_disediakan', e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="jenis_apd_sendiri" className="text-gray-700 font-medium">
-                APD yang Dibawa Mandiri
-              </Label>
-              <Input
-                id="jenis_apd_sendiri"
-                placeholder="Contoh: Masker kain sendiri..."
-                className="bg-white border-gray-300 focus-visible:ring-1 focus-visible:ring-blue-500 focus-visible:border-blue-500 h-11"
-                value={data.jenis_apd_sendiri || ''}
-                onChange={e => onChange('jenis_apd_sendiri', e.target.value)}
-              />
-            </div>
-          </div>
 
         </CardContent>
       </Card>
@@ -379,11 +352,11 @@ export default function FormDetailMedis({ data, onChange }: FormDetailMedisProps
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
                         {[
                           { id: 'Audiometri', label: 'Tes Pendengaran (Audiometri): Cek penurunan pendengaran akibat bising.' },
+                          { id: 'Spirometri', label: 'Tes Tiup/Kekuatan Paru (Spirometri): Cek kapasitas pernapasan.' },
                           { id: 'Timpanometri', label: 'Tes Gendang Telinga (Timpanometri): Cek tekanan/sumbatan telinga.' },
                           { id: 'Otoskopi', label: 'Teropong Lubang Telinga (Otoskopi): Cek kotoran/infeksi telinga.' },
                           { id: 'Radiografi Toraks', label: 'Foto Rontgen Dada (Radiografi Toraks): Cek jantung dan flek paru.' },
                           { id: 'Rontgen ILO', label: 'Rontgen Paru Pekerja (Rontgen ILO): Cek penumpukan debu di paru.' },
-                          { id: 'Spirometri', label: 'Tes Tiup/Kekuatan Paru (Spirometri): Cek kapasitas pernapasan.' },
                           { id: 'Tes Visus', label: 'Tes Ketajaman Mata (Tes Visus): Cek mata minus/plus/silinder.' },
                           { id: 'Tes Ishihara', label: 'Tes Buta Warna (Tes Ishihara): Cek kemampuan bedakan warna.' },
                           { id: 'EKG', label: 'Tes Rekam Jantung (EKG): Cek kelainan detak jantung.' },
@@ -415,13 +388,45 @@ export default function FormDetailMedis({ data, onChange }: FormDetailMedisProps
                       </div>
 
                       {(m.jenis_pemeriksaan || []).includes('Lainnya') && (
-                        <Input
-                          placeholder="Sebutkan jenis pemeriksaan lainnya..."
-                          value={m.jenis_pemeriksaan_lainnya || ''}
-                          onChange={e => updatePemeriksaan(idx, 'jenis_pemeriksaan_lainnya', e.target.value)}
-                          className="bg-white border-gray-300 h-10 mt-3 animate-in slide-in-from-top-1 duration-200"
-                          autoFocus
-                        />
+                        <div className="space-y-2 mt-3 animate-in slide-in-from-top-1 duration-200">
+                          <Label className="text-xs text-gray-500 font-semibold">Sebutkan Jenis Pemeriksaan Lainnya:</Label>
+                          {(m.jenis_pemeriksaan_lainnya ? m.jenis_pemeriksaan_lainnya.split('|') : ['']).map((item, liIdx) => (
+                            <div key={liIdx} className="flex gap-2 items-center">
+                              <Input
+                                placeholder={`Jenis pemeriksaan lainnya ${liIdx + 1}...`}
+                                value={item}
+                                onChange={e => {
+                                  const items = m.jenis_pemeriksaan_lainnya ? m.jenis_pemeriksaan_lainnya.split('|') : [''];
+                                  items[liIdx] = e.target.value;
+                                  updatePemeriksaan(idx, 'jenis_pemeriksaan_lainnya', items.join('|'));
+                                }}
+                                className="bg-white border-gray-300 h-10 flex-1"
+                              />
+                              {(m.jenis_pemeriksaan_lainnya ? m.jenis_pemeriksaan_lainnya.split('|') : ['']).length > 1 && (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-10 w-10 flex-shrink-0 text-gray-400 hover:text-red-500 hover:bg-red-50"
+                                  onClick={() => {
+                                    const items = m.jenis_pemeriksaan_lainnya.split('|').filter((_: string, i: number) => i !== liIdx);
+                                    updatePemeriksaan(idx, 'jenis_pemeriksaan_lainnya', items.join('|'));
+                                  }}
+                                >×</Button>
+                              )}
+                            </div>
+                          ))}
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 font-bold text-xs h-8"
+                            onClick={() => {
+                              const items = m.jenis_pemeriksaan_lainnya ? m.jenis_pemeriksaan_lainnya.split('|') : [''];
+                              updatePemeriksaan(idx, 'jenis_pemeriksaan_lainnya', [...items, ''].join('|'));
+                            }}
+                          >+ Tambah Lainnya</Button>
+                        </div>
                       )}
                     </div>
 
@@ -445,23 +450,7 @@ export default function FormDetailMedis({ data, onChange }: FormDetailMedisProps
                       />
                     </div>
 
-                    {/* Row 4: Status & Pendamping */}
-                    <div className="space-y-2">
-                      <Label className="text-gray-600">Status Kesehatan</Label>
-                      <Select
-                        value={m.status_kesehatan || 'sehat'}
-                        onValueChange={v => updatePemeriksaan(idx, 'status_kesehatan', v)}
-                      >
-                        <SelectTrigger className="bg-white border-gray-300 h-10">
-                          <SelectValue placeholder="Pilih Status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="sehat">Sehat</SelectItem>
-                          <SelectItem value="sehat_dengan_catatan">Sehat dengan Catatan</SelectItem>
-                          <SelectItem value="tidak_sehat">Tidak Sehat</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    {/* Row 4: Pendamping */}
                     <div className="space-y-2">
                       <Label className="text-gray-600">Pendamping / Penjamin</Label>
                       <Select
@@ -489,15 +478,15 @@ export default function FormDetailMedis({ data, onChange }: FormDetailMedisProps
                       )}
                     </div>
 
-                    {/* Bottom: Rekomendasi & Hasil Diagnosis (Full Width) */}
+                    {/* Bottom: Hasil Pemeriksaan & Rekomendasi (Full Width) */}
                     <div className="space-y-4 md:col-span-2 border-t border-gray-100 pt-4 mt-2">
                       <div className="space-y-2">
-                        <Label className="text-gray-600">Hasil Diagnosis</Label>
+                        <Label className="text-gray-600">Hasil Pemeriksaan</Label>
                         <Textarea
-                          placeholder="Ringkasan hasil diagnosis dari dokter..."
+                          placeholder="Tuliskan hasil pemeriksaan yang diperoleh, contoh: Nilai audiometri 40 dB, foto thorax normal..."
                           value={m.hasil_diagnosis || ''}
                           onChange={e => updatePemeriksaan(idx, 'hasil_diagnosis', e.target.value)}
-                          className="bg-white border-gray-300 focus:ring-1 focus:ring-blue-500 min-h-[80px] resize-none"
+                          className="bg-white border-gray-300 focus:ring-1 focus:ring-blue-500 min-h-[70px] resize-none"
                         />
                       </div>
                       <div className="space-y-2">

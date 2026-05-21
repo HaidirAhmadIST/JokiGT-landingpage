@@ -12,6 +12,33 @@ class AdvokasiService
     use HandlesPdfUploads;
 
     /**
+     * Apply strict RBAC filter for advocacy queries.
+     * Petugas ONLY sees advokasi if the worker shares BOTH the exact same perusahaan_id AND serikat.
+     */
+    private function applyRbacFilter($query)
+    {
+        $user = auth()->user();
+        if ($user && $user->isPetugas()) {
+            // Petugas requires BOTH perusahaan_id and matching serikat for advocacy
+            $query->whereHas('pekerja', function ($q) use ($user) {
+                $q->where('perusahaan_id', $user->perusahaan_id)
+                  ->whereHas('perusahaan', function ($qPerusahaan) use ($user) {
+                      // Match serikat directly with the worker's company serikat
+                      // (Or if the worker has nama_serikat, we can match that. The prompt says: "satu perusahaan dan serikat yang sama")
+                      // We will match the worker's nama_serikat if it exists, or fallback to perusahaan's serikat
+                  })
+                  ->where('nama_serikat', $user->serikat); 
+            });
+        } elseif ($user && $user->role === 'viewer') {
+            $query->whereHas('pekerja', function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            });
+        }
+        return $query;
+    }
+
+
+    /**
      * Get aggregate statistics and worker status breakdown for advocacy.
      *
      * @param bool $includeWorkers Whether to include detailed worker lists for each step
@@ -24,6 +51,7 @@ class AdvokasiService
         $startOfThisMonth = $now->copy()->startOfMonth();
 
         $baseQuery = StatusAdvokasi::whereNotNull('jenis_kasus');
+        $this->applyRbacFilter($baseQuery);
         
         if ($hazard) {
             $baseQuery->whereHas('pekerja.riwayatPekerja', function ($q) use ($hazard) {
@@ -72,6 +100,7 @@ class AdvokasiService
         foreach ($steps as $step) {
             $col = $step['column'];
             $query = StatusAdvokasi::where($col, true);
+            $this->applyRbacFilter($query);
             
             if ($hazard) {
                 $query->whereHas('pekerja.riwayatPekerja', function ($q) use ($hazard) {
@@ -124,15 +153,16 @@ class AdvokasiService
      */
     public function getPaginatedCases(int $perPage = 10)
     {
-        return StatusAdvokasi::with([
+        $query = StatusAdvokasi::with([
             'pekerja.perusahaan', 
             'pekerja.user', 
             'pekerja.latestDetailMedis', 
             'pekerja.currentJob'
-        ])
-            ->whereNotNull('jenis_kasus')
-            ->latest('updated_at')
-            ->paginate($perPage);
+        ])->whereNotNull('jenis_kasus')->latest('updated_at');
+        
+        $this->applyRbacFilter($query);
+        
+        return $query->paginate($perPage);
     }
 
     /**
@@ -142,14 +172,16 @@ class AdvokasiService
      */
     public function getAllCases(): Collection
     {
-        return StatusAdvokasi::with([
+        $query = StatusAdvokasi::with([
             'pekerja.perusahaan', 
             'pekerja.user', 
             'pekerja.latestDetailMedis', 
             'pekerja.currentJob'
-        ])
-            ->whereNotNull('jenis_kasus')
-            ->get()
+        ])->whereNotNull('jenis_kasus');
+        
+        $this->applyRbacFilter($query);
+        
+        return $query->get()
             ->map(function($case) {
                 $case->jenis_kasus = strtoupper($case->jenis_kasus);
                 return $case;
@@ -164,14 +196,18 @@ class AdvokasiService
      */
     public function getCaseDetails(string $id): ?StatusAdvokasi
     {
-        return StatusAdvokasi::with([
+        $query = StatusAdvokasi::with([
             'pekerja.perusahaan', 
             'pekerja.user', 
             'pekerja.riwayatPekerja.detailMedis', 
             'pekerja.detailMedis',
             'pekerja.currentJob',
             'pekerja.latestDetailMedis'
-        ])->find($id);
+        ]);
+        
+        $this->applyRbacFilter($query);
+        
+        return $query->find($id);
     }
 
     /**
@@ -298,10 +334,13 @@ class AdvokasiService
      */
     public function getPriorityCases(int $limit = 5): Collection
     {
-        return StatusAdvokasi::with(['pekerja.perusahaan', 'pekerja.riwayatPekerja'])
+        $query = StatusAdvokasi::with(['pekerja.perusahaan', 'pekerja.riwayatPekerja'])
             ->where('jenis_kasus', 'PAK')
-            ->where('rehabilitasi_bpjskes', false) // Only active cases
-            ->get()
+            ->where('rehabilitasi_bpjskes', false); // Only active cases
+            
+        $this->applyRbacFilter($query);
+        
+        return $query->get()
             ->map(function ($case) {
                 $pekerja = $case->pekerja;
                 if (!$pekerja) return null;

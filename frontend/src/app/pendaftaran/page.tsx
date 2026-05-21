@@ -26,6 +26,7 @@ import { cn, formatHealthStatus } from '@/lib/utils';
 import FormDetailMedis, { type DataMedis } from '@/components/FormDetailMedis';
 import { PROVINCES } from '@/lib/provinces';
 import { HazardIdentification } from '@/components/registration/HazardIdentification';
+import { useWilayah } from '@/hooks/useWilayah';
 
 const STORAGE_KEY = 'REKAM_JEJAK_FORM_DATA';
 
@@ -148,12 +149,15 @@ export default function PendaftaranPekerjaPage() {
     bpjs_bpu: '',
     apd_disediakan: '',
     jenis_apd_sendiri: '',
+    akses_apd: '',
     lokasi_proyek: [] as string[],
     riwayat_pemeriksaan: [] as any[],
-    mutasi_jabatan: [] as { bagian: string; jabatan: string; tahun: string }[],
+    mutasi_jabatan: [] as { bagian: string; jabatan: string; tahun_mulai: string; tahun_selesai: string }[],
     file_bukti: [] as File[],
     deskripsi_pajanan: '',
     training_k3: '',
+    jenis_pelatihan_k3: '',
+    terakhir_pelatihan_k3: '',
     ada_p2k3: '',
   });
 
@@ -174,9 +178,20 @@ export default function PendaftaranPekerjaPage() {
     jalan: '',
     rt: '',
     rw: '',
+    patokan_rumah: '',
     is_anggota: null as boolean | null,
     nama_serikat: '',
   });
+
+  // Hook untuk fetch kabupaten & kecamatan dari BPS secara cascading
+  const {
+    kabupatenList,
+    kecamatanList,
+    loadingKabupaten,
+    loadingKecamatan,
+    selectedKabupatenId,
+    setSelectedKabupatenId,
+  } = useWilayah(baseData.domisili);
 
   const [detailMedisData, setDetailMedisData] = useState<DataMedis>({
     keluhan_utama: '',
@@ -270,6 +285,7 @@ export default function PendaftaranPekerjaPage() {
       }
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Kode verifikasi salah atau kedaluwarsa.");
+      setOtpCode('');
     } finally {
       setVerifyingOtp(false);
     }
@@ -486,17 +502,17 @@ export default function PendaftaranPekerjaPage() {
 
     if (!detailMedisData.keluhan_utama) {
       toast.error("Keluhan Utama wajib diisi!");
-      scrollToField('keluhan_utama', 3);
+      scrollToField('keluhan_utama', 4);
       return;
     }
     if (!pekerjaanSaatIni.nama_perusahaan) {
       toast.error("Nama Perusahaan saat ini wajib diisi!");
-      setStep(1);
+      setStep(2);
       return;
     }
     if (pekerjaanSaatIni.nama_perusahaan === 'Lainnya' && !pekerjaanSaatIni.nama_perusahaan_baru) {
       toast.error("Mohon isi nama perusahaan baru Anda!");
-      setStep(1);
+      setStep(2);
       return;
     }
     setLoading(true);
@@ -569,11 +585,14 @@ export default function PendaftaranPekerjaPage() {
             bpjs_bpu: pekerjaanSaatIni.bpjs_bpu,
             apd_disediakan: pekerjaanSaatIni.apd_disediakan,
             jenis_apd_sendiri: pekerjaanSaatIni.jenis_apd_sendiri,
+            akses_apd: pekerjaanSaatIni.akses_apd,
             lokasi_proyek: pekerjaanSaatIni.lokasi_proyek,
             mutasi_jabatan: pekerjaanSaatIni.mutasi_jabatan,
             deskripsi_pajanan: pekerjaanSaatIni.deskripsi_pajanan,
             pajanan_details: pekerjaanSaatIni.pajanan_details,
             training_k3: pekerjaanSaatIni.training_k3,
+            jenis_pelatihan_k3: pekerjaanSaatIni.jenis_pelatihan_k3,
+            terakhir_pelatihan_k3: pekerjaanSaatIni.terakhir_pelatihan_k3,
             ada_p2k3: pekerjaanSaatIni.ada_p2k3,
           },
           riwayat_pemeriksaan: (pekerjaanSaatIni.riwayat_pemeriksaan || []).filter(
@@ -868,13 +887,19 @@ export default function PendaftaranPekerjaPage() {
 
             <div className="flex flex-col items-center">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${step >= 2 ? 'bg-[#0ea5e9] text-white' : 'bg-slate-200 text-slate-500'}`}>2</div>
-              <span className={`text-xs font-semibold mt-2 text-center ${step >= 2 ? 'text-[#0ea5e9]' : 'text-slate-400'}`}>PEMETAAN <br />BAHAYA</span>
+              <span className={`text-xs font-semibold mt-2 text-center ${step >= 2 ? 'text-[#0ea5e9]' : 'text-slate-400'}`}>RIWAYAT <br />PEKERJAAN</span>
             </div>
             <div className={`w-8 h-[2px] mx-1 -mt-6 ${step >= 3 ? 'bg-[#0ea5e9]' : 'bg-slate-200'}`} />
 
             <div className="flex flex-col items-center">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${step >= 3 ? 'bg-[#0ea5e9] text-white' : 'bg-slate-200 text-slate-500'}`}>3</div>
-              <span className={`text-xs font-semibold mt-2 text-center ${step >= 3 ? 'text-[#0ea5e9]' : 'text-slate-400'}`}>RIWAYAT <br />KESEHATAN</span>
+              <span className={`text-xs font-semibold mt-2 text-center ${step >= 3 ? 'text-[#0ea5e9]' : 'text-slate-400'}`}>PEMETAAN <br />BAHAYA</span>
+            </div>
+            <div className={`w-8 h-[2px] mx-1 -mt-6 ${step >= 4 ? 'bg-[#0ea5e9]' : 'bg-slate-200'}`} />
+
+            <div className="flex flex-col items-center">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${step >= 4 ? 'bg-[#0ea5e9] text-white' : 'bg-slate-200 text-slate-500'}`}>4</div>
+              <span className={`text-xs font-semibold mt-2 text-center ${step >= 4 ? 'text-[#0ea5e9]' : 'text-slate-400'}`}>RIWAYAT <br />KESEHATAN</span>
             </div>
           </div>
         </div>
@@ -933,9 +958,9 @@ export default function PendaftaranPekerjaPage() {
                       {duplicateWarning.nik && <p className="text-[10px] text-amber-600 font-medium">{duplicateWarning.nik}</p>}
                     </div>
 
-                    {/* Opsi Keanggotaan Serikat */}
+                    {/* Opsi Pengurus/Delegasi Serikat */}
                     <div id="is-anggota-selector" className="space-y-2.5">
-                      <Label className="text-slate-700 font-bold">Apakah Anda Anggota Serikat? <span className="text-red-500">*</span></Label>
+                      <Label className="text-slate-700 font-bold">Apakah Anda Pengurus/Delegasi Serikat? <span className="text-red-500">*</span></Label>
                       <div className="grid grid-cols-2 gap-3 p-1.5 bg-slate-50 rounded-xl border border-slate-200/60">
                         <button 
                           type="button"
@@ -950,7 +975,7 @@ export default function PendaftaranPekerjaPage() {
                               : "text-slate-500 hover:text-slate-800 bg-white border border-slate-200"
                           }`}
                         >
-                          Ya, Anggota Serikat
+                          Ya
                         </button>
                         <button 
                           type="button"
@@ -965,7 +990,7 @@ export default function PendaftaranPekerjaPage() {
                               : "text-slate-500 hover:text-slate-800 bg-white border border-slate-200"
                           }`}
                         >
-                          Bukan Anggota Serikat
+                          Tidak
                         </button>
                       </div>
                     </div>
@@ -1065,70 +1090,8 @@ export default function PendaftaranPekerjaPage() {
                           </div>
                         </div>
 
-                        {/* Jika BUKAN Anggota -> Wajib Verifikasi WA OTP */}
-                        {baseData.is_anggota === false && (
-                          <div id="otp-verification-section" className="space-y-4 p-4 bg-slate-50 rounded-xl border border-slate-200/60 mt-2">
-                            <p className="text-xs text-slate-500 font-medium leading-relaxed">
-                              Silakan kirim dan verifikasi nomor WhatsApp Anda untuk melanjutkan pengisian formulir.
-                            </p>
-                            {!isWaVerified ? (
-                              <div className="space-y-3.5">
-                                {!otpSent ? (
-                                  <Button 
-                                    type="button"
-                                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-11 rounded-lg transition-all" 
-                                    onClick={sendRegOtpCode}
-                                    disabled={sendingOtp || !baseData.whatsapp}
-                                  >
-                                    {sendingOtp ? 'Mengirim Kode...' : 'Kirim Kode Verifikasi WhatsApp'}
-                                  </Button>
-                                ) : (
-                                  <div className="space-y-3 animate-in zoom-in-95 duration-200">
-                                    <div className="space-y-2">
-                                      <Label htmlFor="reg_otp" className="text-xs font-bold text-slate-600">Masukkan Kode Verifikasi 6-Digit</Label>
-                                      <Input 
-                                        id="reg_otp" 
-                                        type="text"
-                                        maxLength={6} 
-                                        className="text-center text-xl font-black tracking-[0.3em] h-11"
-                                        placeholder="******" 
-                                        value={otpCode}
-                                        onChange={(e) => setOtpCode(e.target.value.replace(/[^0-9]/g, ''))}
-                                      />
-                                      <p className="text-[10px] text-slate-400 mt-1">Kode OTP telah dikirimkan ke nomor +62{baseData.whatsapp}</p>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-2">
-                                      <Button 
-                                        type="button"
-                                        variant="outline"
-                                        onClick={() => {
-                                          setOtpSent(false);
-                                          setOtpCode('');
-                                        }}
-                                        className="rounded-lg font-bold"
-                                      >
-                                        Ubah Nomor
-                                      </Button>
-                                      <Button 
-                                        type="button"
-                                        className="bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-lg" 
-                                        onClick={verifyRegOtpCode}
-                                        disabled={verifyingOtp}
-                                      >
-                                        {verifyingOtp ? 'Memverifikasi...' : 'Verifikasi OTP'}
-                                      </Button>
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-2 text-emerald-600 bg-emerald-50 border border-emerald-200 p-3.5 rounded-lg text-xs font-bold animate-in fade-in duration-300">
-                                <span className="w-5 h-5 flex items-center justify-center bg-emerald-500 text-white rounded-full text-[10px] font-black">✓</span>
-                                Nomor WhatsApp Berhasil Diverifikasi!
-                              </div>
-                            )}
-                          </div>
-                        )}
+
+
 
                         {/* Jika ANGGOTA -> Tampilkan Email & Password */}
                         {baseData.is_anggota === true && (
@@ -1165,6 +1128,17 @@ export default function PendaftaranPekerjaPage() {
                       />
                     </div>
 
+                    <div className="space-y-2">
+                      <Label htmlFor="patokan_rumah">Patokan Rumah</Label>
+                      <Input
+                        id="patokan_rumah"
+                        placeholder="Contoh: Dekat masjid Al-Ikhlas, sebelah warung Bu Sari"
+                        className="h-11"
+                        value={baseData.patokan_rumah || ''}
+                        onChange={e => setBaseData({ ...baseData, patokan_rumah: e.target.value })}
+                      />
+                    </div>
+
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="rt">RT</Label>
@@ -1192,7 +1166,7 @@ export default function PendaftaranPekerjaPage() {
                       <Label>Provinsi Domisili</Label>
                       <Select 
                         value={baseData.domisili} 
-                        onValueChange={v => setBaseData({ ...baseData, domisili: v || '' })}
+                        onValueChange={v => setBaseData({ ...baseData, domisili: v || '', kabupaten: '', kecamatan: '' })}
                       >
                         <SelectTrigger className="h-11 bg-white">
                           <SelectValue placeholder="Pilih Provinsi" />
@@ -1209,27 +1183,79 @@ export default function PendaftaranPekerjaPage() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label>Kabupaten/Kota</Label>
-                        <Input
-                          placeholder="Contoh: Kota Bandung"
-                          className="h-11"
+                        <Select
                           value={baseData.kabupaten || ''}
-                          onChange={e => setBaseData({ ...baseData, kabupaten: e.target.value })}
-                        />
+                          onValueChange={(v) => {
+                            const selected = kabupatenList.find(k => k.name === v);
+                            setSelectedKabupatenId(selected?.id || '');
+                            setBaseData({ ...baseData, kabupaten: v as string, kecamatan: '' as string });
+                          }}
+                          disabled={!baseData.domisili || loadingKabupaten}
+                        >
+                          <SelectTrigger className="h-11 bg-white">
+                            <SelectValue placeholder={
+                              !baseData.domisili
+                                ? 'Pilih provinsi dulu'
+                                : loadingKabupaten
+                                ? 'Memuat data...'
+                                : 'Pilih Kabupaten/Kota'
+                            } />
+                          </SelectTrigger>
+                          <SelectContent className="max-h-[300px]">
+                            {kabupatenList.map((kab) => (
+                              <SelectItem key={kab.id} value={kab.name}>{kab.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                       <div className="space-y-2">
                         <Label>Kecamatan</Label>
-                        <Input
-                          placeholder="Contoh: Coblong"
-                          className="h-11"
+                        <Select
                           value={baseData.kecamatan || ''}
-                          onChange={e => setBaseData({ ...baseData, kecamatan: e.target.value })}
-                        />
+                          onValueChange={(v) => setBaseData({ ...baseData, kecamatan: v as string })}
+                          disabled={!baseData.kabupaten || loadingKecamatan}
+                        >
+                          <SelectTrigger className="h-11 bg-white">
+                            <SelectValue placeholder={
+                              !baseData.kabupaten
+                                ? 'Pilih kabupaten dulu'
+                                : loadingKecamatan
+                                ? 'Memuat data...'
+                                : 'Pilih Kecamatan'
+                            } />
+                          </SelectTrigger>
+                          <SelectContent className="max-h-[300px]">
+                            {kecamatanList.map((kec) => (
+                              <SelectItem key={kec.id} value={kec.name}>{kec.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Section 4: Pekerjaan Saat Ini */}
+                <div className="pt-8 border-t border-slate-100 mt-10">
+                  <Button className="w-full h-12 text-base bg-[#0ea5e9] hover:bg-[#0284c7]" onClick={handleLanjut}>
+                    Lanjutkan ke Riwayat Pekerjaan <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 2: RIWAYAT PEKERJAAN */}
+          {step === 2 && (
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="text-center mb-10">
+                <h2 className="text-2xl font-bold text-slate-900">Riwayat Pekerjaan</h2>
+                <p className="text-slate-500 mt-2 text-sm max-w-md mx-auto">
+                  Lengkapi informasi pekerjaan Anda saat ini dan riwayat pekerjaan sebelumnya.
+                </p>
+              </div>
+
+              <div className="space-y-8">
+                {/* Section: Pekerjaan Saat Ini */}
                 <div className="pt-6 border-t border-slate-100">
                   <h3 className="flex items-center text-sm font-bold text-blue-600 mb-4 uppercase tracking-wider">
                     <Briefcase className="h-4 w-4 mr-2" /> Pekerjaan Saat Ini
@@ -1320,32 +1346,32 @@ export default function PendaftaranPekerjaPage() {
                           <SelectItem value="PKWTT">PKWTT (Tetap)</SelectItem>
                           <SelectItem value="PKWT">PKWT (Kontrak)</SelectItem>
                           <SelectItem value="Outsourcing">Outsourcing</SelectItem>
-                          <SelectItem value="Harian">Harian Lepas</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
 
+                    {(pekerjaanSaatIni.status_pekerjaan === 'PKWT' || pekerjaanSaatIni.status_pekerjaan === 'PKWTT' || pekerjaanSaatIni.status_pekerjaan === 'Outsourcing') && (
+                      <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                        <Label className="text-blue-600 font-bold">Tanggal Masuk / Mulai Kontrak</Label>
+                        <Input 
+                          type="date"
+                          className="h-11 border-blue-200 focus-visible:ring-blue-400 block w-full text-slate-500"
+                          value={pekerjaanSaatIni.tgl_masuk}
+                          onChange={(e) => setPekerjaanSaatIni({ ...pekerjaanSaatIni, tgl_masuk: e.target.value })}
+                        />
+                      </div>
+                    )}
+
                     {pekerjaanSaatIni.status_pekerjaan === 'PKWT' && (
-                      <>
-                        <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                          <Label className="text-blue-600 font-bold">Tanggal Mulai Kontrak</Label>
-                          <Input 
-                            type="date"
-                            className="h-11 border-blue-200 focus-visible:ring-blue-400 block w-full text-slate-500"
-                            value={pekerjaanSaatIni.tgl_masuk}
-                            onChange={(e) => setPekerjaanSaatIni({ ...pekerjaanSaatIni, tgl_masuk: e.target.value })}
-                          />
-                        </div>
-                        <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                          <Label className="text-blue-600 font-bold">Tanggal Selesai Kontrak</Label>
-                          <Input 
-                            type="date"
-                            className="h-11 border-blue-200 focus-visible:ring-blue-400 block w-full text-slate-500"
-                            value={pekerjaanSaatIni.tanggal_selesai_kontrak}
-                            onChange={(e) => setPekerjaanSaatIni({ ...pekerjaanSaatIni, tanggal_selesai_kontrak: e.target.value })}
-                          />
-                        </div>
-                      </>
+                      <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                        <Label className="text-blue-600 font-bold">Tanggal Selesai Kontrak</Label>
+                        <Input 
+                          type="date"
+                          className="h-11 border-blue-200 focus-visible:ring-blue-400 block w-full text-slate-500"
+                          value={pekerjaanSaatIni.tanggal_selesai_kontrak}
+                          onChange={(e) => setPekerjaanSaatIni({ ...pekerjaanSaatIni, tanggal_selesai_kontrak: e.target.value })}
+                        />
+                      </div>
                     )}
 
                     {pekerjaanSaatIni.status_pekerjaan === 'Outsourcing' && (
@@ -1370,6 +1396,16 @@ export default function PendaftaranPekerjaPage() {
                         </div>
                       </>
                     )}
+
+                    <div className="space-y-2 col-span-1 sm:col-span-2">
+                      <Label>Deskripsi Pekerjaan Saat Ini</Label>
+                      <Textarea 
+                        placeholder="Contoh: Mengoperasikan mesin cetak, melakukan pengecekan kualitas produk secara rutin..." 
+                        className="min-h-[80px] bg-white resize-none"
+                        value={pekerjaanSaatIni.deskripsi_pekerjaan}
+                        onChange={(e) => setPekerjaanSaatIni({ ...pekerjaanSaatIni, deskripsi_pekerjaan: e.target.value })}
+                      />
+                    </div>
 
                     <div className="space-y-2">
                       <Label>BPJS Ketenagakerjaan</Label>
@@ -1401,7 +1437,7 @@ export default function PendaftaranPekerjaPage() {
                           className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 font-bold text-xs h-8"
                           onClick={() => setPekerjaanSaatIni(prev => ({
                             ...prev,
-                            mutasi_jabatan: [...(prev.mutasi_jabatan || []), { bagian: '', jabatan: '', tahun: '' }]
+                            mutasi_jabatan: [...(prev.mutasi_jabatan || []), { bagian: '', jabatan: '', tahun_mulai: '', tahun_selesai: '' }]
                           }))}
                         >
                           <Plus className="h-3.5 w-3.5 mr-1" /> Tambah Mutasi
@@ -1414,7 +1450,7 @@ export default function PendaftaranPekerjaPage() {
                         <div className="space-y-3.5">
                           {(pekerjaanSaatIni.mutasi_jabatan || []).map((mut, idx) => (
                             <div key={idx} className="grid grid-cols-12 gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200/60 items-end animate-in fade-in duration-200">
-                              <div className="col-span-5 space-y-1">
+                              <div className="col-span-4 space-y-1">
                                 <Label className="text-[10px] font-bold text-slate-500 uppercase">Bagian / Departemen Baru</Label>
                                 <Input 
                                   placeholder="Contoh: Logistik" 
@@ -1427,7 +1463,7 @@ export default function PendaftaranPekerjaPage() {
                                   }}
                                 />
                               </div>
-                              <div className="col-span-4 space-y-1">
+                              <div className="col-span-3 space-y-1">
                                 <Label className="text-[10px] font-bold text-slate-500 uppercase">Jabatan Baru</Label>
                                 <Input 
                                   placeholder="Contoh: Supervisor" 
@@ -1441,14 +1477,27 @@ export default function PendaftaranPekerjaPage() {
                                 />
                               </div>
                               <div className="col-span-2 space-y-1">
-                                <Label className="text-[10px] font-bold text-slate-500 uppercase">Tahun</Label>
+                                <Label className="text-[10px] font-bold text-slate-500 uppercase">Tahun Mulai</Label>
+                                <Input 
+                                  placeholder="2020" 
+                                  className="h-9 bg-white text-xs text-center"
+                                  value={mut.tahun_mulai}
+                                  onChange={(e) => {
+                                    const newMut = [...pekerjaanSaatIni.mutasi_jabatan];
+                                    newMut[idx].tahun_mulai = e.target.value;
+                                    setPekerjaanSaatIni({ ...pekerjaanSaatIni, mutasi_jabatan: newMut });
+                                  }}
+                                />
+                              </div>
+                              <div className="col-span-2 space-y-1">
+                                <Label className="text-[10px] font-bold text-slate-500 uppercase">Tahun Selesai</Label>
                                 <Input 
                                   placeholder="2024" 
                                   className="h-9 bg-white text-xs text-center"
-                                  value={mut.tahun}
+                                  value={mut.tahun_selesai}
                                   onChange={(e) => {
                                     const newMut = [...pekerjaanSaatIni.mutasi_jabatan];
-                                    newMut[idx].tahun = e.target.value;
+                                    newMut[idx].tahun_selesai = e.target.value;
                                     setPekerjaanSaatIni({ ...pekerjaanSaatIni, mutasi_jabatan: newMut });
                                   }}
                                 />
@@ -1670,10 +1719,13 @@ export default function PendaftaranPekerjaPage() {
                     )}
                   </>
                 )}
-              </div>
+                </div>
 
-                <div className="pt-8 border-t border-slate-100 mt-10">
-                  <Button className="w-full h-12 text-base bg-[#0ea5e9] hover:bg-[#0284c7]" onClick={handleLanjut}>
+                <div className="flex items-center gap-4 pt-8 border-t border-slate-100">
+                  <Button variant="outline" className="h-12 px-8" onClick={() => setStep(1)}>
+                    <ArrowLeft className="mr-2 h-5 w-5" /> Kembali
+                  </Button>
+                  <Button className="flex-1 h-12 text-base bg-[#0ea5e9] hover:bg-[#0284c7]" onClick={handleLanjut}>
                     Lanjutkan ke Pemetaan Bahaya <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                 </div>
@@ -1681,8 +1733,8 @@ export default function PendaftaranPekerjaPage() {
             </div>
           )}
 
-          {/* STEP 2: PEMETAAN BAHAYA */}
-          {step === 2 && (
+          {/* STEP 3: PEMETAAN BAHAYA */}
+          {step === 3 && (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="text-center mb-10">
                 <h2 className="text-2xl font-bold text-slate-900">Pemetaan Bahaya</h2>
@@ -1712,7 +1764,11 @@ export default function PendaftaranPekerjaPage() {
                           <Label className="text-sm font-bold text-slate-700">Pernah Ikut Pelatihan K3?</Label>
                           <Select 
                             value={pekerjaanSaatIni.training_k3 || ''} 
-                            onValueChange={v => setPekerjaanSaatIni({ ...pekerjaanSaatIni, training_k3: v || '' })}
+                            onValueChange={v => setPekerjaanSaatIni({ 
+                              ...pekerjaanSaatIni, 
+                              training_k3: v || '',
+                              ...(v === 'Belum Pernah' ? { jenis_pelatihan_k3: '', terakhir_pelatihan_k3: '' } : {})
+                            })}
                           >
                             <SelectTrigger className="h-12 bg-white border-slate-200">
                               <SelectValue placeholder="Pilih Jawaban" />
@@ -1722,7 +1778,32 @@ export default function PendaftaranPekerjaPage() {
                               <SelectItem value="Belum Pernah">Belum Pernah</SelectItem>
                             </SelectContent>
                           </Select>
-                          <p className="text-[10px] text-slate-400 italic">Pelatihan mengenai keselamatan and kesehatan di lingkungan kerja.</p>
+                          <p className="text-[10px] text-slate-400 italic">Pelatihan mengenai keselamatan dan kesehatan di lingkungan kerja.</p>
+
+                          {pekerjaanSaatIni.training_k3 === 'Pernah' && (
+                            <div className="space-y-4 pt-3 pl-4 border-l-2 border-blue-200 animate-in fade-in slide-in-from-top-2 duration-300">
+                              <div className="space-y-2">
+                                <Label className="text-sm font-bold text-slate-700">Jenis Pelatihan K3</Label>
+                                <Input 
+                                  placeholder="Contoh: Ahli K3 Umum, P3K, Pemadam Kebakaran, dll." 
+                                  className="h-12 bg-white border-slate-200 focus:border-blue-400" 
+                                  value={pekerjaanSaatIni.jenis_pelatihan_k3 || ''} 
+                                  onChange={e => setPekerjaanSaatIni({ ...pekerjaanSaatIni, jenis_pelatihan_k3: e.target.value })} 
+                                />
+                                <p className="text-[10px] text-slate-400 italic">Tuliskan jenis pelatihan K3 yang pernah diikuti.</p>
+                              </div>
+                              <div className="space-y-2">
+                                <Label className="text-sm font-bold text-slate-700">Kapan Terakhir Kali Ikut Pelatihan?</Label>
+                                <Input 
+                                  type="date"
+                                  className="h-12 bg-white border-slate-200 focus:border-blue-400 block w-full text-slate-500" 
+                                  value={pekerjaanSaatIni.terakhir_pelatihan_k3 || ''} 
+                                  onChange={e => setPekerjaanSaatIni({ ...pekerjaanSaatIni, terakhir_pelatihan_k3: e.target.value })} 
+                                />
+                                <p className="text-[10px] text-slate-400 italic">Tanggal terakhir mengikuti pelatihan K3.</p>
+                              </div>
+                            </div>
+                          )}
                         </div>
 
                         <div className="space-y-3">
@@ -1736,33 +1817,74 @@ export default function PendaftaranPekerjaPage() {
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="Ada">Ya, Ada</SelectItem>
-                              <SelectItem value="Tidak Ada">Tidak Ada / Tidak Tahu</SelectItem>
+                              <SelectItem value="Tidak Ada">Tidak Ada</SelectItem>
+                              <SelectItem value="Tidak Tahu">Tidak Tahu</SelectItem>
                             </SelectContent>
                           </Select>
                           <p className="text-[10px] text-slate-400 italic">Panitia Pembina Keselamatan dan Kesehatan Kerja (P2K3).</p>
                         </div>
                       </div>
 
-                      <div className="max-w-xs space-y-3 pt-6 border-t border-slate-100">
-                        <Label className="text-sm font-bold text-slate-700">Total Durasi Pajanan (Tahun)</Label>
-                        <div className="relative">
-                          <Input 
-                            placeholder="Contoh: 5" 
-                            type="number" 
-                            className="h-12 bg-white border-slate-200 focus:border-blue-400 font-bold text-lg px-4" 
-                            value={pekerjaanSaatIni.durasi_pajanan} 
-                            onChange={e => setPekerjaanSaatIni({ ...pekerjaanSaatIni, durasi_pajanan: e.target.value })} 
-                          />
-                          <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium">Tahun</div>
+                      <div className="pt-6 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div className="space-y-3">
+                          <Label className="text-sm font-bold text-slate-700">Apakah di Perusahaan Disediakan APD?</Label>
+                          <Select 
+                            value={pekerjaanSaatIni.apd_disediakan || ''} 
+                            onValueChange={v => setPekerjaanSaatIni({ 
+                              ...pekerjaanSaatIni, 
+                              apd_disediakan: v || '',
+                              ...(v === 'Tidak' ? { jenis_apd_sendiri: '', akses_apd: '' } : {})
+                            })}
+                          >
+                            <SelectTrigger className="h-12 bg-white border-slate-200">
+                              <SelectValue placeholder="Pilih Jawaban" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Ya">Ya</SelectItem>
+                              <SelectItem value="Tidak">Tidak</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <p className="text-[10px] text-slate-400 italic">Penyediaan Alat Pelindung Diri (APD) oleh perusahaan/pemberi kerja.</p>
                         </div>
-                        <p className="text-[10px] text-slate-400 italic">Masukkan estimasi total lamanya terpapar bahaya tersebut di lingkungan kerja.</p>
+
+                        {pekerjaanSaatIni.apd_disediakan === 'Ya' && (
+                          <div className="space-y-3 animate-in fade-in duration-300">
+                            <Label className="text-sm font-bold text-slate-700">Jenis APD yang Disediakan</Label>
+                            <Input 
+                              placeholder="Contoh: Masker N95, Kacamata Pelindung, dll." 
+                              className="h-12 bg-white border-slate-200 focus:border-blue-400" 
+                              value={pekerjaanSaatIni.jenis_apd_sendiri || ''} 
+                              onChange={e => setPekerjaanSaatIni({ ...pekerjaanSaatIni, jenis_apd_sendiri: e.target.value })} 
+                            />
+                            <p className="text-[10px] text-slate-400 italic">Tuliskan jenis-jenis APD yang disediakan oleh perusahaan.</p>
+                          </div>
+                        )}
                       </div>
+
+                      {pekerjaanSaatIni.apd_disediakan === 'Ya' && (
+                        <div className="pt-6 border-t border-slate-100 space-y-3 animate-in fade-in duration-300">
+                          <Label className="text-sm font-bold text-slate-700">Akses Terhadap APD / Kemudahan Mendapatkan APD</Label>
+                          <Select 
+                            value={pekerjaanSaatIni.akses_apd || ''} 
+                            onValueChange={v => setPekerjaanSaatIni({ ...pekerjaanSaatIni, akses_apd: v || '' })}
+                          >
+                            <SelectTrigger className="h-12 bg-white border-slate-200">
+                              <SelectValue placeholder="Pilih Akses APD" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Cuma-cuma">APD didapat cuma-cuma</SelectItem>
+                              <SelectItem value="Dibatasi">APD dibatasi</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <p className="text-[10px] text-slate-400 italic">Bagaimana kemudahan pekerja dalam memperoleh APD tersebut.</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-4 pt-8 border-t border-slate-100">
-                  <Button variant="outline" className="h-12 px-8" onClick={() => setStep(1)}>
+                  <Button variant="outline" className="h-12 px-8" onClick={() => setStep(2)}>
                     <ArrowLeft className="mr-2 h-5 w-5" /> Kembali
                   </Button>
                   <Button className="flex-1 h-12 text-base bg-[#0ea5e9] hover:bg-[#0284c7]" onClick={handleLanjut}>
@@ -1773,8 +1895,8 @@ export default function PendaftaranPekerjaPage() {
             </div>
           )}
 
-          {/* STEP 3: RIWAYAT KESEHATAN */}
-          {step === 3 && (
+          {/* STEP 4: RIWAYAT KESEHATAN */}
+          {step === 4 && (
             <div className="animate-in fade-in slide-in-from-right-8 duration-500">
               <FormDetailMedis
                 data={detailMedisData}
@@ -1796,13 +1918,13 @@ export default function PendaftaranPekerjaPage() {
                     Pernyataan Persetujuan & Kebenaran Data
                   </Label>
                   <p className="text-sm text-blue-800/70 leading-relaxed">
-                    Saya dengan ini menyatakan bahwa seluruh data yang saya masukkan adalah benar dan akurat. Saya <strong>menyetujui (Agree)</strong> data riwayat kesehatan ini digunakan oleh pihak perusahaan dan instansi terkait untuk keperluan evaluasi kesehatan kerja dan upaya advokasi Penyakit Akibat Kerja (PAK).
+                    Saya dengan ini menyatakan bahwa seluruh data yang saya masukkan adalah benar dan akurat. Saya <strong>menyetujui (Agree)</strong> data riwayat kesehatan ini digunakan untuk keperluan evaluasi kesehatan kerja dan upaya advokasi Penyakit Akibat Kerja (PAK).
                   </p>
                 </div>
               </div>
 
               <div className="pt-8 flex gap-4">
-                <Button variant="outline" className="w-1/3 h-12 text-slate-600 bg-slate-50 border-slate-200" onClick={handleKembali}>
+                <Button variant="outline" className="w-1/3 h-12 text-slate-600 bg-slate-50 border-slate-200" onClick={() => setStep(3)}>
                   <ArrowLeft className="mr-2 h-4 w-4" /> Kembali
                 </Button>
                 <Button className="w-2/3 h-12 text-base bg-[#0ea5e9] hover:bg-[#0284c7]" onClick={handleSubmit} disabled={loading || !isConsentChecked}>

@@ -26,6 +26,16 @@ export default function LoginPage() {
   const [otpSent, setOtpSent] = useState(false);
   const [sendingOtp, setSendingOtp] = useState(false);
   const [verifyingOtp, setVerifyingOtp] = useState(false);
+  const [countdown, setCountdown] = useState(0);
+
+  // Countdown timer for resend OTP
+  useEffect(() => {
+    if (countdown <= 0) return;
+    const timer = setTimeout(() => setCountdown(c => c - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [countdown]);
+
+  const startCountdown = () => setCountdown(60);
 
   // Check URL query parameters for Google callback errors
   useEffect(() => {
@@ -109,6 +119,7 @@ export default function LoginPage() {
       if (res.data.status === 'success') {
         toast.success(res.data.message);
         setOtpSent(true);
+        startCountdown();
         // If debug OTP exists in response, show a helpful alert for local dev testing
         if (res.data.data?.debug_otp) {
           console.log("Local Dev OTP Code:", res.data.data.debug_otp);
@@ -163,6 +174,7 @@ export default function LoginPage() {
       }
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Kode verifikasi salah atau kedaluwarsa.");
+      setOtpCode('');
     } finally {
       setVerifyingOtp(false);
     }
@@ -211,7 +223,7 @@ export default function LoginPage() {
         <CardContent className="space-y-6">
           {/* TABS SELECTOR */}
           <div className="space-y-2.5">
-            <Label className="text-slate-500 font-bold text-xs uppercase tracking-wider block text-center">Apakah Anda Anggota Serikat?</Label>
+            <Label className="text-slate-500 font-bold text-xs uppercase tracking-wider block text-center">Apakah Anda Pengurus/Delegasi Serikat?</Label>
             <div className="grid grid-cols-2 gap-3 p-1.5 bg-slate-100 rounded-xl border border-slate-200/60">
               <button 
                 type="button"
@@ -220,12 +232,12 @@ export default function LoginPage() {
                   setOtpSent(false);
                 }}
                 className={`py-2 px-3 text-xs font-bold rounded-lg transition-all ${
-                  isOrganisasi === true 
+                  isOrganisasi !== false 
                     ? "bg-white text-slate-900 shadow-sm border border-slate-200/50" 
                     : "text-slate-500 hover:text-slate-800"
                 }`}
               >
-                Ya, Anggota Serikat
+                Ya, Pengurus/Delegasi
               </button>
               <button 
                 type="button"
@@ -236,36 +248,64 @@ export default function LoginPage() {
                     : "text-slate-500 hover:text-slate-800"
                 }`}
               >
-                Bukan Anggota Serikat
+                Bukan Pengurus/Delegasi
               </button>
             </div>
           </div>
 
-          {/* VIEW: GOOGLE OAUTH */}
-          {isOrganisasi === true && (
-            <div className="pt-2 text-center space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
-              <div className="p-4 bg-blue-50/50 border border-blue-100/60 rounded-xl">
+          {/* VIEW: EMAIL & PASSWORD (PENGURUS) */}
+          {isOrganisasi !== false && (
+            <form onSubmit={handleLogin} className="space-y-4 pt-2 animate-in fade-in duration-300">
+              <div className="p-4 bg-blue-50/50 border border-blue-100/60 rounded-xl mb-2">
                 <p className="text-xs text-blue-600 font-medium leading-relaxed">
-                  Anggota serikat masuk instan dan aman menggunakan email Gmail yang terdaftar.
+                  Pengurus/Delegasi serikat masuk menggunakan Email/No. Telp dan kata sandi yang telah didaftarkan.
                 </p>
               </div>
-              <Button 
-                type="button"
-                className="w-full bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-bold flex items-center justify-center gap-3 shadow-sm rounded-xl py-5 transition-all duration-200 hover:border-slate-400"
-                onClick={handleGoogleLogin}
-              >
-                <img src="https://www.svgrepo.com/show/355037/google.svg" className="w-5 h-5" alt="Google Logo" />
-                Masuk dengan Google
+              <div className="space-y-2">
+                <Label htmlFor="identifier">No. Telp / Email</Label>
+                <Input 
+                  id="identifier" 
+                  type="text" 
+                  placeholder="Contoh: 0812... atau admin@email.com" 
+                  required 
+                  value={formData.identifier}
+                  onChange={(e) => setFormData({ ...formData, identifier: e.target.value })}
+                  className="rounded-xl border-slate-300 bg-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <div className="relative">
+                  <Input 
+                    id="password" 
+                    type={showPassword ? 'text' : 'password'} 
+                    required 
+                    value={formData.password}
+                    onChange={(e) => setFormData({...formData, password: e.target.value})}
+                    className="pr-10 rounded-xl border-slate-300 bg-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <Button className="w-full font-bold rounded-xl py-5 mt-2" type="submit" disabled={loading}>
+                {loading ? 'Masuk...' : 'Masuk Dashboard'}
               </Button>
-            </div>
+            </form>
           )}
 
-          {/* VIEW: WHATSAPP OTP */}
+          {/* VIEW: WHATSAPP OTP (NON-PENGURUS) */}
           {isOrganisasi === false && (
             <div className="space-y-4 pt-1 animate-in fade-in slide-in-from-top-2 duration-300">
               <div className="p-4 bg-emerald-50/50 border border-emerald-100/60 rounded-xl">
                 <p className="text-xs text-emerald-600 font-medium leading-relaxed">
-                  Pekerja non-anggota masuk menggunakan nomor WhatsApp aktif untuk verifikasi kode OTP sekali pakai.
+                  Pekerja non-pengurus masuk menggunakan nomor WhatsApp aktif untuk verifikasi kode OTP sekali pakai.
                 </p>
               </div>
 
@@ -308,8 +348,28 @@ export default function LoginPage() {
                       value={otpCode}
                       onChange={(e) => setOtpCode(e.target.value.replace(/[^0-9]/g, ''))}
                     />
-                    <p className="text-[10px] text-slate-400 text-center mt-1">Kode OTP telah dikirimkan ke nomor +62{waNumber}</p>
+                  <p className="text-[10px] text-slate-400 text-center mt-1">Kode OTP telah dikirimkan ke nomor +62{waNumber}</p>
                   </div>
+
+                  {/* Resend OTP */}
+                  <div className="text-center">
+                    {countdown > 0 ? (
+                      <p className="text-xs text-slate-400">
+                        Kirim ulang kode dalam{' '}
+                        <span className="font-bold text-slate-600">{countdown}s</span>
+                      </p>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={sendOtpCode}
+                        disabled={sendingOtp}
+                        className="text-xs text-emerald-600 font-bold hover:text-emerald-700 hover:underline disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        {sendingOtp ? 'Mengirim ulang...' : '↻ Kirim Ulang Kode Verifikasi'}
+                      </button>
+                    )}
+                  </div>
+
                   <Button 
                     type="button"
                     className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl py-5" 
@@ -323,6 +383,7 @@ export default function LoginPage() {
                     onClick={() => {
                       setOtpSent(false);
                       setOtpCode('');
+                      setCountdown(0);
                     }} 
                     className="text-xs text-primary font-bold hover:underline block text-center w-full mt-2"
                   >
@@ -331,59 +392,6 @@ export default function LoginPage() {
                 </div>
               )}
             </div>
-          )}
-
-          {/* VIEW: FALLBACK REGULAR LOGIN */}
-          {isOrganisasi === null && (
-            <form onSubmit={handleLogin} className="space-y-4 pt-2 animate-in fade-in duration-300">
-              <div className="space-y-2">
-                <Label htmlFor="identifier">No. Telp / Email</Label>
-                <Input 
-                  id="identifier" 
-                  type="text" 
-                  placeholder="Contoh: 0812... atau admin@email.com" 
-                  required 
-                  value={formData.identifier}
-                  onChange={(e) => setFormData({ ...formData, identifier: e.target.value })}
-                  className="rounded-xl border-slate-300 bg-white"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Input 
-                    id="password" 
-                    type={showPassword ? 'text' : 'password'} 
-                    required 
-                    value={formData.password}
-                    onChange={(e) => setFormData({...formData, password: e.target.value})}
-                    className="pr-10 rounded-xl border-slate-300 bg-white"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-              </div>
-
-              <Button className="w-full font-bold rounded-xl py-5 mt-2" type="submit" disabled={loading}>
-                {loading ? 'Masuk...' : 'Masuk Dashboard'}
-              </Button>
-            </form>
-          )}
-
-          {/* Fallback back button if selected an option */}
-          {isOrganisasi !== null && (
-            <button 
-              type="button"
-              onClick={() => setIsOrganisasi(null)}
-              className="text-xs font-semibold text-slate-400 hover:text-slate-600 flex items-center justify-center gap-1.5 w-full pt-2 transition-colors"
-            >
-              <ArrowLeft className="h-3.5 w-3.5" /> Kembali ke Login Sandi
-            </button>
           )}
         </CardContent>
 

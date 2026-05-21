@@ -34,6 +34,7 @@ import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import PriorityCasesCard from '@/components/dashboard/PriorityCasesCard';
+import AdvokasiBarChart from '@/components/AdvokasiBarChart';
 
 export default function LaporanPage() {
   const router = useRouter();
@@ -267,62 +268,10 @@ export default function LaporanPage() {
 
 
       {/* Charts Row */}
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* Bar Chart */}
-        <Card className="rounded-[20px] shadow-sm border-slate-100 p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-[17px] font-bold text-[#0f172a]">Tren Penyakit Akibat Kerja</h2>
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600">Bulanan</span>
-          </div>
-          <div className="h-[250px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                <XAxis
-                  dataKey="month"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: '#94a3b8', fontSize: 11, fontWeight: 600 }}
-                  dy={10}
-                />
-                <RechartsTooltip
-                  cursor={{ fill: '#f1f5f9' }}
-                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                />
-                <Bar dataKey="kasus" fill="#0ea5e9" radius={[6, 6, 0, 0]} name="Jumlah Kasus" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-
-        {/* Compliance Bars */}
-        <Card className="rounded-[20px] shadow-sm border-slate-100 p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-[17px] font-bold text-[#0f172a]">Jenis Kasus</h2>
-            <button className="text-slate-400 hover:text-slate-600 transition-colors">
-              <MoreHorizontal className="h-5 w-5" />
-            </button>
-          </div>
-          <div className="space-y-6">
-            {loading ? [1, 2, 3, 4].map((i: number) => <div key={i} className="h-10 bg-slate-50 animate-pulse rounded-lg" />) : (
-              sectorData.map((item: any) => (
-                <div key={item.name} className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-semibold text-[#1e293b]">{item.name}</span>
-                    <span className="text-sm font-bold text-[#0f172a]">{item.value}%</span>
-                  </div>
-                  <div className="w-full bg-slate-100 rounded-full h-2.5">
-                    <div className={`${item.color} h-2.5 rounded-full transition-all duration-500`} style={{ width: `${item.value}%` }} />
-                  </div>
-                </div>
-              ))
-            )}
-            {!loading && sectorData.length === 0 && (
-              <p className="text-center text-slate-400 text-sm py-10">Belum ada data sektor.</p>
-            )}
-          </div>
-        </Card>
-      </div>
+      {/* Detailed Chart */}
+      <Card className="rounded-[20px] shadow-sm border-slate-100 p-6">
+        <AdvokasiBarChart />
+      </Card>
 
       {/* Bottom Section */}
       <div className="grid gap-6 md:grid-cols-3">

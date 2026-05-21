@@ -1,3 +1,4 @@
+// Provinsi beserta kode BPS resmi (dari api-wilayah-indonesia)
 export const PROVINCES = [
   "Aceh",
   "Bali",
@@ -38,3 +39,45 @@ export const PROVINCES = [
   "Sumatera Selatan",
   "Sumatera Utara"
 ];
+
+// Mapping nama provinsi → kode BPS (digunakan untuk fetch kabupaten/kecamatan)
+export const PROVINCE_CODE_MAP: Record<string, string> = {
+  "Aceh": "11",
+  "Sumatera Utara": "12",
+  "Sumatera Barat": "13",
+  "Riau": "14",
+  "Jambi": "15",
+  "Sumatera Selatan": "16",
+  "Bengkulu": "17",
+  "Lampung": "18",
+  "Kepulauan Bangka Belitung": "19",
+  "Kepulauan Riau": "21",
+  "DKI Jakarta": "31",
+  "Jawa Barat": "32",
+  "Jawa Tengah": "33",
+  "DI Yogyakarta": "34",
+  "Jawa Timur": "35",
+  "Banten": "36",
+  "Bali": "51",
+  "Nusa Tenggara Barat": "52",
+  "Nusa Tenggara Timur": "53",
+  "Kalimantan Barat": "61",
+  "Kalimantan Tengah": "62",
+  "Kalimantan Selatan": "63",
+  "Kalimantan Timur": "64",
+  "Kalimantan Utara": "65",
+  "Sulawesi Utara": "71",
+  "Sulawesi Tengah": "72",
+  "Sulawesi Selatan": "73",
+  "Sulawesi Tenggara": "74",
+  "Gorontalo": "75",
+  "Sulawesi Barat": "76",
+  "Maluku": "81",
+  "Maluku Utara": "82",
+  "Papua Barat": "91",
+  "Papua": "94",
+  "Papua Selatan": "95",
+  "Papua Tengah": "96",
+  "Papua Pegunungan": "97",
+  "Papua Barat Daya": "98",
+};

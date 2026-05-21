@@ -30,12 +30,24 @@ class DashboardController extends Controller
     {
         try {
             // Cache 30 detik agar tidak memukul DB setiap request
-            $data = cache()->remember('admin_dashboard_stats', 30, function () {
+            $requestUser = request()->user();
+            $cacheKey = ($requestUser && $requestUser->isPetugas() && $requestUser->serikat)
+                ? 'stats_serikat_' . md5($requestUser->serikat)
+                : 'admin_dashboard_stats';
+            $serikatFilter = ($requestUser && $requestUser->isPetugas() && $requestUser->serikat)
+                ? $requestUser->serikat
+                : null;
+
+            $data = cache()->remember($cacheKey, 30, function () use ($serikatFilter) {
                 $startOfThisMonth = now()->startOfMonth();
 
                 // ── Pekerja ─────────────────────────────────────────────────────
-                $totalPekerja = Pekerja::count();
-                $newPekerja   = Pekerja::where('created_at', '>=', $startOfThisMonth)->count();
+                $pekerjaBaseQuery = Pekerja::query();
+                if ($serikatFilter) {
+                    $pekerjaBaseQuery->whereHas('perusahaan', fn($q) => $q->where('serikat', $serikatFilter));
+                }
+                $totalPekerja = (clone $pekerjaBaseQuery)->count();
+                $newPekerja   = (clone $pekerjaBaseQuery)->where('created_at', '>=', $startOfThisMonth)->count();
 
                 // ── Kasus Aktif (Advokasi yang belum selesai rehabilitasi) ───────
                 $kasusAktif = StatusAdvokasi::whereNotNull('jenis_kasus')
@@ -59,11 +71,19 @@ class DashboardController extends Controller
                     ->count();
 
                 // ── Perusahaan ───────────────────────────────────────────────────
-                $totalPerusahaan = Perusahaan::count();
-                $newPerusahaan   = Perusahaan::where('created_at', '>=', $startOfThisMonth)->count();
+                $perusahaanBaseQuery = Perusahaan::query();
+                if ($serikatFilter) {
+                    $perusahaanBaseQuery->where('serikat', $serikatFilter);
+                }
+                $totalPerusahaan = (clone $perusahaanBaseQuery)->count();
+                $newPerusahaan   = (clone $perusahaanBaseQuery)->where('created_at', '>=', $startOfThisMonth)->count();
 
                 // ── Status Kesehatan (Optimized to 1 Query) ─────────────────────
-                $kesehatanStats = Pekerja::selectRaw("
+                $kesehatanBaseQuery = Pekerja::query();
+                if ($serikatFilter) {
+                    $kesehatanBaseQuery->whereHas('perusahaan', fn($q) => $q->where('serikat', $serikatFilter));
+                }
+                $kesehatanStats = $kesehatanBaseQuery->selectRaw("
                     COUNT(CASE WHEN status_kesehatan = 'sehat' THEN 1 END) as fit,
                     COUNT(CASE WHEN status_kesehatan = 'sehat_dengan_catatan' THEN 1 END) as note,
                     COUNT(CASE WHEN status_kesehatan = 'tidak_sehat' THEN 1 END) as unfit

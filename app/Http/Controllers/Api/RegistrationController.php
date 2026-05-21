@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Perusahaan;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -48,5 +49,28 @@ class RegistrationController extends Controller
             'status' => 'success',
             'message' => 'Password berhasil disetel. Silakan login untuk masuk ke dashboard.',
         ], 200);
+    }
+
+    /**
+     * Return a unique list of all registered unions (serikat) from users and perusahaan.
+     */
+    public function listSerikat(): JsonResponse
+    {
+        $serikatUsers = \App\Models\User::whereNotNull('serikat')
+            ->where('serikat', '!=', '')
+            ->distinct()
+            ->pluck('serikat')
+            ->toArray();
+
+        $serikatPerusahaan = \App\Models\Perusahaan::whereNotNull('serikat')
+            ->where('serikat', '!=', '')
+            ->distinct()
+            ->pluck('serikat')
+            ->toArray();
+
+        $allSerikat = array_values(array_unique(array_merge($serikatUsers, $serikatPerusahaan)));
+        sort($allSerikat);
+
+        return response()->json(['status' => 'success', 'data' => $allSerikat]);
     }
 }

@@ -27,8 +27,6 @@ const milestoneLabels = [
 
 const caseTypeLabels: Record<string, string> = {
   PAK: 'PAK (Penyakit Kerja)',
-  K3: 'Kecelakaan K3',
-  PHK: 'Kasus PHK',
 };
 
 function ProgressDots({ level, total = 6 }: { level: number; total?: number }) {
@@ -90,7 +88,7 @@ export default function AdvokasiTable({
               <TableHead className="py-3 px-3 font-bold text-[10px] tracking-widest text-[#94a3b8] w-[12%]">JENIS KASUS</TableHead>
               <TableHead className="py-3 px-3 font-bold text-[10px] tracking-widest text-[#94a3b8] w-[18%]">MEDIS & PAJANAN</TableHead>
               <TableHead className="py-3 px-3 font-bold text-[10px] tracking-widest text-[#94a3b8] w-[16%]">PROGRES ALUR</TableHead>
-              <TableHead className="py-3 px-3 font-bold text-[10px] tracking-widest text-[#94a3b8] w-[12%]">STATUS</TableHead>
+              <TableHead className="py-3 px-3 font-bold text-[10px] tracking-widest text-[#94a3b8] w-[14%]">STATUS</TableHead>
               <TableHead className="py-3 px-3 font-bold text-[10px] tracking-widest text-[#94a3b8] w-[9%]">UPDATE</TableHead>
               <TableHead className="py-3 px-2 font-bold text-[10px] tracking-widest text-[#94a3b8] w-10">AKSI</TableHead>
             </TableRow>
@@ -178,8 +176,8 @@ export default function AdvokasiTable({
                       </span>
                     </div>
                   </TableCell>
-                  <TableCell className="py-3 px-3">
-                    <span className={`inline-flex items-center px-2 py-1 rounded-md text-[9px] font-bold border uppercase tracking-wide ${statusColor}`}>
+                  <TableCell className="py-3 px-3 max-w-[140px]">
+                    <span title={formatHealthStatus(c.status_detail) || 'PROSES'} className={`inline-flex items-center px-2 py-1 rounded-md text-[9px] font-bold border uppercase tracking-wide truncate max-w-full block ${statusColor}`}>
                       {formatHealthStatus(c.status_detail) || 'PROSES'}
                     </span>
                   </TableCell>

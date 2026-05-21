@@ -61,7 +61,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { simpanKasusSchema, SimpanKasusFormData } from '@/lib/validations/advokasi';
 
-const tabs = ['Semua Kasus', 'PAK', 'K3', 'PHK'];
+const tabs = ['Semua Kasus', 'PAK'];
 
 
 export default function AdvokasiPage() {
@@ -101,7 +101,7 @@ export default function AdvokasiPage() {
       pekerja_name: '',
       jenis_kasus: '',
       perusahaan: '',
-      tahap: 'UPTD',
+      tahap: 'Evaluasi Medis',
       status_detail: 'Dalam Proses',
       tanggal_pelaporan: new Date().toISOString().split('T')[0],
       catatan: '',
@@ -137,8 +137,6 @@ export default function AdvokasiPage() {
 
   const defaultNotes: Record<string, string> = {
     PAK: "Pekerja didiagnosa mengalami Penyakit Akibat Kerja (PAK) berupa [NAMA PENYAKIT]. Dilaporkan adanya pajanan [JENIS PAJANAN] di area kerja [NAMA AREA] yang berlangsung selama [DURASI]. Dibutuhkan pendampingan medis dan pelaporan ke pihak berwenang.",
-    K3: "Terjadi kecelakaan kerja pada tanggal [TANGGAL] pukul [JAM] di lokasi [LOKASI]. Kejadian bermula saat [KRONOLOGI SINGKAT]. Kondisi pekerja saat ini [KONDISI].",
-    PHK: "Pekerja mengalami perselisihan hubungan kerja terkait [ALASAN PHK]. Hak-hak pekerja seperti pesangon dan uang penggantian hak masih dalam tahap perundingan.",
   };
 
   const handleCaseTypeSelect = (typeId: string) => {
@@ -168,8 +166,14 @@ export default function AdvokasiPage() {
 
   const caseTypes = [
     { id: 'PAK', label: 'PAK (Penyakit Kerja)', icon: Activity, desc: 'Penyakit akibat lingkungan kerja', color: 'text-rose-500', bg: 'bg-rose-50' },
-    { id: 'K3', label: 'K3 (Kecelakaan)', icon: HardHat, desc: 'Kecelakaan saat bekerja', color: 'text-amber-500', bg: 'bg-amber-50' },
-    { id: 'PHK', label: 'PHK (Kasus)', icon: Gavel, desc: 'Perselisihan hubungan kerja', color: 'text-blue-500', bg: 'bg-blue-50' },
+  ];
+
+  // Data struktur untuk opsi "Tahap Saat Ini"
+  const advokasiStages = [
+    { id: 'Evaluasi Medis', label: 'Evaluasi Medis' },
+    { id: 'Verifikasi BPJS', label: 'Verifikasi BPJS' },
+    { id: 'Investigasi UPTD', label: 'Investigasi UPTD' },
+    { id: 'Sengketa PHI', label: 'Sengketa PHI' },
   ];
 
   return (
@@ -326,7 +330,7 @@ export default function AdvokasiPage() {
 
                 <div className="space-y-3 pt-2">
                   <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Jenis Kasus Advokasi</Label>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 gap-3">
                     {caseTypes.map((type) => {
                       const Icon = type.icon;
                       const isActive = formData.jenis_kasus === type.id;
@@ -379,9 +383,11 @@ export default function AdvokasiPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="UPTD">UPTD</SelectItem>
-                      <SelectItem value="BPJS">BPJS</SelectItem>
-                      <SelectItem value="Pengadilan">Pengadilan</SelectItem>
+                      {advokasiStages.map((stage) => (
+                        <SelectItem key={stage.id} value={stage.id}>
+                          {stage.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>

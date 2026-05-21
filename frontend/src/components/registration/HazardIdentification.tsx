@@ -17,7 +17,7 @@ export const HAZARD_CATEGORIES = [
     id: 'KIMIA',
     title: 'Paparan Bahan Kimia',
     icon: '🧪',
-    helperText: 'Contoh: Menghirup asap las, terkena cairan pembersih keras, debu kayu/semen.',
+    helperText: 'Contoh: Menghirup asap las, terkena cairan pembersih karat atau karbol pekat, debu asbes, debu kayu/semen, atau menghirup uap cat/tiner.',
   },
   {
     id: 'BIOLOGI',
@@ -29,7 +29,7 @@ export const HAZARD_CATEGORIES = [
     id: 'ERGONOMI',
     title: 'Sikap Kerja & Beban Fisik',
     icon: '🧍',
-    helperText: 'Contoh: Terlalu lama duduk membungkuk, sering mengangkat beban berat, gerakan berulang.',
+    helperText: 'Contoh: Posisi duduk atau berdiri yang tidak nyaman, sering mengangkat beban berat, gerakan berulang dalam jangka waktu panjang.',
   },
   {
     id: 'PSIKOSOSIAL',

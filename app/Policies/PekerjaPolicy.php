@@ -13,8 +13,14 @@ use App\Models\User;
  * kepemilikan yang tersebar (mencegah IDOR).
  *
  * Aturan umum:
- * - Admin & Petugas → akses penuh ke semua data pekerja.
+ * - Admin → akses penuh ke semua data pekerja, termasuk delete.
+ * - Petugas → hanya data di perusahaan sendiri; beda serikat = list only.
  * - Viewer (Pekerja itu sendiri) → hanya bisa mengakses data miliknya.
+ *
+ * STRICT RULES:
+ * - No Delete Policy: Hanya admin yang bisa menghapus.
+ * - Multi-Tenancy: Petugas diisolasi berdasarkan perusahaan_id.
+ * - Cross-Serikat: Petugas beda serikat di perusahaan sama bisa list, tidak bisa detail.
  */
 class PekerjaPolicy
 {
@@ -23,19 +29,65 @@ class PekerjaPolicy
      *
      * Mencegah IDOR pada endpoint: GET /pekerja/{id}
      *
+     * Aturan ketat:
+     * - Admin → bisa melihat semua data pekerja.
+     * - Petugas → bisa melihat detail HANYA jika:
+     *     1. Pekerja berada di perusahaan yang sama (perusahaan_id cocok), DAN
+     *     2. Serikat user cocok dengan serikat perusahaan pekerja.
+     *     Jika serikat berbeda tapi perusahaan sama → DITOLAK (hanya boleh lihat list).
+     * - Viewer → hanya data miliknya sendiri.
+     *
      * @param  User    $user    User yang sedang login.
      * @param  Pekerja $pekerja Resource Pekerja yang diminta.
      */
     public function view(User $user, Pekerja $pekerja): bool
     {
-        // Admin dan Petugas boleh melihat semua data pekerja
-        if ($user->isAdmin() || $user->isPetugas()) {
+        // Admin boleh melihat semua data pekerja
+        if ($user->isAdmin()) {
             return true;
         }
 
+        // Petugas: cek isolasi perusahaan + serikat
+        if ($user->isPetugas()) {
+            // Pastikan petugas punya perusahaan_id
+            if (!$user->perusahaan_id) {
+                return false;
+            }
+
+            // Pekerja harus di perusahaan yang sama
+            if ($pekerja->perusahaan_id !== $user->perusahaan_id) {
+                return false;
+            }
+
+            // Cek kecocokan serikat: petugas hanya bisa lihat detail pekerja
+            // jika serikat perusahaan pekerja cocok dengan serikat petugas
+            $perusahaanPekerja = $pekerja->perusahaan;
+            if ($perusahaanPekerja && $user->serikat) {
+                return strtolower(trim($perusahaanPekerja->serikat ?? ''))
+                    === strtolower(trim($user->serikat));
+            }
+
+            // Jika data serikat tidak tersedia, tolak akses untuk keamanan
+            return false;
+        }
+
         // Viewer hanya boleh melihat data miliknya sendiri
-        // Dibandingkan via user_id agar konsisten meski id berbeda
         return $user->id === $pekerja->user_id;
+    }
+
+    /**
+     * Menentukan apakah user boleh menghapus data pekerja.
+     *
+     * NO DELETE POLICY:
+     * - HANYA admin (Super Admin) yang boleh menghapus data.
+     * - Petugas dan Viewer akan mendapatkan 403 Forbidden.
+     *
+     * @param  User    $user    User yang sedang login.
+     * @param  Pekerja $pekerja Resource Pekerja yang akan dihapus.
+     */
+    public function delete(User $user, Pekerja $pekerja): bool
+    {
+        return $user->isAdmin();
     }
 
     /**
@@ -52,6 +104,44 @@ class PekerjaPolicy
         // Petugas tidak diberi akses untuk mengganti foto pribadi pekerja
         if ($user->isAdmin()) {
             return true;
+        }
+
+        return $user->id === $pekerja->user_id;
+    }
+
+    /**
+     * Menentukan apakah user boleh mengupdate data pekerja.
+     *
+     * - Admin → bisa update semua pekerja.
+     * - Petugas → hanya pekerja di perusahaan sendiri + serikat sama.
+     * - Viewer → hanya data miliknya sendiri.
+     *
+     * @param  User    $user    User yang sedang login.
+     * @param  Pekerja $pekerja Resource Pekerja yang akan diupdate.
+     */
+    public function update(User $user, Pekerja $pekerja): bool
+    {
+        if ($user->isAdmin()) {
+            return true;
+        }
+
+        if ($user->isPetugas()) {
+            if (!$user->perusahaan_id) {
+                return false;
+            }
+
+            // Harus di perusahaan sama DAN serikat sama
+            if ($pekerja->perusahaan_id !== $user->perusahaan_id) {
+                return false;
+            }
+
+            $perusahaanPekerja = $pekerja->perusahaan;
+            if ($perusahaanPekerja && $user->serikat) {
+                return strtolower(trim($perusahaanPekerja->serikat ?? ''))
+                    === strtolower(trim($user->serikat));
+            }
+
+            return false;
         }
 
         return $user->id === $pekerja->user_id;

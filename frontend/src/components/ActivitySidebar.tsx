@@ -15,6 +15,7 @@ import {
   Activity,
   UserCog,
 } from 'lucide-react';
+import { useRole } from '@/hooks/useRole';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -128,6 +129,7 @@ function ActivityItem({ item }: { item: ActivityLogItem }) {
 
 export default function ActivitySidebar() {
   const router = useRouter();
+  const { isSuperAdmin } = useRole();
   const [activeTab, setActiveTab] = useState<'sistem' | 'admin'>('sistem');
   const [logs, setLogs] = useState<ActivityLogItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -147,10 +149,14 @@ export default function ActivitySidebar() {
   }, []);
 
   useEffect(() => {
-    fetchLogs(activeTab);
-  }, [activeTab, fetchLogs]);
+    if (isSuperAdmin) {
+      fetchLogs(activeTab);
+    }
+  }, [activeTab, fetchLogs, isSuperAdmin]);
 
   const displayItems = logs;
+
+  if (!isSuperAdmin) return null;
 
   return (
     <div className="flex flex-col h-full rounded-[20px] bg-white shadow-sm border border-slate-100 overflow-hidden">

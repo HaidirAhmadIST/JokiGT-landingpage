@@ -32,6 +32,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useUserDashboard } from '@/hooks/useUserDashboard';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
 import { PROVINCES } from '@/lib/provinces';
+import { useWilayah } from '@/hooks/useWilayah';
 import type { StatusAdvokasi, RiwayatPekerja, DetailMedis } from '@/types';
 
 
@@ -97,6 +98,17 @@ export default function UserDashboardPage() {
   } = useUserDashboard();
 
   const { stats } = useDashboardStats();
+
+  // Hook untuk fetch kabupaten & kecamatan dari BPS (cascading)
+  // Mendukung edit mode: initialKabupaten agar saat modal terbuka kecamatan langsung ter-fetch
+  const {
+    kabupatenList,
+    kecamatanList,
+    loadingKabupaten,
+    loadingKecamatan,
+    selectedKabupatenId,
+    setSelectedKabupatenId,
+  } = useWilayah(profileForm.domisili, profileForm.kabupaten || undefined);
 
   if (loading) return (
     <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center">
@@ -1059,7 +1071,7 @@ export default function UserDashboardPage() {
               <Label htmlFor="addr" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Provinsi Domisili</Label>
               <Select 
                 value={profileForm.domisili}
-                onValueChange={(v) => setProfileForm({...profileForm, domisili: v || ''})}
+                onValueChange={(v) => setProfileForm({...profileForm, domisili: v || '', kabupaten: '', kecamatan: ''})}
               >
                 <SelectTrigger id="addr" className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500">
                   <SelectValue placeholder="Pilih Provinsi Domisili" />
@@ -1075,23 +1087,53 @@ export default function UserDashboardPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="kabupaten" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Kabupaten/Kota</Label>
-                <Input 
-                  id="kabupaten"
-                  placeholder="Contoh: Kota Bandung"
-                  className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500"
+                <Select
                   value={profileForm.kabupaten || ''}
-                  onChange={(e) => setProfileForm({...profileForm, kabupaten: e.target.value})}
-                />
+                  onValueChange={(v) => {
+                    const selected = kabupatenList.find(k => k.name === v);
+                    setSelectedKabupatenId(selected?.id || '');
+                    setProfileForm({...profileForm, kabupaten: v as string, kecamatan: '' as string});
+                  }}
+                  disabled={!profileForm.domisili || loadingKabupaten}
+                >
+                  <SelectTrigger id="kabupaten" className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500">
+                    <SelectValue placeholder={
+                      !profileForm.domisili
+                        ? 'Pilih provinsi dulu'
+                        : loadingKabupaten
+                        ? 'Memuat data...'
+                        : 'Pilih Kabupaten/Kota'
+                    } />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[300px]">
+                    {kabupatenList.map((kab) => (
+                      <SelectItem key={kab.id} value={kab.name}>{kab.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="kecamatan" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Kecamatan</Label>
-                <Input 
-                  id="kecamatan"
-                  placeholder="Contoh: Coblong"
-                  className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500"
+                <Select
                   value={profileForm.kecamatan || ''}
-                  onChange={(e) => setProfileForm({...profileForm, kecamatan: e.target.value})}
-                />
+                  onValueChange={(v) => setProfileForm({...profileForm, kecamatan: v as string})}
+                  disabled={!profileForm.kabupaten || loadingKecamatan}
+                >
+                  <SelectTrigger id="kecamatan" className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500">
+                    <SelectValue placeholder={
+                      !profileForm.kabupaten
+                        ? 'Pilih kabupaten dulu'
+                        : loadingKecamatan
+                        ? 'Memuat data...'
+                        : 'Pilih Kecamatan'
+                    } />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[300px]">
+                    {kecamatanList.map((kec) => (
+                      <SelectItem key={kec.id} value={kec.name}>{kec.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 

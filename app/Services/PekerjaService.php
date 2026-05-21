@@ -44,20 +44,33 @@ class PekerjaService
             $user = User::where('email', $data['email'])->first();
         }
 
+        $isPengurus = !empty($data['is_pengurus_serikat']);
+        $role = $isPengurus ? 'petugas' : 'viewer';
+        $serikat = $isPengurus ? ($data['serikat'] ?? null) : null;
+
         if ($user) {
-            $user->update([
+            $updateData = [
                 'nama'     => $data['nama_lengkap'],
                 'whatsapp' => $data['whatsapp'] ?? $user->whatsapp,
                 'email'    => $data['email'] ?? $user->email,
-                'password' => isset($data['password']) ? Hash::make($data['password']) : $user->password,
-            ]);
+            ];
+            if (isset($data['password'])) {
+                $updateData['password'] = Hash::make($data['password']);
+            }
+            // Only update serikat if provided
+            if ($serikat) {
+                $updateData['serikat'] = $serikat;
+                $updateData['role'] = $role;
+            }
+            $user->update($updateData);
         } else {
             $user = User::create([
                 'nama'     => $data['nama_lengkap'],
                 'whatsapp' => $data['whatsapp'] ?? null,
                 'email'    => $data['email'] ?? null,
                 'password' => Hash::make($data['password'] ?? \Illuminate\Support\Str::random(16)),
-                'role'     => 'viewer',
+                'role'     => $role,
+                'serikat'  => $serikat,
             ]);
         }
 

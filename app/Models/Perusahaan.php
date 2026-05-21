@@ -30,6 +30,7 @@ class Perusahaan extends Model
         'kontak_pic',
         'nama_pic_lion',
         'nara_hubung_lion',
+        'serikat',
     ];
 
     // =========================================================================

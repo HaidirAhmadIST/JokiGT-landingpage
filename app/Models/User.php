@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use App\Models\Serikat;
 
 class User extends Authenticatable
 {
@@ -31,6 +32,9 @@ class User extends Authenticatable
         'jabatan',
         'lokasi',
         'bio',
+        'serikat_id',
+        'serikat',
+        'perusahaan_id',
     ];
 
     /**
@@ -66,6 +70,14 @@ class User extends Authenticatable
     public function pekerja(): HasOne
     {
         return $this->hasOne(Pekerja::class);
+    }
+
+    /**
+     * Get the company this user (petugas) is assigned to.
+     */
+    public function perusahaan(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Perusahaan::class, 'perusahaan_id');
     }
 
     // =========================================================================

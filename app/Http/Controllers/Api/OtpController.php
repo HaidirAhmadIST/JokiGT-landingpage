@@ -94,8 +94,13 @@ class OtpController extends Controller
             ], 422);
         }
 
-        $whatsapp = $request->input('whatsapp');
         $otp = $request->input('otp');
+
+        // Normalize whatsapp number (must match sendOtp normalization)
+        $whatsapp = preg_replace('/[^0-9]/', '', $request->input('whatsapp'));
+        if (str_starts_with($whatsapp, '08')) {
+            $whatsapp = '628' . substr($whatsapp, 2);
+        }
 
         // Fetch cached OTP
         $cachedOtp = Cache::get('otp_' . $whatsapp);

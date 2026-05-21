@@ -24,6 +24,12 @@ class PerusahaanController extends Controller
             $query = Perusahaan::query()->withCount('pekerja');
         }
 
+        // Petugas hanya bisa melihat perusahaan dari serikat mereka
+        $user = auth('sanctum')->user();
+        if ($user && $user->isPetugas() && $user->serikat) {
+            $query->where('serikat', $user->serikat);
+        }
+
         if ($request->has('search')) {
             $search = $request->search;
             $query->whereRaw('LOWER(nama_perusahaan) LIKE LOWER(?)', ["%{$search}%"]);
@@ -49,7 +55,13 @@ class PerusahaanController extends Controller
      */
     public function store(StorePerusahaanRequest $request): JsonResponse
     {
-        $perusahaan = Perusahaan::create($request->validated());
+        $validated = $request->validated();
+        // Auto-assign serikat jika user adalah petugas
+        $user = auth('sanctum')->user();
+        if ($user && $user->isPetugas() && $user->serikat) {
+            $validated['serikat'] = $user->serikat;
+        }
+        $perusahaan = Perusahaan::create($validated);
 
         ActivityLog::record(
             action: 'create',
