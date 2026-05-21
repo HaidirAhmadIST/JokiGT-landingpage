@@ -35,6 +35,7 @@ export default function PendaftaranPekerjaPage() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [perusahaanList, setPerusahaanList] = useState<any[]>([]);
+  const [serikatList, setSerikatList] = useState<string[]>([]);
   const [duplicateWarning, setDuplicateWarning] = useState<{ nik?: string; whatsapp?: string }>({});
   // WhatsApp locked to the logged-in user's account
   const [lockedWhatsapp, setLockedWhatsapp] = useState<string | null>(null);
@@ -180,6 +181,7 @@ export default function PendaftaranPekerjaPage() {
     rw: '',
     patokan_rumah: '',
     is_anggota: null as boolean | null,
+    anggota_organisasi: null as boolean | null,
     nama_serikat: '',
   });
 
@@ -397,7 +399,16 @@ export default function PendaftaranPekerjaPage() {
         console.error("Failed fetching perusahaan");
       }
     };
+    const fetchSerikat = async () => {
+      try {
+        const response = await api.get('/serikat');
+        setSerikatList(response.data.data);
+      } catch (error) {
+        console.error("Failed fetching serikat list");
+      }
+    };
     fetchPerusahaan();
+    fetchSerikat();
   }, []);
 
   const handleLanjut = () => {
@@ -980,7 +991,7 @@ export default function PendaftaranPekerjaPage() {
                         <button 
                           type="button"
                           onClick={() => {
-                            setBaseData(prev => ({ ...prev, is_anggota: false }));
+                            setBaseData(prev => ({ ...prev, is_anggota: false, anggota_organisasi: null }));
                             setIsWaVerified(false);
                             setOtpSent(false);
                           }}
@@ -995,16 +1006,53 @@ export default function PendaftaranPekerjaPage() {
                       </div>
                     </div>
 
-                    {baseData.is_anggota === true && (
+                    {/* Jika Bukan Pengurus, Tanyakan Apakah Anggota Biasa */}
+                    {baseData.is_anggota === false && (
+                      <div className="space-y-2.5 animate-in fade-in slide-in-from-top-2">
+                        <Label className="text-slate-700 font-bold">Apakah Anda Anggota Biasa dari Serikat Pekerja?</Label>
+                        <div className="grid grid-cols-2 gap-3 p-1.5 bg-slate-50 rounded-xl border border-slate-200/60">
+                          <button 
+                            type="button"
+                            onClick={() => setBaseData(prev => ({ ...prev, anggota_organisasi: true }))}
+                            className={`py-2.5 px-3 text-xs font-bold rounded-lg transition-all ${
+                              baseData.anggota_organisasi === true 
+                                ? "bg-[#0ea5e9] text-white shadow-sm border border-[#0ea5e9]/50" 
+                                : "text-slate-500 hover:text-slate-800 bg-white border border-slate-200"
+                            }`}
+                          >
+                            Ya
+                          </button>
+                          <button 
+                            type="button"
+                            onClick={() => setBaseData(prev => ({ ...prev, anggota_organisasi: false, nama_serikat: '' }))}
+                            className={`py-2.5 px-3 text-xs font-bold rounded-lg transition-all ${
+                              baseData.anggota_organisasi === false 
+                                ? "bg-[#0ea5e9] text-white shadow-sm border border-[#0ea5e9]/50" 
+                                : "text-slate-500 hover:text-slate-800 bg-white border border-slate-200"
+                            }`}
+                          >
+                            Tidak
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {(baseData.is_anggota === true || baseData.anggota_organisasi === true) && (
                       <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
                         <Label htmlFor="nama_serikat">Nama Serikat Pekerja <span className="text-red-500">*</span></Label>
                         <Input 
                           id="nama_serikat"
-                          placeholder="Masukkan nama serikat pekerja Anda"
+                          list="serikat-list"
+                          placeholder="Ketik atau pilih nama serikat pekerja Anda"
                           className="h-11"
                           value={baseData.nama_serikat || ''}
                           onChange={e => setBaseData({ ...baseData, nama_serikat: e.target.value })}
                         />
+                        <datalist id="serikat-list">
+                          {serikatList.map((serikat, index) => (
+                            <option key={index} value={serikat} />
+                          ))}
+                        </datalist>
                       </div>
                     )}
                   </div>
