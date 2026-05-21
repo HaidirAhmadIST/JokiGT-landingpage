@@ -276,13 +276,6 @@ export default function PekerjaPage() {
                     </TableCell>
                     <TableCell className="py-4 px-3">
                       <div className="flex items-center gap-3 w-full text-left group/worker transition-transform hover:translate-x-1">
-                        <div className="w-8 h-8 rounded-full overflow-hidden bg-slate-100 border border-slate-200 shrink-0 transition-all group-hover/worker:border-[#0ea5e9] group-hover/worker:ring-2 group-hover/worker:ring-blue-100 group-hover/worker:scale-110">
-                           <img 
-                             src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${p.nama_lengkap}`} 
-                             alt="avatar" 
-                             className="w-full h-full object-cover object-top" 
-                           />
-                        </div>
                         <div className="flex flex-col min-w-0 transition-all group-hover/worker:translate-x-1">
                           <span className="font-bold text-slate-900 text-[15px] truncate group-hover/worker:text-[#0284c7] transition-colors leading-tight">{p.nama_lengkap}</span>
                           <span className="text-[11px] text-slate-500 mt-1 truncate font-medium">
@@ -430,13 +423,6 @@ export default function PekerjaPage() {
                 <div key={p.id} className="rounded-xl border border-slate-200 p-5 bg-slate-50/50 hover:bg-white transition-colors">
                   {/* Worker Identity */}
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-100 border border-slate-200 shrink-0">
-                      <img 
-                        src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${p.nama_lengkap}`} 
-                        alt="avatar" 
-                        className="w-full h-full object-cover object-top" 
-                      />
-                    </div>
                     <div>
                       <p className="font-bold text-slate-900 text-sm">{p.nama_lengkap}</p>
                       <p className="text-xs text-slate-500">No. Kartu: {p.nik}</p>

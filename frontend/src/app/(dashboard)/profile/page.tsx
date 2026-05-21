@@ -135,12 +135,8 @@ export default function ProfilePage() {
         {/* Left Side: Avatar */}
         <div className="shrink-0 flex flex-col items-center">
           <div className="relative group">
-            <div className="h-40 w-40 md:h-48 md:w-48 rounded-full bg-slate-50 border-4 border-white shadow-xl flex items-center justify-center text-6xl font-black text-[#0ea5e9] overflow-hidden">
-              <img 
-                src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.nama || 'Admin'}`} 
-                alt={user?.nama} 
-                className="w-full h-full object-cover" 
-              />
+            <div className="h-40 w-40 md:h-48 md:w-48 rounded-full bg-slate-50 border-4 border-white shadow-xl flex items-center justify-center text-slate-300 overflow-hidden">
+              <User className="w-24 h-24" />
             </div>
           </div>
         </div>

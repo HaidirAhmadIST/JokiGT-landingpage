@@ -542,12 +542,8 @@ export default function PekerjaDetailPage() {
           <div className="flex items-center gap-6 w-full lg:w-auto">
             <div className="h-24 w-24 rounded-2xl bg-orange-50 flex items-center justify-center border-4 border-white shadow-sm overflow-hidden relative">
               {/* Placeholder Avatar - replacing with an icon wrapper */}
-              <div className="w-full h-full rounded-[26px] overflow-hidden bg-slate-100 border border-slate-200 relative">
-                <img
-                  src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${data.nama_lengkap}`}
-                  alt="avatar"
-                  className="w-full h-full object-cover object-top"
-                />
+              <div className="w-full h-full rounded-[26px] overflow-hidden bg-slate-100 border border-slate-200 relative flex items-center justify-center">
+                <User className="h-10 w-10 text-slate-400" />
               </div>
               <div className="absolute bottom-[-4px] right-[-4px] bg-[#0ea5e9] rounded-full p-1.5 border-2 border-white text-white">
                 <CheckCircle2 className="h-3 w-3" />

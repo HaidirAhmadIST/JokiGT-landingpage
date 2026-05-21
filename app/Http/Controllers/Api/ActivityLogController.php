@@ -49,16 +49,24 @@ class ActivityLogController extends Controller
             $query->whereDate('created_at', '<=', $request->end_date);
         }
 
-        $logs = $query->latest()->paginate($request->input('per_page', 20));
+        $logs = $query->with('user.perusahaan')->latest()->paginate($request->input('per_page', 20));
 
         // Transform results for frontend
         $logs->getCollection()->transform(function ($log) {
+            $companyName = 'Super Admin';
+            if ($log->user && $log->user->perusahaan) {
+                $companyName = $log->user->perusahaan->nama_perusahaan;
+            } elseif ($log->user && $log->user->pekerja && $log->user->pekerja->perusahaan) {
+                $companyName = $log->user->pekerja->perusahaan->nama_perusahaan;
+            }
+
             return [
                 'id'          => $log->id,
                 'action'      => $log->action,
                 'description' => $log->description,
                 'category'    => $log->category,
                 'user_name'   => $log->user_name,
+                'perusahaan'  => $companyName,
                 'metadata'    => $log->metadata,
                 'created_at'  => $log->created_at->format('Y-m-d H:i'),
                 'time_ago'    => $log->created_at->diffForHumans(),
@@ -105,7 +113,7 @@ class ActivityLogController extends Controller
             $query->whereDate('created_at', '<=', $request->end_date);
         }
 
-        $logs = $query->latest()->get();
+        $logs = $query->with('user.perusahaan')->latest()->get();
         $format = $request->input('format', 'csv');
 
         if ($format === 'pdf') {
@@ -125,13 +133,21 @@ class ActivityLogController extends Controller
 
         $callback = function() use($logs) {
             $file = fopen('php://output', 'w');
-            fputcsv($file, ['ID', 'Waktu', 'Admin', 'Aksi', 'Deskripsi', 'Kategori']);
+            fputcsv($file, ['ID', 'Waktu', 'Admin', 'Perusahaan', 'Aksi', 'Deskripsi', 'Kategori']);
 
             foreach ($logs as $log) {
+                $companyName = 'Super Admin';
+                if ($log->user && $log->user->perusahaan) {
+                    $companyName = $log->user->perusahaan->nama_perusahaan;
+                } elseif ($log->user && $log->user->pekerja && $log->user->pekerja->perusahaan) {
+                    $companyName = $log->user->pekerja->perusahaan->nama_perusahaan;
+                }
+
                 fputcsv($file, [
                     $log->id,
                     $log->created_at->format('Y-m-d H:i:s'),
                     $log->user_name,
+                    $companyName,
                     $log->action,
                     $log->description,
                     $log->category

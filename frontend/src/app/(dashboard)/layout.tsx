@@ -596,14 +596,10 @@ export default function DashboardLayout({
 
           <DropdownMenu>
             <DropdownMenuTrigger 
-              className="h-9 w-9 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center font-bold text-sm border border-orange-100 outline-none hover:ring-2 hover:ring-orange-200 hover:ring-offset-1 transition-all shadow-sm cursor-pointer overflow-hidden"
+              className="h-9 w-9 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center font-bold text-sm border border-slate-200 outline-none hover:ring-2 hover:ring-slate-200 hover:ring-offset-1 transition-all shadow-sm cursor-pointer overflow-hidden"
               suppressHydrationWarning
             >
-              <img 
-                src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.nama || 'Admin'}`} 
-                alt={user?.nama} 
-                className="w-full h-full object-cover" 
-              />
+              <UserIcon className="h-5 w-5" />
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56" align="end">
               <DropdownMenuGroup>

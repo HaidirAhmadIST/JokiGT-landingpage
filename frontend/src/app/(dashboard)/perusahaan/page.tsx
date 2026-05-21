@@ -1090,14 +1090,6 @@ export default function PerusahaanPage() {
                                 {/* Avatar + Name + NIK */}
                                 <td className="py-3.5 px-2">
                                   <div className="flex items-center gap-3">
-                                      <div className="h-9 w-9 rounded-full bg-slate-100 overflow-hidden shrink-0 border-2 border-white shadow-sm">
-                                        <img
-                                          src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${w.nama_lengkap}`}
-                                          alt={w.nama_lengkap}
-                                          className="w-full h-full object-cover object-top"
-                                          loading="lazy"
-                                        />
-                                      </div>
                                     <div className="min-w-0">
                                       <p className="text-[13px] font-bold text-slate-800 truncate">{w.nama_lengkap}</p>
                                       <p className="text-[11px] text-slate-400 font-medium">NIK: {w.nik}</p>

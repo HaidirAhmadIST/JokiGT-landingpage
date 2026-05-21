@@ -48,6 +48,7 @@ interface ActivityLog {
   description: string;
   category: 'sistem' | 'admin';
   user_name: string;
+  perusahaan?: string;
   metadata: any;
   created_at: string;
   time_ago: string;
@@ -342,7 +343,7 @@ export default function AktivitasPage() {
             <TableRow className="hover:bg-transparent border-b border-slate-100 bg-slate-50/50">
               <TableHead className="py-4 pl-8 font-bold text-[10px] tracking-widest text-[#94a3b8] w-[180px]">WAKTU</TableHead>
               <TableHead className="py-4 px-6 font-bold text-[10px] tracking-widest text-[#94a3b8] w-[200px]">ADMIN / USER</TableHead>
-              <TableHead className="py-4 px-6 font-bold text-[10px] tracking-widest text-[#94a3b8] w-[140px]">AKSI</TableHead>
+              <TableHead className="py-4 px-6 font-bold text-[10px] tracking-widest text-[#94a3b8] w-[200px]">PERUSAHAAN</TableHead>
               <TableHead className="py-4 px-6 font-bold text-[10px] tracking-widest text-[#94a3b8] flex-1">DESKRIPSI AKTIVITAS</TableHead>
               <TableHead className="py-4 pr-8 font-bold text-[10px] tracking-widest text-[#94a3b8] text-right w-[100px]">DETAIL</TableHead>
             </TableRow>
@@ -385,12 +386,8 @@ export default function AktivitasPage() {
                       </div>
                     </TableCell>
                     <TableCell className="py-5 px-6">
-                      <span className={cn(
-                        "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold border shadow-sm whitespace-nowrap",
-                        config.color
-                      )}>
-                        <ActionIcon className="h-3 w-3" />
-                        {config.label.toUpperCase()}
+                      <span className="text-[13px] font-bold text-slate-700">
+                        {log.perusahaan || '-'}
                       </span>
                     </TableCell>
                     <TableCell className="py-5 px-6">

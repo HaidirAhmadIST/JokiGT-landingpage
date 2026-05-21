@@ -124,7 +124,6 @@ export default function UserDashboardPage() {
   const hCfg = healthConfig[pekerja?.status_kesehatan ?? 'sehat'] ?? healthConfig.sehat;
   const done = adv ? STEPS.filter(s => (adv as any)[s.key]).length : 0;
   const pct  = Math.round((done / 6) * 100);
-  const photo = `https://api.dicebear.com/7.x/avataaars/svg?seed=${pekerja?.nama_lengkap || user?.nama || 'Pekerja'}`;
   const timeline = [
     { label: 'Terdaftar', at: pekerja?.created_at, icon: Shield, color: 'bg-slate-400' },
     ...STEPS.filter(s => adv && (adv as any)[s.key]).map(s => ({
@@ -199,10 +198,9 @@ export default function UserDashboardPage() {
             <p className="text-[10px] text-slate-400 font-medium">Akun Pekerja</p>
           </div>
           <div className="h-9 w-9 rounded-full overflow-hidden border-2 border-[#0284c7] shadow-sm">
-            {photo ? <img src={photo} alt="foto" className="w-full h-full object-cover object-top" /> :
-              <div className="w-full h-full bg-gradient-to-br from-[#0ea5e9] to-[#0284c7] flex items-center justify-center text-white text-sm font-bold">
-                {user?.nama?.charAt(0)?.toUpperCase() || 'P'}
-              </div>}
+            <div className="w-full h-full bg-gradient-to-br from-[#0ea5e9] to-[#0284c7] flex items-center justify-center text-white text-sm font-bold">
+              {user?.nama?.charAt(0)?.toUpperCase() || 'P'}
+            </div>
           </div>
           <button 
             onClick={() => setIsInboxOpen(true)} 

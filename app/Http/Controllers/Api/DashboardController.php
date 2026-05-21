@@ -30,7 +30,7 @@ class DashboardController extends Controller
     {
         try {
             // Cache 30 detik agar tidak memukul DB setiap request
-            $requestUser = request()->user();
+            $requestUser = auth('sanctum')->user();
             $perusahaanFilter = ($requestUser && $requestUser->isPetugas())
                 ? ($requestUser->perusahaan_id ?? $requestUser->pekerja?->perusahaan_id)
                 : null;
