@@ -24,10 +24,15 @@ class PerusahaanController extends Controller
             $query = Perusahaan::query()->withCount('pekerja');
         }
 
-        // Petugas hanya bisa melihat perusahaan dari serikat mereka
+        // Petugas HANYA bisa melihat perusahaannya sendiri
         $user = auth('sanctum')->user();
-        if ($user && $user->isPetugas() && $user->serikat) {
-            $query->where('serikat', $user->serikat);
+        if ($user && $user->isPetugas()) {
+            $perusahaanId = $user->perusahaan_id ?? $user->pekerja?->perusahaan_id;
+            if ($perusahaanId) {
+                $query->where('id', $perusahaanId);
+            } else {
+                $query->where('id', '<', 0);
+            }
         }
 
         if ($request->has('search')) {

@@ -122,8 +122,20 @@ class OtpController extends Controller
         // OTP is correct! Clear from cache immediately for security
         Cache::forget('otp_' . $whatsapp);
 
-        // Find or create User by WhatsApp number
-        $user = User::where('whatsapp', $whatsapp)->first();
+        // Create alternative whatsapp format to check
+        $altWhatsapp = '';
+        if (str_starts_with($whatsapp, '628')) {
+            $altWhatsapp = '08' . substr($whatsapp, 3);
+        } elseif (str_starts_with($whatsapp, '08')) {
+            $altWhatsapp = '628' . substr($whatsapp, 2);
+        }
+
+        // Find or create User by WhatsApp number (checking both formats)
+        $user = User::where('whatsapp', $whatsapp)
+            ->when($altWhatsapp, function ($query) use ($altWhatsapp) {
+                $query->orWhere('whatsapp', $altWhatsapp);
+            })
+            ->first();
 
         if (!$user) {
             // Create a new viewer user

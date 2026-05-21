@@ -69,8 +69,6 @@ const DOC_KEYS = [
 /** Jenis kasus advokasi yang tersedia. */
 const JENIS: Record<string, string> = {
   PAK: 'Penyakit Akibat Kerja (PAK)',
-  K3:  'Kecelakaan Kerja (K3)',
-  PHK: 'Pemutusan Hubungan Kerja',
 };
 
 /** Format tanggal ke format lokal Indonesia. */
@@ -1199,20 +1197,12 @@ export default function UserDashboardPage() {
           </DialogHeader>
           <form onSubmit={handleUpdateAdvokasi} className="space-y-5 py-4">
             <div className="space-y-2">
-              <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Kategori Kasus</Label>
-              <Select 
-                value={advForm.jenis_kasus} 
-                onValueChange={(v) => setAdvForm({...advForm, jenis_kasus: v || ''})}
-              >
-                <SelectTrigger className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500">
-                  <SelectValue placeholder="Pilih Kategori..." />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl border-slate-100">
-                  {Object.entries(JENIS).map(([k, v]) => (
-                    <SelectItem key={k} value={k} className="font-bold text-slate-700">{v}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Kasus</Label>
+              <Input 
+                value="Penyakit Akibat Kerja (PAK)"
+                readOnly
+                className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold text-slate-700 cursor-not-allowed"
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="adv-note" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Catatan / Pesan untuk Admin</Label>
@@ -1389,17 +1379,16 @@ export default function UserDashboardPage() {
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleUpdateMedis} className="space-y-4 py-4 max-h-[75vh] overflow-y-auto px-1">
-            <div className="space-y-2">
-              <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Jenis Pemeriksaan</Label>
-              <Input 
-                placeholder="Contoh: MCU Tahunan, Pemeriksaan Klinis..."
-                className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500"
-                value={medisForm.jenis_pemeriksaan}
-                onChange={(e) => setMedisForm({...medisForm, jenis_pemeriksaan: e.target.value})}
-              />
-            </div>
-
             <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Jenis Pemeriksaan</Label>
+                <Input 
+                  placeholder="Contoh: MCU Tahunan, Pemeriksaan Klinis..."
+                  className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500"
+                  value={medisForm.jenis_pemeriksaan}
+                  onChange={(e) => setMedisForm({...medisForm, jenis_pemeriksaan: e.target.value})}
+                />
+              </div>
               <div className="space-y-2">
                 <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tgl Pemeriksaan</Label>
                 <Input 
@@ -1408,24 +1397,6 @@ export default function UserDashboardPage() {
                   value={medisForm.tanggal_pemeriksaan}
                   onChange={(e) => setMedisForm({...medisForm, tanggal_pemeriksaan: e.target.value})}
                 />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Status Kesehatan</Label>
-                <Select 
-                  value={medisForm.status_kesehatan} 
-                  onValueChange={(v) => setMedisForm({...medisForm, status_kesehatan: v || ''})}
-                >
-                  <SelectTrigger className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500 capitalize">
-                    <SelectValue placeholder="Pilih...">
-                      {formatHealthStatus(medisForm.status_kesehatan)}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="sehat">Sehat / Fit</SelectItem>
-                    <SelectItem value="sehat_dengan_catatan">Sehat dengan Catatan</SelectItem>
-                    <SelectItem value="tidak_sehat">Tidak Sehat / Unfit</SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
             </div>
 

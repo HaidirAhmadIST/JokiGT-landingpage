@@ -58,11 +58,13 @@ class PekerjaController extends Controller
 
             // Petugas HANYA bisa melihat pekerja dari perusahaannya sendiri
             if ($user && $user->isPetugas()) {
-                if (!$user->perusahaan_id) {
+                $perusahaanId = $user->perusahaan_id ?? $user->pekerja?->perusahaan_id;
+                
+                if ($perusahaanId) {
+                    $query->where('perusahaan_id', $perusahaanId);
+                } else {
                     // Jika petugas tidak memiliki perusahaan_id, jangan tampilkan apa-apa
                     $query->where('id', '<', 0);
-                } else {
-                    $query->where('perusahaan_id', $user->perusahaan_id);
                 }
             }
 

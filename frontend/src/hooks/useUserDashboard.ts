@@ -107,7 +107,7 @@ export function useUserDashboard() {
   const [profileLoading, setProfileLoading] = useState(false);
 
   const [isAdvModalOpen, setIsAdvModalOpen] = useState(false);
-  const [advForm, setAdvForm] = useState<AdvForm>({ jenis_kasus: '', catatan: '' });
+  const [advForm, setAdvForm] = useState<AdvForm>({ jenis_kasus: 'PAK', catatan: '' });
   const [advLoading, setAdvLoading] = useState(false);
 
   const [exposureLoading, setExposureLoading] = useState(false);

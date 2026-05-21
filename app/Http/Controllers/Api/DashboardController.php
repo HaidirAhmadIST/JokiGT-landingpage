@@ -31,57 +31,63 @@ class DashboardController extends Controller
         try {
             // Cache 30 detik agar tidak memukul DB setiap request
             $requestUser = request()->user();
-            $cacheKey = ($requestUser && $requestUser->isPetugas() && $requestUser->serikat)
-                ? 'stats_serikat_' . md5($requestUser->serikat)
-                : 'admin_dashboard_stats';
-            $serikatFilter = ($requestUser && $requestUser->isPetugas() && $requestUser->serikat)
-                ? $requestUser->serikat
+            $perusahaanFilter = ($requestUser && $requestUser->isPetugas())
+                ? ($requestUser->perusahaan_id ?? $requestUser->pekerja?->perusahaan_id)
                 : null;
+            $cacheKey = $perusahaanFilter
+                ? 'stats_perusahaan_' . $perusahaanFilter
+                : 'admin_dashboard_stats';
 
-            $data = cache()->remember($cacheKey, 30, function () use ($serikatFilter) {
+            $data = cache()->remember($cacheKey, 30, function () use ($perusahaanFilter) {
                 $startOfThisMonth = now()->startOfMonth();
 
                 // ── Pekerja ─────────────────────────────────────────────────────
                 $pekerjaBaseQuery = Pekerja::query();
-                if ($serikatFilter) {
-                    $pekerjaBaseQuery->whereHas('perusahaan', fn($q) => $q->where('serikat', $serikatFilter));
+                if ($perusahaanFilter) {
+                    $pekerjaBaseQuery->where('perusahaan_id', $perusahaanFilter);
                 }
                 $totalPekerja = (clone $pekerjaBaseQuery)->count();
                 $newPekerja   = (clone $pekerjaBaseQuery)->where('created_at', '>=', $startOfThisMonth)->count();
 
+                // ── Base Query for Advokasi (Filtered by Company) ────────────────
+                $advokasiBaseQuery = StatusAdvokasi::query();
+                if ($perusahaanFilter) {
+                    $advokasiBaseQuery->whereHas('pekerja', fn($q) => $q->where('perusahaan_id', $perusahaanFilter));
+                }
+
                 // ── Kasus Aktif (Advokasi yang belum selesai rehabilitasi) ───────
-                $kasusAktif = StatusAdvokasi::whereNotNull('jenis_kasus')
+                $kasusAktif = (clone $advokasiBaseQuery)->whereNotNull('jenis_kasus')
                     ->where('rehabilitasi_bpjskes', false)
                     ->count();
-                $newKasus   = StatusAdvokasi::whereNotNull('jenis_kasus')
+                $newKasus   = (clone $advokasiBaseQuery)->whereNotNull('jenis_kasus')
                     ->where('rehabilitasi_bpjskes', false)
                     ->where('created_at', '>=', $startOfThisMonth)
                     ->count();
 
                 // ── Advokasi Selesai ─────────────────────────────────────────────
-                $advokasiSelesai = StatusAdvokasi::where('rehabilitasi_bpjskes', true)->count();
-                $newSelesai      = StatusAdvokasi::where('created_at', '>=', $startOfThisMonth)
+                $advokasiSelesai = (clone $advokasiBaseQuery)->where('rehabilitasi_bpjskes', true)->count();
+                $newSelesai      = (clone $advokasiBaseQuery)->where('created_at', '>=', $startOfThisMonth)
                     ->where('rehabilitasi_bpjskes', true)
                     ->count();
 
                 // ── Klaim Disetujui ──────────────────────────────────────────────
-                $klaimDisetujui = StatusAdvokasi::where('kompensasi_bpjstk', true)->count();
-                $newKlaim       = StatusAdvokasi::where('created_at', '>=', $startOfThisMonth)
+                $klaimDisetujui = (clone $advokasiBaseQuery)->where('kompensasi_bpjstk', true)->count();
+                $newKlaim       = (clone $advokasiBaseQuery)->where('created_at', '>=', $startOfThisMonth)
                     ->where('kompensasi_bpjstk', true)
                     ->count();
 
                 // ── Perusahaan ───────────────────────────────────────────────────
                 $perusahaanBaseQuery = Perusahaan::query();
-                if ($serikatFilter) {
-                    $perusahaanBaseQuery->where('serikat', $serikatFilter);
+                if ($perusahaanFilter) {
+                    $perusahaanBaseQuery->where('id', $perusahaanFilter);
                 }
                 $totalPerusahaan = (clone $perusahaanBaseQuery)->count();
                 $newPerusahaan   = (clone $perusahaanBaseQuery)->where('created_at', '>=', $startOfThisMonth)->count();
 
                 // ── Status Kesehatan (Optimized to 1 Query) ─────────────────────
                 $kesehatanBaseQuery = Pekerja::query();
-                if ($serikatFilter) {
-                    $kesehatanBaseQuery->whereHas('perusahaan', fn($q) => $q->where('serikat', $serikatFilter));
+                if ($perusahaanFilter) {
+                    $kesehatanBaseQuery->where('perusahaan_id', $perusahaanFilter);
                 }
                 $kesehatanStats = $kesehatanBaseQuery->selectRaw("
                     COUNT(CASE WHEN status_kesehatan = 'sehat' THEN 1 END) as fit,
@@ -98,10 +104,15 @@ class DashboardController extends Controller
                 // ── Sebaran Wilayah Kasus (PAK/dll) ──────────────────────────────
                 // Optimasi: Tidak menggunakan LOWER() di SQL untuk menghindari Full Table Scan jika ada Index.
                 // MySQL default collation (utf8mb4_unicode_ci) sudah case-insensitive untuk GROUP BY.
-                $sebaranWilayah = \Illuminate\Support\Facades\DB::table('status_advokasi')
+                $sebaranQuery = \Illuminate\Support\Facades\DB::table('status_advokasi')
                     ->join('pekerja', 'status_advokasi.pekerja_id', '=', 'pekerja.id')
-                    ->whereNotNull('status_advokasi.jenis_kasus')
-                    ->select('pekerja.domisili', \Illuminate\Support\Facades\DB::raw('COUNT(*) as total'))
+                    ->whereNotNull('status_advokasi.jenis_kasus');
+
+                if ($perusahaanFilter) {
+                    $sebaranQuery->where('pekerja.perusahaan_id', $perusahaanFilter);
+                }
+
+                $sebaranWilayah = $sebaranQuery->select('pekerja.domisili', \Illuminate\Support\Facades\DB::raw('COUNT(*) as total'))
                     ->groupBy('pekerja.domisili')
                     ->get()
                     ->filter(function($item) {

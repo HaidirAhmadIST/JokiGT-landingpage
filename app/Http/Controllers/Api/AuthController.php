@@ -67,13 +67,10 @@ class AuthController extends Controller
     {
         $user = $request->user();
         
-        if ($user->role === 'viewer') {
-            $user->load(['pekerja' => function ($query) {
-                $query->with(['perusahaan', 'riwayatPekerja.detailMedis', 'detailMedis', 'riwayatMedis', 'statusAdvokasi']);
-            }]);
-        } else {
-            $user->load('pekerja');
-        }
+        // Load full pekerja relations for any role that has a pekerja profile (viewer or petugas)
+        $user->load(['pekerja' => function ($query) {
+            $query->with(['perusahaan', 'riwayatPekerja.detailMedis', 'detailMedis', 'riwayatMedis', 'statusAdvokasi', 'currentJob']);
+        }]);
 
         return response()->json([
             'status' => 'success',
