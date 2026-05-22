@@ -301,15 +301,6 @@ export default function PekerjaPage() {
                           );
                         }
 
-                        if (job.status_pekerjaan === 'Borongan' || job.status_pekerjaan === 'Harian Lepas') {
-                          return (
-                            <div className="flex flex-col">
-                              <span className="text-[10px] font-bold text-orange-500 uppercase tracking-widest">Pekerja Lapangan</span>
-                              <span className="truncate">{job.status_pekerjaan}</span>
-                            </div>
-                          );
-                        }
-
                         return <span className="text-slate-400">Pekerja Mandiri</span>;
                       })()}
                     </TableCell>
@@ -317,19 +308,6 @@ export default function PekerjaPage() {
                       {(() => {
                         const job = p.current_job;
                         if (!job) return '-';
-
-                        if (job.status_pekerjaan === 'Borongan' || job.status_pekerjaan === 'Harian Lepas') {
-                          let info: any = {};
-                          if (job.informal_data) {
-                            try {
-                              info = typeof job.informal_data === 'string' ? JSON.parse(job.informal_data) : job.informal_data;
-                            } catch(e) {}
-                          }
-                          const lokasi = Array.isArray(info?.lokasi_proyek) 
-                            ? info.lokasi_proyek.filter(Boolean).join(', ') 
-                            : (info?.lokasi_proyek || '-');
-                          return <span className="truncate text-orange-600 font-semibold">{lokasi}</span>;
-                        }
 
                         if (job.status_pekerjaan === 'Outsourcing') {
                           return <span className="truncate">{job.bagian || job.jabatan || 'Unit Luar'}</span>;
@@ -352,7 +330,7 @@ export default function PekerjaPage() {
                          if (s === 'sehat_dengan_catatan' || s === 'sakit_ringan' || s === 'fit_with_note') {
                            return (
                              <div className="inline-flex items-center justify-center px-2.5 py-1 rounded-md border border-amber-200 bg-amber-50 text-amber-700 font-bold text-[10px] tracking-wide">
-                               Fit c/ Catatan
+                               Sehat dengan Catatan
                              </div>
                            );
                          }

@@ -35,6 +35,7 @@ Route::post('perusahaan', [PerusahaanController::class, 'store']);
 Route::get('pekerja', [PekerjaController::class, 'index']);
 Route::post('pekerja', [PekerjaController::class, 'store']);
 Route::get('dashboard/stats', [DashboardController::class, 'stats']);
+Route::get('dashboard/trend-klasifikasi', [DashboardController::class, 'trendKlasifikasi']);
 
 
 // =========================================================================
@@ -42,6 +43,9 @@ Route::get('dashboard/stats', [DashboardController::class, 'stats']);
 // =========================================================================
 
 Route::middleware(['auth:sanctum'])->group(function () {
+    // Dashboard Pekerja Klasifikasi
+    Route::get('dashboard/pekerja-klasifikasi', [DashboardController::class, 'pekerjaKlasifikasi']);
+
     // Auth & Profile
     Route::get('/me', [AuthController::class, 'me']);
     Route::put('/profile', [AuthController::class, 'updateProfile']);
@@ -107,6 +111,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // File Downloads (RBAC handled in controller or by role)
     // Advokasi download — accessible by owner or admin/petugas (ownership checked in controller)
     Route::get('pekerja/{pekerja_id}/files/advokasi/{step_key}', [FileController::class, 'downloadAdvokasiProof']);
+    
+    // Advokasi file deletion
+    Route::delete('pekerja/{pekerja_id}/files/advokasi/{step_key}', [AdvokasiController::class, 'deleteAdvokasiProof']);
 
     Route::group(['middleware' => ['role:admin,petugas']], function () {
         Route::get('pekerja/{pekerja_id}/files/medis', [FileController::class, 'downloadMedis']);

@@ -68,7 +68,13 @@ class RegistrationController extends Controller
             ->pluck('serikat')
             ->toArray();
 
-        $allSerikat = array_values(array_unique(array_merge($serikatUsers, $serikatPerusahaan)));
+        $serikatPekerja = \App\Models\Pekerja::whereNotNull('nama_serikat')
+            ->where('nama_serikat', '!=', '')
+            ->distinct()
+            ->pluck('nama_serikat')
+            ->toArray();
+
+        $allSerikat = array_values(array_unique(array_merge($serikatUsers, $serikatPerusahaan, $serikatPekerja)));
         sort($allSerikat);
 
         return response()->json(['status' => 'success', 'data' => $allSerikat]);

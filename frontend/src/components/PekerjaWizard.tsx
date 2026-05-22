@@ -151,21 +151,7 @@ export default function PekerjaWizard({ onSuccess, onCancel, perusahaanList }: P
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2 col-span-2">
-                <Label>Status Kesehatan Awal *</Label>
-                <Select value={baseData.status_kesehatan} onValueChange={(v: any) => setBaseData({...baseData, status_kesehatan: v})}>
-                  <SelectTrigger>
-                    <SelectValue>
-                      {formatHealthStatus(baseData.status_kesehatan)}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="sehat">Sehat</SelectItem>
-                    <SelectItem value="sehat_dengan_catatan">Sehat dengan Catatan</SelectItem>
-                    <SelectItem value="tidak_sehat">Tidak Sehat</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+
               <div className="space-y-2 col-span-2">
 
               </div>

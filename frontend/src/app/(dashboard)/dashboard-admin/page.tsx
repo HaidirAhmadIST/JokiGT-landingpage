@@ -12,7 +12,7 @@
  * - `AdvokasiBarChart` — grafik batang progres advokasi per tahap
  * - `ActivitySidebar` — panel aktivitas admin/sistem terkini
  */
-
+import { useState } from 'react';
 import Link from 'next/link';
 import { Users, Building2, ClipboardList, CheckCircle2, BadgeCheck, FilePlus } from 'lucide-react';
 import { Card } from '@/components/ui/card';
@@ -20,10 +20,12 @@ import ActivitySidebar from '@/components/ActivitySidebar';
 import AdvokasiBarChart from '@/components/AdvokasiBarChart';
 import StatCard from '@/components/dashboard/StatCard';
 import PriorityCasesCard from '@/components/dashboard/PriorityCasesCard';
+import { FilterableTable } from '@/components/dashboard/FilterableTable';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
 
 export default function DashboardIndexPage() {
   const { stats, loading } = useDashboardStats();
+  const [activeFilter, setActiveFilter] = useState<string>('all');
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 max-w-7xl mx-auto">
@@ -86,9 +88,13 @@ export default function DashboardIndexPage() {
       {/* ── Middle Section: Bar Chart + Activity Sidebar ── */}
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Bar Chart — 2/3 width */}
-        <Card className="lg:col-span-2 rounded-[20px] shadow-sm border-slate-100 p-6 flex flex-col min-h-[400px]">
-          <AdvokasiBarChart />
-        </Card>
+        <div className="lg:col-span-2 flex flex-col gap-6">
+          <Card className="rounded-[20px] shadow-sm border-slate-100 p-6 flex flex-col min-h-[400px]">
+            <AdvokasiBarChart onFilterChange={setActiveFilter} />
+          </Card>
+          
+          <FilterableTable activeFilter={activeFilter} />
+        </div>
 
         {/* Right Column: Priority Cases + Activity Sidebar */}
         <div className="flex flex-col gap-6">

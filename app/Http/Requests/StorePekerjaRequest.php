@@ -34,7 +34,7 @@ class StorePekerjaRequest extends FormRequest
                 'exists:perusahaan,id',
                 Rule::requiredIf(function () {
                     $status = $this->riwayat[0]['status_pekerjaan'] ?? null;
-                    return !in_array($status, ['Borongan', 'Harian Lepas', 'Outsourcing']);
+                    return !in_array($status, ['Outsourcing']);
                 }),
             ],
             'nik' => ['required', 'string', 'max:100'],

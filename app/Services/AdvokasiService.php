@@ -219,6 +219,60 @@ class AdvokasiService
     }
 
     /**
+     * Delete advocacy proof document.
+     *
+     * @param string $pekerja_id
+     * @param string $stepKey
+     * @return StatusAdvokasi
+     */
+    public function deleteProofFile(string $pekerja_id, string $stepKey): StatusAdvokasi
+    {
+        $status = StatusAdvokasi::where('pekerja_id', $pekerja_id)->firstOrFail();
+
+        $validColumns = [
+            'riwayat_pajanan' => 'bukti_pajanan_path', 
+            'persetujuan_dokter' => 'bukti_persetujuan_dokter_path', 
+            'perusahaan_lapor' => 'bukti_perusahaan_lapor_path',
+            'penetapan_pak' => 'bukti_penetapan_pak_path',
+            'kompensasi_bpjstk' => 'bukti_kompensasi_bpjstk_path',
+            'rehabilitasi_bpjskes' => 'bukti_rehabilitasi_bpjskes_path'
+        ];
+
+        $dateColumns = [
+            'riwayat_pajanan' => 'bukti_pajanan_at',
+            'persetujuan_dokter' => 'bukti_persetujuan_dokter_at',
+            'perusahaan_lapor' => 'bukti_perusahaan_lapor_at',
+            'penetapan_pak' => 'bukti_penetapan_pak_at',
+            'kompensasi_bpjstk' => 'bukti_kompensasi_bpjstk_at',
+            'rehabilitasi_bpjskes' => 'bukti_rehabilitasi_bpjskes_at'
+        ];
+
+        if (array_key_exists($stepKey, $validColumns)) {
+            $columnName = $validColumns[$stepKey];
+
+            if ($status->{$columnName}) {
+                Storage::disk('private')->delete($status->{$columnName});
+            }
+
+            $status->{$columnName} = null;
+
+            $actualNameColumn = str_replace('_path', '_name', $columnName);
+            $status->{$actualNameColumn} = null;
+            
+            $status->{$stepKey} = false;
+            if (isset($dateColumns[$stepKey])) {
+                $status->{$dateColumns[$stepKey]} = null;
+            }
+
+            $status->save();
+        } else {
+            throw new \Exception('Invalid step key');
+        }
+
+        return $status;
+    }
+
+    /**
      * Update an advocacy case's metadata, milestones, and handle file uploads.
      *
      * @param string $pekerja_id

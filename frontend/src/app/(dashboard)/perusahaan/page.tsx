@@ -43,7 +43,7 @@ interface Perusahaan {
   id: number;
   nama_perusahaan: string;
   sektor_industri: string;
-  status_pendamping: 'Berkasus' | 'Selesai' | 'Dalam Pantauan';
+  status_pendamping: 'Berkasus' | 'Dalam Pantauan';
   alamat?: string;
   nama_pic?: string;
   kontak_pic?: string;
@@ -271,7 +271,8 @@ export default function PerusahaanPage() {
       status_pendamping: 
         (p.status_pendamping as any) === 'aktif' ? 'Berkasus' :
         (p.status_pendamping as any) === 'pending' ? 'Dalam Pantauan' :
-        (p.status_pendamping as any) === 'tidak_aktif' ? 'Selesai' :
+        (p.status_pendamping as any) === 'tidak_aktif' ? 'Dalam Pantauan' :
+        (p.status_pendamping as any) === 'Selesai' ? 'Dalam Pantauan' :
         p.status_pendamping,
       alamat: p.alamat || '',
       nama_pic: p.nama_pic || '',
@@ -453,11 +454,11 @@ export default function PerusahaanPage() {
         </span>
       );
     }
-    // Selesai / tidak_aktif / default
+    // Selesai / tidak_aktif / default fallback
     return (
-      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-600 border border-emerald-100">
-        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5"></span>
-        Selesai
+      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-600 border border-amber-100">
+        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mr-1.5"></span>
+        Dalam Pantauan
       </span>
     );
   };
@@ -567,7 +568,6 @@ export default function PerusahaanPage() {
                             <SelectContent>
                               <SelectItem value="Berkasus">Berkasus</SelectItem>
                               <SelectItem value="Dalam Pantauan">Dalam Pantauan</SelectItem>
-                              <SelectItem value="Selesai">Selesai</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -684,7 +684,6 @@ export default function PerusahaanPage() {
               <SelectItem value="Semua Status">Semua Status</SelectItem>
               <SelectItem value="Berkasus">Berkasus</SelectItem>
               <SelectItem value="Dalam Pantauan">Dalam Pantauan</SelectItem>
-              <SelectItem value="Selesai">Selesai</SelectItem>
             </SelectContent>
           </Select>
 
@@ -960,7 +959,7 @@ export default function PerusahaanPage() {
                     <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                     <input
                       type="text"
-                      placeholder="Cari pekerja berdasarkan nama atau NIK..."
+                      placeholder="Cari pekerja berdasarkan nama atau No. Kartu..."
                       value={workerSearch}
                       onChange={(e) => handleWorkerSearchChange(e.target.value)}
                       className="w-full h-10 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0ea5e9]/30 focus:border-[#0ea5e9] transition-all"
@@ -1092,7 +1091,7 @@ export default function PerusahaanPage() {
                                   <div className="flex items-center gap-3">
                                     <div className="min-w-0">
                                       <p className="text-[13px] font-bold text-slate-800 truncate">{w.nama_lengkap}</p>
-                                      <p className="text-[11px] text-slate-400 font-medium">NIK: {w.nik}</p>
+                                      <p className="text-[11px] text-slate-400 font-medium">No. Kartu: {w.nik}</p>
                                     </div>
                                   </div>
                                 </td>

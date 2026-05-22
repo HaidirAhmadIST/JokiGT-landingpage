@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Bell, Globe, User, ShieldAlert, ArrowRight, ArrowLeft, Plus, UploadCloud, Save, CheckCircle, Check, X, Activity, Info, Briefcase, HeartPulse, ClipboardList, Zap, Trash2, RefreshCw, Eye, EyeOff, Lock, Mail, ChevronDown, ChevronUp, History } from 'lucide-react';
+import { Bell, Globe, User, ShieldAlert, ArrowRight, ArrowLeft, Plus, UploadCloud, Save, CheckCircle, Check, X, Activity, Info, Briefcase, HeartPulse, ClipboardList, Zap, Trash2, RefreshCw, Eye, EyeOff, Lock, Mail, ChevronDown, ChevronUp, ChevronsUpDown, History } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,6 +22,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { cn, formatHealthStatus } from '@/lib/utils';
 import FormDetailMedis, { type DataMedis } from '@/components/FormDetailMedis';
 import { PROVINCES } from '@/lib/provinces';
@@ -37,6 +39,13 @@ export default function PendaftaranPekerjaPage() {
   const [perusahaanList, setPerusahaanList] = useState<any[]>([]);
   const [serikatList, setSerikatList] = useState<string[]>([]);
   const [duplicateWarning, setDuplicateWarning] = useState<{ nik?: string; whatsapp?: string }>({});
+  
+  // Combobox states
+  const [provOpen, setProvOpen] = useState(false);
+  const [kabOpen, setKabOpen] = useState(false);
+  const [kecOpen, setKecOpen] = useState(false);
+  const [showSerikatSuggestions, setShowSerikatSuggestions] = useState(false);
+  
   // WhatsApp locked to the logged-in user's account
   const [lockedWhatsapp, setLockedWhatsapp] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
@@ -1038,21 +1047,54 @@ export default function PendaftaranPekerjaPage() {
                     )}
 
                     {(baseData.is_anggota === true || baseData.anggota_organisasi === true) && (
-                      <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                      <div className="space-y-2 animate-in fade-in slide-in-from-top-2 relative">
                         <Label htmlFor="nama_serikat">Nama Serikat Pekerja <span className="text-red-500">*</span></Label>
                         <Input 
                           id="nama_serikat"
-                          list="serikat-list"
+                          autoComplete="off"
                           placeholder="Ketik atau pilih nama serikat pekerja Anda"
                           className="h-11"
                           value={baseData.nama_serikat || ''}
-                          onChange={e => setBaseData({ ...baseData, nama_serikat: e.target.value })}
+                          onChange={e => {
+                            setBaseData({ ...baseData, nama_serikat: e.target.value });
+                            setShowSerikatSuggestions(true);
+                          }}
+                          onFocus={() => setShowSerikatSuggestions(true)}
+                          onBlur={() => setTimeout(() => setShowSerikatSuggestions(false), 200)}
                         />
-                        <datalist id="serikat-list">
-                          {serikatList.map((serikat, index) => (
-                            <option key={index} value={serikat} />
-                          ))}
-                        </datalist>
+                        {showSerikatSuggestions && (
+                          <div className="absolute z-50 w-full mt-1 max-h-60 overflow-auto rounded-xl border border-slate-200 bg-white shadow-xl py-1">
+                            <ul className="flex flex-col">
+                              {serikatList
+                                .filter(s => s.toLowerCase().includes((baseData.nama_serikat || '').toLowerCase()))
+                                .map((serikat, index) => (
+                                <li 
+                                  key={index} 
+                                  className="px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700 cursor-pointer transition-colors"
+                                  onClick={() => {
+                                    setBaseData({ ...baseData, nama_serikat: serikat });
+                                    setShowSerikatSuggestions(false);
+                                  }}
+                                >
+                                  {serikat}
+                                </li>
+                              ))}
+                              {baseData.nama_serikat && !serikatList.some(s => s.toLowerCase() === baseData.nama_serikat?.toLowerCase()) && (
+                                <li 
+                                  className="px-4 py-2.5 text-sm font-bold text-blue-700 bg-blue-50/50 hover:bg-blue-100 cursor-pointer transition-colors"
+                                  onClick={() => setShowSerikatSuggestions(false)}
+                                >
+                                  Gunakan: "{baseData.nama_serikat}"
+                                </li>
+                              )}
+                              {!baseData.nama_serikat && serikatList.length === 0 && (
+                                <li className="px-4 py-3 text-sm text-slate-400 italic text-center">
+                                  Ketik nama serikat Anda...
+                                </li>
+                              )}
+                            </ul>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -1212,72 +1254,141 @@ export default function PendaftaranPekerjaPage() {
 
                     <div className="space-y-2">
                       <Label>Provinsi Domisili</Label>
-                      <Select 
-                        value={baseData.domisili} 
-                        onValueChange={v => setBaseData({ ...baseData, domisili: v || '', kabupaten: '', kecamatan: '' })}
-                      >
-                        <SelectTrigger className="h-11 bg-white">
-                          <SelectValue placeholder="Pilih Provinsi" />
-                        </SelectTrigger>
-                        <SelectContent className="max-h-[300px]">
-                          {PROVINCES.map((prov) => (
-                            <SelectItem key={prov} value={prov}>{prov}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Popover open={provOpen} onOpenChange={setProvOpen}>
+                        <PopoverTrigger render={
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            aria-expanded={provOpen}
+                            className="w-full h-11 justify-between bg-white border-slate-200 text-slate-700 font-normal hover:bg-slate-50"
+                          />
+                        }>
+                          {baseData.domisili ? baseData.domisili : "Pilih Provinsi..."}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                          <Command>
+                            <CommandInput placeholder="Cari provinsi..." />
+                            <CommandEmpty>Provinsi tidak ditemukan.</CommandEmpty>
+                            <CommandGroup className="max-h-[300px] overflow-y-auto">
+                              <CommandList>
+                                {PROVINCES.map((prov) => (
+                                  <CommandItem
+                                    key={prov}
+                                    value={prov}
+                                    onSelect={(currentValue) => {
+                                      const exactMatch = PROVINCES.find(p => p.toLowerCase() === currentValue.toLowerCase()) || currentValue;
+                                      setBaseData({ ...baseData, domisili: exactMatch, kabupaten: '', kecamatan: '' });
+                                      setProvOpen(false);
+                                    }}
+                                  >
+                                    <Check className={cn("mr-2 h-4 w-4", baseData.domisili === prov ? "opacity-100" : "opacity-0")} />
+                                    {prov}
+                                  </CommandItem>
+                                ))}
+                              </CommandList>
+                            </CommandGroup>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
                       <p className="text-[10px] text-slate-400 font-medium ml-1">Pilih provinsi tempat Anda tinggal saat ini (untuk pemetaan).</p>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label>Kabupaten/Kota</Label>
-                        <Select
-                          value={baseData.kabupaten || ''}
-                          onValueChange={(v) => {
-                            const selected = kabupatenList.find(k => k.name === v);
-                            setSelectedKabupatenId(selected?.id || '');
-                            setBaseData({ ...baseData, kabupaten: v as string, kecamatan: '' as string });
-                          }}
-                          disabled={!baseData.domisili || loadingKabupaten}
-                        >
-                          <SelectTrigger className="h-11 bg-white">
-                            <SelectValue placeholder={
-                              !baseData.domisili
-                                ? 'Pilih provinsi dulu'
-                                : loadingKabupaten
-                                ? 'Memuat data...'
-                                : 'Pilih Kabupaten/Kota'
-                            } />
-                          </SelectTrigger>
-                          <SelectContent className="max-h-[300px]">
-                            {kabupatenList.map((kab) => (
-                              <SelectItem key={kab.id} value={kab.name}>{kab.name}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <Popover open={kabOpen} onOpenChange={setKabOpen}>
+                          <PopoverTrigger render={
+                            <Button
+                              variant="outline"
+                              role="combobox"
+                              aria-expanded={kabOpen}
+                              disabled={!baseData.domisili || loadingKabupaten}
+                              className="w-full h-11 justify-between bg-white border-slate-200 text-slate-700 font-normal hover:bg-slate-50 disabled:opacity-50"
+                            />
+                          }>
+                            {!baseData.domisili
+                              ? 'Pilih provinsi dulu'
+                              : loadingKabupaten
+                              ? 'Memuat data...'
+                              : baseData.kabupaten || 'Pilih Kabupaten/Kota'}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </PopoverTrigger>
+                          <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                            <Command>
+                              <CommandInput placeholder="Cari kabupaten/kota..." />
+                              <CommandEmpty>Kabupaten/kota tidak ditemukan.</CommandEmpty>
+                              <CommandGroup className="max-h-[300px] overflow-y-auto">
+                                <CommandList>
+                                  {kabupatenList.map((kab) => (
+                                    <CommandItem
+                                      key={kab.id}
+                                      value={kab.name}
+                                      onSelect={(currentValue) => {
+                                        const exactMatch = kabupatenList.find(k => k.name.toLowerCase() === currentValue.toLowerCase());
+                                        if (exactMatch) {
+                                          setSelectedKabupatenId(exactMatch.id);
+                                          setBaseData({ ...baseData, kabupaten: exactMatch.name, kecamatan: '' });
+                                          setKabOpen(false);
+                                        }
+                                      }}
+                                    >
+                                      <Check className={cn("mr-2 h-4 w-4", baseData.kabupaten === kab.name ? "opacity-100" : "opacity-0")} />
+                                      {kab.name}
+                                    </CommandItem>
+                                  ))}
+                                </CommandList>
+                              </CommandGroup>
+                            </Command>
+                          </PopoverContent>
+                        </Popover>
                       </div>
                       <div className="space-y-2">
                         <Label>Kecamatan</Label>
-                        <Select
-                          value={baseData.kecamatan || ''}
-                          onValueChange={(v) => setBaseData({ ...baseData, kecamatan: v as string })}
-                          disabled={!baseData.kabupaten || loadingKecamatan}
-                        >
-                          <SelectTrigger className="h-11 bg-white">
-                            <SelectValue placeholder={
-                              !baseData.kabupaten
-                                ? 'Pilih kabupaten dulu'
-                                : loadingKecamatan
-                                ? 'Memuat data...'
-                                : 'Pilih Kecamatan'
-                            } />
-                          </SelectTrigger>
-                          <SelectContent className="max-h-[300px]">
-                            {kecamatanList.map((kec) => (
-                              <SelectItem key={kec.id} value={kec.name}>{kec.name}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <Popover open={kecOpen} onOpenChange={setKecOpen}>
+                          <PopoverTrigger render={
+                            <Button
+                              variant="outline"
+                              role="combobox"
+                              aria-expanded={kecOpen}
+                              disabled={!baseData.kabupaten || loadingKecamatan}
+                              className="w-full h-11 justify-between bg-white border-slate-200 text-slate-700 font-normal hover:bg-slate-50 disabled:opacity-50"
+                            />
+                          }>
+                            {!baseData.kabupaten
+                              ? 'Pilih kabupaten dulu'
+                              : loadingKecamatan
+                              ? 'Memuat data...'
+                              : baseData.kecamatan || 'Pilih Kecamatan'}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </PopoverTrigger>
+                          <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                            <Command>
+                              <CommandInput placeholder="Cari kecamatan..." />
+                              <CommandEmpty>Kecamatan tidak ditemukan.</CommandEmpty>
+                              <CommandGroup className="max-h-[300px] overflow-y-auto">
+                                <CommandList>
+                                  {kecamatanList.map((kec) => (
+                                    <CommandItem
+                                      key={kec.id}
+                                      value={kec.name}
+                                      onSelect={(currentValue) => {
+                                        const exactMatch = kecamatanList.find(k => k.name.toLowerCase() === currentValue.toLowerCase());
+                                        if (exactMatch) {
+                                          setBaseData({ ...baseData, kecamatan: exactMatch.name });
+                                          setKecOpen(false);
+                                        }
+                                      }}
+                                    >
+                                      <Check className={cn("mr-2 h-4 w-4", baseData.kecamatan === kec.name ? "opacity-100" : "opacity-0")} />
+                                      {kec.name}
+                                    </CommandItem>
+                                  ))}
+                                </CommandList>
+                              </CommandGroup>
+                            </Command>
+                          </PopoverContent>
+                        </Popover>
                       </div>
                     </div>
                   </div>

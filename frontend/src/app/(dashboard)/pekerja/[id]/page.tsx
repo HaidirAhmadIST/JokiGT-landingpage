@@ -42,6 +42,7 @@ export default function PekerjaDetailPage() {
   const [data, setData] = useState<PekerjaFull | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploadLoading, setUploadLoading] = useState<string | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
   const [statusLoading, setStatusLoading] = useState(false);
   const [isEditingCatatan, setIsEditingCatatan] = useState(false);
   const [catatanInput, setCatatanInput] = useState('');
@@ -56,7 +57,7 @@ export default function PekerjaDetailPage() {
     durasi_pajanan: '',
     apd_disediakan: '',
     jenis_apd_sendiri: '',
-    mutasi_jabatan: [] as Array<{bagian: string, jabatan: string, tahun: string}>
+    mutasi_jabatan: [] as Array<{bagian: string, jabatan: string, tahun_mulai: string, tahun_selesai: string}>
   });
   const [savingRiwayat, setSavingRiwayat] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -76,7 +77,12 @@ export default function PekerjaDetailPage() {
       durasi_pajanan: riwayat.durasi_pajanan?.toString() || '',
       apd_disediakan: info.apd_disediakan || '',
       jenis_apd_sendiri: info.jenis_apd_sendiri || '',
-      mutasi_jabatan: info.mutasi_jabatan || []
+      mutasi_jabatan: (info.mutasi_jabatan || []).map((m: any) => ({
+        bagian: m.bagian || '',
+        jabatan: m.jabatan || '',
+        tahun_mulai: m.tahun_mulai || m.tahun || '',
+        tahun_selesai: m.tahun_selesai || ''
+      }))
     });
     setIsEditRiwayatOpen(true);
   };
@@ -84,7 +90,7 @@ export default function PekerjaDetailPage() {
   const addMutasi = () => {
     setRiwayatForm({
       ...riwayatForm,
-      mutasi_jabatan: [...riwayatForm.mutasi_jabatan, { bagian: '', jabatan: '', tahun: '' }]
+      mutasi_jabatan: [...riwayatForm.mutasi_jabatan, { bagian: '', jabatan: '', tahun_mulai: '', tahun_selesai: '' }]
     });
   };
 
@@ -241,6 +247,23 @@ export default function PekerjaDetailPage() {
     }
   };
 
+  const handleDeleteAdvokasiFile = async (stepKey: string) => {
+    if (!window.confirm('Apakah Anda yakin ingin menghapus dokumen ini? Status advokasi tahap ini akan kembali menjadi Belum Dimulai.')) {
+      return;
+    }
+    
+    setDeleteLoading(stepKey);
+    try {
+      await api.delete(`/pekerja/${id}/files/advokasi/${stepKey}`);
+      toast.success('Dokumen berhasil dihapus');
+      fetchDetail();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Gagal menghapus dokumen');
+    } finally {
+      setDeleteLoading(null);
+    }
+  };
+
   const downloadFile = async (stepKey: string) => {
     try {
       const toastId = toast.loading('Memproses file...');
@@ -359,44 +382,8 @@ export default function PekerjaDetailPage() {
   let masaKerjaText = '-';
   let sejakText = '-';
   
-  const statusPekerjaan = currentJob?.status_pekerjaan?.toLowerCase() || '';
-  const isInformalJob = ['borongan', 'harian lepas'].includes(statusPekerjaan);
-
-  if (isInformalJob) {
-    let info: any = {};
-    if (currentJob?.informal_data) {
-      try {
-        info = typeof currentJob.informal_data === 'string' ? JSON.parse(currentJob.informal_data) : currentJob.informal_data;
-      } catch(e) {}
-    }
-
-    if (info?.lama_bekerja) {
-      masaKerjaText = `${info.lama_bekerja} ${info.satuan_waktu || 'Bulan'}`;
-      sejakText = 'Total Durasi';
-    } else {
-      // Cari tgl_masuk paling awal dari semua riwayat
-      const earliestRiwayat = allRiwayat
-        .filter((r: any) => r.tgl_masuk)
-        .sort((a: any, b: any) => new Date(a.tgl_masuk).getTime() - new Date(b.tgl_masuk).getTime())[0];
-
-      if (earliestRiwayat?.tgl_masuk) {
-        const masukDate = parseISO(earliestRiwayat.tgl_masuk);
-        const years = differenceInYears(new Date(), masukDate);
-        const months = differenceInMonths(new Date(), masukDate) % 12;
-        
-        if (years > 0) {
-          masaKerjaText = `${years} Tahun${months > 0 ? ` ${months} Bulan` : ''}`;
-        } else {
-          masaKerjaText = months > 0 ? `${months} Bulan` : '< 1 Bulan';
-        }
-        sejakText = `Sejak ${format(masukDate, 'MMM yyyy', { locale: localeID })}`;
-      } else {
-        sejakText = 'Pekerja Informal';
-      }
-    }
-  } else {
-    // Pekerja Formal (PKWT/PKWTT/Outsourcing)
-    // Cari tgl_masuk paling awal
+  // Pekerja Formal (PKWT/PKWTT/Outsourcing)
+  // Cari tgl_masuk paling awal
     const earliestRiwayat = allRiwayat
       .filter((r: any) => r.tgl_masuk)
       .sort((a: any, b: any) => new Date(a.tgl_masuk).getTime() - new Date(b.tgl_masuk).getTime())[0];
@@ -413,7 +400,6 @@ export default function PekerjaDetailPage() {
       }
       sejakText = `Sejak ${format(masukDate, 'MMM yyyy', { locale: localeID })}`;
     }
-  }
 
   const adv = data.status_advokasi;
   const isAdvocacyActive = adv && Object.values(adv).some(v => v === true);
@@ -578,9 +564,7 @@ export default function PekerjaDetailPage() {
               </p>
               <div className="flex flex-wrap gap-2 mt-3 text-[10px] font-bold">
                 <span className="px-3 py-1 bg-[#0ea5e9]/10 text-[#0ea5e9] rounded-md tracking-widest uppercase">
-                  {['borongan', 'harian lepas'].includes(currentJob?.status_pekerjaan?.toLowerCase()) 
-                    ? 'PEKERJA LAPANGAN' 
-                    : (currentJob?.bagian || currentJob?.jabatan || 'PEKERJA')}
+                  {currentJob?.bagian || currentJob?.jabatan || 'PEKERJA'}
                 </span>
 
                 {/* Status Keanggotaan Organisasi Badge */}
@@ -600,27 +584,6 @@ export default function PekerjaDetailPage() {
                   <span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-md tracking-widest uppercase">{currentJob?.status_pekerjaan}</span>
                 )}
                 
-                {/* Informal Metadata Badges */}
-                {['harian lepas', 'borongan'].includes(currentJob?.status_pekerjaan?.toLowerCase()) && currentJob?.informal_data && (
-                  <>
-                    <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-md tracking-widest uppercase flex items-center">
-                      <MapPin className="h-2.5 w-2.5 mr-1" /> {(() => {
-                        try {
-                          const info = typeof currentJob.informal_data === 'string' ? JSON.parse(currentJob.informal_data) : currentJob.informal_data;
-                          return Array.isArray(info?.lokasi_proyek) ? info.lokasi_proyek.join(', ') : info?.lokasi_proyek || '-';
-                        } catch(e) { return '-'; }
-                      })()}
-                    </span>
-                    <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-md tracking-widest uppercase flex items-center">
-                      <ClipboardList className="h-2.5 w-2.5 mr-1" /> {(() => {
-                        try {
-                          const info = typeof currentJob.informal_data === 'string' ? JSON.parse(currentJob.informal_data) : currentJob.informal_data;
-                          return info?.lama_bekerja ? `${info.lama_bekerja} ${info.satuan_waktu || ''}` : '-';
-                        } catch(e) { return '-'; }
-                      })()}
-                    </span>
-                  </>
-                )}
               </div>
             </div>
           </div>
@@ -773,8 +736,12 @@ export default function PekerjaDetailPage() {
                     <p className="text-sm font-semibold text-slate-700 flex items-center hover:text-[#0ea5e9] transition-colors cursor-pointer"><Mail className="h-3 w-3 mr-1.5 text-slate-400" /> {data.user?.email || '-'}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Telepon / WhatsApp</p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Telepon / WhatsApp Utama</p>
                     <p className="text-sm font-semibold text-slate-700 flex items-center hover:text-[#0ea5e9] transition-colors cursor-pointer"><Phone className="h-3 w-3 mr-1.5 text-slate-400" /> {data.whatsapp || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">No HP Alternatif</p>
+                    <p className="text-sm font-semibold text-slate-700 flex items-center hover:text-[#0ea5e9] transition-colors cursor-pointer"><Phone className="h-3 w-3 mr-1.5 text-slate-400" /> {data.no_hp || '-'}</p>
                   </div>
                 </div>
                 <div>
@@ -897,7 +864,7 @@ export default function PekerjaDetailPage() {
                                     </div>
                                     {r.deskripsi_usaha && (
                                       <p className="text-[#0ea5e9] text-xs font-bold uppercase tracking-tight flex items-center gap-1 mt-1">
-                                        <ShieldAlert className="h-3 w-3" /> PAJANAN: {r.deskripsi_usaha}
+                                        {r.deskripsi_usaha}
                                       </p>
                                     )}
                                   </div>
@@ -930,10 +897,7 @@ export default function PekerjaDetailPage() {
                                   <div>
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Bagian / Jabatan</p>
                                     <p className="text-sm font-semibold text-slate-700">
-                                      {['borongan', 'harian lepas'].includes(r.status_pekerjaan?.toLowerCase()) 
-                                        ? 'Pekerja Lapangan / Informal'
-                                        : `${r.bagian || '-'} / ${r.jabatan || '-'}`
-                                      }
+                                      {`${r.bagian || '-'} / ${r.jabatan || '-'}`}
                                     </p>
                                   </div>
                                   <div>
@@ -950,19 +914,6 @@ export default function PekerjaDetailPage() {
                                     <div>
                                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Agen Penyalur</p>
                                       <p className="text-sm font-semibold text-slate-700">{r.nama_agen_penyalur}</p>
-                                    </div>
-                                  )}
-                                  {(['Borongan', 'Harian Lepas'].includes(r.status_pekerjaan)) && (
-                                    <div>
-                                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Lokasi Proyek</p>
-                                      <p className="text-sm font-semibold text-slate-700">
-                                        {(() => {
-                                          try {
-                                            const info = typeof r.informal_data === 'string' ? JSON.parse(r.informal_data) : r.informal_data;
-                                            return Array.isArray(info?.lokasi_proyek) ? info.lokasi_proyek.join(', ') : info?.lokasi_proyek || '-';
-                                          } catch(e) { return '-'; }
-                                        })()}
-                                      </p>
                                     </div>
                                   )}
                                 </div>
@@ -986,7 +937,9 @@ export default function PekerjaDetailPage() {
                                               <div className="flex-1">
                                                 <div className="flex justify-between items-center mb-0.5">
                                                   <p className="text-xs font-bold text-slate-800">{m.bagian || '-'}</p>
-                                                  <span className="text-[10px] font-bold text-slate-400">{m.tahun || '-'}</span>
+                                                  <span className="text-[10px] font-bold text-slate-400">
+                                                    {m.tahun_mulai ? `${m.tahun_mulai}–${m.tahun_selesai || 'Sekarang'}` : (m.tahun || '-')}
+                                                  </span>
                                                 </div>
                                                 <p className="text-[11px] text-slate-500 font-medium">Jabatan: {m.jabatan || '-'}</p>
                                               </div>
@@ -1007,57 +960,43 @@ export default function PekerjaDetailPage() {
                                   </div>
                                 )}
 
-                                {r.informal_data && ['Borongan', 'Harian Lepas'].includes(r.status_pekerjaan) && (
-                                  <div className="mb-4 bg-orange-50/50 border border-orange-100 p-4 rounded-xl">
-                                    <p className="text-[10px] font-bold text-orange-600 uppercase tracking-widest mb-3 flex items-center gap-1.5">
-                                      <HardHat className="h-3.5 w-3.5" /> Data Pekerja Informal / Lapangan
-                                    </p>
-                                    <div className="grid grid-cols-2 gap-4">
-                                      {(() => {
-                                        let info: any = {};
-                                        try {
-                                          info = typeof r.informal_data === 'string' ? JSON.parse(r.informal_data) : r.informal_data;
-                                        } catch(e) {}
-                                        return (
-                                          <>
-                                            <div className="col-span-2 sm:col-span-1">
-                                              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Tugas Spesifik</p>
-                                              <p className="text-xs font-semibold text-slate-700">{info.tugas_spesifik || '-'}</p>
+                                {(() => {
+                                  if (!r.informal_data) return null;
+                                  let info: any = {};
+                                  try {
+                                    info = typeof r.informal_data === 'string' ? JSON.parse(r.informal_data) : r.informal_data;
+                                  } catch(e) {}
+                                  
+                                  return (
+                                    <>
+                                      {/* APD Untuk Semua Status Karyawan */}
+                                      {(info.apd_disediakan || info.jenis_apd_sendiri) && (
+                                        <div className="mb-4 space-y-3">
+                                          {info.apd_disediakan && (
+                                            <div>
+                                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                                                <HardHat className="h-3.5 w-3.5" /> APD Disediakan Perusahaan
+                                              </p>
+                                              <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                                <p className="text-xs font-semibold text-slate-700">{info.apd_disediakan}</p>
+                                              </div>
                                             </div>
-                                            <div className="col-span-2 sm:col-span-1">
-                                              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Durasi</p>
-                                              <p className="text-xs font-semibold text-slate-700">{info.lama_bekerja || '-'} {info.satuan_waktu}</p>
-                                            </div>
-                                            <div className="col-span-2 sm:col-span-1">
-                                              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Penyediaan APD</p>
-                                              <p className="text-xs font-semibold text-slate-700">{info.apd_disediakan || '-'}</p>
-                                            </div>
-                                            {info.jenis_apd_sendiri && (
-                                              <div className="col-span-2 sm:col-span-1">
-                                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">APD Mandiri</p>
+                                          )}
+                                          {info.jenis_apd_sendiri && (
+                                            <div>
+                                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                                                <HardHat className="h-3.5 w-3.5" /> APD Mandiri (Bawa Sendiri)
+                                              </p>
+                                              <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
                                                 <p className="text-xs font-semibold text-slate-700">{info.jenis_apd_sendiri}</p>
                                               </div>
-                                            )}
-                                            <div className="col-span-2 sm:col-span-1">
-                                              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">BPJS Ketenagakerjaan (BPU)</p>
-                                              <p className="text-xs font-semibold text-slate-700">{info.bpjs_bpu || '-'}</p>
                                             </div>
-                                            {info.lokasi_proyek && info.lokasi_proyek.length > 0 && (
-                                              <div className="col-span-2">
-                                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Lokasi Proyek</p>
-                                                <div className="flex flex-wrap gap-1.5">
-                                                  {info.lokasi_proyek.map((loc: string, i: number) => (
-                                                    loc ? <span key={i} className="bg-white border border-slate-200 text-slate-600 text-[10px] px-2 py-0.5 rounded-md font-medium">{loc}</span> : null
-                                                  ))}
-                                                </div>
-                                              </div>
-                                            )}
-                                          </>
-                                        );
-                                      })()}
-                                    </div>
-                                  </div>
-                                )}
+                                          )}
+                                        </div>
+                                      )}
+                                    </>
+                                  );
+                                })()}
 
                                 {r.file_bukti_path && (
                                   <div className="pt-2">
@@ -1145,11 +1084,35 @@ export default function PekerjaDetailPage() {
                                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Dokter / Rumah Sakit</p>
                                             <p className="text-xs font-semibold text-slate-700 truncate">{m.dokter_pemeriksa || m.tempat_pemeriksa || '-'}</p>
                                           </div>
+                                          {m.tipe_lokasi && (
+                                            <div>
+                                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Fasilitas Kesehatan</p>
+                                              <p className="text-xs font-semibold text-slate-700">{m.tipe_lokasi}</p>
+                                            </div>
+                                          )}
+                                          {m.penanggung_jawab && (
+                                            <div>
+                                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Opsi Pembiayaan</p>
+                                              <p className="text-xs font-semibold text-slate-700">{m.penanggung_jawab}</p>
+                                            </div>
+                                          )}
+                                          {m.alamat_pemeriksaan && (
+                                            <div className="col-span-2">
+                                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Alamat Tempat Pemeriksaan</p>
+                                              <p className="text-xs font-semibold text-slate-700">{m.alamat_pemeriksaan}</p>
+                                            </div>
+                                          )}
+                                          {m.pendamping && (
+                                            <div className="col-span-2">
+                                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Pendamping / Penjamin</p>
+                                              <p className="text-xs font-semibold text-slate-700">{m.pendamping}</p>
+                                            </div>
+                                          )}
                                         </div>
 
                                         <div className="space-y-3">
                                           <div>
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Hasil Diagnosa</p>
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Hasil Pemeriksaan</p>
                                             <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
                                               <p className="text-xs text-slate-600 leading-relaxed italic">{m.hasil_diagnosis || '-'}</p>
                                             </div>
@@ -1215,7 +1178,7 @@ export default function PekerjaDetailPage() {
                                         </div>
                                         <div className="mt-2 space-y-2">
                                           <div>
-                                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Hasil Diagnosa</p>
+                                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Hasil Pemeriksaan</p>
                                             <p className="text-[11px] text-slate-600 italic leading-relaxed">{m.hasil_diagnosis || '-'}</p>
                                           </div>
                                           {m.rekomendasi && (
@@ -1298,10 +1261,7 @@ export default function PekerjaDetailPage() {
                              </div>
                              <div className="flex flex-col gap-0.5 mb-1">
                                <p className="text-[11px] text-slate-400 font-medium truncate">
-                                 {['Borongan', 'Harian Lepas'].includes(r.status_pekerjaan) 
-                                    ? 'Pekerja Lapangan / Informal'
-                                    : `${r.bagian || r.jabatan || 'Produksi'}`
-                                 } • {wText}
+                                 {`${r.bagian || r.jabatan || 'Produksi'}`} • {wText}
                                </p>
                                {r.deskripsi_usaha && (
                                    <p className="text-[10px] text-amber-600 font-bold truncate flex items-center gap-1 mt-0.5">
@@ -1438,11 +1398,35 @@ export default function PekerjaDetailPage() {
                               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Dokter / Rumah Sakit</p>
                               <p className="text-xs font-bold text-slate-700 truncate">{m.dokter_pemeriksa || m.tempat_pemeriksa || '-'}</p>
                             </div>
+                            {m.tipe_lokasi && (
+                              <div>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Fasilitas Kesehatan</p>
+                                <p className="text-xs font-bold text-slate-700">{m.tipe_lokasi}</p>
+                              </div>
+                            )}
+                            {m.penanggung_jawab && (
+                              <div>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Opsi Pembiayaan</p>
+                                <p className="text-xs font-bold text-slate-700">{m.penanggung_jawab}</p>
+                              </div>
+                            )}
+                            {m.alamat_pemeriksaan && (
+                              <div className="col-span-2">
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Alamat Tempat Pemeriksaan</p>
+                                <p className="text-xs font-bold text-slate-700">{m.alamat_pemeriksaan}</p>
+                              </div>
+                            )}
+                            {m.pendamping && (
+                              <div className="col-span-2">
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Pendamping / Penjamin</p>
+                                <p className="text-xs font-bold text-slate-700">{m.pendamping}</p>
+                              </div>
+                            )}
                           </div>
 
                           <div className="space-y-4">
                             <div>
-                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Hasil Diagnosa</p>
+                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Hasil Pemeriksaan</p>
                               <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 group-hover:border-[#0ea5e9]/20 transition-colors">
                                 <p className="text-xs text-slate-600 leading-relaxed italic">{m.hasil_diagnosis || '-'}</p>
                               </div>
@@ -1564,9 +1548,21 @@ export default function PekerjaDetailPage() {
                                )}
 
                                {getFilePath(step.key) ? (
-                                  <button onClick={() => downloadFile(step.key)} className="h-10 w-full bg-white border border-slate-200 rounded-md flex items-center justify-center text-[10px] font-bold text-slate-600 hover:text-[#0ea5e9] hover:border-[#0ea5e9] transition-colors cursor-pointer">
-                                     <FileText className="h-3.5 w-3.5 mr-1.5" /> Lihat Terunggah
-                                  </button>
+                                  <div className="flex gap-2">
+                                    <button onClick={() => downloadFile(step.key)} className="h-10 flex-1 bg-white border border-slate-200 rounded-md flex items-center justify-center text-[10px] font-bold text-slate-600 hover:text-[#0ea5e9] hover:border-[#0ea5e9] transition-colors cursor-pointer">
+                                       <FileText className="h-3.5 w-3.5 mr-1.5" /> Lihat Terunggah
+                                    </button>
+                                    {isStaffOrAbove && (
+                                      <button 
+                                        onClick={() => handleDeleteAdvokasiFile(step.key)} 
+                                        disabled={deleteLoading === step.key}
+                                        className="h-10 px-3 bg-white border border-slate-200 rounded-md flex items-center justify-center text-[10px] font-bold text-rose-500 hover:bg-rose-50 hover:border-rose-200 transition-colors cursor-pointer disabled:opacity-50"
+                                        title="Hapus Dokumen"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </button>
+                                    )}
+                                  </div>
                                ) : isStaffOrAbove ? (
                                   <div className="h-10 w-full border border-slate-200 border-dashed rounded-md flex items-center justify-center px-3 text-[10px] font-medium text-slate-400 italic">
                                      Belum ada dokumen terunggah
@@ -1635,11 +1631,74 @@ export default function PekerjaDetailPage() {
                               <span className="px-3 py-1 bg-slate-100 text-slate-600 text-[10px] font-black rounded-lg uppercase tracking-wider">
                                 {r.bagian || r.jabatan || 'Pekerja'}
                               </span>
+                              {r.status_pekerjaan && (
+                                <span className="px-3 py-1 bg-indigo-50 text-indigo-600 text-[10px] font-black rounded-lg uppercase tracking-wider">
+                                  {r.status_pekerjaan}
+                                </span>
+                              )}
                             </div>
+
+                            {/* Info Pekerjaan Tambahan */}
+                            {(r.deskripsi_pekerjaan || r.nama_agen_penyalur || r.tanggal_selesai_kontrak) && (
+                              <div className="mt-4 space-y-3">
+                                {r.deskripsi_pekerjaan && (
+                                  <div className="text-[11px] text-slate-600">
+                                    <span className="font-bold uppercase tracking-wider text-slate-400 block mb-0.5">Deskripsi Pekerjaan:</span>
+                                    <span className="leading-relaxed">{r.deskripsi_pekerjaan}</span>
+                                  </div>
+                                )}
+                                {r.nama_agen_penyalur && (
+                                  <div className="text-[11px] text-slate-600">
+                                    <span className="font-bold uppercase tracking-wider text-slate-400 block mb-0.5">Agen Penyalur:</span>
+                                    <span>{r.nama_agen_penyalur}</span>
+                                    {r.alamat_agen_penyalur && <span className="block text-slate-500 mt-0.5">{r.alamat_agen_penyalur}</span>}
+                                  </div>
+                                )}
+                                {r.tanggal_selesai_kontrak && (
+                                  <div className="text-[11px] text-slate-600">
+                                    <span className="font-bold uppercase tracking-wider text-slate-400 block mb-0.5">Selesai Kontrak:</span>
+                                    <span>{format(parseISO(r.tanggal_selesai_kontrak), 'dd MMM yyyy', { locale: localeID })}</span>
+                                  </div>
+                                )}
+                                {info?.bpjs_bpu && (
+                                  <div className="text-[11px] text-slate-600">
+                                    <span className="font-bold uppercase tracking-wider text-slate-400 block mb-0.5">BPJS Ketenagakerjaan:</span>
+                                    <span>{info.bpjs_bpu === 'PU' ? 'Penerima Upah (PU)' : info.bpjs_bpu === 'BPU' ? 'Bukan Penerima Upah (BPU)' : info.bpjs_bpu}</span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {/* K3 Info */}
+                            {(info?.training_k3 || info?.ada_p2k3) && (
+                              <div className="mt-5 p-3 bg-emerald-50/50 border border-emerald-100 rounded-xl">
+                                <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                  <ShieldAlert className="h-3 w-3" /> Info Keselamatan (K3)
+                                </p>
+                                <div className="space-y-2">
+                                  {info.training_k3 && (
+                                    <div className="flex flex-col gap-0.5">
+                                      <span className="text-[10px] font-semibold text-slate-500">Pelatihan K3: <span className="font-bold text-slate-700">{info.training_k3 === 'Pernah' ? 'Pernah Mengikuti' : 'Belum Pernah'}</span></span>
+                                      {info.training_k3 === 'Pernah' && info.jenis_pelatihan_k3 && (
+                                        <span className="text-[10px] text-slate-500">- Jenis: {info.jenis_pelatihan_k3}</span>
+                                      )}
+                                      {info.training_k3 === 'Pernah' && info.terakhir_pelatihan_k3 && (
+                                        <span className="text-[10px] text-slate-500">- Terakhir: {info.terakhir_pelatihan_k3}</span>
+                                      )}
+                                    </div>
+                                  )}
+                                  {info.ada_p2k3 && (
+                                    <div className="flex flex-col gap-0.5 mt-1">
+                                      <span className="text-[10px] font-semibold text-slate-500">P2K3 di Perusahaan: <span className="font-bold text-slate-700">{info.ada_p2k3}</span></span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
 
                             {/* Timeline Mutasi */}
                             {mutations.length > 0 && (
-                              <div className="mt-8 ml-2 border-l-[2px] border-slate-100 space-y-6">
+                              <div className="mt-6 ml-2 border-l-[2px] border-slate-100 space-y-6">
                                 {mutations.map((m: any, midx: number) => (
                                   <div key={midx} className="relative pl-8">
                                     <div className="absolute left-[-6px] top-1 h-3 w-3 rounded-full bg-[#0ea5e9] border-2 border-white" />
@@ -1682,6 +1741,12 @@ export default function PekerjaDetailPage() {
                                   <p className="text-[12px] font-bold text-slate-700 leading-relaxed italic">
                                     &quot;{apdDisediakan}&quot;
                                   </p>
+                                  {info?.akses_apd && (
+                                    <div className="mt-3 pt-3 border-t border-blue-100 flex items-center gap-2">
+                                      <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Akses APD:</span>
+                                      <span className="text-[11px] font-semibold text-slate-700">{info.akses_apd}</span>
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                             )}
@@ -1850,7 +1915,7 @@ export default function PekerjaDetailPage() {
                 ) : (
                   riwayatForm.mutasi_jabatan.map((m, idx) => (
                     <div key={idx} className="grid grid-cols-12 gap-2 items-end bg-slate-50/50 p-3 rounded-xl border border-slate-100">
-                      <div className="col-span-4 space-y-1">
+                      <div className="col-span-3 space-y-1">
                         <label className="text-[8px] font-bold text-slate-400 uppercase">Bagian</label>
                         <input 
                           className="w-full h-8 px-2 bg-white border border-slate-200 rounded-lg text-[11px] font-semibold outline-none focus:ring-1 focus:ring-blue-200"
@@ -1858,7 +1923,7 @@ export default function PekerjaDetailPage() {
                           onChange={(e) => updateMutasi(idx, 'bagian', e.target.value)}
                         />
                       </div>
-                      <div className="col-span-4 space-y-1">
+                      <div className="col-span-3 space-y-1">
                         <label className="text-[8px] font-bold text-slate-400 uppercase">Jabatan</label>
                         <input 
                           className="w-full h-8 px-2 bg-white border border-slate-200 rounded-lg text-[11px] font-semibold outline-none focus:ring-1 focus:ring-blue-200"
@@ -1866,13 +1931,22 @@ export default function PekerjaDetailPage() {
                           onChange={(e) => updateMutasi(idx, 'jabatan', e.target.value)}
                         />
                       </div>
-                      <div className="col-span-3 space-y-1">
-                        <label className="text-[8px] font-bold text-slate-400 uppercase">Tahun</label>
+                      <div className="col-span-2 space-y-1">
+                        <label className="text-[8px] font-bold text-slate-400 uppercase">Thn Mulai</label>
                         <input 
                           className="w-full h-8 px-2 bg-white border border-slate-200 rounded-lg text-[11px] font-semibold outline-none focus:ring-1 focus:ring-blue-200"
-                          placeholder="2024"
-                          value={m.tahun}
-                          onChange={(e) => updateMutasi(idx, 'tahun', e.target.value)}
+                          placeholder="2019"
+                          value={m.tahun_mulai}
+                          onChange={(e) => updateMutasi(idx, 'tahun_mulai', e.target.value)}
+                        />
+                      </div>
+                      <div className="col-span-3 space-y-1">
+                        <label className="text-[8px] font-bold text-slate-400 uppercase">Thn Selesai</label>
+                        <input 
+                          className="w-full h-8 px-2 bg-white border border-slate-200 rounded-lg text-[11px] font-semibold outline-none focus:ring-1 focus:ring-blue-200"
+                          placeholder="2021 / Skg"
+                          value={m.tahun_selesai}
+                          onChange={(e) => updateMutasi(idx, 'tahun_selesai', e.target.value)}
                         />
                       </div>
                       <div className="col-span-1 pb-0.5">

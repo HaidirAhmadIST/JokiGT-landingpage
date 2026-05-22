@@ -203,19 +203,19 @@ export const RiskMap: React.FC<RiskMapProps> = ({ onProvinceClick, lockedProvinc
   // Smoothly center the map on the selected province's centroid with a vertical offset
   useEffect(() => {
     if (lockedCentroid && mapRef.current) {
-      // Offset the center slightly north (+ 1.8 degrees lat at zoom 4.8)
-      // so the province centroid sits lower, keeping the popup card within map container bounds.
+      // Perbaikan: Kurangi pergerakan drastis. Hanya geser sedikit dengan durasi lebih lambat
+      // agar tidak memusingkan pengguna, dan pertahankan zoom yang tidak terlalu dekat.
       mapRef.current.easeTo({
-        center: [lockedCentroid.longitude, lockedCentroid.latitude + 1.8],
-        zoom: 4.8,
-        duration: 800,
+        center: [lockedCentroid.longitude, lockedCentroid.latitude + 0.5],
+        zoom: 4.3,
+        duration: 1200,
       });
     } else if (!lockedProvinceName && mapRef.current) {
-      // Return to original view when province selection is cleared
+      // Return to original view when province selection is cleared smoothly
       mapRef.current.easeTo({
         center: [118.0, -2.5],
         zoom: 4,
-        duration: 800,
+        duration: 1200,
       });
     }
   }, [lockedCentroid, lockedProvinceName]);
@@ -281,11 +281,13 @@ export const RiskMap: React.FC<RiskMapProps> = ({ onProvinceClick, lockedProvinc
         const maxRegencyReports = Math.max(...data.regencies.map(r => r.reports), 1);
         const sortedRegencies = [...data.regencies].sort((a, b) => b.reports - a.reports);
         const totalDistricts = data.regencies.reduce((s, r) => s + r.districts.length, 0);
-        // Color palette for heat bars based on percentage
-        const getHeatColor = (pct: number) => {
-          if (pct >= 80) return { bg: 'bg-rose-500', text: 'text-rose-700', light: 'bg-rose-50', border: 'border-rose-200' };
-          if (pct >= 60) return { bg: 'bg-amber-500', text: 'text-amber-700', light: 'bg-amber-50', border: 'border-amber-200' };
-          if (pct >= 40) return { bg: 'bg-sky-500', text: 'text-sky-700', light: 'bg-sky-50', border: 'border-sky-200' };
+        
+        // Color palette for heat bars based on percentage AND absolute values
+        // Perbaikan: Mencegah warna Kritis (Merah) jika total kasus wilayahnya sangat kecil (misal di bawah 20 kasus)
+        const getHeatColor = (pct: number, absoluteValue: number) => {
+          if (pct >= 80 && absoluteValue >= 20) return { bg: 'bg-rose-500', text: 'text-rose-700', light: 'bg-rose-50', border: 'border-rose-200' };
+          if (pct >= 60 && absoluteValue >= 10) return { bg: 'bg-amber-500', text: 'text-amber-700', light: 'bg-amber-50', border: 'border-amber-200' };
+          if (pct >= 40 || absoluteValue >= 5) return { bg: 'bg-sky-500', text: 'text-sky-700', light: 'bg-sky-50', border: 'border-sky-200' };
           return { bg: 'bg-emerald-500', text: 'text-emerald-700', light: 'bg-emerald-50', border: 'border-emerald-200' };
         };
         const getRankBadge = (idx: number) => {
@@ -297,7 +299,7 @@ export const RiskMap: React.FC<RiskMapProps> = ({ onProvinceClick, lockedProvinc
 
         return (
           <div className="absolute inset-0 z-40 flex items-center justify-center pointer-events-none p-4 backdrop-blur-sm bg-slate-900/10 transition-all duration-300">
-            <div className="flex w-[380px] flex-col bg-white rounded-2xl shadow-2xl pointer-events-auto border border-slate-200 p-4 relative" style={{ fontFamily: 'inherit' }}>
+            <div className="flex w-full max-w-[380px] flex-col bg-white rounded-2xl shadow-2xl pointer-events-auto border border-slate-200 p-4 relative" style={{ fontFamily: 'inherit' }}>
               
               {/* Close Button */}
               <button 
@@ -400,7 +402,7 @@ export const RiskMap: React.FC<RiskMapProps> = ({ onProvinceClick, lockedProvinc
                         const origIdx = data.regencies.indexOf(regency);
                         const isExpanded = expandedRegencyIdx === origIdx;
                         const pct = (regency.reports / maxRegencyReports) * 100;
-                        const heat = getHeatColor(pct);
+                        const heat = getHeatColor(pct, regency.reports);
                         const rank = getRankBadge(rIdx);
                         const maxDistrictReports = Math.max(...regency.districts.map(d => d.reports), 1);
 
@@ -476,7 +478,7 @@ export const RiskMap: React.FC<RiskMapProps> = ({ onProvinceClick, lockedProvinc
                                   const origDIdx = regency.districts.indexOf(district);
                                   const isSel = selectedDistrictIdx === origDIdx;
                                   const distPct = (district.reports / maxDistrictReports) * 100;
-                                  const distHeat = getHeatColor(distPct);
+                                  const distHeat = getHeatColor(distPct, district.reports);
                                   return (
                                     <button
                                       key={origDIdx}

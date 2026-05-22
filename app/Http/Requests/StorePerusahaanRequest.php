@@ -37,7 +37,7 @@ class StorePerusahaanRequest extends FormRequest
                     ->whereNull('deleted_at') // Abaikan record yang sudah di-soft delete
             ],
             'sektor_industri' => ['nullable', 'string', 'max:255'],
-            'status_pendamping' => ['required', 'in:Berkasus,Selesai,Dalam Pantauan'],
+            'status_pendamping' => ['required', 'in:Berkasus,Dalam Pantauan'],
             'alamat' => ['nullable', 'string'],
             'nama_pic' => ['nullable', 'string', 'max:255'],
             'kontak_pic' => ['nullable', 'string', 'max:255'],

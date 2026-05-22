@@ -200,4 +200,38 @@ class AdvokasiController extends Controller
             return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
         }
     }
+
+    /**
+     * Delete an advocacy proof document.
+     */
+    public function deleteAdvokasiProof(Request $request, $pekerja_id, $step_key)
+    {
+        $authUser = auth()->user();
+
+        // Check if user is staff or superadmin
+        if (!$authUser || (!in_array($authUser->role, ['staff', 'superadmin']) && !$authUser->isPetugas())) {
+            return response()->json(['status' => 'error', 'message' => 'Unauthorized'], 403);
+        }
+
+        try {
+            $status = $this->advokasiService->deleteProofFile($pekerja_id, $step_key);
+            
+            // Log activity
+            \App\Models\ActivityLog::record(
+                'delete_advokasi_file',
+                "Menghapus dokumen advokasi pada tahap '{$step_key}' untuk pekerja (ID: {$pekerja_id})",
+                'admin',
+                $status
+            );
+
+            return response()->json(['status' => 'success', 'data' => $status]);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Advokasi Delete File Error: ' . $e->getMessage(), [
+                'pekerja_id' => $pekerja_id,
+                'step_key' => $step_key,
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+        }
+    }
 }

@@ -61,12 +61,7 @@ export default function LoginPage() {
       const response = await api.post('/login', formData);
       if (response.data.status === 'success') {
         const { token, user } = response.data.data;
-        
-        if (user.role === 'admin') {
-          toast.error('Akun Superadmin tidak diizinkan masuk dari sini. Silakan gunakan link khusus Superadmin.');
-          setLoading(false);
-          return;
-        }
+        // Akun admin (Superadmin) diizinkan masuk dan langsung diarahkan ke /dashboard-admin
 
         // Store auth info
         Cookies.set('auth_token', token, { expires: 7, path: '/' });
@@ -223,7 +218,7 @@ export default function LoginPage() {
         <CardContent className="space-y-6">
           {/* TABS SELECTOR */}
           <div className="space-y-2.5">
-            <Label className="text-slate-500 font-bold text-xs uppercase tracking-wider block text-center">Apakah Anda Pengurus/Delegasi Serikat?</Label>
+            <Label className="text-slate-500 font-bold text-xs uppercase tracking-wider block text-center">Pilih Akses Masuk Anda</Label>
             <div className="grid grid-cols-2 gap-3 p-1.5 bg-slate-100 rounded-xl border border-slate-200/60">
               <button 
                 type="button"
@@ -237,7 +232,7 @@ export default function LoginPage() {
                     : "text-slate-500 hover:text-slate-800"
                 }`}
               >
-                Ya, Pengurus/Delegasi
+                Super Admin / Pengurus
               </button>
               <button 
                 type="button"
@@ -248,7 +243,7 @@ export default function LoginPage() {
                     : "text-slate-500 hover:text-slate-800"
                 }`}
               >
-                Bukan Pengurus/Delegasi
+                Pekerja (Individu)
               </button>
             </div>
           </div>
@@ -258,7 +253,7 @@ export default function LoginPage() {
             <form onSubmit={handleLogin} className="space-y-4 pt-2 animate-in fade-in duration-300">
               <div className="p-4 bg-blue-50/50 border border-blue-100/60 rounded-xl mb-2">
                 <p className="text-xs text-blue-600 font-medium leading-relaxed">
-                  Pengurus/Delegasi serikat masuk menggunakan Email/No. Telp dan kata sandi yang telah didaftarkan.
+                  Super Admin dan Pengurus/Delegasi serikat masuk menggunakan Email/No. Telp dan kata sandi yang telah didaftarkan.
                 </p>
               </div>
               <div className="space-y-2">
