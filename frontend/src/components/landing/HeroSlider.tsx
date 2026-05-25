@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 const slides = [
   {
     image: 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?q=80&w=2070&auto=format&fit=crop',
+    author: 'ThisisEngineering',
     badge: 'Perlindungan Pekerja',
     title: 'Lindungi Hak & Kesehatan Seluruh Pekerja',
     description: 'Solusi terpadu untuk memastikan setiap pekerja mendapatkan hak kesehatan dan perlindungan hukum yang layak.',
@@ -18,6 +19,7 @@ const slides = [
   },
   {
     image: 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?q=80&w=2080&auto=format&fit=crop',
+    author: 'National Cancer Institute',
     badge: 'Rekam Jejak PAK',
     title: 'Pantau Riwayat Kesehatan Secara Digital',
     description: 'Teknologi pelacakan pajanan dan kondisi medis yang akurat untuk deteksi dini Penyakit Akibat Kerja.',
@@ -26,6 +28,7 @@ const slides = [
   },
   {
     image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=2015&auto=format&fit=crop',
+    author: 'Carlos Muza',
     badge: 'Data Transparan',
     title: 'Manajemen Rekam Medis yang Terpercaya',
     description: 'Akses data kesehatan dan riwayat pekerjaan Anda kapan saja dengan sistem keamanan tingkat tinggi.',
@@ -34,6 +37,7 @@ const slides = [
   },
   {
     image: 'https://images.unsplash.com/photo-1517048676732-d65bc937f952?q=80&w=2070&auto=format&fit=crop',
+    author: 'Scott Graham',
     badge: 'Advokasi Medis',
     title: 'Pendampingan Kasus dari Ahli Profesional',
     description: 'Dukungan penuh dalam proses verifikasi dan advokasi kasus PAK hingga mendapatkan solusi terbaik.',
@@ -132,6 +136,14 @@ export default function HeroSlider() {
                 </a>
               </div>
             </div>
+          </div>
+
+          {/* Image Credit */}
+          <div className={cn(
+            "absolute bottom-4 right-6 text-[10px] text-white/50 font-medium tracking-wide transition-opacity duration-700 delay-500",
+            index === current ? "opacity-100" : "opacity-0"
+          )}>
+            Photo by <span className="text-white/80">{slide.author}</span> on Unsplash
           </div>
         </div>
       ))}
