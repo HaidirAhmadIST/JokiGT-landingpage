@@ -258,7 +258,7 @@ export default function LaporanPage() {
         <Card className="md:col-span-2 rounded-[20px] shadow-sm border-slate-100 p-8 bg-blue-50/30 flex flex-col justify-center">
           <h2 className="text-xl font-bold text-[#0f172a] mb-2">Analisis Urgensi Advokasi</h2>
           <p className="text-sm text-slate-600 leading-relaxed">
-            Data prioritas di samping menunjukkan kasus PAK yang mendekati batas waktu legal 5 tahun sejak berakhirnya hubungan kerja. 
+            Data prioritas di samping menunjukkan kasus PAK yang mendekati batas waktu legal 3 tahun sejak berakhirnya hubungan kerja. 
             Kegagalan penyelesaian dalam periode ini dapat mengakibatkan hilangnya hak kompensasi bagi pekerja. 
             Segera lakukan koordinasi dengan BPJS Ketenagakerjaan dan Dinas Tenaga Kerja setempat.
           </p>

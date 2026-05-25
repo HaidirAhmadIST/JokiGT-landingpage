@@ -21,7 +21,10 @@ use App\Http\Controllers\Api\OtpController;
 
 // =========================================================================
 
+// Statistik Peta Landing Page (Public)
+Route::get('/map-stats', [\App\Http\Controllers\Api\MapStatsController::class, 'getStats']);
 
+// Autentikasi
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/auth/google/redirect', [GoogleAuthController::class, 'redirectToGoogle']);
 Route::get('/auth/google/callback', [GoogleAuthController::class, 'handleGoogleCallback']);
@@ -66,6 +69,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::group(['middleware' => ['role:admin,petugas']], function () {
         Route::put('perusahaan/{perusahaan}', [PerusahaanController::class, 'update']);
         Route::patch('perusahaan/{id}/restore', [PerusahaanController::class, 'restore']);
+        
+        // Pembuatan Akun Pengurus Manual
+        Route::post('admin/buat-pengurus', [\App\Http\Controllers\Api\AdminPengurusController::class, 'store']);
     });
     Route::delete('perusahaan/{perusahaan}', [PerusahaanController::class, 'destroy'])->middleware('role:admin');
     Route::get('perusahaan/{perusahaan}', [PerusahaanController::class, 'show']);

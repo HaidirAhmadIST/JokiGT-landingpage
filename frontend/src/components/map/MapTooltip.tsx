@@ -26,13 +26,19 @@ interface TooltipProps {
       province_name: string;
     };
   } | null;
+  dbStats?: any;
 }
 
 // Deterministic generator to produce clean, realistic regencies and kecamatan for Indonesian provinces
 // Data updated sesuai BPS 2024
-export const getDetailedProvinceData = (provinceName: string): ProvinceReportDetail => {
+export const getDetailedProvinceData = (provinceName: string, dbStats?: any): ProvinceReportDetail => {
   const cleanName = provinceName.trim();
   
+  // Jika ada data dari database untuk provinsi ini, gunakan data asli tersebut
+  if (dbStats && dbStats[cleanName]) {
+    return dbStats[cleanName];
+  }
+
   let regencyNames: string[] = [];
   let districtNamesMap: Record<string, string[]> = {};
   
@@ -135,20 +141,15 @@ export const getDetailedProvinceData = (provinceName: string): ProvinceReportDet
   };
 };
 
-const MapTooltip: React.FC<TooltipProps> = ({ x, y, feature }) => {
+const MapTooltip: React.FC<TooltipProps> = ({ x, y, feature, dbStats }) => {
   if (!feature) return null;
 
   const provinceName = feature.properties.province_name;
-  const data = getDetailedProvinceData(provinceName);
+  const data = getDetailedProvinceData(provinceName, dbStats);
 
   // Ambil 3 kabupaten/kota dengan kasus terbanyak untuk disajikan secara informatif dan sederhana
-  const topRegencies = useMemo(() => {
-    return [...data.regencies].sort((a, b) => b.reports - a.reports).slice(0, 3);
-  }, [data.regencies]);
-
-  const maxReports = useMemo(() => {
-    return Math.max(...topRegencies.map(r => r.reports), 1);
-  }, [topRegencies]);
+  const topRegencies = [...data.regencies].sort((a, b) => b.reports - a.reports).slice(0, 3);
+  const maxReports = Math.max(...topRegencies.map(r => r.reports), 1);
 
   return (
     <div

@@ -502,6 +502,16 @@ export default function FormDetailMedis({ data, onChange }: FormDetailMedisProps
                   </div>
                 </div>
               ))}
+              <div className="flex justify-center mt-2 border-t border-gray-100 pt-6">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={addPemeriksaan}
+                  className="bg-white border-dashed border-blue-300 text-blue-600 hover:bg-blue-50 hover:border-blue-400 font-semibold px-8 h-12 w-full sm:w-auto"
+                >
+                  + Tambah Pemeriksaan Lainnya
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>

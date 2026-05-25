@@ -19,7 +19,11 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['*'],
+    'allowed_origins' => [
+        'https://rekam-jejak-pak.com', // Domain Production
+        'https://www.rekam-jejak-pak.com', 
+        'http://localhost:3000'    // Akses development frontend (Next.js)
+    ],
 
     'allowed_origins_patterns' => [],
 

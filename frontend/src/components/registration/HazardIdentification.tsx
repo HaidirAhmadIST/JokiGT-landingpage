@@ -35,7 +35,7 @@ export const HAZARD_CATEGORIES = [
     id: 'PSIKOSOSIAL',
     title: 'Stres & Beban Mental',
     icon: '🧠',
-    helperText: 'Contoh: Jam kerja berlebih, target tidak masuk akal, tekanan atasan.',
+    helperText: 'Contoh: Jam kerja berlebih, target tidak rasional, pengawasan berlebihan (micromanagement), atau minimnya dukungan dari manajemen.',
   },
 ];
 

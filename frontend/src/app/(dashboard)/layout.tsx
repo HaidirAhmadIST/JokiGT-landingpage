@@ -277,13 +277,7 @@ export default function DashboardLayout({
         if (token) {
           console.log('[Layout] Verifying token with server...');
           try {
-            // Tambahkan timeout agar tidak hang selamanya jika server bermasalah
-            const mePromise = api.get('/me');
-            const timeoutPromise = new Promise((_, reject) => 
-              setTimeout(() => reject(new Error('Timeout')), 5000)
-            );
-
-            const res = await Promise.race([mePromise, timeoutPromise]) as any;
+            const res = await api.get('/me') as any;
             const freshData = res.data.data;
             
             if (freshData && isMounted) {
@@ -297,13 +291,14 @@ export default function DashboardLayout({
             }
           } catch (err: any) {
             console.warn('[Layout] Auth verification failed:', err.message);
-            if (err.response?.status === 401 || err.message === 'Timeout') {
-              console.warn('[Layout] Session invalid or timeout. Clearing state.');
+            if (err.response?.status === 401) {
+              console.warn('[Layout] Session invalid (401). Clearing state.');
               localStorage.removeItem('user');
               Cookies.remove('auth_token', { path: '/' });
               userData = null;
               if (isMounted) setUser(null);
             }
+            // Jika Timeout atau 500, kita biarkan userData terisi dari localStorage agar tidak tiba-tiba keluar
           }
         }
 
@@ -453,7 +448,7 @@ export default function DashboardLayout({
             <SheetContent side="left" className="w-64 p-0">
                {/* Mobile Sidebar Content */}
                <div className="p-6">
-                 <h2 className="font-extrabold text-xl text-slate-800 tracking-tight">Azure Sentinel</h2>
+                 <h2 className="font-extrabold text-xl text-slate-800 tracking-tight">Rekam Jejak PAK</h2>
                </div>
                
                <div className="px-4 mb-6">
@@ -494,7 +489,7 @@ export default function DashboardLayout({
               </nav>
             </SheetContent>
           </Sheet>
-          <h1 className="font-extrabold text-xl text-[#0f172a] tracking-tight hidden md:block">Azure Sentinel</h1>
+          <h1 className="font-extrabold text-xl text-[#0f172a] tracking-tight hidden md:block">Rekam Jejak PAK</h1>
         </div>
 
         {/* Center Search Bar */}

@@ -408,7 +408,7 @@ class AdvokasiService
                 if (!$latestJob) return null;
 
                 $tglKeluar = \Carbon\Carbon::parse($latestJob->tgl_keluar);
-                $deadline = $tglKeluar->copy()->addYears(5);
+                $deadline = $tglKeluar->copy()->addYears(3);
                 $daysRemaining = now()->diffInDays($deadline, false);
 
                 // Attach priority metadata

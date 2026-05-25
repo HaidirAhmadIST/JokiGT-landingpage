@@ -49,22 +49,22 @@ class PekerjaPolicy
 
         // Petugas: cek isolasi perusahaan + serikat
         if ($user->isPetugas()) {
+            $petugasPerusahaanId = $user->perusahaan_id ?? $user->pekerja?->perusahaan_id;
+
             // Pastikan petugas punya perusahaan_id
-            if (!$user->perusahaan_id) {
+            if (!$petugasPerusahaanId) {
                 return false;
             }
 
             // Pekerja harus di perusahaan yang sama
-            if ($pekerja->perusahaan_id !== $user->perusahaan_id) {
+            if ($pekerja->perusahaan_id !== $petugasPerusahaanId) {
                 return false;
             }
 
             // Cek kecocokan serikat: petugas hanya bisa lihat detail pekerja
-            // jika serikat perusahaan pekerja cocok dengan serikat petugas
-            $perusahaanPekerja = $pekerja->perusahaan;
-            if ($perusahaanPekerja && $user->serikat) {
-                return strtolower(trim($perusahaanPekerja->serikat ?? ''))
-                    === strtolower(trim($user->serikat));
+            // jika serikat pekerja cocok dengan serikat petugas
+            if ($pekerja->nama_serikat && $user->serikat) {
+                return strtolower(trim($pekerja->nama_serikat)) === strtolower(trim($user->serikat));
             }
 
             // Jika data serikat tidak tersedia, tolak akses untuk keamanan
@@ -126,19 +126,19 @@ class PekerjaPolicy
         }
 
         if ($user->isPetugas()) {
-            if (!$user->perusahaan_id) {
+            $petugasPerusahaanId = $user->perusahaan_id ?? $user->pekerja?->perusahaan_id;
+
+            if (!$petugasPerusahaanId) {
                 return false;
             }
 
             // Harus di perusahaan sama DAN serikat sama
-            if ($pekerja->perusahaan_id !== $user->perusahaan_id) {
+            if ($pekerja->perusahaan_id !== $petugasPerusahaanId) {
                 return false;
             }
 
-            $perusahaanPekerja = $pekerja->perusahaan;
-            if ($perusahaanPekerja && $user->serikat) {
-                return strtolower(trim($perusahaanPekerja->serikat ?? ''))
-                    === strtolower(trim($user->serikat));
+            if ($pekerja->nama_serikat && $user->serikat) {
+                return strtolower(trim($pekerja->nama_serikat)) === strtolower(trim($user->serikat));
             }
 
             return false;

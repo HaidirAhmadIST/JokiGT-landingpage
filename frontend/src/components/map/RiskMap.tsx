@@ -7,6 +7,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import MapTooltip, { getDetailedProvinceData } from './MapTooltip';
 import mockProvincesData from '@/data/mock-provinces.json';
 import { Landmark, ChevronDown, ChevronRight, MapPin, BarChart3, TrendingUp, Activity, X } from 'lucide-react';
+import api from '@/lib/axios';
 
 // Minimalist light-gray/off-white background style
 const MAP_STYLE = {
@@ -108,6 +109,15 @@ export const RiskMap: React.FC<RiskMapProps> = ({ onProvinceClick, lockedProvinc
   const [expandedRegencyIdx, setExpandedRegencyIdx] = useState<number | null>(null);
   // Which kecamatan is selected inside the expanded regency
   const [selectedDistrictIdx, setSelectedDistrictIdx] = useState<number | null>(null);
+
+  const [dbStats, setDbStats] = useState<any>(null);
+
+  useEffect(() => {
+    // Fetch live map stats from database
+    api.get('/map-stats')
+      .then(res => setDbStats(res.data.data))
+      .catch(console.error);
+  }, []);
 
   const onHover = useCallback((event: MapMouseEvent) => {
     const { features, point: { x, y } } = event;
@@ -275,7 +285,7 @@ export const RiskMap: React.FC<RiskMapProps> = ({ onProvinceClick, lockedProvinc
 
       {/* ── Centered overlay for the locked province ── */}
       {lockedProvinceName && (() => {
-        const data = getDetailedProvinceData(lockedProvinceName);
+        const data = getDetailedProvinceData(lockedProvinceName, dbStats);
         
         // Pre-compute stats for the redesigned card
         const maxRegencyReports = Math.max(...data.regencies.map(r => r.reports), 1);
@@ -562,6 +572,7 @@ export const RiskMap: React.FC<RiskMapProps> = ({ onProvinceClick, lockedProvinc
           x={hoverInfo.x}
           y={hoverInfo.y}
           feature={hoverInfo.feature}
+          dbStats={dbStats}
         />
       )}
     </div>

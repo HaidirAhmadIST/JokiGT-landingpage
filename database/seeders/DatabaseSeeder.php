@@ -38,9 +38,9 @@ class DatabaseSeeder extends Seeder
 
         // Sample Perusahaan
         $perusahaans = [
-            ['nama_perusahaan' => 'PT. Aneka Tambang', 'status_pendamping' => 'aktif'],
-            ['nama_perusahaan' => 'PT. Bukit Asam', 'status_pendamping' => 'aktif'],
-            ['nama_perusahaan' => 'PT. Freeport Indonesia', 'status_pendamping' => 'aktif'],
+            ['nama_perusahaan' => 'PT. Aneka Tambang', 'status_pendamping' => 'Berkasus'],
+            ['nama_perusahaan' => 'PT. Bukit Asam', 'status_pendamping' => 'Berkasus'],
+            ['nama_perusahaan' => 'PT. Freeport Indonesia', 'status_pendamping' => 'Berkasus'],
         ];
 
         foreach ($perusahaans as $p) {
@@ -49,5 +49,9 @@ class DatabaseSeeder extends Seeder
                 $p
             );
         }
+
+        $this->call(WorkerStressTestSeeder::class);
+        $this->call(TestingPendaftaranSeeder::class);
+        $this->call(ComprehensiveDataSeeder::class);
     }
 }

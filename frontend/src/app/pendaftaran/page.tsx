@@ -85,7 +85,7 @@ export default function PendaftaranPekerjaPage() {
       apd_disediakan: '',
       jenis_apd_sendiri: '',
       lokasi_proyek: [''],
-      mutasi_jabatan: [] as { bagian: string; jabatan: string; tahun_mulai: string; tahun_selesai: string }[],
+      mutasi_jabatan: [] as { bagian: string; jabatan: string; tahun_mulai: string; tahun_selesai: string; deskripsi_pekerjaan: string }[],
     }
   });
 
@@ -160,9 +160,10 @@ export default function PendaftaranPekerjaPage() {
     apd_disediakan: '',
     jenis_apd_sendiri: '',
     akses_apd: '',
+    penjelasan_apd_dibatasi: '',
     lokasi_proyek: [] as string[],
     riwayat_pemeriksaan: [] as any[],
-    mutasi_jabatan: [] as { bagian: string; jabatan: string; tahun_mulai: string; tahun_selesai: string }[],
+    mutasi_jabatan: [] as { bagian: string; jabatan: string; tahun_mulai: string; tahun_selesai: string; deskripsi_pekerjaan: string }[],
     file_bukti: [] as File[],
     deskripsi_pajanan: '',
     training_k3: '',
@@ -899,25 +900,37 @@ export default function PendaftaranPekerjaPage() {
         {/* Stepper */}
         <div className="flex items-center justify-center mb-10 overflow-x-auto pb-4">
           <div className="flex items-center min-w-max">
-            <div className="flex flex-col items-center">
+            <div 
+              className="flex flex-col items-center cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={() => setStep(1)}
+            >
               <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${step >= 1 ? 'bg-[#0ea5e9] text-white' : 'bg-slate-200 text-slate-500'}`}>1</div>
               <span className={`text-xs font-semibold mt-2 text-center ${step >= 1 ? 'text-[#0ea5e9]' : 'text-slate-400'}`}>PROFIL <br />PEKERJA</span>
             </div>
             <div className={`w-8 h-[2px] mx-1 -mt-6 ${step >= 2 ? 'bg-[#0ea5e9]' : 'bg-slate-200'}`} />
 
-            <div className="flex flex-col items-center">
+            <div 
+              className="flex flex-col items-center cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={() => setStep(2)}
+            >
               <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${step >= 2 ? 'bg-[#0ea5e9] text-white' : 'bg-slate-200 text-slate-500'}`}>2</div>
               <span className={`text-xs font-semibold mt-2 text-center ${step >= 2 ? 'text-[#0ea5e9]' : 'text-slate-400'}`}>RIWAYAT <br />PEKERJAAN</span>
             </div>
             <div className={`w-8 h-[2px] mx-1 -mt-6 ${step >= 3 ? 'bg-[#0ea5e9]' : 'bg-slate-200'}`} />
 
-            <div className="flex flex-col items-center">
+            <div 
+              className="flex flex-col items-center cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={() => setStep(3)}
+            >
               <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${step >= 3 ? 'bg-[#0ea5e9] text-white' : 'bg-slate-200 text-slate-500'}`}>3</div>
               <span className={`text-xs font-semibold mt-2 text-center ${step >= 3 ? 'text-[#0ea5e9]' : 'text-slate-400'}`}>PEMETAAN <br />BAHAYA</span>
             </div>
             <div className={`w-8 h-[2px] mx-1 -mt-6 ${step >= 4 ? 'bg-[#0ea5e9]' : 'bg-slate-200'}`} />
 
-            <div className="flex flex-col items-center">
+            <div 
+              className="flex flex-col items-center cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={() => setStep(4)}
+            >
               <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${step >= 4 ? 'bg-[#0ea5e9] text-white' : 'bg-slate-200 text-slate-500'}`}>4</div>
               <span className={`text-xs font-semibold mt-2 text-center ${step >= 4 ? 'text-[#0ea5e9]' : 'text-slate-400'}`}>RIWAYAT <br />KESEHATAN</span>
             </div>
@@ -978,19 +991,19 @@ export default function PendaftaranPekerjaPage() {
                       {duplicateWarning.nik && <p className="text-[10px] text-amber-600 font-medium">{duplicateWarning.nik}</p>}
                     </div>
 
-                    {/* Opsi Pengurus/Delegasi Serikat */}
-                    <div id="is-anggota-selector" className="space-y-2.5">
-                      <Label className="text-slate-700 font-bold">Apakah Anda Pengurus/Delegasi Serikat? <span className="text-red-500">*</span></Label>
+                    {/* Opsi Anggota Serikat Pekerja */}
+                    <div id="anggota-selector" className="space-y-2.5">
+                      <Label className="text-slate-700 font-bold">Apakah Anda Anggota Serikat Pekerja? <span className="text-red-500">*</span></Label>
                       <div className="grid grid-cols-2 gap-3 p-1.5 bg-slate-50 rounded-xl border border-slate-200/60">
                         <button 
                           type="button"
                           onClick={() => {
-                            setBaseData(prev => ({ ...prev, is_anggota: true }));
+                            setBaseData(prev => ({ ...prev, anggota_organisasi: true }));
                             setIsWaVerified(false);
                             setOtpSent(false);
                           }}
                           className={`py-2.5 px-3 text-xs font-bold rounded-lg transition-all ${
-                            baseData.is_anggota === true 
+                            baseData.anggota_organisasi === true 
                               ? "bg-[#0ea5e9] text-white shadow-sm border border-[#0ea5e9]/50" 
                               : "text-slate-500 hover:text-slate-800 bg-white border border-slate-200"
                           }`}
@@ -1000,12 +1013,12 @@ export default function PendaftaranPekerjaPage() {
                         <button 
                           type="button"
                           onClick={() => {
-                            setBaseData(prev => ({ ...prev, is_anggota: false, anggota_organisasi: null }));
+                            setBaseData(prev => ({ ...prev, anggota_organisasi: false, nama_serikat: '' }));
                             setIsWaVerified(false);
                             setOtpSent(false);
                           }}
                           className={`py-2.5 px-3 text-xs font-bold rounded-lg transition-all ${
-                            baseData.is_anggota === false 
+                            baseData.anggota_organisasi === false 
                               ? "bg-[#0ea5e9] text-white shadow-sm border border-[#0ea5e9]/50" 
                               : "text-slate-500 hover:text-slate-800 bg-white border border-slate-200"
                           }`}
@@ -1015,38 +1028,7 @@ export default function PendaftaranPekerjaPage() {
                       </div>
                     </div>
 
-                    {/* Jika Bukan Pengurus, Tanyakan Apakah Anggota Biasa */}
-                    {baseData.is_anggota === false && (
-                      <div className="space-y-2.5 animate-in fade-in slide-in-from-top-2">
-                        <Label className="text-slate-700 font-bold">Apakah Anda Anggota Biasa dari Serikat Pekerja?</Label>
-                        <div className="grid grid-cols-2 gap-3 p-1.5 bg-slate-50 rounded-xl border border-slate-200/60">
-                          <button 
-                            type="button"
-                            onClick={() => setBaseData(prev => ({ ...prev, anggota_organisasi: true }))}
-                            className={`py-2.5 px-3 text-xs font-bold rounded-lg transition-all ${
-                              baseData.anggota_organisasi === true 
-                                ? "bg-[#0ea5e9] text-white shadow-sm border border-[#0ea5e9]/50" 
-                                : "text-slate-500 hover:text-slate-800 bg-white border border-slate-200"
-                            }`}
-                          >
-                            Ya
-                          </button>
-                          <button 
-                            type="button"
-                            onClick={() => setBaseData(prev => ({ ...prev, anggota_organisasi: false, nama_serikat: '' }))}
-                            className={`py-2.5 px-3 text-xs font-bold rounded-lg transition-all ${
-                              baseData.anggota_organisasi === false 
-                                ? "bg-[#0ea5e9] text-white shadow-sm border border-[#0ea5e9]/50" 
-                                : "text-slate-500 hover:text-slate-800 bg-white border border-slate-200"
-                            }`}
-                          >
-                            Tidak
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                    {(baseData.is_anggota === true || baseData.anggota_organisasi === true) && (
+                    {baseData.anggota_organisasi === true && (
                       <div className="space-y-2 animate-in fade-in slide-in-from-top-2 relative">
                         <Label htmlFor="nama_serikat">Nama Serikat Pekerja <span className="text-red-500">*</span></Label>
                         <Input 
@@ -1137,7 +1119,7 @@ export default function PendaftaranPekerjaPage() {
                   <div className="space-y-4">
 
                     {/* Jika Opsi Keanggotaan Terpilih */}
-                    {baseData.is_anggota !== null && (
+                    {baseData.anggota_organisasi !== null && (
                       <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
                         {/* WA Input */}
                         <div className="space-y-2">
@@ -1180,78 +1162,28 @@ export default function PendaftaranPekerjaPage() {
                           </div>
                         </div>
 
-
-
-
-                        {/* Jika ANGGOTA -> Tampilkan Email & Password */}
-                        {baseData.is_anggota === true && (
-                          <div className="space-y-4 pt-1 animate-in fade-in slide-in-from-top-2 duration-300">
-                            <div className="space-y-2">
-                              <Label htmlFor="email" className="flex items-center gap-1.5 font-semibold">
-                                Alamat Email <span className="text-red-500">*</span>
-                              </Label>
-                              <div className="relative">
-                                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                                <Input
-                                  id="email"
-                                  type="email"
-                                  placeholder="contoh@email.com"
-                                  className="h-11 pl-10"
-                                  value={baseData.email}
-                                  onChange={e => setBaseData({ ...baseData, email: e.target.value })}
-                                />
-                              </div>
-                            </div>
-
+                        {/* Email Opsional */}
+                        <div className="space-y-2">
+                          <Label htmlFor="email" className="flex items-center gap-1.5 font-semibold">
+                            Alamat Email <span className="text-slate-400 font-normal text-xs">(Opsional)</span>
+                          </Label>
+                          <div className="relative">
+                            <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                            <Input
+                              id="email"
+                              type="email"
+                              placeholder="contoh@email.com"
+                              className="h-11 pl-10"
+                              value={baseData.email}
+                              onChange={e => setBaseData({ ...baseData, email: e.target.value })}
+                            />
                           </div>
-                        )}
+                        </div>
+
                       </div>
                     )}
-                    <div className="space-y-2">
-                      <Label htmlFor="jalan">Nama Jalan / Alamat Rumah</Label>
-                      <Input
-                        id="jalan"
-                        placeholder="Contoh: Jl. Diponegoro No. 123"
-                        className="h-11"
-                        value={baseData.jalan || ''}
-                        onChange={e => setBaseData({ ...baseData, jalan: e.target.value })}
-                      />
-                    </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="patokan_rumah">Patokan Rumah</Label>
-                      <Input
-                        id="patokan_rumah"
-                        placeholder="Contoh: Dekat masjid Al-Ikhlas, sebelah warung Bu Sari"
-                        className="h-11"
-                        value={baseData.patokan_rumah || ''}
-                        onChange={e => setBaseData({ ...baseData, patokan_rumah: e.target.value })}
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="rt">RT</Label>
-                        <Input
-                          id="rt"
-                          placeholder="Contoh: 001"
-                          className="h-11"
-                          value={baseData.rt || ''}
-                          onChange={e => setBaseData({ ...baseData, rt: e.target.value })}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="rw">RW</Label>
-                        <Input
-                          id="rw"
-                          placeholder="Contoh: 002"
-                          className="h-11"
-                          value={baseData.rw || ''}
-                          onChange={e => setBaseData({ ...baseData, rw: e.target.value })}
-                        />
-                      </div>
-                    </div>
-
+                    {/* 1. Provinsi Domisili */}
                     <div className="space-y-2">
                       <Label>Provinsi Domisili</Label>
                       <Popover open={provOpen} onOpenChange={setProvOpen}>
@@ -1294,6 +1226,7 @@ export default function PendaftaranPekerjaPage() {
                       <p className="text-[10px] text-slate-400 font-medium ml-1">Pilih provinsi tempat Anda tinggal saat ini (untuk pemetaan).</p>
                     </div>
 
+                    {/* 2. Kabupaten & Kecamatan */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label>Kabupaten/Kota</Label>
@@ -1390,6 +1323,54 @@ export default function PendaftaranPekerjaPage() {
                           </PopoverContent>
                         </Popover>
                       </div>
+                    </div>
+
+                    {/* 3. RT & RW */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="rt">RT</Label>
+                        <Input
+                          id="rt"
+                          placeholder="Contoh: 001"
+                          className="h-11"
+                          value={baseData.rt || ''}
+                          onChange={e => setBaseData({ ...baseData, rt: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="rw">RW</Label>
+                        <Input
+                          id="rw"
+                          placeholder="Contoh: 002"
+                          className="h-11"
+                          value={baseData.rw || ''}
+                          onChange={e => setBaseData({ ...baseData, rw: e.target.value })}
+                        />
+                      </div>
+                    </div>
+
+                    {/* 4. Nama Jalan / Alamat */}
+                    <div className="space-y-2">
+                      <Label htmlFor="jalan">Nama Jalan / Alamat Rumah</Label>
+                      <Input
+                        id="jalan"
+                        placeholder="Contoh: Jl. Diponegoro No. 123"
+                        className="h-11"
+                        value={baseData.jalan || ''}
+                        onChange={e => setBaseData({ ...baseData, jalan: e.target.value })}
+                      />
+                    </div>
+
+                    {/* 5. Patokan Rumah */}
+                    <div className="space-y-2">
+                      <Label htmlFor="patokan_rumah">Patokan Rumah</Label>
+                      <Input
+                        id="patokan_rumah"
+                        placeholder="Contoh: Dekat masjid Al-Ikhlas, sebelah warung Bu Sari"
+                        className="h-11"
+                        value={baseData.patokan_rumah || ''}
+                        onChange={e => setBaseData({ ...baseData, patokan_rumah: e.target.value })}
+                      />
                     </div>
                   </div>
                 </div>
@@ -1511,7 +1492,7 @@ export default function PendaftaranPekerjaPage() {
 
                     {(pekerjaanSaatIni.status_pekerjaan === 'PKWT' || pekerjaanSaatIni.status_pekerjaan === 'PKWTT' || pekerjaanSaatIni.status_pekerjaan === 'Outsourcing') && (
                       <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                        <Label className="text-blue-600 font-bold">Tanggal Masuk / Mulai Kontrak</Label>
+                        <Label className="text-blue-600 font-bold">Tanggal Masuk</Label>
                         <Input 
                           type="date"
                           className="h-11 border-blue-200 focus-visible:ring-blue-400 block w-full text-slate-500"
@@ -1585,22 +1566,27 @@ export default function PendaftaranPekerjaPage() {
 
                     {/* Riwayat Mutasi Jabatan Section */}
                     <div className="col-span-1 sm:col-span-2 pt-4 border-t border-slate-100 mt-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <Label className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
-                          <RefreshCw className="h-4 w-4 text-blue-500" /> Riwayat Mutasi Jabatan / Bagian (Opsional)
-                        </Label>
-                        <Button 
-                          type="button" 
-                          variant="ghost" 
-                          size="sm" 
-                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 font-bold text-xs h-8"
-                          onClick={() => setPekerjaanSaatIni(prev => ({
-                            ...prev,
-                            mutasi_jabatan: [...(prev.mutasi_jabatan || []), { bagian: '', jabatan: '', tahun_mulai: '', tahun_selesai: '' }]
-                          }))}
-                        >
-                          <Plus className="h-3.5 w-3.5 mr-1" /> Tambah Mutasi
-                        </Button>
+                      <div className="flex flex-col mb-3 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
+                            <RefreshCw className="h-4 w-4 text-blue-500" /> Riwayat Mutasi Jabatan / Bagian (Opsional)
+                          </Label>
+                          <Button 
+                            type="button" 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 font-bold text-xs h-8"
+                            onClick={() => setPekerjaanSaatIni(prev => ({
+                              ...prev,
+                              mutasi_jabatan: [...(prev.mutasi_jabatan || []), { bagian: '', jabatan: '', tahun_mulai: '', tahun_selesai: '', deskripsi_pekerjaan: '' }]
+                            }))}
+                          >
+                            <Plus className="h-3.5 w-3.5 mr-1" /> Tambah Mutasi
+                          </Button>
+                        </div>
+                        <p className="text-xs text-slate-500 italic">
+                          * Tambahkan riwayat mutasi jika Anda pernah di bagian lain atau jabatan lain di perusahaan yang sama.
+                        </p>
                       </div>
 
                       {(!pekerjaanSaatIni.mutasi_jabatan || pekerjaanSaatIni.mutasi_jabatan.length === 0) ? (
@@ -1674,6 +1660,19 @@ export default function PendaftaranPekerjaPage() {
                                 >
                                   <X className="h-4 w-4" />
                                 </Button>
+                              </div>
+                              <div className="col-span-12 space-y-1 mt-1">
+                                <Label className="text-[10px] font-bold text-slate-500 uppercase">Deskripsi Pekerjaan</Label>
+                                <Input 
+                                  placeholder="Jelaskan secara singkat pekerjaan Anda di posisi ini" 
+                                  className="h-9 bg-white text-xs"
+                                  value={mut.deskripsi_pekerjaan || ''}
+                                  onChange={(e) => {
+                                    const newMut = [...pekerjaanSaatIni.mutasi_jabatan];
+                                    newMut[idx].deskripsi_pekerjaan = e.target.value;
+                                    setPekerjaanSaatIni({ ...pekerjaanSaatIni, mutasi_jabatan: newMut });
+                                  }}
+                                />
                               </div>
                             </div>
                           ))}
@@ -1758,9 +1757,10 @@ export default function PendaftaranPekerjaPage() {
                           {!item.collapsed && (
                             <div className="p-5 animate-in fade-in duration-300">
                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div className="space-y-2 col-span-2 sm:col-span-1">
+                                <div className="space-y-2 col-span-1 sm:col-span-2">
                                   <Label>Nama Perusahaan Sebelumnya</Label>
                                   <Input 
+                                    className="h-11"
                                     placeholder="Contoh: PT Logam Terpadu" 
                                     value={item.nama_perusahaan} 
                                     onChange={(e) => {
@@ -1768,15 +1768,46 @@ export default function PendaftaranPekerjaPage() {
                                     }} 
                                   />
                                 </div>
-                                <div className="space-y-2 col-span-2 sm:col-span-1">
+                                <div className="space-y-2 col-span-1 sm:col-span-2">
                                   <Label>Alamat Perusahaan</Label>
                                   <Input 
+                                    className="h-11"
                                     placeholder="Contoh: Jl. Industri No. 123, Jakarta" 
                                     value={item.alamat_perusahaan || ''} 
                                     onChange={(e) => {
                                       const newR = [...riwayatLalu]; newR[idx].alamat_perusahaan = e.target.value; setRiwayatLalu(newR);
                                     }} 
                                   />
+                                </div>
+
+                                <div className="space-y-2 col-span-2 sm:col-span-1">
+                                  <Label>Jabatan / Posisi</Label>
+                                  <Input 
+                                    className="h-11"
+                                    placeholder="Contoh: Operator Produksi" 
+                                    value={item.jabatan} 
+                                    onChange={(e) => {
+                                      const newR = [...riwayatLalu]; newR[idx].jabatan = e.target.value; setRiwayatLalu(newR);
+                                    }} 
+                                  />
+                                </div>
+                                <div className="space-y-2 col-span-2 sm:col-span-1">
+                                  <Label>Bagian / Departemen</Label>
+                                  <Input 
+                                    className="h-11"
+                                    placeholder="Contoh: Produksi / Logistik" 
+                                    value={item.bagian} 
+                                    onChange={(e) => {
+                                      const newR = [...riwayatLalu]; newR[idx].bagian = e.target.value; setRiwayatLalu(newR);
+                                    }} 
+                                  />
+                                </div>
+
+                                <div className="space-y-2 col-span-2 sm:col-span-1">
+                                  <Label>Tanggal Masuk</Label>
+                                  <Input type="date" className="h-11" value={item.tgl_masuk} onChange={(e) => {
+                                    const newR = [...riwayatLalu]; newR[idx].tgl_masuk = e.target.value; setRiwayatLalu(newR);
+                                  }} />
                                 </div>
                                 <div className="space-y-2 col-span-2 sm:col-span-1">
                                   <Label>Status Pekerjaan</Label>
@@ -1795,69 +1826,44 @@ export default function PendaftaranPekerjaPage() {
                                   </Select>
                                 </div>
 
-                                {item.status_pekerjaan === 'Outsourcing' && (
-                                  <>
-                                    <div className="space-y-2 col-span-2 sm:col-span-1 animate-in fade-in">
-                                      <Label className="text-blue-600 font-bold">Nama Pihak Ketiga / Agensi</Label>
-                                      <Input 
-                                        placeholder="Nama agensi penyalur" 
-                                        value={item.nama_agen_penyalur} 
-                                        onChange={(e) => {
-                                          const newR = [...riwayatLalu]; newR[idx].nama_agen_penyalur = e.target.value; setRiwayatLalu(newR);
-                                        }} 
-                                      />
-                                    </div>
-                                    <div className="space-y-2 col-span-2 sm:col-span-1 animate-in fade-in">
-                                      <Label className="text-blue-600 font-bold">Alamat Pihak Ketiga / Agensi</Label>
-                                      <Input 
-                                        placeholder="Alamat lengkap kantor agensi" 
-                                        value={item.alamat_agen_penyalur || ''} 
-                                        onChange={(e) => {
-                                          const newR = [...riwayatLalu]; newR[idx].alamat_agen_penyalur = e.target.value; setRiwayatLalu(newR);
-                                        }} 
-                                      />
-                                    </div>
-                                  </>
-                                )}
-
-                                <div className="space-y-2 col-span-2 sm:col-span-1">
-                                  <Label>Bagian / Departemen</Label>
-                                  <Input 
-                                    placeholder="Contoh: Produksi / Logistik" 
-                                    value={item.bagian} 
-                                    onChange={(e) => {
-                                      const newR = [...riwayatLalu]; newR[idx].bagian = e.target.value; setRiwayatLalu(newR);
-                                    }} 
-                                  />
-                                </div>
-                                <div className="space-y-2 col-span-2 sm:col-span-1">
-                                  <Label>Jabatan / Posisi</Label>
-                                  <Input 
-                                    placeholder="Contoh: Operator Produksi" 
-                                    value={item.jabatan} 
-                                    onChange={(e) => {
-                                      const newR = [...riwayatLalu]; newR[idx].jabatan = e.target.value; setRiwayatLalu(newR);
-                                    }} 
-                                  />
-                                </div>
-
-                                <div className="space-y-2">
-                                  <Label>Tanggal Masuk</Label>
-                                  <Input type="date" value={item.tgl_masuk} onChange={(e) => {
-                                    const newR = [...riwayatLalu]; newR[idx].tgl_masuk = e.target.value; setRiwayatLalu(newR);
-                                  }} />
-                                </div>
                                 {item.status_pekerjaan !== 'PKWTT' && (
-                                  <div className="space-y-2">
+                                  <div className="space-y-2 col-span-2 sm:col-span-1">
                                     <Label>Tanggal Keluar</Label>
-                                    <Input type="date" value={item.tgl_keluar} onChange={(e) => {
+                                    <Input type="date" className="h-11" value={item.tgl_keluar} onChange={(e) => {
                                       const newR = [...riwayatLalu]; newR[idx].tgl_keluar = e.target.value; setRiwayatLalu(newR);
                                     }} />
                                   </div>
                                 )}
+                                {item.status_pekerjaan === 'Outsourcing' && (
+                                  <div className="space-y-2 col-span-2 sm:col-span-1 animate-in fade-in">
+                                    <Label className="text-blue-600 font-bold">Nama Pihak Ketiga / Agensi</Label>
+                                    <Input 
+                                      className="h-11"
+                                      placeholder="Nama agensi penyalur" 
+                                      value={item.nama_agen_penyalur} 
+                                      onChange={(e) => {
+                                        const newR = [...riwayatLalu]; newR[idx].nama_agen_penyalur = e.target.value; setRiwayatLalu(newR);
+                                      }} 
+                                    />
+                                  </div>
+                                )}
+
+                                {item.status_pekerjaan === 'Outsourcing' && (
+                                  <div className="space-y-2 col-span-1 sm:col-span-2 animate-in fade-in">
+                                    <Label className="text-blue-600 font-bold">Alamat Pihak Ketiga / Agensi</Label>
+                                    <Input 
+                                      className="h-11"
+                                      placeholder="Alamat lengkap kantor agensi" 
+                                      value={item.alamat_agen_penyalur || ''} 
+                                      onChange={(e) => {
+                                        const newR = [...riwayatLalu]; newR[idx].alamat_agen_penyalur = e.target.value; setRiwayatLalu(newR);
+                                      }} 
+                                    />
+                                  </div>
+                                )}
 
                                 <div className="space-y-2 col-span-1 sm:col-span-2">
-                                  <Label>Deskripsikan pekerjaan anda</Label>
+                                  <Label>Deskripsi Pekerjaan</Label>
                                   <Textarea 
                                     placeholder="Contoh: Mengoperasikan mesin cetak, melakukan pengecekan kualitas produk secara rutin..." 
                                     className="min-h-[80px] bg-white resize-none"
@@ -2031,11 +2037,23 @@ export default function PendaftaranPekerjaPage() {
                               <SelectValue placeholder="Pilih Akses APD" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="Cuma-cuma">APD didapat cuma-cuma</SelectItem>
+                              <SelectItem value="Cuma-cuma">APD didapat cuma-cuma dan tersedia kapan saja</SelectItem>
                               <SelectItem value="Dibatasi">APD dibatasi</SelectItem>
                             </SelectContent>
                           </Select>
                           <p className="text-[10px] text-slate-400 italic">Bagaimana kemudahan pekerja dalam memperoleh APD tersebut.</p>
+
+                          {pekerjaanSaatIni.akses_apd === 'Dibatasi' && (
+                            <div className="space-y-2 mt-4 animate-in fade-in duration-300">
+                              <Label className="text-sm font-bold text-slate-700">Jelaskan pembatasannya seperti apa</Label>
+                              <Input 
+                                placeholder="Contoh: Harus menukar yang lama, jatah dibatasi sebulan sekali, dsb." 
+                                className="h-11 bg-white border-slate-200 focus:border-blue-400" 
+                                value={pekerjaanSaatIni.penjelasan_apd_dibatasi || ''} 
+                                onChange={e => setPekerjaanSaatIni({ ...pekerjaanSaatIni, penjelasan_apd_dibatasi: e.target.value })} 
+                              />
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -2095,13 +2113,13 @@ export default function PendaftaranPekerjaPage() {
 
           {/* Internal Form Footer */}
           <div className="mt-12 flex justify-between items-center border-t border-slate-100 pt-6">
-            <div className="flex gap-2">
-              <ShieldAlert className="h-8 w-8 text-slate-200" />
+            <a href="https://wa.me/628995389335" target="_blank" rel="noopener noreferrer" className="flex gap-2 cursor-pointer hover:opacity-80 transition-opacity group">
+              <ShieldAlert className="h-8 w-8 text-slate-200 group-hover:text-green-500 transition-colors" />
               <div>
-                <p className="text-[10px] font-bold text-slate-700">Butuh Bantuan?</p>
-                <p className="text-[10px] text-slate-500">Hubungi admin via WhatsApp jika ada masalah dalam pengisian formulir.</p>
+                <p className="text-[10px] font-bold text-slate-700 group-hover:text-green-600 transition-colors">Butuh Bantuan?</p>
+                <p className="text-[10px] text-slate-500 group-hover:text-green-600/80 transition-colors">Hubungi admin via WhatsApp jika ada masalah dalam pengisian formulir.</p>
               </div>
-            </div>
+            </a>
             <div className="flex gap-2 text-right">
               <div>
                 <p className="text-[10px] font-bold text-slate-700">Privasi Data</p>

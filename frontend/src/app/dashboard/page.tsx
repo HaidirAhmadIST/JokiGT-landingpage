@@ -80,7 +80,7 @@ export default function DashboardPage() {
             <DashboardCharts onChartClick={handleChartClick} />
             
             {/* Bagian 3: Interactive Data Table */}
-            <FilterableTable userRole={user.role} activeFilter={activeFilter} />
+            <FilterableTable userRole={user.role} activeFilter={activeFilter?.value ?? null} />
           </div>
 
           {/* Right Column (Side Panel) */}

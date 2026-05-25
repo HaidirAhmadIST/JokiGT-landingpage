@@ -27,7 +27,7 @@ export default function PriorityCasesCard() {
         </div>
         <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest">Kasus Prioritas</h3>
         <p className="text-xs text-slate-400 mt-2 max-w-[200px]">
-          Tidak ada kasus yang mendekati tenggat waktu advokasi 5 tahun.
+          Tidak ada kasus yang mendekati tenggat waktu advokasi 3 tahun.
         </p>
       </Card>
     );
@@ -42,7 +42,7 @@ export default function PriorityCasesCard() {
           </div>
           <div>
             <h3 className="text-sm font-bold text-[#1e293b] uppercase tracking-tight">Kasus Prioritas (Deadline PAK)</h3>
-            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">Tenggat Waktu Advokasi 5 Tahun</p>
+            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">Tenggat Waktu Advokasi 3 Tahun</p>
           </div>
         </div>
         <span className="px-3 py-1 bg-rose-50 text-rose-600 text-[10px] font-bold rounded-full border border-rose-100 flex items-center gap-1 shrink-0 whitespace-nowrap">

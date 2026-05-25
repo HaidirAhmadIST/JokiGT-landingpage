@@ -54,7 +54,7 @@ class MigratePekerjaFromPakSeeder extends Seeder
                         $perusahaanId = DB::table('perusahaan')->insertGetId([
                             'nama_perusahaan'  => $namaPerusahaan,
                             'sektor_industri'  => 'Manufaktur',
-                            'status_pendamping' => 'aktif',
+                            'status_pendamping' => 'Berkasus',
                             'created_at'       => now(),
                             'updated_at'       => now(),
                         ]);

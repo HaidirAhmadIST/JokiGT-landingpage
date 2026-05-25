@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import {
   Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle,
 } from '@/components/ui/sheet';
-import { Plus, ExternalLink, ChevronLeft, ChevronRight, AlertTriangle, Save, Users, Trash2, Search, ArrowDownAZ, ArrowUpAZ } from 'lucide-react';
+import { Plus, ExternalLink, ChevronLeft, ChevronRight, AlertTriangle, Save, Users, Trash2, Search, ArrowDownAZ, ArrowUpAZ, ShieldAlert, Copy, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRole } from '@/hooks/useRole';
 import { cn } from '@/lib/utils';
@@ -49,6 +49,15 @@ export default function PekerjaPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deleteReason, setDeleteReason] = useState('');
   const [requestingDeleteApproval, setRequestingDeleteApproval] = useState(false);
+
+  // Create Pengurus State
+  const [createPengurusOpen, setCreatePengurusOpen] = useState(false);
+  const [createPengurusData, setCreatePengurusData] = useState({
+    nama_lengkap: '', email: '', nama_serikat: '', nama_perusahaan: ''
+  });
+  const [creatingPengurus, setCreatingPengurus] = useState(false);
+  const [createdPengurusResult, setCreatedPengurusResult] = useState<{email: string, password: string} | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -178,6 +187,33 @@ export default function PekerjaPage() {
     setIsDeleteDialogOpen(true);
   };
 
+  const handleCreatePengurus = async () => {
+    if (!createPengurusData.nama_lengkap || !createPengurusData.email || !createPengurusData.nama_serikat || !createPengurusData.nama_perusahaan) {
+      toast.error('Semua kolom harus diisi.');
+      return;
+    }
+    setCreatingPengurus(true);
+    try {
+      const res = await api.post('/admin/buat-pengurus', createPengurusData);
+      setCreatedPengurusResult(res.data.data);
+      toast.success('Akun pengurus serikat berhasil dibuat!');
+      fetchData();
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message || 'Gagal membuat akun pengurus.');
+    } finally {
+      setCreatingPengurus(false);
+    }
+  };
+
+  const copyToClipboard = () => {
+    if (createdPengurusResult) {
+      navigator.clipboard.writeText(`Email: ${createdPengurusResult.email}\nPassword: ${createdPengurusResult.password}`);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      toast.success('Disalin ke clipboard!');
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -197,6 +233,12 @@ export default function PekerjaPage() {
             >
               <AlertTriangle className="mr-2 h-4 w-4" />
               {incompleteWorkers.length} Data Belum Lengkap
+            </Button>
+          )}
+          {isStaffOrAbove && (
+            <Button onClick={() => { setCreatePengurusOpen(true); setCreatedPengurusResult(null); setCreatePengurusData({nama_lengkap: '', email: '', nama_serikat: '', nama_perusahaan: ''}); }} className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl px-5 h-11 text-sm shadow-sm transition-all" size="lg">
+              <ShieldAlert className="mr-2 h-5 w-5" />
+              Buat Akun Pengurus
             </Button>
           )}
           <Button onClick={() => router.push('/pendaftaran')} className="bg-[#0ea5e9] hover:bg-[#0284c7] rounded-xl px-5 h-11 text-sm shadow-sm transition-all" size="lg">
@@ -536,6 +578,106 @@ export default function PekerjaPage() {
             >
               {requestingDeleteApproval ? 'Mengirim...' : isSuperAdmin ? 'Ya, Hapus Permanen' : 'Kirim Pengajuan'}
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Buat Akun Pengurus Modal */}
+      <AlertDialog open={createPengurusOpen} onOpenChange={setCreatePengurusOpen}>
+        <AlertDialogContent className="rounded-2xl border-none shadow-2xl bg-white max-w-md">
+          <AlertDialogHeader>
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-indigo-50 mb-2">
+              <ShieldAlert className="h-7 w-7 text-indigo-500" />
+            </div>
+            <AlertDialogTitle className="text-xl font-black text-slate-900 text-center">
+              Buat Akun Pengurus Serikat
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-500 text-center text-sm px-2">
+              Isi data di bawah untuk men-generate akun Pengurus Serikat. Password akan dibuatkan secara otomatis oleh sistem.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          {createdPengurusResult ? (
+            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-5 my-4">
+              <p className="text-emerald-800 text-sm font-bold text-center mb-4">✅ Akun Berhasil Dibuat!</p>
+              <div className="space-y-2 mb-4">
+                <div className="bg-white p-3 rounded-lg border border-emerald-100 flex justify-between items-center">
+                  <span className="text-xs text-slate-500 font-bold uppercase">Email</span>
+                  <span className="text-sm font-medium text-slate-900">{createdPengurusResult.email}</span>
+                </div>
+                <div className="bg-white p-3 rounded-lg border border-emerald-100 flex justify-between items-center">
+                  <span className="text-xs text-slate-500 font-bold uppercase">Password</span>
+                  <span className="text-sm font-black text-slate-900 tracking-wider bg-slate-100 px-2 py-1 rounded">{createdPengurusResult.password}</span>
+                </div>
+              </div>
+              <Button onClick={copyToClipboard} variant="outline" className="w-full h-11 border-emerald-200 text-emerald-700 hover:bg-emerald-100 font-bold">
+                {copied ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
+                {copied ? 'Tersalin' : 'Copy Email & Password'}
+              </Button>
+            </div>
+          ) : (
+            <div className="py-2 space-y-4 text-left">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold text-slate-600 uppercase tracking-wide">Nama Lengkap</Label>
+                <Input
+                  placeholder="Misal: Budi Santoso"
+                  value={createPengurusData.nama_lengkap}
+                  onChange={(e) => setCreatePengurusData({...createPengurusData, nama_lengkap: e.target.value})}
+                  className="h-11 rounded-xl bg-slate-50 border-slate-200 text-sm focus-visible:ring-indigo-500 focus-visible:border-indigo-500"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold text-slate-600 uppercase tracking-wide">Email</Label>
+                <Input
+                  type="email"
+                  placeholder="Misal: budi@serikat.com"
+                  value={createPengurusData.email}
+                  onChange={(e) => setCreatePengurusData({...createPengurusData, email: e.target.value})}
+                  className="h-11 rounded-xl bg-slate-50 border-slate-200 text-sm focus-visible:ring-indigo-500 focus-visible:border-indigo-500"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-bold text-slate-600 uppercase tracking-wide">Nama Serikat</Label>
+                  <Input
+                    placeholder="Misal: FSPMI"
+                    value={createPengurusData.nama_serikat}
+                    onChange={(e) => setCreatePengurusData({...createPengurusData, nama_serikat: e.target.value})}
+                    className="h-11 rounded-xl bg-slate-50 border-slate-200 text-sm focus-visible:ring-indigo-500 focus-visible:border-indigo-500"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-bold text-slate-600 uppercase tracking-wide">Asal Perusahaan</Label>
+                  <Input
+                    placeholder="Misal: PT Maju Jaya"
+                    value={createPengurusData.nama_perusahaan}
+                    onChange={(e) => setCreatePengurusData({...createPengurusData, nama_perusahaan: e.target.value})}
+                    className="h-11 rounded-xl bg-slate-50 border-slate-200 text-sm focus-visible:ring-indigo-500 focus-visible:border-indigo-500"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          <AlertDialogFooter className="sm:justify-center gap-3 mt-4">
+            <AlertDialogCancel 
+              onClick={() => { setCreatePengurusOpen(false); }}
+              className="rounded-xl border-slate-200 text-slate-500 font-bold hover:bg-slate-50 px-6"
+            >
+              Tutup
+            </AlertDialogCancel>
+            {!createdPengurusResult && (
+              <Button 
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleCreatePengurus();
+                }}
+                disabled={creatingPengurus}
+                className="rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-200 border-none px-6"
+              >
+                {creatingPengurus ? 'Membuat...' : 'Generate Akun'}
+              </Button>
+            )}
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

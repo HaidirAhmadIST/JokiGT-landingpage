@@ -31,6 +31,8 @@ class Perusahaan extends Model
         'nama_pic_lion',
         'nara_hubung_lion',
         'serikat',
+        'provinsi',
+        'kabupaten',
     ];
 
     // =========================================================================
