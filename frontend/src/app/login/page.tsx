@@ -61,32 +61,26 @@ export default function LoginPage() {
       const response = await api.post('/login', formData);
       if (response.data.status === 'success') {
         const { token, user } = response.data.data;
-        // Akun admin (Superadmin) diizinkan masuk dan langsung diarahkan ke /dashboard-admin
+        
+        // Prevent regular user (viewer) from logging in via this Pengurus form
+        if (user.role === 'viewer') {
+          toast.error('Akun Pekerja (Individu) tidak diizinkan masuk dari sini. Silakan gunakan opsi masuk Pekerja (Individu).');
+          setLoading(false);
+          return;
+        }
 
+        // Prevent Superadmin from logging in via this Pengurus form
+        if (user.role === 'admin') {
+          toast.error('Akun Superadmin memiliki halaman login tersendiri. Silakan ke halaman login Superadmin.');
+          setLoading(false);
+          return;
+        }
         // Store auth info
         Cookies.set('auth_token', token, { expires: 7, path: '/' });
         localStorage.setItem('user', JSON.stringify(user));
 
         toast.success(response.data.message);
-        
-        if (user.role === 'viewer') {
-          // Check if this viewer already has a pekerja record
-          try {
-            const meRes = await api.get('/me');
-            const pekerja = meRes.data.data?.pekerja;
-            if (pekerja?.id) {
-              localStorage.setItem('user', JSON.stringify({ ...user, pekerja_id: pekerja.id }));
-              window.location.href = '/dashboard-user';
-            } else {
-              window.location.href = '/pendaftaran';
-            }
-          } catch {
-            window.location.href = '/pendaftaran';
-          }
-        } else {
-          window.location.href = '/dashboard-admin';
-        }
-        
+        window.location.href = '/dashboard-admin';
         return;
       }
     } catch (error: any) {
@@ -232,7 +226,7 @@ export default function LoginPage() {
                     : "text-slate-500 hover:text-slate-800"
                 }`}
               >
-                Super Admin / Pengurus
+                Pengurus Serikat
               </button>
               <button 
                 type="button"
@@ -250,10 +244,10 @@ export default function LoginPage() {
 
           {/* VIEW: EMAIL & PASSWORD (PENGURUS) */}
           {isOrganisasi !== false && (
-            <form onSubmit={handleLogin} className="space-y-4 pt-2 animate-in fade-in duration-300">
+            <form onSubmit={handleLogin} suppressHydrationWarning className="space-y-4 pt-2 animate-in fade-in duration-300">
               <div className="p-4 bg-blue-50/50 border border-blue-100/60 rounded-xl mb-2">
                 <p className="text-xs text-blue-600 font-medium leading-relaxed">
-                  Super Admin dan Pengurus/Delegasi serikat masuk menggunakan Email/No. Telp dan kata sandi yang telah didaftarkan.
+                  Pengurus/Delegasi serikat masuk menggunakan Email/No. Telp dan kata sandi yang telah didaftarkan.
                 </p>
               </div>
               <div className="space-y-2">
@@ -265,6 +259,7 @@ export default function LoginPage() {
                   required 
                   value={formData.identifier}
                   onChange={(e) => setFormData({ ...formData, identifier: e.target.value })}
+                  suppressHydrationWarning
                   className="rounded-xl border-slate-300 bg-white"
                 />
               </div>
@@ -277,6 +272,7 @@ export default function LoginPage() {
                     required 
                     value={formData.password}
                     onChange={(e) => setFormData({...formData, password: e.target.value})}
+                    suppressHydrationWarning
                     className="pr-10 rounded-xl border-slate-300 bg-white"
                   />
                   <button
@@ -289,7 +285,7 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              <Button className="w-full font-bold rounded-xl py-5 mt-2" type="submit" disabled={loading}>
+              <Button suppressHydrationWarning className="w-full font-bold rounded-xl py-5 mt-2" type="submit" disabled={loading}>
                 {loading ? 'Masuk...' : 'Masuk Dashboard'}
               </Button>
             </form>

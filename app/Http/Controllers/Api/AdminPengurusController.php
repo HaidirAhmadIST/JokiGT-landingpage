@@ -31,7 +31,8 @@ class AdminPengurusController extends Controller
                 'nama' => $request->nama_lengkap,
                 'email' => $request->email,
                 'password' => Hash::make($passwordPlain),
-                'role' => 'viewer',
+                'role' => 'petugas',
+                'serikat' => $request->nama_serikat,
             ]);
 
             $perusahaan = Perusahaan::firstOrCreate(
