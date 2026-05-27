@@ -280,8 +280,8 @@ export default function PekerjaPage() {
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-        <div className="p-4 sm:p-6 pb-2 w-full">
-          <Table className="w-full table-fixed">
+        <div className="p-4 sm:p-6 pb-2 w-full overflow-x-auto">
+          <Table className="w-full min-w-[900px]">
             <TableHeader>
               <TableRow className="border-b border-slate-100 hover:bg-transparent">
                 <TableHead className="text-[11px] font-bold text-slate-400 tracking-widest uppercase bg-transparent w-12 pl-4 pr-1">NO.</TableHead>
@@ -318,9 +318,22 @@ export default function PekerjaPage() {
                     </TableCell>
                     <TableCell className="py-4 px-3">
                       <div className="flex items-center gap-3 w-full text-left group/worker transition-transform hover:translate-x-1">
-                        <div className="flex flex-col min-w-0 transition-all group-hover/worker:translate-x-1">
-                          <span className="font-bold text-slate-900 text-[15px] truncate group-hover/worker:text-[#0284c7] transition-colors leading-tight">{p.nama_lengkap}</span>
-                          <span className="text-[11px] text-slate-500 mt-1 truncate font-medium">
+                        <div className="flex flex-col items-start min-w-0 transition-all group-hover/worker:translate-x-1">
+                          <span className="font-bold text-slate-900 text-[15px] group-hover/worker:text-[#0284c7] transition-colors leading-tight mb-1">{p.nama_lengkap}</span>
+                          {(p.user?.role === 'petugas' || p.anggota_organisasi) && (
+                            <div className="flex items-center mb-1">
+                              {p.user?.role === 'petugas' ? (
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-indigo-100 text-indigo-700 uppercase tracking-wider whitespace-nowrap">
+                                  Admin {p.nama_serikat || p.user?.serikat}
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-100 text-emerald-700 uppercase tracking-wider whitespace-nowrap">
+                                  Anggota {p.nama_serikat}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                          <span className="text-[11px] text-slate-500 mt-0.5 truncate font-medium">
                             {p.jenis_kelamin === 'L' ? 'Laki-laki' : p.jenis_kelamin === 'P' ? 'Perempuan' : '-'} • {p.tanggal_lahir ? (new Date().getFullYear() - new Date(p.tanggal_lahir).getFullYear()) + ' Tahun' : '-'}
                           </span>
                         </div>

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
+import Image from 'next/image';
 import Cookies from 'js-cookie';
 import { Button } from '@/components/ui/button';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
@@ -74,17 +75,15 @@ export default function LandingPage() {
       <nav className="fixed top-0 inset-x-0 h-20 bg-white/70 backdrop-blur-xl border-b border-slate-200/50 z-50 transition-all duration-300">
         <div className="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-[#0284c7] to-[#0ea5e9] rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
-              <ShieldCheck className="h-5 w-5 text-white" />
-            </div>
-            <span className="font-extrabold text-[#0f172a] text-xl tracking-tight hidden sm:block">
+            <Image src="/logo.png" alt="Rekam Jejak PAK Logo" width={40} height={40} className="h-10 w-10 object-contain drop-shadow-sm" />
+            <span className="font-extrabold text-[#0f172a] text-xl tracking-tight hidden sm:block whitespace-nowrap">
               Rekam Jejak PAK
             </span>
           </div>
           <div className="flex items-center gap-4">
             <Link 
-              href="/dashboard-admin" 
-              className="text-sm font-bold text-slate-600 hover:text-[#0284c7] transition-colors hidden sm:block"
+              href="/login" 
+              className="text-sm font-bold text-slate-600 hover:text-[#0284c7] transition-colors"
               suppressHydrationWarning
             >
               Masuk
@@ -267,9 +266,12 @@ export default function LandingPage() {
               </h2>
             </div>
             
-            <div className="flex flex-col md:flex-row items-start justify-center gap-8 relative">
-              {/* Line connector */}
+            <div className="flex flex-col md:flex-row items-center md:items-start justify-center gap-12 md:gap-8 relative">
+              {/* Horizontal Line connector for desktop */}
               <div className="hidden md:block absolute top-8 left-[10%] right-[10%] h-0.5 bg-slate-100 z-0" />
+              
+              {/* Vertical Line connector for mobile */}
+              <div className="md:hidden absolute top-8 bottom-8 left-1/2 w-0.5 bg-slate-100 z-0 -translate-x-1/2" />
               
               {[
                 { step: '01', title: 'Registrasi', desc: 'Buat akun pekerja Anda dalam hitungan menit.' },
@@ -277,12 +279,12 @@ export default function LandingPage() {
                 { step: '03', title: 'Verifikasi', desc: 'Admin akan meninjau dan memverifikasi data Anda.' },
                 { step: '04', title: 'Advokasi', desc: 'Pantau proses penyelesaian kasus hingga tuntas.' }
               ].map((s, i) => (
-                <div key={i} className="relative z-10 flex-1 text-center group">
-                  <div className="w-16 h-16 mx-auto bg-white border-4 border-slate-50 rounded-2xl shadow-xl shadow-slate-200/50 flex items-center justify-center mb-6 group-hover:-translate-y-2 group-hover:border-blue-100 transition-all duration-300">
+                <div key={i} className="relative z-10 flex-1 text-center group w-full md:w-auto px-4 bg-white md:bg-transparent rounded-3xl py-4 md:py-0">
+                  <div className="w-16 h-16 mx-auto bg-white border-4 border-slate-50 rounded-2xl shadow-xl shadow-slate-200/50 flex items-center justify-center mb-6 group-hover:-translate-y-2 group-hover:border-blue-100 transition-all duration-300 relative z-10">
                     <span className="text-xl font-black text-[#0284c7]">{s.step}</span>
                   </div>
                   <h3 className="text-lg font-black text-slate-800 mb-2">{s.title}</h3>
-                  <p className="text-sm text-slate-500 font-medium px-4">{s.desc}</p>
+                  <p className="text-sm text-slate-500 font-medium">{s.desc}</p>
                 </div>
               ))}
             </div>
@@ -314,9 +316,9 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="bg-slate-50 border-t border-slate-200 py-12">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
-           <div className="flex items-center gap-2">
-            <ShieldCheck className="h-6 w-6 text-[#0284c7]" />
-            <span className="font-black text-slate-800 text-lg tracking-tight">Rekam Jejak PAK</span>
+           <div className="flex items-center gap-3">
+            <Image src="/logo.png" alt="Rekam Jejak PAK Logo" width={32} height={32} className="h-8 w-8 object-contain drop-shadow-sm" />
+            <span className="font-black text-slate-800 text-lg tracking-tight whitespace-nowrap">Rekam Jejak PAK</span>
           </div>
           <p className="text-slate-500 text-sm font-medium">
             &copy; {new Date().getFullYear()} Sistem Rekam Jejak PAK. All rights reserved.

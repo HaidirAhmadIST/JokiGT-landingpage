@@ -158,40 +158,66 @@ class DashboardController extends Controller
 
     /**
      * Mengambil trend klasifikasi bulanan untuk chart.
-     * Mengembalikan data mock yang digabungkan dengan master penyakit kategori spesifik secara dinamis.
+     * Menggunakan data asli dari kolom faktor_pak pada tabel pekerja.
      * 
      * @return JsonResponse
      */
-    public function trendKlasifikasi(): JsonResponse
+    public function trendKlasifikasi(\Illuminate\Http\Request $request): JsonResponse
     {
         try {
-            // Simulasi bulan (Bisa diganti dengan query agregat DB sesungguhnya berdasarkan created_at/tanggal_pelaporan)
-            $months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun'];
-            
-            $baseData = [
-                ['Faktor Kimia' => 15, 'Faktor Fisika' => 25, 'Faktor Biologi' => 10, 'Pernafasan' => 12, 'Kulit' => 8, 'Otot & Kerangka' => 30, 'Mental & Perilaku' => 4, 'Kanker Akibat Kerja' => 3],
-                ['Faktor Kimia' => 20, 'Faktor Fisika' => 30, 'Faktor Biologi' => 15, 'Pernafasan' => 15, 'Kulit' => 10, 'Otot & Kerangka' => 35, 'Mental & Perilaku' => 5, 'Kanker Akibat Kerja' => 4],
-                ['Faktor Kimia' => 25, 'Faktor Fisika' => 35, 'Faktor Biologi' => 20, 'Pernafasan' => 18, 'Kulit' => 12, 'Otot & Kerangka' => 40, 'Mental & Perilaku' => 6, 'Kanker Akibat Kerja' => 5],
-                ['Faktor Kimia' => 30, 'Faktor Fisika' => 40, 'Faktor Biologi' => 25, 'Pernafasan' => 22, 'Kulit' => 15, 'Otot & Kerangka' => 45, 'Mental & Perilaku' => 8, 'Kanker Akibat Kerja' => 7],
-                ['Faktor Kimia' => 35, 'Faktor Fisika' => 45, 'Faktor Biologi' => 30, 'Pernafasan' => 28, 'Kulit' => 18, 'Otot & Kerangka' => 50, 'Mental & Perilaku' => 10, 'Kanker Akibat Kerja' => 9],
-                ['Faktor Kimia' => 25, 'Faktor Fisika' => 25, 'Faktor Biologi' => 15, 'Pernafasan' => 25, 'Kulit' => 27, 'Otot & Kerangka' => 50, 'Mental & Perilaku' => 7, 'Kanker Akibat Kerja' => 17],
-            ];
+            $timeRange = $request->query('time_range', 'all');
+            $sector = $request->query('sector', 'all');
+
+            // Kita hitung dari 6 bulan terakhir sampai bulan ini
+            $trend = [];
+            $months = [];
+            for ($i = 5; $i >= 0; $i--) {
+                $months[] = now()->subMonths($i);
+            }
 
             // Fetch dynamic Category IV diseases
             $penyakitKategori4 = \App\Models\PenyakitSpesifik::where('kategori', 'kategori_4')
                                     ->pluck('nama_penyakit')
                                     ->toArray();
 
-            $trend = [];
-            foreach ($months as $index => $bulan) {
-                $item = ['bulan' => $bulan];
-                // Merge base data
-                $item = array_merge($item, $baseData[$index]);
+            // Semua label yang valid di chart
+            $semuaKategori = array_merge([
+                'Faktor Kimia', 'Faktor Fisika', 'Faktor Biologi', 
+                'Pernafasan', 'Kulit', 'Otot & Kerangka', 'Mental & Perilaku', 
+                'Kanker Akibat Kerja'
+            ], $penyakitKategori4);
+
+            foreach ($months as $month) {
+                $bulanName = $month->translatedFormat('M'); // Jan, Feb, dst
                 
-                // Merge dynamic category 4 data. Di masa depan bisa melakukan query COUNT() dari status_advokasi.
-                // Saat ini disimulasikan sebagai 0 (empty state) atau 1 agar terender.
-                foreach ($penyakitKategori4 as $penyakit) {
-                    $item[$penyakit] = 0; 
+                $item = ['bulan' => $bulanName];
+                
+                // Inisialisasi semua kategori dengan 0
+                foreach ($semuaKategori as $kat) {
+                    $item[$kat] = 0;
+                }
+
+                // Hitung dari DB
+                $query = \App\Models\Pekerja::whereNotNull('faktor_pak')
+                    ->whereYear('created_at', $month->year)
+                    ->whereMonth('created_at', $month->month);
+                
+                // Apply Sector Filter
+                if ($sector && $sector !== 'all') {
+                    $query->whereHas('perusahaan', function($q) use ($sector) {
+                        $q->where('sektor_industri', $sector);
+                    });
+                }
+
+                $counts = $query->select('faktor_pak', \Illuminate\Support\Facades\DB::raw('COUNT(*) as total'))
+                    ->groupBy('faktor_pak')
+                    ->get();
+
+                foreach ($counts as $count) {
+                    // Cek jika faktor_pak valid dan ada di chart
+                    if (in_array($count->faktor_pak, $semuaKategori)) {
+                        $item[$count->faktor_pak] = $count->total;
+                    }
                 }
                 
                 $trend[] = $item;
@@ -242,9 +268,15 @@ class DashboardController extends Controller
             // Ambil semua data pekerja (atau dengan pagination jika data banyak)
             $pekerjaList = $query->orderBy('created_at', 'desc')->get();
 
-            // Transformasi data untuk memetakan kategori (mocking simulasi kategori)
-            // Karena DB saat ini belum memiliki mapping pasti ke Faktor Kimia / Organ
-            $formattedData = $pekerjaList->map(function ($pekerja) {
+            // Kategori Map
+            $penyebab = ['Faktor Kimia', 'Faktor Fisika', 'Faktor Biologi'];
+            $targetOrgan = ['Pernafasan', 'Kulit', 'Otot & Kerangka', 'Mental & Perilaku'];
+            
+            $penyakitKategori4 = \App\Models\PenyakitSpesifik::where('kategori', 'kategori_4')
+                                    ->pluck('nama_penyakit')
+                                    ->toArray();
+
+            $formattedData = $pekerjaList->map(function ($pekerja) use ($penyebab, $targetOrgan, $penyakitKategori4) {
                 $advokasi = $pekerja->statusAdvokasi;
                 
                 // Fallback jika advokasi kosong
@@ -253,21 +285,17 @@ class DashboardController extends Controller
                     $statusKasus = 'Selesai';
                 }
 
-                // --- Simulasi Kategori (Mock) ---
-                // Berdasarkan ID (agar stabil tiap refresh)
-                $idMod = $pekerja->id % 4;
-                if ($idMod === 0) {
+                $kategoriSpesifik = $pekerja->faktor_pak ?? 'Belum Ditentukan';
+                $kategoriName = 'Belum Ditentukan';
+
+                if (in_array($pekerja->faktor_pak, $penyebab)) {
                     $kategoriName = 'Penyebab';
-                    $kategoriSpesifik = 'Faktor Kimia';
-                } elseif ($idMod === 1) {
+                } elseif (in_array($pekerja->faktor_pak, $targetOrgan)) {
                     $kategoriName = 'Target Organ';
-                    $kategoriSpesifik = 'Pernafasan';
-                } elseif ($idMod === 2) {
+                } elseif ($pekerja->faktor_pak === 'Kanker Akibat Kerja') {
                     $kategoriName = 'Kanker';
-                    $kategoriSpesifik = 'Kanker Akibat Kerja';
-                } else {
+                } elseif (in_array($pekerja->faktor_pak, $penyakitKategori4)) {
                     $kategoriName = 'Penyakit Spesifik Lainnya';
-                    $kategoriSpesifik = 'Nystagmus pada penambang';
                 }
 
                 return [

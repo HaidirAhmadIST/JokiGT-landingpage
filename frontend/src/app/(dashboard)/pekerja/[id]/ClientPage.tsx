@@ -41,6 +41,7 @@ export default function PekerjaDetailPage() {
   const router = useRouter();
   const [data, setData] = useState<PekerjaFull | null>(null);
   const [loading, setLoading] = useState(true);
+  const [forbiddenError, setForbiddenError] = useState(false);
   const [uploadLoading, setUploadLoading] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
   const [statusLoading, setStatusLoading] = useState(false);
@@ -61,6 +62,9 @@ export default function PekerjaDetailPage() {
   });
   const [savingRiwayat, setSavingRiwayat] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isFaktorModalOpen, setIsFaktorModalOpen] = useState(false);
+  const [selectedFaktor, setSelectedFaktor] = useState('');
+  const [savingFaktor, setSavingFaktor] = useState(false);
   const { isSuperAdmin, isStaffOrAbove } = useRole();
 
   const openEditRiwayat = (riwayat: RiwayatPekerja) => {
@@ -137,6 +141,28 @@ export default function PekerjaDetailPage() {
     }
   };
 
+  const handleSaveFaktor = async () => {
+    if (!data) return;
+    setSavingFaktor(true);
+    try {
+      const res = await api.post(`/pekerja/${data.id}/faktor-pak`, {
+        faktor_pak: selectedFaktor
+      });
+      if (res.data.status === 'success') {
+        toast.success('Faktor PAK berhasil disimpan!');
+        setIsFaktorModalOpen(false);
+        fetchDetail();
+      } else {
+        toast.error('Gagal menyimpan Faktor PAK');
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error('Gagal menyimpan Faktor PAK');
+    } finally {
+      setSavingFaktor(false);
+    }
+  };
+
   const handleDelete = async () => {
     try {
       await api.delete(`/pekerja/${id}`);
@@ -153,7 +179,9 @@ export default function PekerjaDetailPage() {
       const res = await api.get(`/pekerja/${id}`);
       setData(res.data.data);
     } catch (e: any) {
-      if (e.response?.status !== 401) {
+      if (e.response?.status === 403) {
+        setForbiddenError(true);
+      } else if (e.response?.status !== 401) {
         toast.error('Gagal mengambil detail pekerja');
       }
     } finally {
@@ -374,6 +402,25 @@ export default function PekerjaDetailPage() {
   };
 
   if (loading) return <div className="p-8 text-center text-slate-500 animate-pulse">Memuat detail pekerja...</div>;
+  
+  if (forbiddenError) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
+        <div className="bg-rose-50 p-6 rounded-full mb-6">
+          <ShieldAlert className="h-16 w-16 text-rose-500" />
+        </div>
+        <h2 className="text-2xl font-black text-slate-900 mb-3">Akses Terbatas</h2>
+        <p className="text-slate-500 max-w-md mx-auto mb-8 leading-relaxed">
+          Anda tidak bisa melihat detail data dari serikat lain. Sesuai dengan kebijakan privasi data antar serikat, Pengurus hanya diizinkan untuk melihat rekam jejak pekerja yang terdaftar di bawah serikatnya masing-masing.
+        </p>
+        <Button onClick={() => router.back()} className="bg-slate-900 hover:bg-slate-800 text-white rounded-xl px-8 h-12 font-bold shadow-lg shadow-slate-200 transition-all">
+          <ArrowLeft className="mr-2 h-5 w-5" />
+          Kembali Sebelumnya
+        </Button>
+      </div>
+    );
+  }
+
   if (!data) return <div className="p-8 text-center text-red-500 font-medium">Data pekerja tidak ditemukan.</div>;
 
   // Derived Data Calculations
@@ -508,6 +555,19 @@ export default function PekerjaDetailPage() {
           <span className="text-sm font-medium text-slate-500">Kembali ke Daftar Pekerja</span>
         </div>
         
+        {isStaffOrAbove && (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="rounded-xl font-semibold text-[#0284c7] border-[#0284c7] hover:bg-[#0284c7] hover:text-white transition-all duration-200 shadow-sm flex items-center gap-2"
+            onClick={() => {
+              setSelectedFaktor(data?.faktor_pak && data.faktor_pak !== 'Belum Ditentukan' ? data.faktor_pak : '');
+              setIsFaktorModalOpen(true);
+            }}
+          >
+            <Stethoscope className="h-4 w-4" /> Tentukan Faktor PAK
+          </Button>
+        )}
         {isSuperAdmin && (
           <Button 
             variant="ghost" 
@@ -526,15 +586,7 @@ export default function PekerjaDetailPage() {
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col lg:flex-row items-center justify-between gap-8">
           {/* Left: Profile Info */}
           <div className="flex items-center gap-6 w-full lg:w-auto">
-            <div className="h-24 w-24 rounded-2xl bg-orange-50 flex items-center justify-center border-4 border-white shadow-sm overflow-hidden relative">
-              {/* Placeholder Avatar - replacing with an icon wrapper */}
-              <div className="w-full h-full rounded-[26px] overflow-hidden bg-slate-100 border border-slate-200 relative flex items-center justify-center">
-                <User className="h-10 w-10 text-slate-400" />
-              </div>
-              <div className="absolute bottom-[-4px] right-[-4px] bg-[#0ea5e9] rounded-full p-1.5 border-2 border-white text-white">
-                <CheckCircle2 className="h-3 w-3" />
-              </div>
-            </div>
+
 
             <div>
               <h1 className="text-3xl font-extrabold tracking-tight text-[#1e293b]">{data.nama_lengkap}</h1>
@@ -574,9 +626,11 @@ export default function PekerjaDetailPage() {
                     : 'bg-slate-100 text-slate-600'
                 }`}>
                   <User className="h-2.5 w-2.5 mr-1" />
-                  {data.anggota_organisasi 
-                    ? `Anggota Serikat${data.nama_serikat ? ` (${data.nama_serikat})` : ''}` 
-                    : 'Bukan Anggota Serikat'}
+                  {data.user?.role === 'petugas'
+                    ? `Pengurus Serikat${data.nama_serikat ? ` (${data.nama_serikat})` : ''}`
+                    : data.anggota_organisasi 
+                      ? `Anggota Serikat${data.nama_serikat ? ` (${data.nama_serikat})` : ''}` 
+                      : 'Bukan Anggota Serikat'}
                 </span>
                 
                 {/* Hanya tampilkan status jika tidak sama dengan label pertama */}
@@ -2002,6 +2056,97 @@ export default function PekerjaDetailPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {/* MODAL TENTUKAN PAK */}
+      {isFaktorModalOpen && data && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+              <h3 className="text-xl font-black text-slate-800 tracking-tight">
+                Klasifikasi Penyakit Akibat Kerja
+              </h3>
+              <p className="text-sm text-slate-500 mt-1.5 font-medium flex items-center gap-2 flex-wrap">
+                Menentukan faktor untuk pekerja: 
+                <span className="font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">{data.nama_lengkap}</span>
+                <span>dari</span>
+                <span className="font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">
+                  {data.riwayat_pekerja?.find((r: any) => !r.tgl_keluar)?.nama_perusahaan || data.riwayat_pekerja?.[0]?.nama_perusahaan || 'Perusahaan Tidak Diketahui'}
+                </span>
+              </p>
+            </div>
+            
+            <div className="p-6 overflow-y-auto space-y-6">
+              {[
+                { 
+                  title: 'Kategori I (Penyebab)', 
+                  options: ['Faktor Kimia', 'Faktor Fisika', 'Faktor Biologi'],
+                  activeClass: 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-200 scale-[1.02]',
+                  inactiveClass: 'bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:bg-blue-50'
+                },
+                { 
+                  title: 'Kategori II (Target Organ)', 
+                  options: ['Pernafasan', 'Kulit', 'Otot & Kerangka', 'Mental & Perilaku'],
+                  activeClass: 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-200 scale-[1.02]',
+                  inactiveClass: 'bg-white text-slate-600 border-slate-200 hover:border-emerald-300 hover:bg-emerald-50'
+                },
+                { 
+                  title: 'Kategori III (Kanker)', 
+                  options: ['Kanker Akibat Kerja'],
+                  activeClass: 'bg-rose-600 text-white border-rose-600 shadow-md shadow-rose-200 scale-[1.02]',
+                  inactiveClass: 'bg-white text-slate-600 border-slate-200 hover:border-rose-300 hover:bg-rose-50'
+                },
+                { 
+                  title: 'Kategori IV (Penyakit Spesifik Lainnya)', 
+                  options: ['Nystagmus pada penambang'],
+                  activeClass: 'bg-amber-600 text-white border-amber-600 shadow-md shadow-amber-200 scale-[1.02]',
+                  inactiveClass: 'bg-white text-slate-600 border-slate-200 hover:border-amber-300 hover:bg-amber-50'
+                }
+              ].map((group, idx) => (
+                <div key={idx} className="space-y-3">
+                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest">{group.title}</h4>
+                  <div className="flex flex-wrap gap-2.5">
+                    {group.options.map((opt) => (
+                      <button
+                        key={opt}
+                        onClick={() => setSelectedFaktor(opt)}
+                        className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 border ${
+                          selectedFaktor === opt ? group.activeClass : group.inactiveClass
+                        }`}
+                      >
+                        {opt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="p-5 border-t border-slate-100 bg-slate-50 flex justify-between items-center">
+              <div>
+                {selectedFaktor ? (
+                  <p className="text-sm text-slate-500">Terpilih: <span className="font-bold text-slate-800">{selectedFaktor}</span></p>
+                ) : (
+                  <p className="text-sm text-amber-600 font-medium italic">Pilih salah satu faktor di atas</p>
+                )}
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setIsFaktorModalOpen(false)}
+                  className="px-5 py-2.5 text-sm font-bold text-slate-500 bg-white border border-slate-200 hover:bg-slate-100 rounded-xl transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={handleSaveFaktor}
+                  disabled={savingFaktor || !selectedFaktor}
+                  className="px-6 py-2.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-all shadow-sm hover:shadow shadow-blue-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {savingFaktor ? 'Menyimpan...' : 'Simpan Data'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

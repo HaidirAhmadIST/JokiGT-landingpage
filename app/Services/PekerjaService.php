@@ -93,18 +93,22 @@ class PekerjaService
         $pekerja = Pekerja::where('nik', $data['nik'])->first();
 
         $pekerjaData = [
-            'user_id'         => $user->id,
-            'perusahaan_id'   => $data['perusahaan_id'] ?? null,
-            'nama_lengkap'    => $data['nama_lengkap'],
-            'status_kesehatan'=> $data['status_kesehatan'] ?? 'sehat',
-            'catatan_admin'   => $data['catatan_admin'] ?? null,
-            'tanggal_lahir'   => $data['tanggal_lahir'] ?? null,
-            'jenis_kelamin'   => $data['jenis_kelamin'] ?? null,
-            'whatsapp'        => $data['whatsapp'] ?? null,
-            'no_hp'           => $data['no_hp'] ?? null,
-            'domisili'        => $data['domisili'] ?? null,
+            'user_id'          => $user->id,
+            'perusahaan_id'    => $data['perusahaan_id'] ?? null,
+            'nama_lengkap'     => $data['nama_lengkap'],
+            'status_kesehatan' => $data['status_kesehatan'] ?? 'sehat',
+            'catatan_admin'    => $data['catatan_admin'] ?? null,
+            'tanggal_lahir'    => $data['tanggal_lahir'] ?? null,
+            'jenis_kelamin'    => $data['jenis_kelamin'] ?? null,
+            'whatsapp'         => $data['whatsapp'] ?? null,
+            'no_hp'            => $data['no_hp'] ?? null,
+            'domisili'         => $data['domisili'] ?? null,
+            // Kolom lokasi terpisah untuk keperluan pemetaan real-time
+            'provinsi_pekerja' => $data['provinsi_pekerja'] ?? null,
+            'kabupaten_pekerja'=> $data['kabupaten_pekerja'] ?? null,
+            'kecamatan'        => $data['kecamatan'] ?? null,
             'anggota_organisasi' => $data['anggota_organisasi'] ?? $data['is_anggota'] ?? false,
-            'nama_serikat' => $data['nama_serikat'] ?? null,
+            'nama_serikat'     => $data['nama_serikat'] ?? null,
         ];
 
         if ($pekerja) {

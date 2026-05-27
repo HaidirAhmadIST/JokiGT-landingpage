@@ -684,9 +684,9 @@ export default function PerusahaanPage() {
       </div>
 
       {/* Main Table Area */}
-      <div className="bg-white rounded-[20px] shadow-sm border border-slate-100 overflow-hidden">
+      <div className="bg-white rounded-[20px] shadow-sm border border-slate-100 overflow-hidden overflow-x-auto">
 
-        <Table className="table-fixed w-full">
+        <Table className="w-full min-w-[900px]">
           <TableHeader>
             <TableRow className="hover:bg-transparent border-b border-slate-100">
               <TableHead className="py-4 pl-6 pr-1 font-bold text-[11px] tracking-widest text-[#94a3b8] w-12">NO.</TableHead>
@@ -730,9 +730,6 @@ export default function PerusahaanPage() {
                     </TableCell>
                     <TableCell className="py-4 px-4">
                       <div className="flex items-center gap-3 w-full text-left group/company transition-transform hover:translate-x-1">
-                        <div className="shrink-0 scale-75 origin-left transition-all group-hover/company:scale-90 group-hover/company:drop-shadow-md">
-                          {getRandomIcon(p.id)}
-                        </div>
                         <span className="font-bold text-[#1e293b] group-hover/company:text-[#0284c7] transition-all text-[14px] truncate">
                           {p.nama_perusahaan}
                         </span>
@@ -796,9 +793,8 @@ export default function PerusahaanPage() {
             <>
               {/* ---- HEADER SECTION ---- */}
               <div className="bg-white border-b border-slate-100 px-8 py-6">
-                {/* Top row: Icon + Name + Close hint */}
+                {/* Top row: Name + Close hint */}
                 <div className="flex items-start gap-5 mb-6">
-                  {getBigIcon(detailData.id)}
                   <div className="flex-1 min-w-0">
                     <SheetTitle className="text-2xl font-extrabold text-[#0f172a] tracking-tight truncate">
                       {detailData.nama_perusahaan}

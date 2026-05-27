@@ -252,6 +252,7 @@ class PekerjaController extends Controller
         $pekerja->update($request->only([
             'nama_lengkap', 'nik', 'perusahaan_id', 'status_kesehatan',
             'catatan_admin', 'tanggal_lahir', 'jenis_kelamin', 'whatsapp', 'no_hp', 'domisili',
+            'provinsi_pekerja', 'kabupaten_pekerja', 'kecamatan',
             'anggota_organisasi', 'nama_serikat',
         ]));
 
@@ -400,5 +401,38 @@ class PekerjaController extends Controller
         }
 
         return response()->json(['status' => 'error', 'message' => 'File tidak ditemukan.'], 400);
+    }
+
+    public function updateFaktorPak(Request $request, $id)
+    {
+        $request->validate([
+            'faktor_pak' => 'nullable|string|max:255',
+        ]);
+
+        $pekerja = Pekerja::find($id);
+        if (!$pekerja) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Data pekerja tidak ditemukan'
+            ], 404);
+        }
+
+        // Authorization: Hanya Admin / Super Admin (atau Petugas dari perusahaannya)
+        $user = auth('sanctum')->user();
+        if ($user && $user->isPetugas()) {
+            $userPerusahaanId = $user->perusahaan_id ?? $user->pekerja?->perusahaan_id;
+            if ($pekerja->perusahaan_id !== $userPerusahaanId) {
+                return response()->json(['status' => 'error', 'message' => 'Unauthorized'], 403);
+            }
+        }
+
+        $pekerja->faktor_pak = $request->faktor_pak;
+        $pekerja->save();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Faktor PAK berhasil diupdate',
+            'data' => $pekerja
+        ]);
     }
 }

@@ -213,6 +213,7 @@ export interface PekerjaFull {
   perusahaan_id?: number;
   anggota_organisasi?: boolean;
   nama_serikat?: string;
+  faktor_pak?: string;
   user?: User;
   perusahaan?: Perusahaan;
   riwayat_pekerja?: RiwayatPekerja[];
@@ -242,6 +243,7 @@ export interface Pekerja {
   perusahaan_id?: number;
   anggota_organisasi?: boolean;
   nama_serikat?: string;
+  faktor_pak?: string;
   perusahaan?: Perusahaan;
   riwayat_pekerja?: RiwayatPekerja[];
   current_job?: RiwayatPekerja;

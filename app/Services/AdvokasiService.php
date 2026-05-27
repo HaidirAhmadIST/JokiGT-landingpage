@@ -415,11 +415,11 @@ class AdvokasiService
                 $case->days_remaining = $daysRemaining;
                 $case->deadline_date = $deadline->toDateString();
                 $case->latest_pajanan = $latestJob->jenis_pajanan;
-                $case->is_very_urgent = $daysRemaining <= 180; // Less than 6 months
+                $case->is_very_urgent = $daysRemaining <= 90; // Less than 3 months
                 
                 return $case;
             })
-            ->filter(fn($c) => $c !== null && $c->days_remaining <= 365) // Within 1 year of deadline
+            ->filter(fn($c) => $c !== null && $c->days_remaining <= 730) // Within 2 years of deadline
             ->sortBy('days_remaining')
             ->take($limit)
             ->values();

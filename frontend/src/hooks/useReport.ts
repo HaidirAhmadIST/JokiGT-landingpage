@@ -1,8 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/axios';
 
-const fetchReportSummary = async () => {
-  const { data } = await api.get('/reports/summary');
+const fetchReportSummary = async (timeRange?: string, sector?: string) => {
+  const params = new URLSearchParams();
+  if (timeRange && timeRange !== 'all') params.append('time_range', timeRange);
+  if (sector && sector !== 'all') params.append('sector', sector);
+  
+  const queryString = params.toString() ? `?${params.toString()}` : '';
+  const { data } = await api.get(`/reports/summary${queryString}`);
   if (data.status !== 'success') throw new Error('Failed to fetch report summary');
   return data.data; // returns { summary, chart_data, sector_data, recent_successes }
 };
@@ -13,10 +18,23 @@ const searchAdvocacyCases = async (query: string) => {
   return data.data;
 };
 
-export const useGetReportSummary = () => {
+const fetchSectors = async () => {
+  const { data } = await api.get('/reports/sectors');
+  if (data.status !== 'success') throw new Error('Failed to fetch sectors');
+  return data.data;
+};
+
+export const useGetReportSummary = (timeRange?: string, sector?: string) => {
   return useQuery({
-    queryKey: ['reports', 'summary'],
-    queryFn: fetchReportSummary,
+    queryKey: ['reports', 'summary', timeRange, sector],
+    queryFn: () => fetchReportSummary(timeRange, sector),
+  });
+};
+
+export const useGetSectors = () => {
+  return useQuery({
+    queryKey: ['reports', 'sectors'],
+    queryFn: fetchSectors,
   });
 };
 

@@ -26,32 +26,13 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        // Staff
-        User::updateOrCreate(
-            ['email' => 'staff@pak.com'],
-            [
-                'nama'     => 'Staff PAK',
-                'password' => Hash::make('staff123'),
-                'role'     => 'petugas',
-            ]
-        );
+        // Data akun Staff telah dihapus atas permintaan Anda
 
-        // Sample Perusahaan
-        $perusahaans = [
-            ['nama_perusahaan' => 'PT. Aneka Tambang', 'status_pendamping' => 'Berkasus'],
-            ['nama_perusahaan' => 'PT. Bukit Asam', 'status_pendamping' => 'Berkasus'],
-            ['nama_perusahaan' => 'PT. Freeport Indonesia', 'status_pendamping' => 'Berkasus'],
-        ];
+        // Data sample perusahaan telah dihapus atas permintaan Anda
 
-        foreach ($perusahaans as $p) {
-            \App\Models\Perusahaan::updateOrCreate(
-                ['nama_perusahaan' => $p['nama_perusahaan']],
-                $p
-            );
-        }
-
-        $this->call(WorkerStressTestSeeder::class);
-        $this->call(TestingPendaftaranSeeder::class);
-        $this->call(ComprehensiveDataSeeder::class);
+        // Hapus data palsu (comment out)
+        // $this->call(WorkerStressTestSeeder::class);
+        // $this->call(TestingPendaftaranSeeder::class);
+        // $this->call(ComprehensiveDataSeeder::class);
     }
 }

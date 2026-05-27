@@ -304,6 +304,10 @@ export function useUserDashboard() {
         whatsapp: profileForm.whatsapp,
         no_hp: profileForm.no_hp,
         domisili: alamatLengkap,
+        // Kolom lokasi terpisah untuk keperluan peta real-time
+        provinsi_pekerja: profileForm.domisili || null,
+        kabupaten_pekerja: profileForm.kabupaten || null,
+        kecamatan: profileForm.kecamatan || null,
         anggota_organisasi: profileForm.anggota_organisasi,
         nama_serikat: profileForm.anggota_organisasi ? profileForm.nama_serikat : null,
       });

@@ -4,18 +4,39 @@ import { MapPin, TrendingUp } from 'lucide-react';
 export interface KecamatanData {
   name: string;
   reports: number;
+  hazardBreakdown?: {
+    fisik: number;
+    kimia: number;
+    biologi: number;
+    ergonomi: number;
+    psikososial: number;
+  };
 }
 
 export interface RegencyData {
   name: string;
   reports: number;
   districts: KecamatanData[];
+  hazardBreakdown?: {
+    fisik: number;
+    kimia: number;
+    biologi: number;
+    ergonomi: number;
+    psikososial: number;
+  };
 }
 
 export interface ProvinceReportDetail {
   provinceName: string;
   totalReports: number;
   regencies: RegencyData[];
+  hazardBreakdown?: {
+    fisik: number;
+    kimia: number;
+    biologi: number;
+    ergonomi: number;
+    psikososial: number;
+  };
 }
 
 interface TooltipProps {
@@ -39,105 +60,18 @@ export const getDetailedProvinceData = (provinceName: string, dbStats?: any): Pr
     return dbStats[cleanName];
   }
 
-  let regencyNames: string[] = [];
-  let districtNamesMap: Record<string, string[]> = {};
-  
-  if (cleanName === 'Jawa Barat') {
-    regencyNames = ['Kota Bandung', 'Kabupaten Bandung', 'Kota Bekasi', 'Kabupaten Bogor', 'Kota Bogor', 'Kota Depok'];
-    districtNamesMap = {
-      'Kota Bandung': ['Andir', 'Astana Anyar', 'Bandung Kidul', 'Bandung Wetan', 'Batununggal', 'Buahbatu', 'Cidadap', 'Cibeunying Kidul', 'Cibeunying Colot', 'Cibiru', 'Cicendo', 'Coblong', 'Lengkong'],
-      'Kabupaten Bandung': ['Baleendah', 'Bandung', 'Banjaran', 'Bojongsoang', 'Cicalengka', 'Cicurug', 'Cileunyi', 'Cimaung', 'Ciparay', 'Cisewu', 'Ciwidey', 'Lembang', 'Rancaekek'],
-      'Kota Bekasi': ['Bekasi Barat', 'Bekasi Selatan', 'Bekasi Timur', 'Bekasi Utara', 'Jatiasih', 'Medan Satria', 'Pondok Gede'],
-      'Kabupaten Bogor': ['Babakan Madang', 'Beji', 'Bojong Gede', 'Cibinong', 'Cibitung', 'Cigombong', 'Cijeruk', 'Cikeas', 'Cileungsi', 'Cilodong', 'Ciluar', 'Cisarua', 'Gunung Putri'],
-      'Kota Bogor': ['Bogor Barat', 'Bogor Selatan', 'Bogor Tengah', 'Bogor Timur', 'Bogor Utara', 'Tanah Sareal'],
-      'Kota Depok': ['Beji', 'Cipayung', 'Citayam', 'Depok', 'Jagakarsa', 'Kemang', 'Pondok Cina', 'Sukmajaya', 'Tapos'],
-    };
-  } else if (cleanName === 'DKI Jakarta') {
-    regencyNames = ['Jakarta Pusat', 'Jakarta Selatan', 'Jakarta Timur', 'Jakarta Barat', 'Jakarta Utara', 'Kepulauan Seribu'];
-    districtNamesMap = {
-      'Jakarta Pusat': ['Cempaka Putih', 'Gambir', 'Johar Baru', 'Kemayoran', 'Menteng', 'Pegangsaan', 'Senen', 'Tanah Abang', 'Tebet'],
-      'Jakarta Selatan': ['Cilandak', 'Jagakarsa', 'Kebayoran Baru', 'Kebayoran Lama', 'Mampang Prapatan', 'Pasar Minggu', 'Pesanggrahan', 'Tebet'],
-      'Jakarta Timur': ['Cakung', 'Cipayung', 'Ciracas', 'Cirebon', 'Duren Sawit', 'Jatinegara', 'Kayu Putih', 'Kramat Jati', 'Kuningan', 'Makasar', 'Matraman', 'Pulogadung'],
-      'Jakarta Barat': ['Cengkareng', 'Grogol Petamburan', 'Jelambar', 'Kebon Jeruk', 'Kembangan', 'Palmerah', 'Penjaringan', 'Taman Sari', 'Tambora', 'Tanjung Priok'],
-      'Jakarta Utara': ['Ancol', 'Cilincing', 'Genteng', 'Jembatan Lima', 'Kelapa Gading', 'Koja', 'Penjaringan', 'Pademangan', 'Sunter', 'Tanjung Priok'],
-      'Kepulauan Seribu': ['Kepulauan Seribu Selatan', 'Kepulauan Seribu Utara'],
-    };
-  } else if (cleanName === 'Jawa Tengah') {
-    regencyNames = ['Kota Semarang', 'Kota Surakarta', 'Kabupaten Cilacap', 'Kabupaten Banyumas', 'Kabupaten Purbalingga', 'Kabupaten Banjarnegara'];
-    districtNamesMap = {
-      'Kota Semarang': ['Banyumanik', 'Candisari', 'Gajahmungkur', 'Genuk', 'Gunungpati', 'Mijen', 'Pedurungan', 'Semarang Barat', 'Semarang Selatan', 'Semarang Tengah', 'Semarang Timur', 'Semarang Utara', 'Tembalang', 'Tugu'],
-      'Kota Surakarta': ['Banjarsari', 'Jebres', 'Laweyan', 'Pasar Kliwon'],
-      'Kabupaten Cilacap': ['Cilacap Selatan', 'Cilacap Tengah', 'Cilacap Utara', 'Cilogon', 'Dayeuhluhur', 'Jatilawang', 'Jeruklegi', 'Kawunganten', 'Kedungreja', 'Kroya', 'Majenang', 'Maos', 'Sidareja', 'Sampang', 'Wanareja'],
-      'Kabupaten Banyumas': ['Ajibarang', 'Banyumas', 'Baturraden', 'Bukateja', 'Cilongok', 'Jatilawang', 'Karanganyar', 'Kedungreja', 'Kembar', 'Lembang', 'Patikraja', 'Purwokerto Barat', 'Purwokerto Selatan', 'Purwokerto Timur', 'Purwokerto Utara', 'Rawalo', 'Sumbang', 'Sumpiuh', 'Tambak', 'Wangon'],
-      'Kabupaten Purbalingga': ['Bobotsari', 'Bojongsari', 'Bukateja', 'Bunutwangi', 'Kertanegara', 'Kutasari', 'Mrebet', 'Purbalingga', 'Purwantoro', 'Purwosari', 'Sumbang', 'Tambaksari', 'Tonjong'],
-      'Kabupaten Banjarnegara': ['Banjarmangu', 'Banjarnegara', 'Bawang', 'Bojong', 'Kalibening', 'Leksono', 'Madukara', 'Mandiraja', 'Pagedongan', 'Purwanegara', 'Rakit', 'Salaman', 'Sigaluh', 'Somagede', 'Songgom', 'Susukan', 'Tembuku', 'Tonjong', 'Wadaslintang'],
-    };
-  } else if (cleanName === 'Jawa Timur') {
-    regencyNames = ['Kota Surabaya', 'Kota Malang', 'Kota Batu', 'Kabupaten Sidoarjo', 'Kabupaten Gresik', 'Kabupaten Mojokerto', 'Kabupaten Lamongan'];
-    districtNamesMap = {
-      'Kota Surabaya': ['Asemrowo', 'Benowo', 'Bubutan', 'Bulak', 'Dukuh Pakis', 'Gayungan', 'Genteng', 'Gubeng', 'Gunung Anyar', 'Jambangan', 'Karangpilang', 'Kenjeran', 'Krembangan', 'Lakarsantri', 'Mulyorejo', 'Pabeyan', 'Pakal', 'Sambikerep', 'Sawahan', 'Sememi', 'Simolawaru', 'Siwalankerto', 'Sukolilo', 'Tegalsari', 'Wonokromo', 'Wiyung'],
-      'Kota Malang': ['Blimbing', 'Klojen', 'Lowokwaru', 'Sukun'],
-      'Kota Batu': ['Batu Barat', 'Batu Timur', 'Junrejo'],
-      'Kabupaten Sidoarjo': ['Balongbendo', 'Buduran', 'Candi', 'Gedangan', 'Jabon', 'Krian', 'Krembilhan', 'Sedati', 'Sidoarjo', 'Sukodono', 'Sumurup', 'Tanggulangin', 'Tarik', 'Temon', 'Tulangan', 'Waru', 'Wonoayu'],
-      'Kabupaten Gresik': ['Bungah', 'Cerme', 'Driyorejo', 'Gresik', 'Kebomas', 'Manyar', 'Panceng', 'Sangkapura', 'Sidayu', 'Ujungpangkah', 'Wringinasri'],
-      'Kabupaten Mojokerto': ['Bangsal', 'Kota Mojokerto', 'Kutorejo', 'Mojokerto', 'Ngoro', 'Puri', 'Sooko', 'Trawas'],
-      'Kabupaten Lamongan': ['Babat', 'Brondong', 'Deket', 'Glagah', 'Karang Geneng', 'Karangkates', 'Karangrejo', 'Kembang Bahu', 'Lamongan', 'Laren', 'Mantup', 'Maduran', 'Ngimbang', 'Pucuk', 'Sambas', 'Sarirejo', 'Sukodadi', 'Sumurup', 'Tikung', 'Turi', 'Widang'],
-    };
-  } else if (cleanName === 'Banten') {
-    regencyNames = ['Kota Tangerang', 'Kota Tangerang Selatan', 'Kota Cilegon', 'Kota Serang', 'Kabupaten Serang', 'Kabupaten Pandeglang'];
-    districtNamesMap = {
-      'Kota Tangerang': ['Batuceper', 'Benda', 'Ciledug', 'Cipondoh', 'Glodok', 'Jatiuwung', 'Kalideres', 'Karawaci', 'Neglasari', 'Periuk', 'Pinang', 'Podomoro', 'Srengseng', 'Tanjungsari'],
-      'Kota Tangerang Selatan': ['Cikunir', 'Cipete', 'Ciputat', 'Ciputat Timur', 'Jurangmangu', 'Jurangmangu Barat', 'Kemang', 'Pamulang', 'Pondok Aren'],
-      'Kota Cilegon': ['Cibeber', 'Cilegon', 'Grogol', 'Jatiluhur', 'Kandanghaur', 'Kraton', 'Pulomerak', 'Purwadadi', 'Sukanegara'],
-      'Kota Serang': ['Cipocok Jaya', 'Kasemen', 'Serang', 'Serang Barat', 'Serang Timur', 'Serang Utara', 'Taktakan'],
-      'Kabupaten Serang': ['Anyar', 'Banyu Asih', 'Bojonegara', 'Caringin', 'Cinangka', 'Cipandeglang', 'Cipayung', 'Cirewang', 'Cirata', 'Ciruas', 'Cisalak', 'Cisamsu', 'Cisarua', 'Cisuaka', 'Citangkok', 'Citeureup'],
-      'Kabupaten Pandeglang': ['Anyer', 'Bojong', 'Carita', 'Labuan', 'Menes', 'Pandeglang', 'Saketi', 'Sambas', 'Sukanagara', 'Sukaraja', 'Sumur', 'Taktakan'],
-    };
-  } else if (cleanName === 'Sumatera Utara') {
-    regencyNames = ['Kota Medan', 'Kabupaten Deli Serdang', 'Kota Binjai', 'Kabupaten Simalungun', 'Kabupaten Asahan'];
-    districtNamesMap = {
-      'Kota Medan': ['Amplas', 'Belawan', 'Denai', 'Jelutung', 'Johor', 'Kemayoran', 'Medan Area', 'Medan Barat', 'Medan Deli', 'Medan Helvetia', 'Medan Kota', 'Medan Maimun', 'Medan Petisah', 'Medan Satria', 'Medan Selayang', 'Medan Timur', 'Medan Tuntungan', 'Pancur Batu', 'Patumbak'],
-      'Kabupaten Deli Serdang': ['Batu Bara', 'Biru Biru', 'Gunung Meriah', 'Hamparan Perak', 'Hilir Gajah', 'Kampung Rakyat', 'Kebun Kelapa', 'Labuhan Deli', 'Lubuk Pakam', 'Merbau', 'Perbaungan', 'Percut Sei Tuan', 'Rampah', 'Sei Rampah', 'Sunggal', 'Tanjung Balai', 'Tanjung Morawa'],
-      'Kota Binjai': ['Binjai Barat', 'Binjai Kota', 'Binjai Selatan', 'Binjai Timur', 'Binjai Utara'],
-      'Kabupaten Simalungun': ['Bandar Pulau', 'Bandar Raya', 'Banyurip', 'Barusjahe', 'Bonatua Luneau', 'Bonatua Sonang', 'Bosar Maligas', 'Bunut Bara', 'Bunut Panjang', 'Candi Banua', 'Carang Manis', 'Cengget', 'Condet', 'Dander', 'Dapur', 'Dolok Batu Nangka', 'Dolok Masihul', 'Dolok Panribuan'],
-      'Kabupaten Asahan': ['Aek Manyar', 'Aek Songsonneon', 'Aji', 'Aji Barat', 'Aji Timur', 'Alas Jaya', 'Alas Roban', 'Alas Tebo', 'Alas Terigas', 'Asahan', 'Asahan Hulu', 'Asahan Jaya', 'Asahan Maju', 'Asahan Muara', 'Asahan Timur', 'Asahan Utara'],
-    };
-  } else {
-    // Fallback untuk provinsi lain
-    const base = cleanName.split(' ')[0] || 'Wilayah';
-    regencyNames = [`Kota ${base}`, `Kabupaten ${base} Timur`, `Kabupaten ${base} Barat`];
-    districtNamesMap = {
-      [`Kota ${base}`]: ['Pusat', 'Utara', 'Timur', 'Barat', 'Selatan'],
-      [`Kabupaten ${base} Timur`]: ['Kecamatan Indah', 'Kecamatan Sari', 'Kecamatan Mulia', 'Kecamatan Jaya'],
-      [`Kabupaten ${base} Barat`]: ['Kecamatan Makmur', 'Kecamatan Sejahtera', 'Kecamatan Hijau', 'Kecamatan Maju']
-    };
-  }
-  
-  // Build regencies with districts
-  const regencies: RegencyData[] = regencyNames.map((regencyName) => {
-    const districts = districtNamesMap[regencyName] || [];
-    const hash = regencyName.split('').reduce((h, char) => h + char.charCodeAt(0), 0);
-    const reports = hash % 50 + 5;
-    
-    return {
-      name: regencyName,
-      reports,
-      districts: districts.map((districtName) => {
-        const distHash = districtName.split('').reduce((h, char) => h + char.charCodeAt(0), 0);
-        return {
-          name: districtName,
-          reports: (distHash % 20) + 1
-        };
-      })
-    };
-  });
-  
-  const totalReports = regencies.reduce((sum, reg) => sum + reg.reports, 0);
-  
+  // Jika tidak ada data dari database, kembalikan data kosong yang valid (0 kasus)
   return {
     provinceName: cleanName,
-    totalReports,
-    regencies
+    totalReports: 0,
+    regencies: [],
+    hazardBreakdown: {
+      fisik: 0,
+      kimia: 0,
+      biologi: 0,
+      ergonomi: 0,
+      psikososial: 0
+    }
   };
 };
 

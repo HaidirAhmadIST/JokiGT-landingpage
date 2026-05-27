@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
 import api from '@/lib/axios';
@@ -61,7 +62,7 @@ export default function DashboardLayout({
   // Approval Inbox and Notification states
   const [requests, setRequests] = useState<any[]>([]);
   const [pendingCount, setPendingCount] = useState(0);
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED'>('PENDING');
   const [isInboxOpen, setIsInboxOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
@@ -70,23 +71,14 @@ export default function DashboardLayout({
 
   const fetchRequests = async () => {
     try {
-      const res = await api.get('/approval-requests');
+      const res = await api.get('/inbox');
       if (res.data.status === 'success') {
-        let rawData = res.data.data;
-        
-        // Filter: Staff only sees their own requests, Admin sees all
-        if (user?.role === 'petugas') {
-          rawData = rawData.filter((r: any) => r.requester_id === user.id);
-        }
-
-        const sorted = rawData.sort((a: any, b: any) => 
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        );
+        let sorted = res.data.data || [];
         setRequests(sorted);
         
         // Count for notification badge
         if (user?.role === 'admin') {
-          const pending = sorted.filter((r: any) => r.status === 'PENDING');
+          const pending = sorted.filter((r: any) => r.status === 'PENDING' && r.type === 'APPROVAL_REQUEST');
           setPendingCount(pending.length);
         } else if (user?.role === 'petugas') {
           const lastOpened = localStorage.getItem(`lastInboxOpened_${user.id}`);
@@ -113,10 +105,12 @@ export default function DashboardLayout({
     }
   }, [user]);
 
-  const handleApprove = async (id: number) => {
+  const handleApprove = async (id: string | number) => {
+    // extract actual id if string
+    const actualId = typeof id === 'string' ? id.split('_').pop() : id;
     setSubmittingResponse(true);
     try {
-      const res = await api.post(`/approval-requests/${id}/respond`, {
+      const res = await api.post(`/approval-requests/${actualId}/respond`, {
         status: 'APPROVED'
       });
       if (res.data.status === 'success') {
@@ -140,10 +134,11 @@ export default function DashboardLayout({
       return;
     }
     if (!selectedId) return;
+    const actualId = selectedId.split('_').pop();
 
     setSubmittingResponse(true);
     try {
-      const res = await api.post(`/approval-requests/${selectedId}/respond`, {
+      const res = await api.post(`/approval-requests/${actualId}/respond`, {
         status: 'REJECTED',
         rejection_reason: rejectionReason
       });
@@ -168,7 +163,7 @@ export default function DashboardLayout({
       const params = new URLSearchParams(window.location.search);
       const urlId = params.get('id');
       if (urlId) {
-        setSelectedId(Number(urlId));
+        setSelectedId('approval_' + urlId);
         setActiveTab('ALL');
         setIsInboxOpen(true);
       } else if (!selectedId) {
@@ -437,7 +432,7 @@ export default function DashboardLayout({
       <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 z-20 shrink-0 shadow-sm print:hidden">
         
         {/* Logo Text Area */}
-        <div className="flex items-center gap-4 w-48 shrink-0">
+        <div className="flex items-center gap-4 w-64 shrink-0">
           <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
             <SheetTrigger 
               className="md:hidden -ml-2 text-slate-700 h-9 w-9 flex items-center justify-center rounded-lg hover:bg-slate-100 transition-colors"
@@ -447,8 +442,9 @@ export default function DashboardLayout({
             </SheetTrigger>
             <SheetContent side="left" className="w-64 p-0">
                {/* Mobile Sidebar Content */}
-               <div className="p-6">
-                 <h2 className="font-extrabold text-xl text-slate-800 tracking-tight">Rekam Jejak PAK</h2>
+               <div className="p-6 flex items-center justify-center gap-3">
+                 <Image src="/logo.png" alt="Rekam Jejak PAK Logo" width={32} height={32} className="h-8 w-8 object-contain drop-shadow-sm" />
+                 <h2 className="font-extrabold text-xl text-slate-800 tracking-tight whitespace-nowrap">Rekam Jejak PAK</h2>
                </div>
                
                <div className="px-4 mb-6">
@@ -458,7 +454,7 @@ export default function DashboardLayout({
                     </div>
                     <div>
                       <p className="text-[11px] font-extrabold text-slate-800 tracking-wider">
-                        {user?.role === 'petugas' ? 'UNION STAFF' : 'ADMIN PANEL'}
+                        {user?.role === 'petugas' ? 'STAF SERIKAT' : 'ADMIN PANEL'}
                       </p>
                       <p className="text-[10px] text-slate-500 font-medium">
                         {user?.role === 'petugas' && user?.serikat ? user.serikat : 'Mode Manajemen'}
@@ -489,7 +485,10 @@ export default function DashboardLayout({
               </nav>
             </SheetContent>
           </Sheet>
-          <h1 className="font-extrabold text-xl text-[#0f172a] tracking-tight hidden md:block">Rekam Jejak PAK</h1>
+          <div className="hidden md:flex items-center gap-3">
+            <Image src="/logo.png" alt="Rekam Jejak PAK Logo" width={32} height={32} className="h-8 w-8 object-contain drop-shadow-sm" />
+            <h1 className="font-extrabold text-xl text-[#0f172a] tracking-tight whitespace-nowrap">Rekam Jejak PAK</h1>
+          </div>
         </div>
 
         {/* Center Search Bar */}
@@ -635,7 +634,7 @@ export default function DashboardLayout({
         <aside 
           ref={sidebarRef}
           style={{ width: `${sidebarWidth}px` }}
-          className="hidden md:flex flex-col bg-white border-r border-slate-200 z-10 justify-between py-6 shrink-0 print:hidden relative transition-[width] duration-75 ease-out"
+          className="hidden md:flex flex-col bg-white border-r border-slate-200 z-10 justify-between py-6 shrink-0 print:hidden relative"
         >
            {/* Resizer Handle */}
            <div 
@@ -654,7 +653,7 @@ export default function DashboardLayout({
                   </div>
                   <div className={`min-w-0 transition-opacity duration-200 ${sidebarWidth < 160 ? 'opacity-0' : 'opacity-100'}`}>
                     <p className="text-[10px] font-extrabold text-[#1e293b] tracking-wider truncate">
-                      {user?.role === 'petugas' ? 'UNION STAFF' : 'ADMIN PANEL'}
+                      {user?.role === 'petugas' ? 'STAF SERIKAT' : 'ADMIN PANEL'}
                     </p>
                     <p className="text-[9px] text-slate-500 font-medium mt-0.5 truncate">
                       {user?.role === 'petugas' && user?.serikat ? user.serikat : 'Mode Manajemen'}
@@ -710,26 +709,24 @@ export default function DashboardLayout({
 
         {/* FLOATING ACTION KOTAK MASUK (EMAIL BOX OVERLAY) */}
         <Dialog open={isInboxOpen} onOpenChange={setIsInboxOpen}>
-          <DialogContent className="sm:max-w-7xl sm:w-[92vw] sm:h-[86vh] bg-white rounded-3xl border border-slate-100 shadow-2xl overflow-hidden p-0 flex flex-col backdrop-blur-md">
+          <DialogContent className="sm:max-w-4xl sm:w-[90vw] sm:h-[80vh] bg-white rounded-3xl border border-slate-100 shadow-2xl overflow-hidden p-0 flex flex-col backdrop-blur-md">
             
             {/* Native Window Titlebar */}
-            <div className="px-6 py-4.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between shrink-0">
+            <div className="px-6 py-4 pr-12 bg-slate-50 border-b border-slate-100 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
                 <div className="h-8 w-8 rounded-lg bg-[#0ea5e9]/10 text-[#0ea5e9] flex items-center justify-center">
                   <Inbox className="h-4.5 w-4.5" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-extrabold text-slate-800 tracking-tight">Kotak Masuk Persetujuan</h3>
+                  <h3 className="text-sm font-extrabold text-slate-800 tracking-tight">Kotak Masuk</h3>
                   <p className="text-[10px] text-slate-400 font-medium">
-                    {user?.role === 'admin' 
-                      ? 'Kelola dan eksekusi permohonan modifikasi data secara real-time.' 
-                      : 'Pantau status pengajuan persetujuan modifikasi data Anda.'}
+                    Pantau permohonan, kasus prioritas, dan pembaruan data.
                   </p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
                 <span className={cn(
-                  "px-2 py-0.5 rounded-full text-[9px] font-bold",
+                  "px-2 py-0.5 rounded-full text-[9px] font-bold text-center whitespace-nowrap",
                   user?.role === 'admin' ? "bg-rose-100 text-rose-700" : "bg-sky-100 text-sky-700"
                 )}>
                   {user?.role === 'admin' ? `${pendingCount} Tertunda` : `${pendingCount} Pembaruan`}
@@ -738,10 +735,10 @@ export default function DashboardLayout({
             </div>
 
             {/* Content Area - Double Pane */}
-            <div className="flex-1 flex overflow-hidden min-h-0">
+            <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
               
               {/* Left Pane - List of Messages */}
-              <div className="w-80 border-r border-slate-100 flex flex-col shrink-0 bg-white">
+              <div className="w-full md:w-96 border-b md:border-b-0 md:border-r border-slate-100 flex flex-col shrink-0 bg-white h-1/2 md:h-auto">
                 {/* Search / Filter tabs */}
                 <div className="grid grid-cols-4 p-2 bg-slate-50 border-b border-slate-100 shrink-0">
                   {(['PENDING', 'APPROVED', 'REJECTED', 'ALL'] as const).map((tab) => (
@@ -757,7 +754,7 @@ export default function DashboardLayout({
                         }
                       }}
                       className={cn(
-                        "py-1.5 text-[9px] font-black rounded-lg transition-all cursor-pointer",
+                        "py-1.5 text-[10px] sm:text-xs font-black rounded-lg transition-all cursor-pointer truncate",
                         activeTab === tab
                           ? "bg-white text-slate-800 shadow-sm border border-slate-200/50"
                           : "text-slate-400 hover:text-slate-700"
@@ -772,14 +769,20 @@ export default function DashboardLayout({
                 <div className="flex-1 overflow-y-auto divide-y divide-slate-50">
                   {requests.filter(r => activeTab === 'ALL' || r.status === activeTab).length === 0 ? (
                     <div className="p-8 text-center text-slate-400">
-                      <MailOpen className="h-8 w-8 mx-auto mb-2 text-slate-200" />
-                      <p className="text-xs font-bold uppercase tracking-wider">Inbox Kosong</p>
-                      <p className="text-[10px] text-slate-400 mt-1">Tidak ada permohonan.</p>
+                      <MailOpen className="h-10 w-10 mx-auto mb-3 text-slate-200" />
+                      <p className="text-sm font-bold uppercase tracking-wider">Inbox Kosong</p>
+                      <p className="text-xs text-slate-400 mt-1">Tidak ada permohonan.</p>
                     </div>
                   ) : (
                     requests
                       .filter(r => activeTab === 'ALL' || r.status === activeTab)
-                      .map((req: any) => (
+                      .map((req: any) => {
+                        const isApproval = req.type === 'APPROVAL_REQUEST';
+                        const isPriority = req.type === 'PRIORITY_CASE';
+                        const isNewWorker = req.type === 'NEW_WORKER';
+                        const d = req.data;
+
+                        return (
                         <button
                           key={req.id}
                           onClick={() => setSelectedId(req.id)}
@@ -791,28 +794,38 @@ export default function DashboardLayout({
                           )}
                         >
                           <div className="flex justify-between items-center">
-                            <span className="text-[9px] font-extrabold text-[#0284c7] uppercase">
-                              REQ-{req.id.toString().padStart(4, '0')}
+                            <span className={cn(
+                              "text-[10px] font-extrabold uppercase tracking-wide",
+                              isApproval ? "text-[#0284c7]" : isPriority ? "text-rose-600" : "text-emerald-600"
+                            )}>
+                              {isApproval ? `REQ-${d.id.toString().padStart(4, '0')}` : isPriority ? `PRIO-${d.id}` : `NEW-${d.nik || d.id}`}
                             </span>
-                            <span className="text-[9px] text-slate-400 font-medium">
+                            <span className="text-xs text-slate-400 font-medium">
                               {new Date(req.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
                             </span>
                           </div>
 
-                          <p className="text-xs font-extrabold text-slate-800 line-clamp-1">
-                            {req.requester?.nama || 'Admin Staff'} meminta {req.action === 'DELETE' ? 'Penghapusan' : req.action === 'UPDATE' ? 'Perubahan' : 'Penambahan'}
+                          <p className="text-sm font-extrabold text-slate-800 line-clamp-1">
+                            {isApproval ? `${d.requester?.nama || 'Admin Staff'} meminta ${d.action === 'DELETE' ? 'Penghapusan' : d.action === 'UPDATE' ? 'Perubahan' : 'Penambahan'}` : 
+                             isPriority ? `Prioritas: ${d.pekerja?.nama_lengkap || 'Kasus PAK'}` :
+                             `Pekerja Baru: ${d.nama_lengkap}`}
                           </p>
 
-                          <p className="text-[10px] text-slate-400 line-clamp-2 leading-relaxed">
-                            {req.reason}
+                          <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">
+                            {isApproval ? d.reason :
+                             isPriority ? `Sisa waktu advokasi menipis. Batas waktu: ${d.deadline_date}` :
+                             `Didaftarkan di ${d.perusahaan?.nama_perusahaan || 'Perusahaan tidak diketahui'}`}
                           </p>
 
-                          <div className="flex justify-between items-center pt-1 mt-1 shrink-0">
-                            {getActionBadge(req.action)}
-                            {getStatusBadge(req.status)}
-                          </div>
+                          {isApproval && (
+                            <div className="flex justify-between items-center pt-1 mt-1 shrink-0">
+                              {getActionBadge(d.action)}
+                              {getStatusBadge(req.status)}
+                            </div>
+                          )}
                         </button>
-                      ))
+                      );
+                    })
                   )}
                 </div>
               </div>
@@ -821,164 +834,134 @@ export default function DashboardLayout({
               <div className="flex-1 flex flex-col bg-slate-50/30 overflow-hidden">
                 {selectedRequest ? (
                   <div className="flex-1 flex flex-col overflow-hidden">
-                    
-                    {/* Detail Header */}
-                    <div className="p-6 border-b border-slate-100 flex justify-between items-start shrink-0 bg-white">
-                      <div className="flex gap-3">
-                        <div className="h-10 w-10 rounded-lg bg-sky-100 text-[#0284c7] flex items-center justify-center shrink-0">
-                          <UserIcon className="h-5 w-5" />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h3 className="text-xs font-extrabold text-slate-800">
-                              {selectedRequest.requester?.nama || 'Admin Staff'}
-                            </h3>
-                            <span className="px-2 py-0.5 bg-slate-100 text-slate-500 rounded text-[8px] font-bold uppercase tracking-wider">
-                              Staff
-                            </span>
-                          </div>
-                          <p className="text-[10px] text-slate-400 font-medium mt-0.5">
-                            {selectedRequest.requester?.email} • {new Date(selectedRequest.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })} • {new Date(selectedRequest.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-col items-end gap-1.5 shrink-0">
-                        <span className="text-[10px] font-black text-slate-400">
-                          ID: REQ-{selectedRequest.id.toString().padStart(4, '0')}
-                        </span>
-                        <div className="flex gap-2">
-                          {getActionBadge(selectedRequest.action)}
-                          {getStatusBadge(selectedRequest.status)}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Detail Body Scroll Area */}
-                    <div className="flex-1 p-6 overflow-y-auto space-y-6">
+                    {(() => {
+                      const req = selectedRequest;
+                      const type = req.type;
+                      const d = req.data;
                       
-                      {/* 1. Alasan Permohonan */}
-                      <div className="space-y-2">
-                        <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest">ALASAN TINDAKAN</h4>
-                        <div className="bg-[#f0f9ff]/60 border border-sky-100 rounded-xl p-4">
-                          <p className="text-xs text-slate-700 leading-relaxed font-semibold italic">
-                            "{selectedRequest.reason}"
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* 2. Target Obyek */}
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">JENIS MODEL</h4>
-                          <p className="text-xs font-extrabold text-slate-800">{selectedRequest.model_type}</p>
-                        </div>
-                        <div>
-                          <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">TARGET RECORD ID</h4>
-                          <p className="text-xs font-extrabold text-slate-800">#{selectedRequest.model_id || 'BARU'}</p>
-                        </div>
-                      </div>
-
-                      {/* 3. Detail Data (Payload) */}
-                      {selectedRequest.payload && Object.keys(selectedRequest.payload).length > 0 && (
-                        <div className="space-y-2">
-                          <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest">DETAIL PERUBAHAN DATA</h4>
-                          <div className="border border-slate-100 rounded-xl overflow-hidden shadow-sm bg-white">
-                            <table className="w-full text-left border-collapse">
-                              <thead>
-                                <tr className="bg-slate-50 border-b border-slate-100">
-                                  <th className="px-4 py-2.5 text-[9px] font-extrabold text-slate-500 uppercase tracking-wider">Field Nama</th>
-                                  <th className="px-4 py-2.5 text-[9px] font-extrabold text-slate-500 uppercase tracking-wider">Nilai Baru</th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-slate-50 text-[11px] font-semibold text-slate-700">
-                                {Object.entries(selectedRequest.payload).map(([key, val]) => (
-                                  <tr key={key} className="hover:bg-slate-50/50">
-                                    <td className="px-4 py-2.5 font-bold text-[#0284c7]">{key}</td>
-                                    <td className="px-4 py-2.5 font-medium whitespace-pre-wrap max-w-md">
-                                      {typeof val === 'boolean' 
-                                        ? (val ? 'TRUE (Selesai/Aktif)' : 'FALSE (Belum)') 
-                                        : val === null || val === '' 
-                                          ? '-' 
-                                          : JSON.stringify(val, null, 2)}
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* 4. Respon Log (Jika sudah diproses) */}
-                      {selectedRequest.status !== 'PENDING' && (
-                        <div className="pt-6 border-t border-slate-100 space-y-4">
-                          <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest">LOG PERSETUJUAN</h4>
-                          <div className={cn(
-                            "p-4 rounded-xl border flex gap-4 items-start",
-                            selectedRequest.status === 'APPROVED' 
-                              ? "bg-emerald-50/40 border-emerald-100 text-emerald-800" 
-                              : "bg-rose-50/40 border-rose-100 text-rose-800"
-                          )}>
-                            <div className={cn(
-                              "p-2 rounded-lg shrink-0",
-                              selectedRequest.status === 'APPROVED' ? "bg-emerald-100 text-emerald-600" : "bg-rose-100 text-rose-600"
-                            )}>
-                              {selectedRequest.status === 'APPROVED' ? <CheckCircle className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+                      if (type === 'APPROVAL_REQUEST') {
+                        return (
+                          <>
+                            <div className="p-6 border-b border-slate-100 flex justify-between items-start shrink-0 bg-white">
+                              <div className="flex gap-3">
+                                <div className="h-10 w-10 rounded-lg bg-sky-100 text-[#0284c7] flex items-center justify-center shrink-0">
+                                  <UserIcon className="h-5 w-5" />
+                                </div>
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <h3 className="text-xs font-extrabold text-slate-800">
+                                      {d.requester?.nama || 'Admin Staff'}
+                                    </h3>
+                                    <span className="px-2 py-0.5 bg-slate-100 text-slate-500 rounded text-[8px] font-bold uppercase tracking-wider">
+                                      Staff
+                                    </span>
+                                  </div>
+                                  <p className="text-[10px] text-slate-400 font-medium mt-0.5">
+                                    {d.requester?.email} • {new Date(req.created_at).toLocaleDateString('id-ID')}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex flex-col items-end gap-1.5 shrink-0">
+                                <span className="text-[10px] font-black text-slate-400">
+                                  ID: REQ-{d.id.toString().padStart(4, '0')}
+                                </span>
+                                <div className="flex gap-2">
+                                  {getActionBadge(d.action)}
+                                  {getStatusBadge(req.status)}
+                                </div>
+                              </div>
                             </div>
-                            <div>
-                              <p className="text-xs font-extrabold">
-                                Permintaan ini telah {selectedRequest.status === 'APPROVED' ? 'DISETUJUI' : 'DITOLAK'} oleh {selectedRequest.responder?.nama || 'Superadmin'}
-                              </p>
-                              {selectedRequest.rejection_reason && (
-                                <p className="text-xs font-bold text-rose-700 mt-2 bg-rose-100/50 p-2.5 rounded-lg border border-rose-200/50 italic">
-                                  Alasan Penolakan: "{selectedRequest.rejection_reason}"
-                                </p>
+                            
+                            <div className="flex-1 p-6 overflow-y-auto space-y-6">
+                              <div className="space-y-2">
+                                <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest">ALASAN TINDAKAN</h4>
+                                <div className="bg-[#f0f9ff]/60 border border-sky-100 rounded-xl p-4">
+                                  <p className="text-xs text-slate-700 leading-relaxed font-semibold italic">"{d.reason}"</p>
+                                </div>
+                              </div>
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">JENIS MODEL</h4>
+                                  <p className="text-xs font-extrabold text-slate-800">{d.model_type}</p>
+                                </div>
+                                <div>
+                                  <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">TARGET RECORD ID</h4>
+                                  <p className="text-xs font-extrabold text-slate-800">#{d.model_id || 'BARU'}</p>
+                                </div>
+                              </div>
+                              {d.payload && Object.keys(d.payload).length > 0 && (
+                                <div className="space-y-2">
+                                  <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest">DETAIL PERUBAHAN DATA</h4>
+                                  <div className="border border-slate-100 rounded-xl overflow-hidden shadow-sm bg-white">
+                                    <table className="w-full text-left border-collapse">
+                                      <tbody className="divide-y divide-slate-50 text-[11px] font-semibold text-slate-700">
+                                        {Object.entries(d.payload).map(([key, val]) => (
+                                          <tr key={key} className="hover:bg-slate-50/50">
+                                            <td className="px-4 py-2.5 font-bold text-[#0284c7]">{key}</td>
+                                            <td className="px-4 py-2.5 font-medium whitespace-pre-wrap">{typeof val === 'boolean' ? (val ? 'TRUE' : 'FALSE') : val === null || val === '' ? '-' : JSON.stringify(val)}</td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                </div>
                               )}
-                              <p className="text-[9px] text-slate-400 font-bold mt-2 uppercase">
-                                Selesai diproses pada: {new Date(selectedRequest.updated_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })} • {new Date(selectedRequest.updated_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
-                              </p>
                             </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Detail Footer Actions */}
-                    {selectedRequest.status === 'PENDING' && (
-                      <div className="p-6 border-t border-slate-100 bg-white shrink-0">
-                        {user?.role === 'admin' ? (
-                          <div className="flex justify-end gap-3">
-                            <Button 
-                              variant="outline" 
-                              onClick={() => setIsRejectOpen(true)}
-                              disabled={submittingResponse}
-                              className="h-11 px-6 font-bold text-rose-600 border-rose-200 hover:bg-rose-50 hover:text-rose-700 rounded-xl cursor-pointer"
-                            >
-                              Tolak Permintaan
-                            </Button>
-                            <Button 
-                              onClick={() => handleApprove(selectedRequest.id)}
-                              disabled={submittingResponse}
-                              className="h-11 px-6 font-bold bg-[#0284c7] hover:bg-[#0369a1] text-white shadow-sm rounded-xl cursor-pointer"
-                            >
-                              Setujui & Eksekusi
-                            </Button>
-                          </div>
-                        ) : (
-                          <div className="flex gap-3 p-4 bg-amber-50/60 border border-amber-100 rounded-2xl items-center text-amber-800">
-                            <Clock className="h-5 w-5 text-amber-500 shrink-0 animate-spin" style={{ animationDuration: '3s' }} />
-                            <div className="text-left">
-                              <p className="text-xs font-black uppercase tracking-wider">Menunggu Persetujuan</p>
-                              <p className="text-[10px] font-semibold text-amber-700/90 mt-0.5">
-                                Permintaan ini sedang ditinjau oleh Superadmin. Anda akan diberitahu begitu status diperbarui.
+                            
+                            {req.status === 'PENDING' && (
+                              <div className="p-6 border-t border-slate-100 bg-white shrink-0">
+                                {user?.role === 'admin' ? (
+                                  <div className="flex justify-end gap-3">
+                                    <Button variant="outline" onClick={() => setIsRejectOpen(true)} disabled={submittingResponse} className="h-11 px-6 font-bold text-rose-600 border-rose-200 hover:bg-rose-50 hover:text-rose-700 rounded-xl">Tolak Permintaan</Button>
+                                    <Button onClick={() => handleApprove(req.id)} disabled={submittingResponse} className="h-11 px-6 font-bold bg-[#0284c7] hover:bg-[#0369a1] text-white shadow-sm rounded-xl">Setujui & Eksekusi</Button>
+                                  </div>
+                                ) : (
+                                  <p className="text-xs font-bold text-amber-600 text-center">Menunggu persetujuan Admin.</p>
+                                )}
+                              </div>
+                            )}
+                          </>
+                        );
+                      }
+                      
+                      if (type === 'PRIORITY_CASE') {
+                        return (
+                          <>
+                            <div className="p-8 text-center flex flex-col items-center justify-center flex-1 space-y-4">
+                              <div className="h-16 w-16 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center animate-pulse">
+                                <ShieldAlert className="h-8 w-8" />
+                              </div>
+                              <h2 className="text-lg font-black text-slate-800">Kasus PAK Prioritas</h2>
+                              <p className="text-sm text-slate-500 max-w-sm">
+                                Kasus advokasi pekerja <b>{d.pekerja?.nama_lengkap}</b> mendekati batas waktu klaim JKK (3 tahun sejak keluar). <br/><br/>
+                                Deadline: {d.deadline_date}<br/>
+                                Sisa Waktu: {d.days_remaining} hari
                               </p>
+                              <Button onClick={() => { setIsInboxOpen(false); router.push(`/advokasi/${d.id}`); }} className="mt-4 bg-rose-600 hover:bg-rose-700 rounded-xl h-11 px-8 font-bold text-white shadow-sm">Lihat Detail Kasus</Button>
                             </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
+                          </>
+                        );
+                      }
 
+                      if (type === 'NEW_WORKER') {
+                        return (
+                          <>
+                            <div className="p-8 text-center flex flex-col items-center justify-center flex-1 space-y-4">
+                              <div className="h-16 w-16 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center">
+                                <UserIcon className="h-8 w-8" />
+                              </div>
+                              <h2 className="text-lg font-black text-slate-800">Pekerja Baru Ditambahkan</h2>
+                              <p className="text-sm text-slate-500 max-w-sm">
+                                <b>{d.nama_lengkap}</b> baru saja didaftarkan sebagai pekerja di <b>{d.perusahaan?.nama_perusahaan || 'sistem'}</b>.
+                              </p>
+                              <Button onClick={() => { setIsInboxOpen(false); router.push(`/pekerja/${d.id}`); }} className="mt-4 bg-emerald-600 hover:bg-emerald-700 rounded-xl h-11 px-8 font-bold text-white shadow-sm">Lihat Profil Pekerja</Button>
+                            </div>
+                          </>
+                        );
+                      }
+                      
+                      return null;
+                    })()}
                   </div>
                 ) : (
                   <div className="flex-1 flex flex-col items-center justify-center text-center p-8">

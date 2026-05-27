@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useGetReportSummary, useSearchCases } from '@/hooks/useReport';
+import { useGetReportSummary, useSearchCases, useGetSectors } from '@/hooks/useReport';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,13 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
@@ -28,22 +35,27 @@ import {
   Search,
   ArrowDownAZ,
   ArrowUpAZ,
+  Download,
 } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, XAxis, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import api from '@/lib/axios';
 import PriorityCasesCard from '@/components/dashboard/PriorityCasesCard';
 import AdvokasiBarChart from '@/components/AdvokasiBarChart';
 
 export default function LaporanPage() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
-  const [isReviewOpen, setIsReviewOpen] = useState(false);
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  
+  const [timeRange, setTimeRange] = useState('all');
+  const [sector, setSector] = useState('all');
 
-  const { data: reportData, isLoading } = useGetReportSummary();
+  const { data: reportData, isLoading } = useGetReportSummary(timeRange, sector);
   const { data: searchResults, isFetching: searching } = useSearchCases(searchQuery);
+  const { data: sectorsList } = useGetSectors();
 
   const loading = isLoading;
   const summaryData = reportData?.summary;
@@ -57,6 +69,40 @@ export default function LaporanPage() {
     if (sortOrder === 'asc') return nameA > nameB ? 1 : -1;
     return nameA < nameB ? 1 : -1;
   });
+
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExport = async () => {
+    try {
+      setIsExporting(true);
+      const response = await api.get('/laporan/export', {
+        responseType: 'blob', // Important
+      });
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      // Ambil filename dari header jika ada, atau gunakan default
+      const contentDisposition = response.headers['content-disposition'];
+      let fileName = 'Laporan_Pekerja.csv';
+      if (contentDisposition) {
+        const fileNameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
+        if (fileNameMatch && fileNameMatch.length === 2)
+          fileName = fileNameMatch[1];
+      }
+      
+      link.setAttribute('download', fileName);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.success('Laporan berhasil diunduh');
+    } catch (error) {
+      console.error(error);
+      toast.error('Gagal mengunduh laporan');
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   return (
     <div className="animate-in fade-in duration-500 max-w-7xl mx-auto">
@@ -166,20 +212,24 @@ export default function LaporanPage() {
       {/* REGULAR DASHBOARD VIEW (HIDDEN ON PRINT) */}
       <div className="space-y-8 print:hidden">
 
-      {/* Header */}
+      {/* Header Section */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-[28px] font-extrabold tracking-tight text-[#0f172a]">Statistik Penyakit Akibat Kerja & Kepatuhan</h1>
+          <h1 className="text-[28px] font-extrabold tracking-tight text-[#0f172a]">Laporan Data Penyakit Akibat Kerja (PAK)</h1>
           <p className="text-[#64748b] mt-1.5 text-[15px]">
-            Analisis tren terkini di seluruh sektor industri nasional
+            Ringkasan statistik, analisis tren kasus PAK, dan status advokasi pekerja
           </p>
         </div>
-        <Button 
-          onClick={() => window.print()}
-          className="h-11 px-6 font-bold bg-[#0f172a] hover:bg-[#1e293b] text-white print:hidden"
-        >
-          <Printer className="mr-2 h-4 w-4" /> Cetak Laporan
-        </Button>
+        <div className="flex gap-3 print:hidden">
+          <Button 
+            onClick={handleExport}
+            disabled={isExporting}
+            className="h-11 px-6 font-bold bg-emerald-600 hover:bg-emerald-700 text-white"
+          >
+            {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+            Unduh Excel / CSV
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -250,19 +300,36 @@ export default function LaporanPage() {
         </Card>
       </div>
 
-      {/* Priority Section for Reports */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="md:col-span-1">
-          <PriorityCasesCard />
+      {/* Filter Options for Report (Placeholder for future) */}
+      <div className="flex flex-col md:flex-row gap-4 bg-white p-4 rounded-[20px] shadow-sm border border-slate-100">
+        <div className="flex-1">
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Pilih Rentang Waktu</p>
+          <Select value={timeRange} onValueChange={(val) => setTimeRange(val || 'all')}>
+            <SelectTrigger className="w-full md:w-[200px] h-10 border-slate-200 rounded-xl">
+              <SelectValue placeholder="Semua Waktu" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Semua Waktu</SelectItem>
+              <SelectItem value="Bulan Ini">Bulan Ini</SelectItem>
+              <SelectItem value="3 Bulan Terakhir">3 Bulan Terakhir</SelectItem>
+              <SelectItem value="Tahun Ini">Tahun Ini</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
-        <Card className="md:col-span-2 rounded-[20px] shadow-sm border-slate-100 p-8 bg-blue-50/30 flex flex-col justify-center">
-          <h2 className="text-xl font-bold text-[#0f172a] mb-2">Analisis Urgensi Advokasi</h2>
-          <p className="text-sm text-slate-600 leading-relaxed">
-            Data prioritas di samping menunjukkan kasus PAK yang mendekati batas waktu legal 3 tahun sejak berakhirnya hubungan kerja. 
-            Kegagalan penyelesaian dalam periode ini dapat mengakibatkan hilangnya hak kompensasi bagi pekerja. 
-            Segera lakukan koordinasi dengan BPJS Ketenagakerjaan dan Dinas Tenaga Kerja setempat.
-          </p>
-        </Card>
+        <div className="flex-1">
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Pilih Sektor Industri</p>
+          <Select value={sector} onValueChange={(val) => setSector(val || 'all')}>
+            <SelectTrigger className="w-full md:w-[200px] h-10 border-slate-200 rounded-xl">
+              <SelectValue placeholder="Semua Sektor" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Semua Sektor</SelectItem>
+              {sectorsList?.map((s: string) => (
+                <SelectItem key={s} value={s}>{s}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
 
@@ -274,11 +341,11 @@ export default function LaporanPage() {
       </Card>
 
       {/* Bottom Section */}
-      <div className="grid gap-6 md:grid-cols-3">
-        {/* Recent Advocacy Table */}
-        <Card className="md:col-span-2 rounded-[20px] shadow-sm border-slate-100 p-6">
+      <div className="grid gap-6 md:grid-cols-1">
+        {/* Recent Advocacy Table (Full Width for Reporting) */}
+        <Card className="rounded-[20px] shadow-sm border-slate-100 p-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-            <h2 className="text-[17px] font-bold text-[#0f172a]">Pencarian Kasus Advokasi</h2>
+            <h2 className="text-[17px] font-bold text-[#0f172a]">Data Tabel Kasus Advokasi</h2>
             <div className="flex items-center gap-2 w-full sm:w-auto print:hidden">
               <div className="relative w-full sm:w-64">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -313,49 +380,51 @@ export default function LaporanPage() {
             <Table className="table-fixed w-full">
               <TableHeader>
                 <TableRow className="hover:bg-transparent border-b border-slate-100">
-                  <TableHead className="py-3 font-bold text-[10px] tracking-widest text-[#94a3b8] w-10 pl-2 pr-1">NO.</TableHead>
-                  <TableHead className="py-3 font-bold text-[10px] tracking-widest text-[#94a3b8] w-[40%] pl-3">PEKERJA / PERUSAHAAN</TableHead>
-                  <TableHead className="py-3 font-bold text-[10px] tracking-widest text-[#94a3b8] w-[25%]">KASUS</TableHead>
-                  <TableHead className="py-3 font-bold text-[10px] tracking-widest text-[#94a3b8] w-[20%]">STATUS</TableHead>
+                  <TableHead className="py-3 font-bold text-[10px] tracking-widest text-[#94a3b8] w-12 pl-2 pr-1">NO.</TableHead>
+                  <TableHead className="py-3 font-bold text-[10px] tracking-widest text-[#94a3b8] w-[35%] pl-3">PEKERJA / PERUSAHAAN</TableHead>
+                  <TableHead className="py-3 font-bold text-[10px] tracking-widest text-[#94a3b8] w-[30%]">KASUS</TableHead>
+                  <TableHead className="py-3 font-bold text-[10px] tracking-widest text-[#94a3b8] w-[15%]">STATUS</TableHead>
                   <TableHead className="py-3 font-bold text-[10px] tracking-widest text-[#94a3b8] text-right pr-4 print:hidden">AKSI</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {searching && recentAdvocacy.length === 0 ? (
                   [1, 2, 3].map((i: number) => (
-                    <TableRow key={i}><TableCell colSpan={4} className="h-16 bg-slate-50/50 animate-pulse" /></TableRow>
+                    <TableRow key={i}><TableCell colSpan={5} className="h-16 bg-slate-50/50 animate-pulse" /></TableRow>
                   ))
                 ) : (
                   recentAdvocacy.map((row: any, i: number) => (
                     <TableRow key={i} className="hover:bg-slate-50/50 transition-colors">
-                      <TableCell className="pl-2 pr-1 w-10">
-                        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-slate-500 text-[10px] font-bold">
+                      <TableCell className="pl-2 pr-1 w-12">
+                        <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-slate-100 text-slate-500 text-[11px] font-bold">
                           {i + 1}
                         </span>
                       </TableCell>
-                      <TableCell className="py-3.5 pl-3 truncate max-w-0">
+                      <TableCell className="py-4 pl-3 truncate max-w-0">
                         <button 
                           onClick={() => router.push(`/pekerja/${row.pekerja_id}?tab=advokasi`)}
                           className="flex flex-col text-left group/worker outline-none transition-transform hover:translate-x-1 w-full"
                         >
                           <div className="font-bold text-[#1e293b] text-sm truncate group-hover/worker:text-[#0284c7] transition-colors">{row.worker}</div>
-                          <div className="text-[11px] text-[#94a3b8] font-medium truncate">{row.company}</div>
+                          <div className="text-[11px] text-[#94a3b8] font-medium truncate mt-0.5">
+                            {row.company} {row.union_name ? `— ${row.union_name}` : ''}
+                          </div>
                         </button>
                       </TableCell>
-                      <TableCell className="py-3.5 text-sm text-[#475569] font-medium truncate max-w-0">
+                      <TableCell className="py-4 text-sm text-[#475569] font-medium truncate max-w-0">
                         <span className="truncate block">{row.case}</span>
                       </TableCell>
-                      <TableCell className="py-3.5">
-                        <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold border ${row.statusColor}`}>
+                      <TableCell className="py-4">
+                        <span className={`inline-flex items-center px-3 py-1.5 rounded-lg text-[11px] font-bold border ${row.statusColor}`}>
                           {row.status}
                         </span>
                       </TableCell>
-                      <TableCell className="py-3.5 text-right pr-4 print:hidden">
+                      <TableCell className="py-4 text-right pr-4 print:hidden">
                         <button
                           onClick={() => router.push(`/pekerja/${row.pekerja_id}?tab=advokasi`)}
-                          className="text-xs font-bold text-[#0ea5e9] hover:text-[#0284c7] transition-colors"
+                          className="text-xs font-bold text-[#0ea5e9] hover:text-[#0284c7] transition-colors bg-[#0ea5e9]/10 hover:bg-[#0ea5e9]/20 px-3 py-1.5 rounded-lg"
                         >
-                          Detail
+                          Detail Pekerja
                         </button>
                       </TableCell>
                     </TableRow>
@@ -363,7 +432,7 @@ export default function LaporanPage() {
                 )}
                 {!searching && recentAdvocacy.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={4} className="py-10 text-center text-slate-400 text-sm">
+                    <TableCell colSpan={5} className="py-12 text-center text-slate-400 text-sm">
                       Tidak ada kasus ditemukan.
                     </TableCell>
                   </TableRow>
@@ -372,102 +441,7 @@ export default function LaporanPage() {
             </Table>
           </div>
         </Card>
-
-        {/* Success Rate Card */}
-        <Card className="rounded-[20px] shadow-sm border-slate-100 bg-gradient-to-br from-[#0c4a6e] to-[#0284c7] text-white p-8 flex flex-col justify-between">
-          <div>
-            <h2 className="text-lg font-bold">Tingkat Keberhasilan</h2>
-            <p className="text-white/70 text-sm mt-1.5">Efektivitas pendampingan dan advokasi hukum nasional</p>
-          </div>
-          <div className="my-6">
-            <h3 className="text-6xl font-extrabold">{summaryData ? `${summaryData.sukses_advokasi.value}%` : '0%'}</h3>
-          </div>
-          <div>
-            <p className="text-white/70 text-sm">
-              {summaryData && parseFloat(summaryData.sukses_advokasi.value) >= 90 
-                ? 'Melampaui target KPI tahunan (90%)' 
-                : 'Belum mencapai target KPI tahunan (90%)'}
-            </p>
-            <Button
-              onClick={() => setIsReviewOpen(true)}
-              className="mt-4 bg-white/10 hover:bg-white/20 text-white border-white/20 border h-11 px-6 font-bold"
-              variant="outline"
-            >
-              Lihat Review
-            </Button>
-          </div>
-        </Card>
       </div>
-
-      {/* Success Review Modal */}
-      <Dialog open={isReviewOpen} onOpenChange={setIsReviewOpen}>
-        <DialogContent className="max-w-5xl p-0 overflow-hidden border-none rounded-3xl h-auto max-h-[90vh] flex flex-col">
-          <div className="bg-gradient-to-br from-[#0c4a6e] to-[#0284c7] p-8 text-white shrink-0">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-              <div>
-                <DialogHeader>
-                  <DialogTitle className="text-2xl font-extrabold flex items-center gap-3 text-left">
-                    <CheckCircle2 className="h-7 w-7 text-emerald-400" />
-                    Review Tingkat Keberhasilan
-                  </DialogTitle>
-                  <DialogDescription className="text-white/70 text-base mt-2 text-left">
-                    Analisis mendalam mengenai pencapaian target advokasi nasional tahun {new Date().getFullYear()}.
-                  </DialogDescription>
-                </DialogHeader>
-              </div>
-              <div className="flex items-center gap-4 shrink-0 bg-white/10 p-4 rounded-2xl backdrop-blur-sm border border-white/10">
-                <div>
-                  <p className="text-white/60 text-[10px] font-bold tracking-widest uppercase">Target KPI</p>
-                  <p className="text-2xl font-black mt-1">90.0%</p>
-                </div>
-                <div className="h-10 w-px bg-white/20 mx-2"></div>
-                <div>
-                  <p className="text-white/60 text-[10px] font-bold tracking-widest uppercase">Pencapaian Riil</p>
-                  <p className="text-2xl font-black mt-1 text-emerald-400">{summaryData ? `${summaryData.sukses_advokasi.value}%` : '0%'}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="p-8 bg-white flex-1 overflow-y-auto flex flex-col">
-            <h4 className="text-sm font-bold text-[#0f172a] mb-4 uppercase tracking-wider flex items-center shrink-0">
-              <TrendingUp className="h-4 w-4 mr-2 text-[#0ea5e9]" />
-              Kisah Sukses Terakhir
-            </h4>
-
-            <div className="space-y-4 flex-1">
-              {recentSuccesses.length > 0 ? (
-                recentSuccesses.map((item: any, idx: number) => (
-                  <div 
-                    key={idx} 
-                    className="flex flex-col sm:flex-row sm:items-center gap-4 p-5 rounded-2xl bg-slate-50 border border-slate-100 group hover:bg-white hover:shadow-xl hover:shadow-[#0ea5e9]/10 hover:-translate-y-1 hover:border-[#0ea5e9]/30 transition-all duration-300"
-                  >
-                    <div className="bg-emerald-100/70 text-emerald-600 p-3 rounded-xl shrink-0 group-hover:bg-emerald-100 group-hover:scale-110 transition-transform">
-                      <CheckCircle className="h-6 w-6" />
-                    </div>
-                    <div className="flex-1 min-w-0 pr-4">
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-1">
-                        <p className="font-extrabold text-[#0f172a] text-base leading-tight group-hover:text-[#0ea5e9] transition-colors">{item.worker}</p>
-                        <span className="text-[11px] font-bold text-slate-400 bg-white px-2 py-1 rounded-lg border border-slate-100 shadow-sm shrink-0 w-fit">{item.date}</span>
-                      </div>
-                      <p className="text-sm font-medium text-slate-500">{item.company}</p>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="text-center py-10 text-slate-400 text-sm">Belum ada data keberhasilan terbaru.</p>
-              )}
-            </div>
-
-            <Button
-              onClick={() => setIsReviewOpen(false)}
-              className="w-full mt-6 h-12 rounded-xl bg-[#0f172a] hover:bg-[#1e293b] font-bold shrink-0"
-            >
-              Tutup Review
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       </div>
     </div>

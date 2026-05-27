@@ -3,13 +3,14 @@
 import { useState } from 'react';
 import {
   Lock,
-  ShieldCheck,
   Eye,
   EyeOff,
   CheckCircle2,
   AlertCircle,
   X,
+  DownloadCloud,
 } from 'lucide-react';
+import { useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -83,6 +84,13 @@ function PasswordStrength({ password }: { password: string }) {
 export default function SettingsPage() {
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDownloadingBackup, setIsDownloadingBackup] = useState(false);
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) setUser(JSON.parse(storedUser));
+  }, []);
 
   const [form, setForm] = useState({
     current_password: '',
@@ -135,6 +143,40 @@ export default function SettingsPage() {
     setForm({ current_password: '', new_password: '', new_password_confirmation: '' });
     setErrors({});
     setShowChangePassword(false);
+  };
+
+  const handleDownloadBackup = async () => {
+    setIsDownloadingBackup(true);
+    try {
+      const response = await api.get('/backup/download', {
+        responseType: 'blob'
+      });
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      
+      // Extract filename from Content-Disposition if possible, else default
+      let filename = 'backup_database.json';
+      const disposition = response.headers['content-disposition'];
+      if (disposition && disposition.indexOf('attachment') !== -1) {
+        const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+        const matches = filenameRegex.exec(disposition);
+        if (matches != null && matches[1]) { 
+          filename = matches[1].replace(/['"]/g, '');
+        }
+      }
+      
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.success('Backup berhasil diunduh!');
+    } catch (err) {
+      toast.error('Gagal mengunduh backup. Pastikan Anda memiliki akses Admin.');
+    } finally {
+      setIsDownloadingBackup(false);
+    }
   };
 
   return (
@@ -217,31 +259,31 @@ export default function SettingsPage() {
           )}
         </Card>
 
-        {/* 2FA Section */}
-        <Card className="rounded-2xl border-border bg-card shadow-sm">
-          <div className="p-6 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-amber-500/10 rounded-xl">
-                <ShieldCheck className="h-5 w-5 text-amber-500" />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-foreground">Autentikasi Dua Faktor (2FA)</p>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <span className="h-1.5 w-1.5 rounded-full bg-rose-500 inline-block" />
-                  <p className="text-[11px] text-rose-500 font-bold uppercase tracking-tighter">Belum Aktif</p>
+        {/* Database Backup Section - Admin Only */}
+        {user?.role === 'admin' && (
+          <Card className="rounded-2xl border-border bg-card shadow-sm overflow-hidden border-sky-100 bg-sky-50/30">
+            <div className="p-6 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-sky-100 rounded-xl">
+                  <DownloadCloud className="h-5 w-5 text-sky-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-slate-800">Pencadangan Sistem (Backup)</p>
+                  <p className="text-[11px] text-slate-500 font-medium mt-0.5">Unduh seluruh data aplikasi dalam format JSON yang aman dan ringkas.</p>
                 </div>
               </div>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={handleDownloadBackup}
+                disabled={isDownloadingBackup}
+                className="rounded-xl font-bold shrink-0 bg-sky-600 hover:bg-sky-700 shadow-md shadow-sky-600/20"
+              >
+                {isDownloadingBackup ? 'Memproses...' : 'Unduh Backup Database'}
+              </Button>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => toast.info('Fitur 2FA akan segera hadir di pembaruan berikutnya.')}
-              className="rounded-xl font-bold shrink-0 border-amber-500/30 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-500/10"
-            >
-              Aktifkan 2FA
-            </Button>
-          </div>
-        </Card>
+          </Card>
+        )}
 
         {/* Security Info */}
         <Card className="p-5 rounded-2xl border-dashed border-2 border-border bg-transparent">
@@ -252,7 +294,6 @@ export default function SettingsPage() {
               <ul className="mt-2 space-y-1">
                 {[
                   'Gunakan password yang unik dan minimal 8 karakter.',
-                  'Aktifkan 2FA untuk perlindungan berlapis.',
                   'Jangan bagikan kata sandi kepada siapapun.',
                   'Ganti password secara berkala setiap 3 bulan.',
                 ].map((tip, i) => (

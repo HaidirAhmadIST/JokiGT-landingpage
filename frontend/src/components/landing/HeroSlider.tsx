@@ -98,7 +98,7 @@ export default function HeroSlider() {
           </div>
 
           {/* Content */}
-          <div className="relative h-full max-w-7xl mx-auto px-6 flex flex-col justify-center text-left">
+          <div className="relative h-full max-w-7xl mx-auto px-6 flex flex-col justify-center text-left pb-20 sm:pb-0">
             <div className={cn(
               "max-w-2xl transition-all duration-700 delay-300",
               index === current ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
@@ -129,11 +129,13 @@ export default function HeroSlider() {
                     {slide.ctaText} <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </Link>
-                <a href="https://wa.me/628995389335" target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto">
-                  <Button size="lg" variant="outline" className="w-full rounded-full px-8 h-14 text-base font-bold bg-white/10 backdrop-blur-md border-white/20 text-white hover:bg-white/20 transition-all hover:scale-105">
-                    Konsultasi Gratis
-                  </Button>
-                </a>
+                {slide.ctaText !== 'Konsultasi Gratis' && (
+                  <a href="https://wa.me/628995389335" target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto">
+                    <Button size="lg" variant="outline" className="w-full rounded-full px-8 h-14 text-base font-bold bg-white/10 backdrop-blur-md border-white/20 text-white hover:bg-white/20 transition-all hover:scale-105">
+                      Konsultasi Gratis
+                    </Button>
+                  </a>
+                )}
               </div>
             </div>
           </div>
@@ -149,34 +151,34 @@ export default function HeroSlider() {
       ))}
 
       {/* Navigation Controls */}
-      <div className="absolute bottom-10 left-0 right-0 z-20 flex items-center justify-between max-w-7xl mx-auto px-6">
+      <div className="absolute bottom-6 sm:bottom-10 left-0 right-0 z-20 flex items-center justify-between max-w-7xl mx-auto px-4 sm:px-6">
         {/* Dots */}
-        <div className="flex gap-3">
+        <div className="flex gap-2 sm:gap-3">
           {slides.map((_, i) => (
             <button
               key={i}
               onClick={() => setCurrent(i)}
               className={cn(
                 "h-1.5 transition-all duration-300 rounded-full",
-                i === current ? "w-8 bg-blue-500" : "w-2 bg-white/30 hover:bg-white/50"
+                i === current ? "w-6 sm:w-8 bg-blue-500" : "w-2 bg-white/30 hover:bg-white/50"
               )}
             />
           ))}
         </div>
 
         {/* Arrows */}
-        <div className="flex gap-4">
+        <div className="flex gap-2 sm:gap-4">
           <button
             onClick={prevSlide}
-            className="w-12 h-12 rounded-full border border-white/20 bg-white/5 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/10 transition-all"
+            className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border border-white/20 bg-white/5 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/10 transition-all"
           >
-            <ChevronLeft className="h-6 w-6" />
+            <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
           </button>
           <button
             onClick={nextSlide}
-            className="w-12 h-12 rounded-full border border-white/20 bg-white/5 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/10 transition-all"
+            className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border border-white/20 bg-white/5 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/10 transition-all"
           >
-            <ChevronRight className="h-6 w-6" />
+            <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6" />
           </button>
         </div>
       </div>

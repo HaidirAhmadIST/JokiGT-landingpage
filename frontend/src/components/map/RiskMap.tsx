@@ -309,7 +309,7 @@ export const RiskMap: React.FC<RiskMapProps> = ({ onProvinceClick, lockedProvinc
 
         return (
           <div className="absolute inset-0 z-40 flex items-center justify-center pointer-events-none p-4 backdrop-blur-sm bg-slate-900/10 transition-all duration-300">
-            <div className="flex w-full max-w-[380px] flex-col bg-white rounded-2xl shadow-2xl pointer-events-auto border border-slate-200 p-4 relative" style={{ fontFamily: 'inherit' }}>
+            <div className="flex w-full max-w-[540px] flex-col bg-white rounded-2xl shadow-2xl pointer-events-auto border border-slate-200 p-4 relative" style={{ fontFamily: 'inherit' }}>
               
               {/* Close Button */}
               <button 
@@ -394,6 +394,46 @@ export const RiskMap: React.FC<RiskMapProps> = ({ onProvinceClick, lockedProvinc
                       </div>
                     </div>
 
+                    {/* ── 5 Jenis PAK (Hazard Breakdown) ── */}
+                    {data.hazardBreakdown && (
+                      <div className="mb-3">
+                        <div className="flex flex-col items-center mb-2">
+                          <div className="flex items-center gap-2 w-full">
+                            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
+                            <span className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-400 shrink-0 flex items-center gap-1">
+                              Distribusi PAK Berdasarkan Faktor Risiko
+                            </span>
+                            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
+                          </div>
+                          <span className="text-[9px] font-medium text-slate-500 text-center mt-1 leading-tight">
+                            Jumlah kasus penyakit akibat kerja yang dikelompokkan berdasarkan tipe paparan bahaya.
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-5 gap-1">
+                          <div className="flex flex-col items-center bg-slate-50 border border-slate-100 rounded-lg p-1.5 hover:bg-slate-100 transition-colors">
+                            <span className="text-[12px] font-black text-slate-700 tabular-nums leading-none">{data.hazardBreakdown.fisik}</span>
+                            <span className="text-[7px] font-bold text-slate-400 text-center uppercase tracking-widest leading-tight mt-1">Fisik</span>
+                          </div>
+                          <div className="flex flex-col items-center bg-slate-50 border border-slate-100 rounded-lg p-1.5 hover:bg-slate-100 transition-colors">
+                            <span className="text-[12px] font-black text-slate-700 tabular-nums leading-none">{data.hazardBreakdown.kimia}</span>
+                            <span className="text-[7px] font-bold text-slate-400 text-center uppercase tracking-widest leading-tight mt-1">Kimia</span>
+                          </div>
+                          <div className="flex flex-col items-center bg-slate-50 border border-slate-100 rounded-lg p-1.5 hover:bg-slate-100 transition-colors">
+                            <span className="text-[12px] font-black text-slate-700 tabular-nums leading-none">{data.hazardBreakdown.biologi}</span>
+                            <span className="text-[7px] font-bold text-slate-400 text-center uppercase tracking-widest leading-tight mt-1">Biologi</span>
+                          </div>
+                          <div className="flex flex-col items-center bg-slate-50 border border-slate-100 rounded-lg p-1.5 hover:bg-slate-100 transition-colors">
+                            <span className="text-[12px] font-black text-slate-700 tabular-nums leading-none">{data.hazardBreakdown.ergonomi}</span>
+                            <span className="text-[7px] font-bold text-slate-400 text-center uppercase tracking-widest leading-tight mt-1">Ergonomi</span>
+                          </div>
+                          <div className="flex flex-col items-center bg-slate-50 border border-slate-100 rounded-lg p-1.5 hover:bg-slate-100 transition-colors">
+                            <span className="text-[12px] font-black text-slate-700 tabular-nums leading-none">{data.hazardBreakdown.psikososial}</span>
+                            <span className="text-[7px] font-bold text-slate-400 text-center uppercase tracking-widest leading-tight mt-1">Mental</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     {/* ── Section label with divider ── */}
                     <div className="flex items-center gap-2 mb-2">
                       <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
@@ -467,6 +507,16 @@ export const RiskMap: React.FC<RiskMapProps> = ({ onProvinceClick, lockedProvinc
                                   {Math.round(pct)}%
                                 </span>
                               </div>
+                              {/* Regency Hazard Breakdown */}
+                              {regency.hazardBreakdown && (
+                                <div className="w-full flex items-center gap-1.5 pl-5 pt-1.5 flex-wrap">
+                                  <span className="text-[8px] font-medium text-slate-500 bg-slate-100/80 px-1.5 py-0.5 rounded border border-slate-200/50">Fisik: <strong className="text-slate-700">{regency.hazardBreakdown.fisik}</strong></span>
+                                  <span className="text-[8px] font-medium text-slate-500 bg-slate-100/80 px-1.5 py-0.5 rounded border border-slate-200/50">Kimia: <strong className="text-slate-700">{regency.hazardBreakdown.kimia}</strong></span>
+                                  <span className="text-[8px] font-medium text-slate-500 bg-slate-100/80 px-1.5 py-0.5 rounded border border-slate-200/50">Biologi: <strong className="text-slate-700">{regency.hazardBreakdown.biologi}</strong></span>
+                                  <span className="text-[8px] font-medium text-slate-500 bg-slate-100/80 px-1.5 py-0.5 rounded border border-slate-200/50">Ergonomi: <strong className="text-slate-700">{regency.hazardBreakdown.ergonomi}</strong></span>
+                                  <span className="text-[8px] font-medium text-slate-500 bg-slate-100/80 px-1.5 py-0.5 rounded border border-slate-200/50">Mental: <strong className="text-slate-700">{regency.hazardBreakdown.psikososial}</strong></span>
+                                </div>
+                              )}
                             </button>
 
                             {/* ── Kecamatan sub-list (expanded) ── */}
@@ -516,7 +566,7 @@ export const RiskMap: React.FC<RiskMapProps> = ({ onProvinceClick, lockedProvinc
                                         </span>
                                       </div>
                                       {/* Mini heat bar */}
-                                      <div className="w-full pl-4">
+                                      <div className="w-full pl-4 mt-0.5">
                                         <div className="h-1 bg-slate-100 rounded-full overflow-hidden">
                                           <div
                                             className={`h-full rounded-full transition-all duration-500 ${isSel ? 'bg-sky-400' : distHeat.bg} opacity-60`}
@@ -524,6 +574,16 @@ export const RiskMap: React.FC<RiskMapProps> = ({ onProvinceClick, lockedProvinc
                                           />
                                         </div>
                                       </div>
+                                      {/* District Hazard Breakdown */}
+                                      {district.hazardBreakdown && (
+                                        <div className="w-full flex items-center gap-1.5 pl-4 pt-1 flex-wrap">
+                                          <span className="text-[7.5px] font-medium text-slate-500 bg-slate-100/60 px-1 py-0.5 rounded border border-slate-200/30">Fisik: <strong className="text-slate-700">{district.hazardBreakdown.fisik}</strong></span>
+                                          <span className="text-[7.5px] font-medium text-slate-500 bg-slate-100/60 px-1 py-0.5 rounded border border-slate-200/30">Kimia: <strong className="text-slate-700">{district.hazardBreakdown.kimia}</strong></span>
+                                          <span className="text-[7.5px] font-medium text-slate-500 bg-slate-100/60 px-1 py-0.5 rounded border border-slate-200/30">Biologi: <strong className="text-slate-700">{district.hazardBreakdown.biologi}</strong></span>
+                                          <span className="text-[7.5px] font-medium text-slate-500 bg-slate-100/60 px-1 py-0.5 rounded border border-slate-200/30">Ergonomi: <strong className="text-slate-700">{district.hazardBreakdown.ergonomi}</strong></span>
+                                          <span className="text-[7.5px] font-medium text-slate-500 bg-slate-100/60 px-1 py-0.5 rounded border border-slate-200/30">Mental: <strong className="text-slate-700">{district.hazardBreakdown.psikososial}</strong></span>
+                                        </div>
+                                      )}
                                     </button>
                                   );
                                 })}

@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Perusahaan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -11,68 +10,128 @@ class MapStatsController extends Controller
 {
     /**
      * Get aggregate statistics for the interactive map.
+     * Menggunakan kolom provinsi_pekerja, kabupaten_pekerja, dan kecamatan
+     * dari tabel pekerja untuk data pemetaan real-time yang akurat.
      */
     public function getStats(Request $request)
     {
-        // Get counts grouped by province and kabupaten
-        // We join pekerja and perusahaan.
-        // We only count pekerja with status_kesehatan = tidak_sehat or sehat_dengan_catatan (as "kasus")
-        // but for now, the map says "Laporan", so we can just count ALL pekerja or just those with health issues.
-        // The landing page says "Sebaran Kasus PAK", so let's count all workers as base, but filter by "kasus" (tidak_sehat/sehat_dengan_catatan) if needed.
-        // Actually, let's count all workers for now to ensure data shows up, but maybe filter by 'kasus' later.
-        
+        // Ambil data dari kolom lokasi pekerja (prioritas utama)
+        // Jika pekerja belum memiliki kolom lokasi baru, fallback ke data perusahaan
         $stats = DB::table('pekerja')
-            ->join('perusahaan', 'pekerja.perusahaan_id', '=', 'perusahaan.id')
-            ->select('perusahaan.provinsi', 'perusahaan.kabupaten', DB::raw('count(pekerja.id) as total_reports'))
-            // Optional: filter by health status if you only want to map "sick" workers
-            // ->whereIn('pekerja.status_kesehatan', ['tidak_sehat', 'sehat_dengan_catatan'])
-            ->whereNotNull('perusahaan.provinsi')
-            ->groupBy('perusahaan.provinsi', 'perusahaan.kabupaten')
+            ->leftJoin('perusahaan', 'pekerja.perusahaan_id', '=', 'perusahaan.id')
+            ->select(
+                // Prioritaskan kolom lokasi pekerja, fallback ke perusahaan jika null
+                DB::raw("COALESCE(pekerja.provinsi_pekerja, perusahaan.provinsi) as provinsi"),
+                DB::raw("COALESCE(pekerja.kabupaten_pekerja, perusahaan.kabupaten) as kabupaten"),
+                'pekerja.kecamatan',
+                'pekerja.faktor_pak'
+            )
+            ->whereNotNull(DB::raw("COALESCE(pekerja.provinsi_pekerja, perusahaan.provinsi)"))
+            ->whereNull('pekerja.deleted_at')
             ->get();
-
-        // Format the data into the structure expected by the frontend
-        // Structure expected:
-        // {
-        //   "DKI Jakarta": {
-        //     "provinceName": "DKI Jakarta",
-        //     "totalReports": 150,
-        //     "regencies": [
-        //       { "name": "Jakarta Selatan", "reports": 50, "districts": [ ... ] }
-        //     ]
-        //   }
-        // }
 
         $formatted = [];
 
         foreach ($stats as $row) {
-            $provinsi = $row->provinsi;
+            $provinsi  = $row->provinsi;
             $kabupaten = $row->kabupaten ?? 'Tidak Diketahui';
-            $reports = (int) $row->total_reports;
+            $kecamatan = $row->kecamatan ?? null;
+            $faktor    = $row->faktor_pak;
 
             if (!isset($formatted[$provinsi])) {
                 $formatted[$provinsi] = [
-                    'provinceName' => $provinsi,
-                    'totalReports' => 0,
-                    'regencies' => []
+                    'provinceName'    => $provinsi,
+                    'totalReports'    => 0,
+                    'regencies'       => [],
+                    'hazardBreakdown' => [
+                        'fisik' => 0, 'kimia' => 0, 'biologi' => 0,
+                        'ergonomi' => 0, 'psikososial' => 0,
+                    ],
+                    '_regencies' => []
                 ];
             }
 
-            $formatted[$provinsi]['totalReports'] += $reports;
-            
-            // Push to regencies
-            // Since we don't track district (kecamatan) in DB yet, we just pass an empty districts array or a mock one.
-            $formatted[$provinsi]['regencies'][] = [
-                'name' => $kabupaten,
-                'reports' => $reports,
-                'districts' => [
-                    ['name' => 'Kecamatan Pusat', 'reports' => $reports] // Mocking district for UI
-                ]
-            ];
+            $formatted[$provinsi]['totalReports']++;
+
+            if (!isset($formatted[$provinsi]['_regencies'][$kabupaten])) {
+                $formatted[$provinsi]['_regencies'][$kabupaten] = [
+                    'count'           => 0,
+                    'hazardBreakdown' => [
+                        'fisik' => 0, 'kimia' => 0, 'biologi' => 0,
+                        'ergonomi' => 0, 'psikososial' => 0,
+                    ],
+                    '_districts' => []
+                ];
+            }
+            $formatted[$provinsi]['_regencies'][$kabupaten]['count']++;
+
+            // Kelompokkan kecamatan secara real jika ada datanya
+            if ($kecamatan) {
+                if (!isset($formatted[$provinsi]['_regencies'][$kabupaten]['_districts'][$kecamatan])) {
+                    $formatted[$provinsi]['_regencies'][$kabupaten]['_districts'][$kecamatan] = [
+                        'count'           => 0,
+                        'hazardBreakdown' => [
+                            'fisik' => 0, 'kimia' => 0, 'biologi' => 0,
+                            'ergonomi' => 0, 'psikososial' => 0,
+                        ],
+                    ];
+                }
+                $formatted[$provinsi]['_regencies'][$kabupaten]['_districts'][$kecamatan]['count']++;
+            }
+
+            // Deteksi faktor risiko
+            if ($faktor) {
+                $faktorLower = strtolower($faktor);
+                $type = null;
+                if (str_contains($faktorLower, 'fisika') || str_contains($faktorLower, 'fisik')) $type = 'fisik';
+                elseif (str_contains($faktorLower, 'kimia')) $type = 'kimia';
+                elseif (str_contains($faktorLower, 'biologi')) $type = 'biologi';
+                elseif (str_contains($faktorLower, 'ergonomi') || str_contains($faktorLower, 'otot') || str_contains($faktorLower, 'sikap kerja')) $type = 'ergonomi';
+                elseif (str_contains($faktorLower, 'psikososial') || str_contains($faktorLower, 'mental')) $type = 'psikososial';
+
+                if ($type) {
+                    $formatted[$provinsi]['hazardBreakdown'][$type]++;
+                    $formatted[$provinsi]['_regencies'][$kabupaten]['hazardBreakdown'][$type]++;
+                    if ($kecamatan) {
+                        $formatted[$provinsi]['_regencies'][$kabupaten]['_districts'][$kecamatan]['hazardBreakdown'][$type]++;
+                    }
+                }
+            }
+        }
+
+        // Format struktur akhir: regencies + districts
+        foreach ($formatted as $provinsi => &$data) {
+            foreach ($data['_regencies'] as $kabupaten => $regData) {
+                $districts = [];
+
+                if (!empty($regData['_districts'])) {
+                    // Gunakan data kecamatan NYATA dari database
+                    foreach ($regData['_districts'] as $kecamatanName => $dData) {
+                        $districts[] = [
+                            'name'            => $kecamatanName,
+                            'reports'         => $dData['count'],
+                            'hazardBreakdown' => $dData['hazardBreakdown'],
+                        ];
+                    }
+                    // Urutkan dari terbanyak ke terkecil
+                    usort($districts, fn($a, $b) => $b['reports'] - $a['reports']);
+                }
+
+                $data['regencies'][] = [
+                    'name'            => $kabupaten,
+                    'reports'         => $regData['count'],
+                    'hazardBreakdown' => $regData['hazardBreakdown'],
+                    'districts'       => $districts,
+                ];
+            }
+            // Urutkan kabupaten dari terbanyak
+            usort($data['regencies'], fn($a, $b) => $b['reports'] - $a['reports']);
+            unset($data['_regencies']);
         }
 
         return response()->json([
             'status' => 'success',
-            'data' => $formatted
+            'data'   => $formatted
         ]);
     }
 }

@@ -705,6 +705,10 @@ export default function PendaftaranPekerjaPage() {
         const payload: any = {
           ...baseData,
           domisili: alamatLengkap,
+          // Kirim kolom lokasi terpisah untuk keperluan pemetaan real-time di peta
+          provinsi_pekerja: baseData.domisili || null,
+          kabupaten_pekerja: baseData.kabupaten || null,
+          kecamatan: baseData.kecamatan || null,
           perusahaan_id: pId,
           riwayat: riwayatData,
           medis: finalMedis
@@ -729,7 +733,7 @@ export default function PendaftaranPekerjaPage() {
           }
           
           if (shouldSetToken) {
-            Cookies.set('auth_token', response.data.token, { path: '/' });
+            Cookies.set('auth_token', response.data.token, { expires: 7, path: '/' });
             // Ensure axios instance uses the new token immediately
             api.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
           }
@@ -1034,7 +1038,7 @@ export default function PendaftaranPekerjaPage() {
                         <Input 
                           id="nama_serikat"
                           autoComplete="off"
-                          placeholder="Ketik atau pilih nama serikat pekerja Anda"
+                          placeholder="Contoh: SBA PT Maju Jaya"
                           className="h-11"
                           value={baseData.nama_serikat || ''}
                           onChange={e => {

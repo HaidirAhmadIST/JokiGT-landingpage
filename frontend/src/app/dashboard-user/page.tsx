@@ -12,13 +12,14 @@
 
 import { cn, formatHealthStatus } from '@/lib/utils';
 import dynamic from 'next/dynamic';
+import Image from 'next/image';
 import { Card } from '@/components/ui/card';
 import {
   User2, Building2, Briefcase, MapPin, HeartPulse, ShieldCheck,
   Search, Stethoscope, FileText, Scale, Coins, Clock, LogOut,
   Download, CheckCircle2, AlertCircle, Loader2, FileStack, Activity, Upload,
   Calendar, Shield, Zap, Settings, ClipboardList, User, Plus, FilePlus, RefreshCw,
-  Mail, MailOpen, Inbox, CheckCircle, XCircle
+  Mail, MailOpen, Inbox, CheckCircle, XCircle, ArrowLeft
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -187,10 +188,8 @@ export default function UserDashboardPage() {
       {/* HEADER */}
       <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 sticky top-0 z-[50] shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-[#0284c7] rounded-lg flex items-center justify-center">
-            <ShieldCheck className="h-4 w-4 text-white" />
-          </div>
-          <span className="font-extrabold text-[#0f172a] text-lg tracking-tight hidden sm:block">Rekam Jejak PAK</span>
+          <Image src="/logo.png" alt="Rekam Jejak PAK Logo" width={32} height={32} className="h-8 w-8 object-contain drop-shadow-sm" />
+          <span className="font-extrabold text-[#0f172a] text-lg tracking-tight hidden sm:block whitespace-nowrap">Rekam Jejak PAK</span>
         </div>
         <div className="flex items-center gap-4">
           <div className="text-right hidden sm:block">
@@ -1166,7 +1165,7 @@ export default function UserDashboardPage() {
                 <Label htmlFor="nama_serikat_edit" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nama Serikat Pekerja <span className="text-red-500">*</span></Label>
                 <Input 
                   id="nama_serikat_edit"
-                  placeholder="Masukkan nama serikat pekerja Anda"
+                  placeholder="Contoh: SBA PT Maju Jaya"
                   className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500"
                   value={profileForm.nama_serikat || ''}
                   onChange={e => setProfileForm({ ...profileForm, nama_serikat: e.target.value })}
@@ -1223,7 +1222,7 @@ export default function UserDashboardPage() {
       </Dialog>
 
       <Dialog open={isExposureModalOpen} onOpenChange={setIsExposureModalOpen}>
-        <DialogContent className="sm:max-w-[480px] rounded-[24px]">
+        <DialogContent className="w-[95vw] sm:max-w-[480px] rounded-[24px]">
           <DialogHeader>
             <DialogTitle className="text-xl font-black text-slate-800">Edit Riwayat & Pajanan</DialogTitle>
             <DialogDescription className="text-xs font-medium text-slate-500">
@@ -1241,7 +1240,7 @@ export default function UserDashboardPage() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="jabatan" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Jabatan</Label>
                 <Input 
@@ -1270,7 +1269,7 @@ export default function UserDashboardPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="masuk" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tgl Masuk</Label>
                 <Input 
@@ -1440,7 +1439,7 @@ export default function UserDashboardPage() {
 
       {/* FLOATING ACTION KOTAK MASUK (EMAIL BOX OVERLAY) UNTUK CUSTOMER */}
       <Dialog open={isInboxOpen} onOpenChange={setIsInboxOpen}>
-        <DialogContent className="sm:max-w-7xl sm:w-[92vw] sm:h-[86vh] bg-white rounded-3xl border border-slate-100 shadow-2xl overflow-hidden p-0 flex flex-col backdrop-blur-md">
+        <DialogContent className="w-[95vw] h-[90vh] sm:max-w-7xl sm:w-[92vw] sm:h-[86vh] bg-white rounded-3xl border border-slate-100 shadow-2xl overflow-hidden p-0 flex flex-col backdrop-blur-md">
           
           {/* Native Window Titlebar */}
           <div className="px-6 py-4.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between shrink-0">
@@ -1456,17 +1455,17 @@ export default function UserDashboardPage() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-sky-100 text-sky-700">
-                {requests.filter(r => r.status === 'PENDING').length} Sedang Diproses
+              <span className="px-2 py-1 md:py-0.5 rounded-full text-[9px] font-bold bg-sky-100 text-sky-700 whitespace-nowrap shrink-0 text-center">
+                {requests.filter(r => r.status === 'PENDING').length} <span className="hidden sm:inline">Sedang Diproses</span><span className="sm:hidden">Proses</span>
               </span>
             </div>
           </div>
 
           {/* Content Area - Double Pane */}
-          <div className="flex-1 flex overflow-hidden min-h-0">
+          <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
             
             {/* Left Pane - List of Messages */}
-            <div className="w-80 border-r border-slate-100 flex flex-col shrink-0 bg-white">
+            <div className={cn("w-full md:w-80 border-r border-slate-100 flex-col shrink-0 bg-white", selectedId ? "hidden md:flex" : "flex")}>
               {/* Search / Filter tabs */}
               <div className="grid grid-cols-4 p-2 bg-slate-50 border-b border-slate-100 shrink-0">
                 {(['PENDING', 'APPROVED', 'REJECTED', 'ALL'] as const).map((tab) => (
@@ -1543,7 +1542,7 @@ export default function UserDashboardPage() {
             </div>
 
             {/* Right Pane - Message Details */}
-            <div className="flex-1 flex flex-col bg-slate-50/30 overflow-hidden">
+            <div className={cn("flex-1 flex-col bg-slate-50/30 overflow-hidden", !selectedId ? "hidden md:flex" : "flex")}>
               {(() => {
                 const selectedRequest = requests.find(r => r.id === selectedId);
                 if (selectedRequest) {
@@ -1552,7 +1551,13 @@ export default function UserDashboardPage() {
                       
                       {/* Detail Header */}
                       <div className="p-6 border-b border-slate-100 flex justify-between items-start shrink-0 bg-white">
-                        <div className="flex gap-3">
+                        <div className="flex gap-3 items-center">
+                          <button 
+                            onClick={() => setSelectedId(null)} 
+                            className="md:hidden mr-1 p-2 -ml-2 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 shrink-0"
+                          >
+                            <ArrowLeft className="h-4 w-4" />
+                          </button>
                           <div className="h-10 w-10 rounded-lg bg-sky-100 text-[#0284c7] flex items-center justify-center shrink-0">
                             <User className="h-5 w-5" />
                           </div>

@@ -132,15 +132,6 @@ export default function ProfilePage() {
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500">
       <Card className="p-8 md:p-12 rounded-3xl border-slate-100 shadow-sm bg-white flex flex-col md:flex-row gap-10">
-        {/* Left Side: Avatar */}
-        <div className="shrink-0 flex flex-col items-center">
-          <div className="relative group">
-            <div className="h-40 w-40 md:h-48 md:w-48 rounded-full bg-slate-50 border-4 border-white shadow-xl flex items-center justify-center text-slate-300 overflow-hidden">
-              <User className="w-24 h-24" />
-            </div>
-          </div>
-        </div>
-
         {/* Right Side: Info */}
         <div className="flex-1 space-y-6">
           <div className="flex justify-between items-start border-b border-slate-100 pb-6">
@@ -234,34 +225,39 @@ export default function ProfilePage() {
                 className="rounded-xl"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="phone">Nomor Telepon</Label>
-              <Input 
-                id="phone" 
-                value={profileForm.phone} 
-                onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
-                className="rounded-xl"
-              />
-            </div>
+            
             <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="phone">Nomor Telepon</Label>
+                <Input 
+                  id="phone" 
+                  placeholder="Contoh: 08123456789"
+                  value={profileForm.phone} 
+                  onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
+                  className="rounded-xl"
+                />
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="jabatan">Jabatan</Label>
                 <Input 
                   id="jabatan" 
+                  placeholder="Contoh: Ketua SP"
                   value={profileForm.jabatan} 
                   onChange={(e) => setProfileForm({ ...profileForm, jabatan: e.target.value })}
                   className="rounded-xl"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="lokasi">Alamat Rumah Admin</Label>
-                <Input 
-                  id="lokasi" 
-                  value={profileForm.lokasi} 
-                  onChange={(e) => setProfileForm({ ...profileForm, lokasi: e.target.value })}
-                  className="rounded-xl"
-                />
-              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="lokasi">Alamat Lengkap</Label>
+              <Textarea 
+                id="lokasi" 
+                placeholder="Masukkan alamat rumah atau domisili saat ini..."
+                value={profileForm.lokasi} 
+                onChange={(e) => setProfileForm({ ...profileForm, lokasi: e.target.value })}
+                className="rounded-xl resize-none min-h-[80px]"
+              />
             </div>
           </div>
           <DialogFooter className="gap-2">

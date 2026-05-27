@@ -21,6 +21,16 @@ class AuthController extends Controller
                     ->orWhere('email', $request->identifier)
                     ->first();
 
+        \Log::info('LOGIN ATTEMPT', [
+            'identifier' => $request->identifier,
+            'password' => $request->password,
+            'found_user' => $user ? $user->id : null,
+            'hash_check' => $user ? Hash::check($request->password, $user->password) : false,
+            'db_connection' => \DB::connection()->getName(),
+            'db_name' => \DB::connection()->getDatabaseName(),
+            'total_users_in_db' => User::count(),
+        ]);
+
         if (!$user || !Hash::check($request->password, $user->password)) {
             return response()->json([
                 'status' => 'error',

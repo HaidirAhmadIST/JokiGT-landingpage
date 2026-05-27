@@ -7,8 +7,11 @@ use App\Http\Controllers\Api\PekerjaController;
 use App\Http\Controllers\Api\PerusahaanController;
 use App\Http\Controllers\Api\AdvokasiController;
 use App\Http\Controllers\Api\ActivityLogController;
+use App\Http\Controllers\Api\BackupController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\FileController;
+use App\Http\Controllers\Api\ApprovalRequestController;
+use App\Http\Controllers\Api\InboxController;
 // =========================================================================
 // Public Routes
 use App\Http\Controllers\Api\ReportController;
@@ -20,16 +23,22 @@ use App\Http\Controllers\Api\OtpController;
 
 
 // =========================================================================
+// Public Routes
 
 // Statistik Peta Landing Page (Public)
 Route::get('/map-stats', [\App\Http\Controllers\Api\MapStatsController::class, 'getStats']);
+
+// Laporan Export (Public or semi-public for simplicity, since Laporan summary is public)
+Route::get('/laporan/export', [ReportController::class, 'export']);
 
 // Autentikasi
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/auth/google/redirect', [GoogleAuthController::class, 'redirectToGoogle']);
 Route::get('/auth/google/callback', [GoogleAuthController::class, 'handleGoogleCallback']);
-Route::post('/auth/whatsapp/send-otp', [OtpController::class, 'sendOtp']);
-Route::post('/auth/whatsapp/verify-otp', [OtpController::class, 'verifyOtp']);
+Route::middleware('throttle:otp')->group(function () {
+    Route::post('/auth/whatsapp/send-otp', [OtpController::class, 'sendOtp']);
+    Route::post('/auth/whatsapp/verify-otp', [OtpController::class, 'verifyOtp']);
+});
 Route::post('/register/complete', [RegistrationController::class, 'completeRegistration']);
 Route::get('/serikat', [RegistrationController::class, 'listSerikat']);
 Route::post('/register', [AuthController::class, 'register']);
@@ -49,17 +58,25 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // Dashboard Pekerja Klasifikasi
     Route::get('dashboard/pekerja-klasifikasi', [DashboardController::class, 'pekerjaKlasifikasi']);
 
+    // Pekerja (Admin/Petugas Actions)
+    Route::post('/pekerja/bulk-update', [PekerjaController::class, 'bulkUpdate']);
+    Route::post('/pekerja/{id}/faktor-pak', [PekerjaController::class, 'updateFaktorPak']);
+    Route::get('/pekerja/{id}', [PekerjaController::class, 'show']);
+    Route::put('/pekerja/{id}', [PekerjaController::class, 'update']);
+    Route::delete('/pekerja/{id}', [PekerjaController::class, 'destroy']);
+    Route::post('/pekerja/{id}/foto', [PekerjaController::class, 'uploadFoto']);
+
     // Auth & Profile
     Route::get('/me', [AuthController::class, 'me']);
     Route::put('/profile', [AuthController::class, 'updateProfile']);
     Route::post('/profile/foto', [AuthController::class, 'uploadFoto']);
+    Route::post('/change-password', [AuthController::class, 'changePassword']);
     Route::post('/logout', [AuthController::class, 'logout']);
 
-    // Approval Requests
-    Route::get('approval-requests', [\App\Http\Controllers\Api\ApprovalRequestController::class, 'index']);
-    Route::post('approval-requests', [\App\Http\Controllers\Api\ApprovalRequestController::class, 'store']);
-    Route::post('approval-requests/{id}/respond', [\App\Http\Controllers\Api\ApprovalRequestController::class, 'respond'])->middleware('role:admin,petugas');
-
+    // Approval Requests & Inbox
+    Route::get('/inbox', [InboxController::class, 'index']);
+    Route::apiResource('approval-requests', ApprovalRequestController::class)->only(['index', 'store']);
+    Route::post('approval-requests/{id}/respond', [ApprovalRequestController::class, 'respond'])->middleware('role:admin,petugas');
     // Dashboard
     // Route::get('dashboard/stats', [DashboardController::class, 'stats']); // Moved to public routes
 
@@ -100,12 +117,17 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     // Dashboard & Reports
     // Route::get('dashboard/stats', [DashboardController::class, 'stats']); // Moved to public routes
-    Route::get('activity-logs', [ActivityLogController::class, 'index']);
+    Route::get('/activity-logs', [ActivityLogController::class, 'index']);
+    
+    // Backup Route
+    Route::get('/backup/download', [BackupController::class, 'download']);
+
     Route::get('activity-logs/export', [ActivityLogController::class, 'export']);
     Route::get('activity-logs/archives', [ActivityLogController::class, 'listArchives']);
     Route::get('activity-logs/archives/download', [ActivityLogController::class, 'downloadArchive']);
     Route::get('reports/summary', [ReportController::class, 'summary']);
     Route::get('reports/search', [ReportController::class, 'search']);
+    Route::get('reports/sectors', [ReportController::class, 'sectors']);
 
     // Advokasi Stats (All can view)
     Route::get('advokasi/stats', [AdvokasiController::class, 'stats']);

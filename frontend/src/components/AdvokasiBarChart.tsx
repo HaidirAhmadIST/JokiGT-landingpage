@@ -45,14 +45,28 @@ function CustomTooltip({ active, payload, label }: { active?: boolean; payload?:
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
-export default function AdvokasiBarChart({ onFilterChange }: { onFilterChange?: (filter: string) => void }) {
+export default function AdvokasiBarChart({ 
+  onFilterChange, 
+  timeRange = 'all', 
+  sector = 'all' 
+}: { 
+  onFilterChange?: (filter: string) => void,
+  timeRange?: string,
+  sector?: string
+}) {
   const [filter, setFilter] = useState<string>('all');
   const [trendData, setTrendData] = useState<any[]>([]);
   const [kat4Keys, setKat4Keys] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.get(`/dashboard/trend-klasifikasi?t=${new Date().getTime()}`)
+    setLoading(true);
+    const params = new URLSearchParams();
+    params.append('t', new Date().getTime().toString());
+    if (timeRange && timeRange !== 'all') params.append('time_range', timeRange);
+    if (sector && sector !== 'all') params.append('sector', sector);
+
+    api.get(`/dashboard/trend-klasifikasi?${params.toString()}`)
       .then(res => {
         const data = res.data;
         if (data.status === 'success') {

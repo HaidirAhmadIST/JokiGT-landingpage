@@ -78,8 +78,8 @@ export default function AdvokasiTable({
 
   return (
     <>
-      <div className="mt-4 w-full">
-        <Table className="w-full table-fixed">
+      <div className="mt-4 w-full overflow-x-auto">
+        <Table className="w-full min-w-[900px]">
           <TableHeader>
             <TableRow className="hover:bg-transparent border-b border-slate-100">
               <TableHead className="py-3 pl-4 pr-1 font-bold text-[10px] tracking-widest text-[#94a3b8] w-10">NO.</TableHead>
