@@ -10,7 +10,7 @@ import {
   Briefcase, ShieldAlert, CheckCircle2, Circle, Edit3,
   Download, Image as ImageIcon, Activity, FileText, FileCheck, ClipboardList, HeartPulse, HardHat, Zap, Building2, User, RefreshCw, Plus, History as TenureIcon, Stethoscope
 } from 'lucide-react';
-import { format, differenceInYears, differenceInMonths, parseISO } from 'date-fns';
+import { format, differenceInYears, differenceInMonths, parseISO, isValid } from 'date-fns';
 import { id as localeID } from 'date-fns/locale';
 import { useRole } from '@/hooks/useRole';
 import {
@@ -62,6 +62,7 @@ export default function PekerjaDetailPage() {
   });
   const [savingRiwayat, setSavingRiwayat] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [fileToDelete, setFileToDelete] = useState<string | null>(null);
   const [isFaktorModalOpen, setIsFaktorModalOpen] = useState(false);
   const [selectedFaktor, setSelectedFaktor] = useState('');
   const [savingFaktor, setSavingFaktor] = useState(false);
@@ -276,19 +277,22 @@ export default function PekerjaDetailPage() {
   };
 
   const handleDeleteAdvokasiFile = async (stepKey: string) => {
-    if (!window.confirm('Apakah Anda yakin ingin menghapus dokumen ini? Status advokasi tahap ini akan kembali menjadi Belum Dimulai.')) {
-      return;
-    }
+    setFileToDelete(stepKey);
+  };
+
+  const confirmDeleteAdvokasiFile = async () => {
+    if (!fileToDelete) return;
     
-    setDeleteLoading(stepKey);
+    setDeleteLoading(fileToDelete);
     try {
-      await api.delete(`/pekerja/${id}/files/advokasi/${stepKey}`);
+      await api.delete(`/pekerja/${id}/files/advokasi/${fileToDelete}`);
       toast.success('Dokumen berhasil dihapus');
       fetchDetail();
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Gagal menghapus dokumen');
     } finally {
       setDeleteLoading(null);
+      setFileToDelete(null);
     }
   };
 
@@ -435,7 +439,7 @@ export default function PekerjaDetailPage() {
       .filter((r: any) => r.tgl_masuk)
       .sort((a: any, b: any) => new Date(a.tgl_masuk).getTime() - new Date(b.tgl_masuk).getTime())[0];
 
-    if (earliestRiwayat?.tgl_masuk) {
+    if (earliestRiwayat?.tgl_masuk && isValid(parseISO(earliestRiwayat.tgl_masuk))) {
       const masukDate = parseISO(earliestRiwayat.tgl_masuk);
       const years = differenceInYears(new Date(), masukDate);
       const months = differenceInMonths(new Date(), masukDate) % 12;
@@ -598,19 +602,19 @@ export default function PekerjaDetailPage() {
                     <span className="font-semibold text-slate-500">{data.jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan'}</span>
                   </span>
                 )}
-                {data.jenis_kelamin && data.tanggal_lahir && <span className="text-slate-300">•</span>}
-                {data.tanggal_lahir && (
+                {data.jenis_kelamin && data.tanggal_lahir && isValid(parseISO(data.tanggal_lahir)) && <span className="text-slate-300">•</span>}
+                {data.tanggal_lahir && isValid(parseISO(data.tanggal_lahir)) && (
                   <span className="font-semibold text-slate-500">
                     {differenceInYears(new Date(), parseISO(data.tanggal_lahir))} Tahun
                   </span>
                 )}
-                {data.tanggal_lahir && <span className="text-slate-300">•</span>}
-                {data.tanggal_lahir && (
+                {data.tanggal_lahir && isValid(parseISO(data.tanggal_lahir)) && <span className="text-slate-300">•</span>}
+                {data.tanggal_lahir && isValid(parseISO(data.tanggal_lahir)) && (
                   <span className="text-slate-400">
                     Lahir {format(parseISO(data.tanggal_lahir), 'dd MMM yyyy', { locale: localeID })}
                   </span>
                 )}
-                {!data.jenis_kelamin && !data.tanggal_lahir && (
+                {!data.jenis_kelamin && (!data.tanggal_lahir || !isValid(parseISO(data.tanggal_lahir))) && (
                   <span className="text-amber-500 font-medium text-xs">Data pribadi belum lengkap</span>
                 )}
               </p>
@@ -2031,6 +2035,32 @@ export default function PekerjaDetailPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {/* Delete Document Confirmation Dialog */}
+      <AlertDialog open={!!fileToDelete} onOpenChange={(open) => !open && setFileToDelete(null)}>
+        <AlertDialogContent className="rounded-2xl border-none shadow-2xl">
+          <AlertDialogHeader>
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-rose-50 mb-2">
+              <Trash2 className="h-7 w-7 text-rose-500" />
+            </div>
+            <AlertDialogTitle className="text-xl font-black text-slate-900 text-center">Hapus Dokumen?</AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-500 text-center text-sm px-2">
+              Apakah Anda yakin ingin menghapus dokumen ini? Status advokasi tahap ini akan kembali menjadi Belum Dimulai.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="sm:justify-center gap-3 mt-4">
+            <AlertDialogCancel className="rounded-xl border-slate-200 text-slate-500 font-bold hover:bg-slate-50 px-6">
+              Batalkan
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDeleteAdvokasiFile}
+              className="rounded-xl bg-rose-600 text-white font-bold hover:bg-rose-700 shadow-lg shadow-rose-200 border-none px-6"
+            >
+              Ya, Hapus Dokumen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent className="rounded-2xl border-none shadow-2xl">

@@ -94,6 +94,7 @@ class AuthController extends Controller
         
         $validated = $request->validate([
             'nama'    => 'sometimes|required|string|max:255',
+            'email'   => 'sometimes|required|email|max:255|unique:users,email,' . $user->id,
             'phone'   => 'nullable|string|max:20',
             'jabatan' => 'nullable|string|max:255',
             'lokasi'  => 'nullable|string|max:255',

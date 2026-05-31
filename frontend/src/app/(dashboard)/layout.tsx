@@ -103,6 +103,7 @@ export default function DashboardLayout({
       const interval = setInterval(fetchRequests, 15000);
       return () => clearInterval(interval);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const handleApprove = async (id: string | number) => {
@@ -174,6 +175,7 @@ export default function DashboardLayout({
         }
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [requests]);
 
   // Clear notification badge count when inbox is opened

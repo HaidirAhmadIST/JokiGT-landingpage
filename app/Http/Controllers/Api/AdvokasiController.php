@@ -66,12 +66,23 @@ class AdvokasiController extends Controller
         $status = $this->advokasiService->getCaseDetails($id);
         if (!$status) return response()->json(['error' => 'Not found'], 404);
 
-        // Ownership check: viewer hanya bisa export data milik sendiri
+        // Ownership check
         $authUser = $request->user();
+        $pekerja = $status->pekerja;
+        
         if ($authUser->role === 'viewer') {
-            $pekerja = $status->pekerja;
             if (!$pekerja || (string)$pekerja->id !== (string)$authUser->pekerja()->value('id')) {
                 return response()->json(['status' => 'error', 'message' => 'Akses ditolak.'], 403);
+            }
+        } elseif ($authUser->isPetugas()) {
+            $petugasPerusahaanId = $authUser->perusahaan_id ?? $authUser->pekerja?->perusahaan_id;
+            $petugasSerikat = $authUser->serikat ?? $authUser->pekerja?->nama_serikat;
+            
+            $companyMatch = !$petugasPerusahaanId || ($pekerja && $pekerja->perusahaan_id === $petugasPerusahaanId);
+            $serikatMatch = !$petugasSerikat || ($pekerja && $pekerja->nama_serikat === $petugasSerikat);
+            
+            if (!$pekerja || !$companyMatch || !$serikatMatch) {
+                return response()->json(['status' => 'error', 'message' => 'Akses ditolak. Anda tidak berhak mengakses dokumen ini.'], 403);
             }
         }
 
@@ -208,9 +219,22 @@ class AdvokasiController extends Controller
     {
         $authUser = auth()->user();
 
-        // Check if user is staff or superadmin
-        if (!$authUser || (!in_array($authUser->role, ['staff', 'superadmin']) && !$authUser->isPetugas())) {
+        // Check if user is staff or superadmin, and apply strict checks for petugas
+        if (!$authUser || (!$authUser->isAdmin() && !in_array($authUser->role, ['staff']) && !$authUser->isPetugas())) {
             return response()->json(['status' => 'error', 'message' => 'Unauthorized'], 403);
+        }
+
+        if ($authUser && $authUser->isPetugas()) {
+            $targetPekerja = \App\Models\Pekerja::find($pekerja_id);
+            $petugasPerusahaanId = $authUser->perusahaan_id ?? $authUser->pekerja?->perusahaan_id;
+            $petugasSerikat = $authUser->serikat ?? $authUser->pekerja?->nama_serikat;
+            
+            $companyMatch = !$petugasPerusahaanId || ($targetPekerja && $targetPekerja->perusahaan_id === $petugasPerusahaanId);
+            $serikatMatch = !$petugasSerikat || ($targetPekerja && $targetPekerja->nama_serikat === $petugasSerikat);
+            
+            if (!$targetPekerja || !$companyMatch || !$serikatMatch) {
+                return response()->json(['status' => 'error', 'message' => 'Unauthorized. Anda tidak berhak menghapus dokumen ini.'], 403);
+            }
         }
 
         try {

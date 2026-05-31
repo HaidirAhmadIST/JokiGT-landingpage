@@ -302,6 +302,7 @@ export default function AdvokasiPage() {
                               >
                                 <div className="flex items-center gap-3 w-full">
                                   <div className="h-10 w-10 rounded-full overflow-hidden bg-slate-100 border border-slate-200 shrink-0">
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
                                     <img 
                                       src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${worker.nama_lengkap || 'Guest'}`} 
                                       alt={worker.nama_lengkap} 

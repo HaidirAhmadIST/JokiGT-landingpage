@@ -60,10 +60,26 @@ class RiwayatPekerjaController extends Controller
         }
 
         $user = auth()->user();
-        $isOwner = $user->pekerja && $user->pekerja->id == $riwayat->pekerja_id;
+        if (!$user->isAdmin()) {
+            $isOwner = $user->pekerja && $user->pekerja->id == $riwayat->pekerja_id;
+            $isPetugasAndAuthorized = false;
+            
+            if ($user->isPetugas()) {
+                $targetPekerja = \App\Models\Pekerja::find($riwayat->pekerja_id);
+                $petugasPerusahaanId = $user->perusahaan_id ?? $user->pekerja?->perusahaan_id;
+                $petugasSerikat = $user->serikat ?? $user->pekerja?->nama_serikat;
+                
+                $companyMatch = !$petugasPerusahaanId || ($targetPekerja && $targetPekerja->perusahaan_id === $petugasPerusahaanId);
+                $serikatMatch = !$petugasSerikat || ($targetPekerja && $targetPekerja->nama_serikat === $petugasSerikat);
+                
+                if ($targetPekerja && $companyMatch && $serikatMatch) {
+                    $isPetugasAndAuthorized = true;
+                }
+            }
 
-        if (!$user->isAdmin() && !$user->isPetugas() && !$isOwner) {
-            return response()->json(['status' => 'error', 'message' => 'Anda tidak memiliki izin untuk mengubah data ini.'], 403);
+            if (!$isOwner && !$isPetugasAndAuthorized) {
+                return response()->json(['status' => 'error', 'message' => 'Anda tidak memiliki izin untuk mengubah data ini.'], 403);
+            }
         }
 
         $validated = $request->validate([

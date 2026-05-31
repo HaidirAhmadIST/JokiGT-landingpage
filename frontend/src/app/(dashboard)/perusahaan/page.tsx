@@ -239,6 +239,7 @@ export default function PerusahaanPage() {
   useEffect(() => {
     setCurrentPage(1);
     fetchData(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search, statusFilter, mainSortField, mainSortOrder]);
 
   const toggleMainSort = () => {

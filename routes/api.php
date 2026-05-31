@@ -87,9 +87,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::put('perusahaan/{perusahaan}', [PerusahaanController::class, 'update']);
         Route::patch('perusahaan/{id}/restore', [PerusahaanController::class, 'restore']);
         
-        // Pembuatan Akun Pengurus Manual
-        Route::post('admin/buat-pengurus', [\App\Http\Controllers\Api\AdminPengurusController::class, 'store']);
     });
+    // Pembuatan Akun Pengurus Manual (Super Admin Only)
+    Route::post('admin/buat-pengurus', [\App\Http\Controllers\Api\AdminPengurusController::class, 'store'])->middleware('role:admin');
     Route::delete('perusahaan/{perusahaan}', [PerusahaanController::class, 'destroy'])->middleware('role:admin');
     Route::get('perusahaan/{perusahaan}', [PerusahaanController::class, 'show']);
 

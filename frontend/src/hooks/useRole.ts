@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 export type Role = 'admin' | 'petugas' | 'viewer';
 
 export function useRole() {
-  const [user, setUser] = useState<{ id: number; nama: string; role: Role } | null>(null);
+  const [user, setUser] = useState<{ id: number; nama: string; role: Role; serikat?: string } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

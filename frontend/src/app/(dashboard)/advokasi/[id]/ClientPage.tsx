@@ -362,6 +362,7 @@ export default function AdvokasiDetailPage() {
             </div>
             <div className="flex items-start gap-6">
               <div className="h-20 w-20 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 shrink-0 relative shadow-sm">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img 
                   src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${data.pekerja?.nama_lengkap || 'Guest'}`}
                   alt={data.pekerja?.nama_lengkap || 'Pekerja'}

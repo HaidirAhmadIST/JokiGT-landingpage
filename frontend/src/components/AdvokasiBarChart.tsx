@@ -81,6 +81,7 @@ export default function AdvokasiBarChart({
         console.error("Fetch error:", err);
         setLoading(false);
       });
+      // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Transform data based on filter

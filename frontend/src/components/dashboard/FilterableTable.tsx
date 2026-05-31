@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { Edit2, Eye, Trash2 } from "lucide-react";
 import api from '@/lib/axios';
+import { toast } from "sonner";
 
 interface WorkerData {
   id: string;
@@ -56,12 +57,12 @@ export function FilterableTable({ userRole, activeFilter = 'all' }: FilterableTa
         }));
         setIsModalOpen(false);
         // Toast notification (opsional, jika ada library)
-        alert('Faktor PAK berhasil disimpan!');
-        window.location.reload(); // Paksa reload agar diagram terupdate
+        toast.success('Faktor PAK berhasil disimpan!');
+        setTimeout(() => window.location.reload(), 1500); // Paksa reload agar diagram terupdate
       }
     } catch (e) {
       console.error(e);
-      alert('Gagal menyimpan Faktor PAK');
+      toast.error('Gagal menyimpan Faktor PAK');
     } finally {
       setSavingFaktor(false);
     }

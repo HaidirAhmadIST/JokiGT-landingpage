@@ -21,10 +21,21 @@ class ApprovalRequestController extends Controller
         $query = ApprovalRequest::with(['requester', 'responder'])->latest();
         
         if ($user->role === 'petugas') {
-            $query->where(function($q) use ($user) {
+            $petugasPerusahaanId = $user->perusahaan_id ?? $user->pekerja?->perusahaan_id;
+            $petugasSerikat = $user->serikat ?? $user->pekerja?->nama_serikat;
+
+            $query->where(function($q) use ($user, $petugasPerusahaanId, $petugasSerikat) {
                 $q->where('requester_id', $user->id)
-                  ->orWhereHas('requester', function($sub) {
-                      $sub->where('role', 'viewer');
+                  ->orWhereHas('requester', function($sub) use ($petugasPerusahaanId, $petugasSerikat) {
+                      $sub->where('role', 'viewer')
+                          ->whereHas('pekerja', function($p) use ($petugasPerusahaanId, $petugasSerikat) {
+                              if ($petugasPerusahaanId) {
+                                  $p->where('perusahaan_id', $petugasPerusahaanId);
+                              }
+                              if ($petugasSerikat) {
+                                  $p->where('nama_serikat', $petugasSerikat);
+                              }
+                          });
                   });
             });
         } elseif ($user->role === 'viewer') {

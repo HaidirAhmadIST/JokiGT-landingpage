@@ -9,6 +9,7 @@ import {
   AlertCircle,
   X,
   DownloadCloud,
+  User as UserIcon,
 } from 'lucide-react';
 import { useEffect } from 'react';
 import { Card } from '@/components/ui/card';
@@ -83,13 +84,27 @@ function PasswordStrength({ password }: { password: string }) {
 
 export default function SettingsPage() {
   const [showChangePassword, setShowChangePassword] = useState(false);
+  const [showUpdateProfile, setShowUpdateProfile] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmittingProfile, setIsSubmittingProfile] = useState(false);
   const [isDownloadingBackup, setIsDownloadingBackup] = useState(false);
   const [user, setUser] = useState<any>(null);
 
+  const [profileForm, setProfileForm] = useState({
+    nama: '',
+    email: '',
+  });
+
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
-    if (storedUser) setUser(JSON.parse(storedUser));
+    if (storedUser) {
+      const parsedUser = JSON.parse(storedUser);
+      setUser(parsedUser);
+      setProfileForm({
+        nama: parsedUser.nama || '',
+        email: parsedUser.email || '',
+      });
+    }
   }, []);
 
   const [form, setForm] = useState({
@@ -139,6 +154,32 @@ export default function SettingsPage() {
     }
   };
 
+  const handleUpdateProfile = async () => {
+    if (!profileForm.nama || !profileForm.email) {
+      toast.error('Nama dan Email wajib diisi.');
+      return;
+    }
+    setIsSubmittingProfile(true);
+    try {
+      const response = await api.put('/profile', profileForm);
+      toast.success('Profil berhasil diperbarui!');
+      
+      // Update local storage and context state
+      const updatedUser = response.data.data;
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      setUser(updatedUser);
+      setShowUpdateProfile(false);
+      
+      // Optional event to trigger sidebar update
+      window.dispatchEvent(new Event('userUpdated'));
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || 'Terjadi kesalahan saat memperbarui profil.';
+      toast.error(msg);
+    } finally {
+      setIsSubmittingProfile(false);
+    }
+  };
+
   const resetForm = () => {
     setForm({ current_password: '', new_password: '', new_password_confirmation: '' });
     setErrors({});
@@ -183,10 +224,72 @@ export default function SettingsPage() {
     <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col gap-2">
         <h1 className="text-3xl font-extrabold text-foreground tracking-tight">Keamanan & Akun</h1>
-        <p className="text-muted-foreground font-medium">Kelola proteksi dan kata sandi akun Anda.</p>
+        <p className="text-muted-foreground font-medium">Kelola proteksi dan detail akun Anda.</p>
       </div>
 
       <div className="space-y-6 animate-in fade-in duration-300">
+        {/* Profile Update Section */}
+        <Card className="rounded-2xl border-border bg-card shadow-sm overflow-hidden">
+          <div className="p-6 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-indigo-500/10 rounded-xl">
+                <UserIcon className="h-5 w-5 text-indigo-500" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-foreground">Informasi Akun</p>
+                <p className="text-[11px] text-muted-foreground font-medium mt-0.5">Perbarui nama lengkap dan alamat email Anda.</p>
+              </div>
+            </div>
+            <Button
+              variant={showUpdateProfile ? 'ghost' : 'outline'}
+              size="sm"
+              onClick={() => showUpdateProfile ? setShowUpdateProfile(false) : setShowUpdateProfile(true)}
+              className="rounded-xl font-bold shrink-0"
+            >
+              {showUpdateProfile ? <><X className="h-4 w-4 mr-1" /> Tutup</> : 'Ubah Profil'}
+            </Button>
+          </div>
+
+          {/* Inline Update Profile Form */}
+          {showUpdateProfile && (
+            <div className="border-t border-border p-6 space-y-5 bg-muted/20 animate-in fade-in slide-in-from-top-2 duration-200">
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Nama Lengkap</label>
+                <input
+                  type="text"
+                  value={profileForm.nama}
+                  onChange={(e) => setProfileForm({ ...profileForm, nama: e.target.value })}
+                  placeholder="Masukkan nama lengkap"
+                  className="w-full h-11 px-4 rounded-xl border bg-background text-foreground text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all border-border placeholder:text-muted-foreground/50"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Alamat Email</label>
+                <input
+                  type="email"
+                  value={profileForm.email}
+                  onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
+                  placeholder="contoh@email.com"
+                  className="w-full h-11 px-4 rounded-xl border bg-background text-foreground text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all border-border placeholder:text-muted-foreground/50"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <Button variant="ghost" onClick={() => setShowUpdateProfile(false)} className="rounded-xl font-bold flex-1" disabled={isSubmittingProfile}>
+                  Batal
+                </Button>
+                <Button
+                  onClick={handleUpdateProfile}
+                  className="bg-indigo-500 hover:bg-indigo-600 text-white font-bold rounded-xl flex-1 shadow-lg shadow-indigo-500/20 disabled:opacity-70"
+                  disabled={isSubmittingProfile}
+                >
+                  {isSubmittingProfile ? 'Menyimpan...' : 'Simpan Profil'}
+                </Button>
+              </div>
+            </div>
+          )}
+        </Card>
+
         {/* Change Password Section */}
         <Card className="rounded-2xl border-border bg-card shadow-sm overflow-hidden">
           <div className="p-6 flex items-center justify-between">

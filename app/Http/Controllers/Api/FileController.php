@@ -33,9 +33,27 @@ class FileController extends Controller
         }
 
         // Check ownership or admin
-        $isOwner = $request->user()->pekerja && $request->user()->pekerja->id == $medis->pekerja_id;
-        if (!$isOwner && !$request->user()->isAdmin() && !$request->user()->isPetugas()) {
-            return response()->json(['status' => 'error', 'message' => 'Unauthorized access.'], 403);
+        $user = $request->user();
+        if (!$user->isAdmin()) {
+            $isOwner = $user->pekerja && $user->pekerja->id == $medis->pekerja_id;
+            $isPetugasAndAuthorized = false;
+            
+            if ($user->isPetugas()) {
+                $targetPekerja = \App\Models\Pekerja::find($medis->pekerja_id);
+                $petugasPerusahaanId = $user->perusahaan_id ?? $user->pekerja?->perusahaan_id;
+                $petugasSerikat = $user->serikat ?? $user->pekerja?->nama_serikat;
+                
+                $companyMatch = !$petugasPerusahaanId || ($targetPekerja && $targetPekerja->perusahaan_id === $petugasPerusahaanId);
+                $serikatMatch = !$petugasSerikat || ($targetPekerja && $targetPekerja->nama_serikat === $petugasSerikat);
+                
+                if ($targetPekerja && $companyMatch && $serikatMatch) {
+                    $isPetugasAndAuthorized = true;
+                }
+            }
+
+            if (!$isOwner && !$isPetugasAndAuthorized) {
+                return response()->json(['status' => 'error', 'message' => 'Unauthorized access.'], 403);
+            }
         }
 
         if ($request->hasFile('file_hasil')) {
@@ -80,9 +98,27 @@ class FileController extends Controller
         }
 
         // Check ownership or admin
-        $isOwner = $request->user()->pekerja && $request->user()->pekerja->id == $riwayat->pekerja_id;
-        if (!$isOwner && !$request->user()->isAdmin() && !$request->user()->isPetugas()) {
-            return response()->json(['status' => 'error', 'message' => 'Unauthorized access.'], 403);
+        $user = $request->user();
+        if (!$user->isAdmin()) {
+            $isOwner = $user->pekerja && $user->pekerja->id == $riwayat->pekerja_id;
+            $isPetugasAndAuthorized = false;
+            
+            if ($user->isPetugas()) {
+                $targetPekerja = \App\Models\Pekerja::find($riwayat->pekerja_id);
+                $petugasPerusahaanId = $user->perusahaan_id ?? $user->pekerja?->perusahaan_id;
+                $petugasSerikat = $user->serikat ?? $user->pekerja?->nama_serikat;
+                
+                $companyMatch = !$petugasPerusahaanId || ($targetPekerja && $targetPekerja->perusahaan_id === $petugasPerusahaanId);
+                $serikatMatch = !$petugasSerikat || ($targetPekerja && $targetPekerja->nama_serikat === $petugasSerikat);
+                
+                if ($targetPekerja && $companyMatch && $serikatMatch) {
+                    $isPetugasAndAuthorized = true;
+                }
+            }
+
+            if (!$isOwner && !$isPetugasAndAuthorized) {
+                return response()->json(['status' => 'error', 'message' => 'Unauthorized access.'], 403);
+            }
         }
 
         if ($request->hasFile('file_bukti')) {
@@ -122,9 +158,27 @@ class FileController extends Controller
         }
 
         // Only admin, petugas, or owner can access these files
-        $isOwner = $request->user()->pekerja && $request->user()->pekerja->id == $riwayat->pekerja_id;
-        if (!$isOwner && !$request->user()->isAdmin() && !$request->user()->isPetugas()) {
-            return response()->json(['status' => 'error', 'message' => 'Unauthorized access.'], 403);
+        $user = $request->user();
+        if (!$user->isAdmin()) {
+            $isOwner = $user->pekerja && $user->pekerja->id == $riwayat->pekerja_id;
+            $isPetugasAndAuthorized = false;
+            
+            if ($user->isPetugas()) {
+                $targetPekerja = \App\Models\Pekerja::find($riwayat->pekerja_id);
+                $petugasPerusahaanId = $user->perusahaan_id ?? $user->pekerja?->perusahaan_id;
+                $petugasSerikat = $user->serikat ?? $user->pekerja?->nama_serikat;
+                
+                $companyMatch = !$petugasPerusahaanId || ($targetPekerja && $targetPekerja->perusahaan_id === $petugasPerusahaanId);
+                $serikatMatch = !$petugasSerikat || ($targetPekerja && $targetPekerja->nama_serikat === $petugasSerikat);
+                
+                if ($targetPekerja && $companyMatch && $serikatMatch) {
+                    $isPetugasAndAuthorized = true;
+                }
+            }
+
+            if (!$isOwner && !$isPetugasAndAuthorized) {
+                return response()->json(['status' => 'error', 'message' => 'Unauthorized access.'], 403);
+            }
         }
 
         if (!$riwayat || !$riwayat->file_bukti_path) {
@@ -152,9 +206,27 @@ class FileController extends Controller
         }
 
         // Only admin, petugas, or owner can access medical files
-        $isOwner = $request->user()->pekerja && $request->user()->pekerja->id == $medis->pekerja_id;
-        if (!$isOwner && !$request->user()->isAdmin() && !$request->user()->isPetugas()) {
-            return response()->json(['status' => 'error', 'message' => 'Unauthorized access.'], 403);
+        $user = $request->user();
+        if (!$user->isAdmin()) {
+            $isOwner = $user->pekerja && $user->pekerja->id == $medis->pekerja_id;
+            $isPetugasAndAuthorized = false;
+            
+            if ($user->isPetugas()) {
+                $targetPekerja = \App\Models\Pekerja::find($medis->pekerja_id);
+                $petugasPerusahaanId = $user->perusahaan_id ?? $user->pekerja?->perusahaan_id;
+                $petugasSerikat = $user->serikat ?? $user->pekerja?->nama_serikat;
+                
+                $companyMatch = !$petugasPerusahaanId || ($targetPekerja && $targetPekerja->perusahaan_id === $petugasPerusahaanId);
+                $serikatMatch = !$petugasSerikat || ($targetPekerja && $targetPekerja->nama_serikat === $petugasSerikat);
+                
+                if ($targetPekerja && $companyMatch && $serikatMatch) {
+                    $isPetugasAndAuthorized = true;
+                }
+            }
+
+            if (!$isOwner && !$isPetugasAndAuthorized) {
+                return response()->json(['status' => 'error', 'message' => 'Unauthorized access.'], 403);
+            }
         }
 
         if (!$medis || !$medis->file_hasil_path) {
@@ -176,9 +248,27 @@ class FileController extends Controller
     public function downloadMedis(Request $request, string $pekerja_id)
     {
         // Only admin, petugas, or owner can access medical files
-        $isOwner = $request->user()->pekerja && $request->user()->pekerja->id == $pekerja_id;
-        if (!$isOwner && !$request->user()->isAdmin() && !$request->user()->isPetugas()) {
-            return response()->json(['status' => 'error', 'message' => 'Unauthorized access.'], 403);
+        $user = $request->user();
+        if (!$user->isAdmin()) {
+            $isOwner = $user->pekerja && $user->pekerja->id == $pekerja_id;
+            $isPetugasAndAuthorized = false;
+            
+            if ($user->isPetugas()) {
+                $targetPekerja = \App\Models\Pekerja::find($pekerja_id);
+                $petugasPerusahaanId = $user->perusahaan_id ?? $user->pekerja?->perusahaan_id;
+                $petugasSerikat = $user->serikat ?? $user->pekerja?->nama_serikat;
+                
+                $companyMatch = !$petugasPerusahaanId || ($targetPekerja && $targetPekerja->perusahaan_id === $petugasPerusahaanId);
+                $serikatMatch = !$petugasSerikat || ($targetPekerja && $targetPekerja->nama_serikat === $petugasSerikat);
+                
+                if ($targetPekerja && $companyMatch && $serikatMatch) {
+                    $isPetugasAndAuthorized = true;
+                }
+            }
+
+            if (!$isOwner && !$isPetugasAndAuthorized) {
+                return response()->json(['status' => 'error', 'message' => 'Unauthorized access.'], 403);
+            }
         }
 
         $pekerja = Pekerja::with('detailMedis')->find($pekerja_id);
@@ -202,10 +292,27 @@ class FileController extends Controller
     public function downloadAdvokasiProof(Request $request, string $pekerja_id, string $step_key)
     {
         // Workers can view their own, but others must be admin/petugas
-        $isOwner = $request->user()->pekerja && $request->user()->pekerja->id == $pekerja_id;
-        
-        if (!$isOwner && !$request->user()->isAdmin() && !$request->user()->isPetugas()) {
-            return response()->json(['status' => 'error', 'message' => 'Unauthorized access to evidence document.'], 403);
+        $user = $request->user();
+        if (!$user->isAdmin()) {
+            $isOwner = $user->pekerja && $user->pekerja->id == $pekerja_id;
+            $isPetugasAndAuthorized = false;
+            
+            if ($user->isPetugas()) {
+                $targetPekerja = \App\Models\Pekerja::find($pekerja_id);
+                $petugasPerusahaanId = $user->perusahaan_id ?? $user->pekerja?->perusahaan_id;
+                $petugasSerikat = $user->serikat ?? $user->pekerja?->nama_serikat;
+                
+                $companyMatch = !$petugasPerusahaanId || ($targetPekerja && $targetPekerja->perusahaan_id === $petugasPerusahaanId);
+                $serikatMatch = !$petugasSerikat || ($targetPekerja && $targetPekerja->nama_serikat === $petugasSerikat);
+                
+                if ($targetPekerja && $companyMatch && $serikatMatch) {
+                    $isPetugasAndAuthorized = true;
+                }
+            }
+
+            if (!$isOwner && !$isPetugasAndAuthorized) {
+                return response()->json(['status' => 'error', 'message' => 'Unauthorized access to evidence document.'], 403);
+            }
         }
 
         $validColumns = [

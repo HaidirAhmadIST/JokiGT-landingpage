@@ -89,6 +89,7 @@ export default function PekerjaPage() {
 
   useEffect(() => {
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search, currentPage, sortField, sortOrder]);
 
   const toggleSort = () => {
@@ -235,7 +236,7 @@ export default function PekerjaPage() {
               {incompleteWorkers.length} Data Belum Lengkap
             </Button>
           )}
-          {isStaffOrAbove && (
+          {user?.role === 'admin' && (
             <Button onClick={() => { setCreatePengurusOpen(true); setCreatedPengurusResult(null); setCreatePengurusData({nama_lengkap: '', email: '', nama_serikat: '', nama_perusahaan: ''}); }} className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl px-5 h-11 text-sm shadow-sm transition-all" size="lg">
               <ShieldAlert className="mr-2 h-5 w-5" />
               Buat Akun Pengurus

@@ -32,8 +32,24 @@ class DetailMedisController extends Controller
         
         // Ownership check
         $user = auth()->user();
-        if (!$user->isAdmin() && !$user->isPetugas()) {
-            if (!$user->pekerja || $user->pekerja->id !== $riwayat->pekerja_id) {
+        if (!$user->isAdmin()) {
+            $isOwner = $user->pekerja && $user->pekerja->id === $riwayat->pekerja_id;
+            $isPetugasAndAuthorized = false;
+            
+            if ($user->isPetugas()) {
+                $targetPekerja = \App\Models\Pekerja::find($riwayat->pekerja_id);
+                $petugasPerusahaanId = $user->perusahaan_id ?? $user->pekerja?->perusahaan_id;
+                $petugasSerikat = $user->serikat ?? $user->pekerja?->nama_serikat;
+                
+                $companyMatch = !$petugasPerusahaanId || ($targetPekerja && $targetPekerja->perusahaan_id === $petugasPerusahaanId);
+                $serikatMatch = !$petugasSerikat || ($targetPekerja && $targetPekerja->nama_serikat === $petugasSerikat);
+                
+                if ($targetPekerja && $companyMatch && $serikatMatch) {
+                    $isPetugasAndAuthorized = true;
+                }
+            }
+
+            if (!$isOwner && !$isPetugasAndAuthorized) {
                 return response()->json(['status' => 'error', 'message' => 'Akses ditolak.'], 403);
             }
         }
@@ -73,8 +89,24 @@ class DetailMedisController extends Controller
 
         // Ownership check
         $user = auth()->user();
-        if (!$user->isAdmin() && !$user->isPetugas()) {
-            if (!$user->pekerja || $user->pekerja->id !== $riwayat->pekerja_id) {
+        if (!$user->isAdmin()) {
+            $isOwner = $user->pekerja && $user->pekerja->id === $riwayat->pekerja_id;
+            $isPetugasAndAuthorized = false;
+            
+            if ($user->isPetugas()) {
+                $targetPekerja = \App\Models\Pekerja::find($riwayat->pekerja_id);
+                $petugasPerusahaanId = $user->perusahaan_id ?? $user->pekerja?->perusahaan_id;
+                $petugasSerikat = $user->serikat ?? $user->pekerja?->nama_serikat;
+                
+                $companyMatch = !$petugasPerusahaanId || ($targetPekerja && $targetPekerja->perusahaan_id === $petugasPerusahaanId);
+                $serikatMatch = !$petugasSerikat || ($targetPekerja && $targetPekerja->nama_serikat === $petugasSerikat);
+                
+                if ($targetPekerja && $companyMatch && $serikatMatch) {
+                    $isPetugasAndAuthorized = true;
+                }
+            }
+
+            if (!$isOwner && !$isPetugasAndAuthorized) {
                 return response()->json(['status' => 'error', 'message' => 'Akses ditolak.'], 403);
             }
         }
