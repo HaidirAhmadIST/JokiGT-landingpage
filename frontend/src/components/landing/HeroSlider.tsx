@@ -42,7 +42,7 @@ const slides = [
     title: 'Pendampingan Kasus dari Ahli Profesional',
     description: 'Dukungan penuh dalam proses verifikasi dan advokasi kasus PAK hingga mendapatkan solusi terbaik.',
     ctaText: 'Konsultasi Gratis',
-    ctaLink: 'https://wa.me/628995389335'
+    ctaLink: 'https://wa.me/6285176876869'
   }
 ];
 
@@ -130,7 +130,7 @@ export default function HeroSlider() {
                   </Button>
                 </Link>
                 {slide.ctaText !== 'Konsultasi Gratis' && (
-                  <a href="https://wa.me/628995389335" target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto">
+                  <a href="https://wa.me/6285176876869" target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto">
                     <Button size="lg" variant="outline" className="w-full rounded-full px-8 h-14 text-base font-bold bg-white/10 backdrop-blur-md border-white/20 text-white hover:bg-white/20 transition-all hover:scale-105">
                       Konsultasi Gratis
                     </Button>

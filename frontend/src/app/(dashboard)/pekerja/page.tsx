@@ -310,7 +310,7 @@ export default function PekerjaPage() {
                   <TableRow 
                     key={p.id} 
                     className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors cursor-pointer group"
-                    onClick={() => router.push(`/pekerja/${p.id}`)}
+                    onClick={() => router.push(`/pekerja/detail?id=${p.id}`)}
                   >
                     <TableCell className="pl-4 pr-1 py-4 w-12">
                       <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-slate-100 text-slate-500 text-[11px] font-bold">

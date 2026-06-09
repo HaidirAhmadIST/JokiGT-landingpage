@@ -1080,7 +1080,7 @@ export default function PerusahaanPage() {
                                 {/* Aksi */}
                                 <td className="py-3.5 px-2 text-right">
                                   <button
-                                    onClick={() => { setDetailOpen(false); router.push(`/pekerja/${w.id}`); }}
+                                    onClick={() => { setDetailOpen(false); router.push(`/pekerja/detail?id=${w.id}`); }}
                                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold text-[#0ea5e9] hover:bg-blue-50 hover:text-[#0284c7] transition-all border border-transparent hover:border-blue-100"
                                     title="Lihat Profil Pekerja"
                                   >

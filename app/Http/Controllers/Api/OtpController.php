@@ -5,29 +5,30 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\ActivityLog;
-use App\Services\WhatsAppService;
+use App\Mail\OtpMail;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
 class OtpController extends Controller
 {
-    public function __construct(private readonly WhatsAppService $whatsAppService) {}
+    // No external service needed for email
 
     /**
-     * Generate and send OTP to user's WhatsApp number.
+     * Generate and send OTP to user's Email address.
      */
     public function sendOtp(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'whatsapp' => 'required|string|min:9|max:20',
+            'email' => 'required|email',
         ], [
-            'whatsapp.required' => 'Nomor WhatsApp wajib diisi.',
-            'whatsapp.min' => 'Nomor WhatsApp minimal 9 digit.',
+            'email.required' => 'Alamat Email wajib diisi.',
+            'email.email' => 'Format Email tidak valid.',
         ]);
 
         if ($validator->fails()) {
@@ -38,38 +39,33 @@ class OtpController extends Controller
             ], 422);
         }
 
-        // Format whatsapp: ensure it uses numeric digits, remove + or spaces
-        $whatsapp = preg_replace('/[^0-9]/', '', $request->input('whatsapp'));
+        $email = strtolower(trim($request->input('email')));
 
-        // Standardize leading "08" to "628" for Indonesian numbers (Fonnte API usually requires international format)
-        if (str_starts_with($whatsapp, '08')) {
-            $whatsapp = '628' . substr($whatsapp, 2);
-        }
-
-        // Generate a secure 6-digit random code
-        $otp = (string) mt_rand(100000, 999999);
+        // Generate a secure 6-digit random code using Cryptographically Secure PRNG
+        $otp = (string) random_int(100000, 999999);
 
         // Store OTP in Cache for 5 minutes (300 seconds)
-        Cache::put('otp_' . $whatsapp, $otp, 300);
+        Cache::put('otp_' . $email, $otp, 300);
 
-        // Send OTP via WhatsApp Service
-        $sent = $this->whatsAppService->sendOtp($whatsapp, $otp);
+        try {
+            // Send OTP via Email
+            Mail::to($email)->send(new OtpMail($otp));
 
-        if ($sent) {
             return response()->json([
                 'status' => 'success',
-                'message' => 'Kode verifikasi berhasil dikirim ke WhatsApp Anda.',
+                'message' => 'Kode verifikasi berhasil dikirim ke Email Anda.',
                 'data' => [
-                    'whatsapp' => $whatsapp,
-                    'debug_otp' => env('APP_DEBUG') ? $otp : null, // Show OTP in response ONLY when debugging is active
+                    'email' => $email,
+                    'debug_otp' => env('APP_DEBUG') ? $otp : null,
                 ]
             ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to send OTP email: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gagal mengirim kode verifikasi. Coba lagi beberapa saat.'
+            ], 500);
         }
-
-        return response()->json([
-            'status' => 'error',
-            'message' => 'Gagal mengirim kode verifikasi. Coba lagi beberapa saat.'
-        ], 500);
     }
 
     /**
@@ -78,10 +74,11 @@ class OtpController extends Controller
     public function verifyOtp(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'whatsapp' => 'required|string',
+            'email' => 'required|email',
             'otp' => 'required|string|size:6',
         ], [
-            'whatsapp.required' => 'Nomor WhatsApp wajib disertakan.',
+            'email.required' => 'Alamat Email wajib disertakan.',
+            'email.email' => 'Format Email tidak valid.',
             'otp.required' => 'Kode verifikasi wajib diisi.',
             'otp.size' => 'Kode verifikasi harus tepat 6 digit.',
         ]);
@@ -95,15 +92,10 @@ class OtpController extends Controller
         }
 
         $otp = $request->input('otp');
-
-        // Normalize whatsapp number (must match sendOtp normalization)
-        $whatsapp = preg_replace('/[^0-9]/', '', $request->input('whatsapp'));
-        if (str_starts_with($whatsapp, '08')) {
-            $whatsapp = '628' . substr($whatsapp, 2);
-        }
+        $email = strtolower(trim($request->input('email')));
 
         // Fetch cached OTP
-        $cachedOtp = Cache::get('otp_' . $whatsapp);
+        $cachedOtp = Cache::get('otp_' . $email);
 
         if (empty($cachedOtp)) {
             return response()->json([
@@ -120,48 +112,36 @@ class OtpController extends Controller
         }
 
         // OTP is correct! Clear from cache immediately for security
-        Cache::forget('otp_' . $whatsapp);
+        Cache::forget('otp_' . $email);
 
-        // Create alternative whatsapp format to check
-        $altWhatsapp = '';
-        if (str_starts_with($whatsapp, '628')) {
-            $altWhatsapp = '08' . substr($whatsapp, 3);
-        } elseif (str_starts_with($whatsapp, '08')) {
-            $altWhatsapp = '628' . substr($whatsapp, 2);
-        }
-
-        // Find or create User by WhatsApp number (checking both formats)
-        $user = User::where('whatsapp', $whatsapp)
-            ->when($altWhatsapp, function ($query) use ($altWhatsapp) {
-                $query->orWhere('whatsapp', $altWhatsapp);
-            })
-            ->first();
+        // Find or create User by Email
+        $user = User::where('email', $email)->first();
 
         if (!$user) {
             // Create a new viewer user
-            $suffix = substr($whatsapp, -4);
+            $parts = explode('@', $email);
             $user = User::create([
-                'nama' => 'Pekerja WA ' . $suffix,
-                'whatsapp' => $whatsapp,
+                'nama' => 'Pekerja ' . $parts[0],
+                'email' => $email,
                 'role' => 'viewer',
                 'password' => Hash::make(Str::random(16)), // Dummy random password
             ]);
 
             ActivityLog::record(
                 'Daftar Akun OTP',
-                "Pekerja baru {$user->nama} terdaftar otomatis via WhatsApp OTP.",
+                "Pekerja baru {$user->nama} terdaftar otomatis via Email OTP.",
                 'sistem',
                 $user,
-                ['whatsapp' => $whatsapp],
+                ['email' => $email],
                 $user
             );
         } else {
             ActivityLog::record(
                 'Login OTP',
-                "Pengguna {$user->nama} login sukses via WhatsApp OTP.",
+                "Pengguna {$user->nama} login sukses via Email OTP.",
                 'sistem',
                 $user,
-                ['whatsapp' => $whatsapp],
+                ['email' => $email],
                 $user
             );
         }

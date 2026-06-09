@@ -532,7 +532,7 @@ export default function DashboardLayout({
                     <button
                       key={pekerja.id}
                       onClick={() => {
-                        router.push(`/pekerja/${pekerja.id}`);
+                        router.push(`/pekerja/detail?id=${pekerja.id}`);
                         setSearchOpen(false);
                         setSearchQuery('');
                         setSearchResults([]);
@@ -939,7 +939,7 @@ export default function DashboardLayout({
                                 Deadline: {d.deadline_date}<br/>
                                 Sisa Waktu: {d.days_remaining} hari
                               </p>
-                              <Button onClick={() => { setIsInboxOpen(false); router.push(`/advokasi/${d.id}`); }} className="mt-4 bg-rose-600 hover:bg-rose-700 rounded-xl h-11 px-8 font-bold text-white shadow-sm">Lihat Detail Kasus</Button>
+                              <Button onClick={() => { setIsInboxOpen(false); router.push(`/advokasi/detail?id=${d.id}`); }} className="mt-4 bg-rose-600 hover:bg-rose-700 rounded-xl h-11 px-8 font-bold text-white shadow-sm">Lihat Detail Kasus</Button>
                             </div>
                           </>
                         );
@@ -956,7 +956,7 @@ export default function DashboardLayout({
                               <p className="text-sm text-slate-500 max-w-sm">
                                 <b>{d.nama_lengkap}</b> baru saja didaftarkan sebagai pekerja di <b>{d.perusahaan?.nama_perusahaan || 'sistem'}</b>.
                               </p>
-                              <Button onClick={() => { setIsInboxOpen(false); router.push(`/pekerja/${d.id}`); }} className="mt-4 bg-emerald-600 hover:bg-emerald-700 rounded-xl h-11 px-8 font-bold text-white shadow-sm">Lihat Profil Pekerja</Button>
+                              <Button onClick={() => { setIsInboxOpen(false); router.push(`/pekerja/detail?id=${d.id}`); }} className="mt-4 bg-emerald-600 hover:bg-emerald-700 rounded-xl h-11 px-8 font-bold text-white shadow-sm">Lihat Profil Pekerja</Button>
                             </div>
                           </>
                         );

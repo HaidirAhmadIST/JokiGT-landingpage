@@ -171,10 +171,10 @@ export function FilterableTable({ userRole, activeFilter = 'all' }: FilterableTa
                     </span>
                   </td>
                   <td className="px-6 py-4 text-right flex justify-end gap-2">
-                    <Link href={`/pekerja/${row.real_id}`} className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors" title="Lihat Detail">
+                    <Link href={`/pekerja/detail?id=${row.real_id}`} className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors" title="Lihat Detail">
                       <Eye className="w-4 h-4" />
                     </Link>
-                    <Link href={`/pekerja/${row.real_id}`} className="p-1.5 text-gray-500 hover:text-amber-600 hover:bg-amber-50 rounded-md transition-colors" title="Edit Data">
+                    <Link href={`/pekerja/detail?id=${row.real_id}`} className="p-1.5 text-gray-500 hover:text-amber-600 hover:bg-amber-50 rounded-md transition-colors" title="Edit Data">
                       <Edit2 className="w-4 h-4" />
                     </Link>
                     {canDelete && (

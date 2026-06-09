@@ -377,6 +377,58 @@ class AdvokasiService
         }
 
         $status->save();
+
+        // 6. Send Email Notifications
+        try {
+            $stepLabels = [
+                'riwayat_pajanan' => 'Riwayat Pajanan',
+                'persetujuan_dokter' => 'Evaluasi Dokter Okupasi',
+                'perusahaan_lapor' => 'Laporan Perusahaan',
+                'penetapan_pak' => 'Penetapan PAK',
+                'kompensasi_bpjstk' => 'Klaim JKK BPJS',
+                'rehabilitasi_bpjskes' => 'Rehabilitasi Medik',
+            ];
+
+            $emailSent = false;
+            
+            // Check if any milestone was completed (changed to true)
+            foreach (array_keys($validColumns) as $field) {
+                // Check if field was changed to true during this request
+                if ($status->wasChanged($field) && $status->{$field} == true) {
+                    $pekerja = $status->pekerja()->with('user')->first();
+                    if ($pekerja && $pekerja->user && $pekerja->user->email) {
+                        \Illuminate\Support\Facades\Mail::to($pekerja->user->email)
+                            ->send(new \App\Mail\AdvokasiProgressMail(
+                                $pekerja,
+                                $status->jenis_kasus ?? 'Advokasi Kasus',
+                                $stepLabels[$field] ?? ucfirst(str_replace('_', ' ', $field)),
+                                'Selesai',
+                                $status->catatan
+                            ));
+                        $emailSent = true;
+                        break; // Only send one email per update
+                    }
+                }
+            }
+
+            // Check if stage changed to something new (in progress)
+            if (!$emailSent && $status->wasChanged('tahap')) {
+                $pekerja = $status->pekerja()->with('user')->first();
+                if ($pekerja && $pekerja->user && $pekerja->user->email && $status->tahap) {
+                    \Illuminate\Support\Facades\Mail::to($pekerja->user->email)
+                        ->send(new \App\Mail\AdvokasiProgressMail(
+                            $pekerja,
+                            $status->jenis_kasus ?? 'Advokasi Kasus',
+                            $status->tahap,
+                            'Sedang Berjalan',
+                            $status->catatan
+                        ));
+                }
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Gagal mengirim email notifikasi advokasi: ' . $e->getMessage());
+        }
+
         return $status;
     }
 

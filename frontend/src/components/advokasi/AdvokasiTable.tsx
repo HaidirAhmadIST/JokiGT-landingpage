@@ -125,7 +125,7 @@ export default function AdvokasiTable({
                 <TableRow 
                   key={c.id} 
                   className="hover:bg-slate-50/50 transition-colors group cursor-pointer"
-                  onClick={() => router.push(`/advokasi/${c.id}`)}
+                  onClick={() => router.push(`/advokasi/detail?id=${c.id}`)}
                 >
                   <TableCell className="py-3 pl-4 pr-1 w-10">
                     <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-slate-500 text-[10px] font-bold">
@@ -187,7 +187,7 @@ export default function AdvokasiTable({
                         <MoreVertical className="h-3.5 w-3.5" />
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-48">
-                        <DropdownMenuItem className="cursor-pointer" onClick={() => router.push(`/advokasi/${c.id}`)}><Eye className="mr-2 h-4 w-4" /> Lihat Detail</DropdownMenuItem>
+                        <DropdownMenuItem className="cursor-pointer" onClick={() => router.push(`/advokasi/detail?id=${c.id}`)}><Eye className="mr-2 h-4 w-4" /> Lihat Detail</DropdownMenuItem>
                         {isStaffOrAbove && (
                           <>
                             <DropdownMenuItem className="cursor-pointer"><RefreshCw className="mr-2 h-4 w-4" /> Update Status</DropdownMenuItem>

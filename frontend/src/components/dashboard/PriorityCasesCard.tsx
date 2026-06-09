@@ -58,7 +58,7 @@ export default function PriorityCasesCard() {
             return (
               <div 
                 key={idx} 
-                onClick={() => router.push(`/advokasi/${item.id}`)}
+                onClick={() => router.push(`/advokasi/detail?id=${item.id}`)}
                 className="p-5 hover:bg-slate-50 transition-all cursor-pointer group flex items-start gap-4"
               >
                 <div className="flex flex-col items-center gap-1 shrink-0 pt-1">

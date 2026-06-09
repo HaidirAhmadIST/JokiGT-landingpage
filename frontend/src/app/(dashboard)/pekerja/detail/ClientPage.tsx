@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import api from '@/lib/axios';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -37,7 +37,8 @@ import { cn, formatHealthStatus } from '@/lib/utils';
 import { PekerjaFull, RiwayatPekerja, InformalData } from '@/types';
 
 export default function PekerjaDetailPage() {
-  const { id } = useParams();
+  const searchParams = useSearchParams();
+  const id = searchParams.get('id');
   const router = useRouter();
   const [data, setData] = useState<PekerjaFull | null>(null);
   const [loading, setLoading] = useState(true);

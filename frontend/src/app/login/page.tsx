@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { ShieldAlert, Eye, EyeOff, ArrowLeft, MessageSquare, Chrome } from 'lucide-react';
+import { ShieldAlert, Eye, EyeOff, ArrowLeft, Mail, Chrome } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function LoginPage() {
@@ -21,7 +21,7 @@ export default function LoginPage() {
 
   // Hybrid Auth States
   const [isOrganisasi, setIsOrganisasi] = useState<boolean | null>(null);
-  const [waNumber, setWaNumber] = useState('');
+  const [emailOTP, setEmailOTP] = useState('');
   const [otpCode, setOtpCode] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [sendingOtp, setSendingOtp] = useState(false);
@@ -97,14 +97,13 @@ export default function LoginPage() {
   };
 
   const sendOtpCode = async () => {
-    if (!waNumber) {
-      toast.error("Nomor WhatsApp wajib diisi!");
+    if (!emailOTP) {
+      toast.error("Alamat Email wajib diisi!");
       return;
     }
     setSendingOtp(true);
     try {
-      const formattedWa = waNumber.trim().replace(/[^0-9]/g, '');
-      const res = await api.post('/auth/whatsapp/send-otp', { whatsapp: formattedWa });
+      const res = await api.post('/auth/email/send-otp', { email: emailOTP });
       if (res.data.status === 'success') {
         toast.success(res.data.message);
         setOtpSent(true);
@@ -118,7 +117,7 @@ export default function LoginPage() {
         toast.error(res.data.message || "Gagal mengirim OTP.");
       }
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Gagal mengirim OTP. Pastikan nomor WhatsApp Anda aktif.");
+      toast.error(err.response?.data?.message || "Gagal mengirim OTP. Pastikan Email Anda aktif.");
     } finally {
       setSendingOtp(false);
     }
@@ -131,8 +130,7 @@ export default function LoginPage() {
     }
     setVerifyingOtp(true);
     try {
-      const formattedWa = waNumber.trim().replace(/[^0-9]/g, '');
-      const res = await api.post('/auth/whatsapp/verify-otp', { whatsapp: formattedWa, otp: otpCode });
+      const res = await api.post('/auth/email/verify-otp', { email: emailOTP, otp: otpCode });
       if (res.data.status === 'success') {
         const { token, user } = res.data.data;
         
@@ -247,7 +245,7 @@ export default function LoginPage() {
             <form onSubmit={handleLogin} suppressHydrationWarning className="space-y-4 pt-2 animate-in fade-in duration-300">
               <div className="p-4 bg-blue-50/50 border border-blue-100/60 rounded-xl mb-2">
                 <p className="text-xs text-blue-600 font-medium leading-relaxed">
-                  Pengurus/Delegasi serikat masuk menggunakan Email/No. Telp dan kata sandi yang telah didaftarkan.
+                  Pengurus serikat masuk menggunakan Email/No. Telp dan kata sandi yang telah didaftarkan.
                 </p>
               </div>
               <div className="space-y-2">
@@ -291,28 +289,28 @@ export default function LoginPage() {
             </form>
           )}
 
-          {/* VIEW: WHATSAPP OTP (NON-PENGURUS) */}
+          {/* VIEW: EMAIL OTP (NON-PENGURUS) */}
           {isOrganisasi === false && (
             <div className="space-y-4 pt-1 animate-in fade-in slide-in-from-top-2 duration-300">
               <div className="p-4 bg-emerald-50/50 border border-emerald-100/60 rounded-xl">
                 <p className="text-xs text-emerald-600 font-medium leading-relaxed">
-                  Pekerja non-pengurus masuk menggunakan nomor WhatsApp aktif untuk verifikasi kode OTP sekali pakai.
+                  Pekerja non-pengurus masuk menggunakan Alamat Email aktif untuk verifikasi kode OTP sekali pakai.
                 </p>
               </div>
 
               {!otpSent ? (
                 <div className="space-y-3.5">
                   <div className="space-y-1.5">
-                    <Label htmlFor="whatsapp" className="text-slate-600 font-semibold">Nomor WhatsApp Aktif</Label>
+                    <Label htmlFor="emailOTP" className="text-slate-600 font-semibold">Alamat Email Aktif</Label>
                     <div className="relative">
-                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-bold border-r pr-2 border-slate-200">+62</span>
+                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-bold border-r pr-2 border-slate-200"><Mail className="w-4 h-4" /></span>
                       <Input 
-                        id="whatsapp" 
-                        type="tel"
-                        placeholder="8123456xxxx" 
-                        value={waNumber}
-                        onChange={(e) => setWaNumber(e.target.value.replace(/[^0-9]/g, ''))}
-                        className="pl-16 rounded-xl border-slate-300 bg-white"
+                        id="emailOTP" 
+                        type="email"
+                        placeholder="email@example.com" 
+                        value={emailOTP}
+                        onChange={(e) => setEmailOTP(e.target.value)}
+                        className="pl-12 rounded-xl border-slate-300 bg-white"
                       />
                     </div>
                   </div>
@@ -322,7 +320,7 @@ export default function LoginPage() {
                     onClick={sendOtpCode}
                     disabled={sendingOtp}
                   >
-                    <MessageSquare className="h-4 w-4" />
+                    <Mail className="h-4 w-4" />
                     {sendingOtp ? 'Mengirim Kode...' : 'Kirim Kode Verifikasi'}
                   </Button>
                 </div>
@@ -339,7 +337,7 @@ export default function LoginPage() {
                       value={otpCode}
                       onChange={(e) => setOtpCode(e.target.value.replace(/[^0-9]/g, ''))}
                     />
-                  <p className="text-[10px] text-slate-400 text-center mt-1">Kode OTP telah dikirimkan ke nomor +62{waNumber}</p>
+                  <p className="text-[10px] text-slate-400 text-center mt-1">Kode OTP telah dikirimkan ke email {emailOTP}</p>
                   </div>
 
                   {/* Resend OTP */}
@@ -378,7 +376,7 @@ export default function LoginPage() {
                     }} 
                     className="text-xs text-primary font-bold hover:underline block text-center w-full mt-2"
                   >
-                    Ubah Nomor WhatsApp
+                    Ubah Alamat Email
                   </button>
                 </div>
               )}

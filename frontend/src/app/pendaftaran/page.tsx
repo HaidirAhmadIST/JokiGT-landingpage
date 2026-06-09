@@ -257,14 +257,13 @@ export default function PendaftaranPekerjaPage() {
   const [verifyingOtp, setVerifyingOtp] = useState(false);
 
   const sendRegOtpCode = async () => {
-    if (!baseData.whatsapp) {
-      toast.error("Nomor WhatsApp wajib diisi!");
+    if (!baseData.email) {
+      toast.error("Email wajib diisi!");
       return;
     }
     setSendingOtp(true);
     try {
-      const formattedWa = baseData.whatsapp.trim().replace(/[^0-9]/g, '');
-      const res = await api.post('/auth/whatsapp/send-otp', { whatsapp: formattedWa });
+      const res = await api.post('/auth/email/send-otp', { email: baseData.email });
       if (res.data.status === 'success') {
         toast.success(res.data.message);
         setOtpSent(true);
@@ -276,7 +275,7 @@ export default function PendaftaranPekerjaPage() {
         toast.error(res.data.message || "Gagal mengirim OTP.");
       }
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Gagal mengirim OTP. Pastikan nomor WhatsApp Anda aktif.");
+      toast.error(err.response?.data?.message || "Gagal mengirim OTP. Pastikan Email Anda aktif.");
     } finally {
       setSendingOtp(false);
     }
@@ -289,10 +288,9 @@ export default function PendaftaranPekerjaPage() {
     }
     setVerifyingOtp(true);
     try {
-      const formattedWa = baseData.whatsapp.trim().replace(/[^0-9]/g, '');
-      const res = await api.post('/auth/whatsapp/verify-otp', { whatsapp: formattedWa, otp: otpCode });
+      const res = await api.post('/auth/email/verify-otp', { email: baseData.email, otp: otpCode });
       if (res.data.status === 'success') {
-        toast.success("Nomor WhatsApp berhasil diverifikasi!");
+        toast.success("Email berhasil diverifikasi!");
         setIsWaVerified(true);
       }
     } catch (err: any) {
@@ -1125,10 +1123,89 @@ export default function PendaftaranPekerjaPage() {
                     {/* Jika Opsi Keanggotaan Terpilih */}
                     {baseData.anggota_organisasi !== null && (
                       <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                        {/* Email Input */}
+                        <div className="space-y-2" id="email">
+                          <Label htmlFor="email" className="flex items-center gap-1.5 font-semibold">
+                            Alamat Email Aktif <span className="text-red-500">*</span>
+                          </Label>
+                          <div className="flex">
+                            <span className="inline-flex items-center px-4 rounded-l-lg border border-r-0 border-slate-200 bg-slate-50 text-slate-500 sm:text-sm font-bold">
+                              <Mail className="w-4 h-4" />
+                            </span>
+                            <Input 
+                              id="email" 
+                              placeholder="email@example.com" 
+                              className={cn("rounded-l-none h-11", lockedWhatsapp ? "bg-slate-50 cursor-not-allowed" : "")}
+                              readOnly={!!lockedWhatsapp || isWaVerified}
+                              value={baseData.email} 
+                              onChange={e => setBaseData({ ...baseData, email: e.target.value })} 
+                            />
+                          </div>
+                        </div>
+
+                        {/* Verifikasi OTP - Hanya muncul jika Email valid dan diisi */}
+                        {baseData.email && baseData.email.includes('@') && !lockedWhatsapp && (
+                          <div className="pt-4 border-t border-slate-100" id="otp-verification-section">
+                            {isWaVerified ? (
+                              <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 text-green-700 rounded-lg animate-in fade-in zoom-in">
+                                <CheckCircle className="h-5 w-5" />
+                                <span className="text-sm font-bold">Email berhasil diverifikasi</span>
+                              </div>
+                            ) : (
+                              <div className="space-y-3 p-4 bg-slate-50 border border-slate-200 rounded-lg">
+                                <div className="flex justify-between items-center mb-2">
+                                  <Label className="text-sm font-bold text-slate-700">Verifikasi Email Anda</Label>
+                                  {otpSent && (
+                                    <span className="text-[10px] font-bold px-2 py-1 bg-amber-100 text-amber-700 rounded-full">
+                                      Menunggu Kode
+                                    </span>
+                                  )}
+                                </div>
+                                
+                                {!otpSent ? (
+                                  <div className="space-y-2">
+                                    <p className="text-xs text-slate-500 mb-3">Klik tombol di bawah untuk menerima 6 digit kode OTP yang akan dikirim ke Email Anda.</p>
+                                    <Button 
+                                      type="button" 
+                                      onClick={sendRegOtpCode}
+                                      disabled={sendingOtp || !baseData.email}
+                                      className="w-full bg-[#0ea5e9] hover:bg-[#0284c7]"
+                                    >
+                                      {sendingOtp ? 'Mengirim Kode OTP...' : 'Kirim Kode OTP via Email'}
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  <div className="space-y-3">
+                                    <Input 
+                                      placeholder="Masukkan 6 digit kode OTP" 
+                                      maxLength={6}
+                                      value={otpCode}
+                                      className="text-center text-lg tracking-[0.5em] font-bold"
+                                      onChange={(e) => {
+                                        const val = e.target.value.replace(/[^0-9]/g, '');
+                                        setOtpCode(val);
+                                      }}
+                                    />
+                                    <Button 
+                                      type="button" 
+                                      onClick={verifyRegOtpCode}
+                                      disabled={verifyingOtp || otpCode.length !== 6}
+                                      className="w-full bg-slate-900 hover:bg-slate-800"
+                                    >
+                                      {verifyingOtp ? 'Memverifikasi...' : 'Verifikasi OTP'}
+                                    </Button>
+                                    <p className="text-[10px] text-slate-400 text-center">Kode telah dikirim ke {baseData.email}</p>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
                         {/* WA Input */}
                         <div className="space-y-2">
                           <Label htmlFor="whatsapp" className="flex items-center gap-1.5 font-semibold">
-                            Nomor WhatsApp Aktif <span className="text-red-500">*</span>
+                            Nomor WhatsApp <span className="text-red-500">*</span>
                           </Label>
                           <div className="flex">
                             <span className="inline-flex items-center px-4 rounded-l-lg border border-r-0 border-slate-200 bg-slate-50 text-slate-500 sm:text-sm font-bold">
@@ -1138,7 +1215,6 @@ export default function PendaftaranPekerjaPage() {
                               id="whatsapp" 
                               placeholder="8123456xxx" 
                               className={cn("rounded-l-none h-11", duplicateWarning.whatsapp ? 'border-amber-400 bg-amber-50/30' : '', lockedWhatsapp ? "bg-slate-50 cursor-not-allowed" : "")}
-                              readOnly={!!lockedWhatsapp || isWaVerified}
                               value={baseData.whatsapp} 
                               onChange={e => setBaseData({ ...baseData, whatsapp: e.target.value.replace(/\D/g, '') })} 
                               onBlur={(e) => checkDuplicate('whatsapp', e.target.value)}
@@ -1149,9 +1225,7 @@ export default function PendaftaranPekerjaPage() {
 
                         {/* No HP Alternatif Input */}
                         <div className="space-y-2">
-                          <Label htmlFor="no_hp" className="flex items-center gap-1.5 font-semibold">
-                            Nomor HP/Telepon Lain Yang Bisa Dihubungi <span className="text-slate-400 font-normal text-xs">(Opsional)</span>
-                          </Label>
+                          <Label htmlFor="no_hp">Nomor Telepon Lainnya (Opsional)</Label>
                           <div className="flex">
                             <span className="inline-flex items-center px-4 rounded-l-lg border border-r-0 border-slate-200 bg-slate-50 text-slate-500 sm:text-sm font-bold">
                               +62
@@ -1160,30 +1234,11 @@ export default function PendaftaranPekerjaPage() {
                               id="no_hp" 
                               placeholder="8123456xxx" 
                               className="rounded-l-none h-11"
-                              value={baseData.no_hp || ''} 
+                              value={baseData.no_hp} 
                               onChange={e => setBaseData({ ...baseData, no_hp: e.target.value.replace(/\D/g, '') })} 
                             />
                           </div>
                         </div>
-
-                        {/* Email Opsional */}
-                        <div className="space-y-2">
-                          <Label htmlFor="email" className="flex items-center gap-1.5 font-semibold">
-                            Alamat Email <span className="text-slate-400 font-normal text-xs">(Opsional)</span>
-                          </Label>
-                          <div className="relative">
-                            <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                            <Input
-                              id="email"
-                              type="email"
-                              placeholder="contoh@email.com"
-                              className="h-11 pl-10"
-                              value={baseData.email}
-                              onChange={e => setBaseData({ ...baseData, email: e.target.value })}
-                            />
-                          </div>
-                        </div>
-
                       </div>
                     )}
 
@@ -2117,7 +2172,7 @@ export default function PendaftaranPekerjaPage() {
 
           {/* Internal Form Footer */}
           <div className="mt-12 flex justify-between items-center border-t border-slate-100 pt-6">
-            <a href="https://wa.me/628995389335" target="_blank" rel="noopener noreferrer" className="flex gap-2 cursor-pointer hover:opacity-80 transition-opacity group">
+            <a href="https://wa.me/6285176876869" target="_blank" rel="noopener noreferrer" className="flex gap-2 cursor-pointer hover:opacity-80 transition-opacity group">
               <ShieldAlert className="h-8 w-8 text-slate-200 group-hover:text-green-500 transition-colors" />
               <div>
                 <p className="text-[10px] font-bold text-slate-700 group-hover:text-green-600 transition-colors">Butuh Bantuan?</p>

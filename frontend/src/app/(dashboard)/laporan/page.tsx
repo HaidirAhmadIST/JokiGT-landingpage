@@ -402,7 +402,7 @@ export default function LaporanPage() {
                       </TableCell>
                       <TableCell className="py-4 pl-3 truncate max-w-0">
                         <button 
-                          onClick={() => router.push(`/pekerja/${row.pekerja_id}?tab=advokasi`)}
+                          onClick={() => router.push(`/pekerja/detail?id=${row.pekerja_id}&tab=advokasi`)}
                           className="flex flex-col text-left group/worker outline-none transition-transform hover:translate-x-1 w-full"
                         >
                           <div className="font-bold text-[#1e293b] text-sm truncate group-hover/worker:text-[#0284c7] transition-colors">{row.worker}</div>
@@ -421,7 +421,7 @@ export default function LaporanPage() {
                       </TableCell>
                       <TableCell className="py-4 text-right pr-4 print:hidden">
                         <button
-                          onClick={() => router.push(`/pekerja/${row.pekerja_id}?tab=advokasi`)}
+                          onClick={() => router.push(`/pekerja/detail?id=${row.pekerja_id}&tab=advokasi`)}
                           className="text-xs font-bold text-[#0ea5e9] hover:text-[#0284c7] transition-colors bg-[#0ea5e9]/10 hover:bg-[#0ea5e9]/20 px-3 py-1.5 rounded-lg"
                         >
                           Detail Pekerja

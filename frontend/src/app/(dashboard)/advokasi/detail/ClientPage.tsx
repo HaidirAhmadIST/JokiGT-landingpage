@@ -1,6 +1,6 @@
 'use client';
 
-import { useParams, useRouter } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Card } from '@/components/ui/card';
@@ -69,9 +69,9 @@ const getStatusColor = (s?: string) => {
 };
 
 export default function AdvokasiDetailPage() {
-  const params = useParams();
+  const searchParams = useSearchParams();
+  const id = searchParams.get('id') as string;
   const router = useRouter();
-  const id = params.id as string;
   
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [downloading, setDownloading] = useState(false);

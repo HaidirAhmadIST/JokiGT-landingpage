@@ -36,8 +36,8 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::get('/auth/google/redirect', [GoogleAuthController::class, 'redirectToGoogle']);
 Route::get('/auth/google/callback', [GoogleAuthController::class, 'handleGoogleCallback']);
 Route::middleware('throttle:otp')->group(function () {
-    Route::post('/auth/whatsapp/send-otp', [OtpController::class, 'sendOtp']);
-    Route::post('/auth/whatsapp/verify-otp', [OtpController::class, 'verifyOtp']);
+    Route::post('/auth/email/send-otp', [OtpController::class, 'sendOtp']);
+    Route::post('/auth/email/verify-otp', [OtpController::class, 'verifyOtp']);
 });
 Route::post('/register/complete', [RegistrationController::class, 'completeRegistration']);
 Route::get('/serikat', [RegistrationController::class, 'listSerikat']);
