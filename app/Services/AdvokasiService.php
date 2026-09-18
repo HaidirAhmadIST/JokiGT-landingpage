@@ -227,8 +227,7 @@ class AdvokasiService
      */
     public function deleteProofFile(string $pekerja_id, string $stepKey): StatusAdvokasi
     {
-        $status = StatusAdvokasi::where('pekerja_id', $pekerja_id)->firstOrFail();
-
+        $status = StatusAdvokasi::firstOrCreate(['pekerja_id' => $pekerja_id]);
         $validColumns = [
             'riwayat_pajanan' => 'bukti_pajanan_path', 
             'persetujuan_dokter' => 'bukti_persetujuan_dokter_path', 
@@ -282,8 +281,7 @@ class AdvokasiService
      */
     public function updateTracker(string $pekerja_id, array $data, $files = null): StatusAdvokasi
     {
-        $status = StatusAdvokasi::where('pekerja_id', $pekerja_id)->firstOrFail();
-
+        $status = StatusAdvokasi::firstOrCreate(['pekerja_id' => $pekerja_id]);
         $validColumns = [
             'riwayat_pajanan' => 'bukti_pajanan_path', 
             'persetujuan_dokter' => 'bukti_persetujuan_dokter_path', 

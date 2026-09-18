@@ -110,21 +110,21 @@ export default function LandingPage() {
               <Info className="h-4 w-4" /> Informasi Dasar
             </div>
             <h2 className="text-3xl md:text-4xl font-black text-[#0f172a] tracking-tight mb-4">
-              Mengenal K3 & Penyakit Akibat Kerja
+              Memahami Penyakit Akibat Kerja (PAK) & Hak Pekerja
             </h2>
             <p className="text-slate-500 max-w-2xl mx-auto font-medium">
-              Edukasi penting untuk memahami hak dan kewajiban dalam menjaga keselamatan serta kesehatan di lingkungan kerja.
+              Kenali apa itu Penyakit Akibat Kerja (PAK) dan pahami hak-hak Anda untuk mendapatkan perlindungan, pemeriksaan medis, serta kompensasi yang layak.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-2 gap-8">
             <div className="bg-white rounded-3xl p-8 border border-slate-100 shadow-xl shadow-slate-200/40 hover:-translate-y-2 transition-transform duration-300">
               <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-6 border bg-emerald-50 text-emerald-500 border-emerald-100">
                 <ShieldCheck className="h-6 w-6" />
               </div>
-              <h3 className="text-xl font-black text-slate-800 mb-3">Apa itu K3?</h3>
+              <h3 className="text-xl font-black text-slate-800 mb-3">Hak Pekerja</h3>
               <p className="text-slate-500 font-medium leading-relaxed">
-                Keselamatan dan Kesehatan Kerja (K3) adalah segala upaya terencana untuk menjamin dan melindungi keselamatan serta kesehatan tenaga kerja melalui upaya pencegahan kecelakaan kerja dan penyakit akibat kerja.
+                Setiap pekerja berhak mendapatkan perlindungan Jaminan sosial ketenagakerjaan, mendapatkan pemeriksaan medis berkala, mendapatkan Kompensasi dan rehabilitasi jika mengalami PAK.
               </p>
             </div>
 
@@ -134,17 +134,7 @@ export default function LandingPage() {
               </div>
               <h3 className="text-xl font-black text-slate-800 mb-3">Apa itu PAK?</h3>
               <p className="text-slate-500 font-medium leading-relaxed">
-                Penyakit Akibat Kerja (PAK) adalah penyakit yang disebabkan oleh pekerjaan atau lingkungan kerja. Ini meliputi pajanan faktor fisik (bising, radiasi), kimia (debu, gas), biologi, hingga postur tubuh yang buruk.
-              </p>
-            </div>
-
-            <div className="bg-white rounded-3xl p-8 border border-slate-100 shadow-xl shadow-slate-200/40 hover:-translate-y-2 transition-transform duration-300">
-              <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-6 border bg-blue-50 text-blue-500 border-blue-100">
-                <Scale className="h-6 w-6" />
-              </div>
-              <h3 className="text-xl font-black text-slate-800 mb-3">Hak Pekerja</h3>
-              <p className="text-slate-500 font-medium leading-relaxed">
-                Setiap pekerja berhak atas perlindungan kesehatan, pemeriksaan medis berkala, serta kompensasi hukum dan medis dari BPJS Ketenagakerjaan apabila terbukti menderita penyakit akibat paparan di tempat kerja.
+                Penyakit Akibat Kerja (PAK) adalah penyakit yang disebabkan oleh pekerjaan atau lingkungan kerja. Meliputi pajanan Faktor Fisik (Bising, Radiasi), Kimia (Debu, Asbes, Gas), Biologi (Bakteri, virus), Postur tubuh, dan Psikososial.
               </p>
             </div>
           </div>
@@ -242,8 +232,8 @@ export default function LandingPage() {
                   desc: 'Laporkan keluhan kesehatan, riwayat pajanan kerja, dan pantau proses bantuan advokasi Anda secara mandiri.',
                 },
                 {
-                  role: 'Admin / Advokat',
-                  desc: 'Kelola database pekerja, verifikasi laporan, dan koordinasikan langkah advokasi secara efisien.',
+                  role: 'Serikat Pekerja',
+                  desc: 'Dampingi pekerja dalam pelaporan kasus, kelola data anggota, dan koordinasikan langkah advokasi hak-hak K3 secara kolektif dan efisien.',
                 }
               ].map((t, i) => (
                 <div key={i} className="bg-white/5 border border-white/10 backdrop-blur-md rounded-3xl p-8 hover:bg-white/10 transition-colors">

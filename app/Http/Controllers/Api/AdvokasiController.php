@@ -102,7 +102,7 @@ class AdvokasiController extends Controller
                 }
 
                 // If they are a viewer, any update to Advokasi must be routed to ApprovalRequest
-                $status = \App\Models\StatusAdvokasi::where('pekerja_id', $pekerja_id)->firstOrFail();
+                $status = \App\Models\StatusAdvokasi::firstOrCreate(['pekerja_id' => $pekerja_id]);
                 
                 $payload = [];
                 $stepKey = $request->input('step_key');

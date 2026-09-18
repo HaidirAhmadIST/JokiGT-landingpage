@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Bell, Globe, User, ShieldAlert, ArrowRight, ArrowLeft, Plus, UploadCloud, Save, CheckCircle, Check, X, Activity, Info, Briefcase, HeartPulse, ClipboardList, Zap, Trash2, RefreshCw, Eye, EyeOff, Lock, Mail, ChevronDown, ChevronUp, ChevronsUpDown, History } from 'lucide-react';
+import { Bell, Globe, User, ShieldAlert, ArrowRight, ArrowLeft, Plus, UploadCloud, Save, CheckCircle, Check, X, Activity, Info, Briefcase, HeartPulse, ClipboardList, Zap, Trash2, RefreshCw, Eye, EyeOff, Lock, Mail, ChevronDown, ChevronUp, ChevronsUpDown, History, FileCheck, FileText } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -49,6 +49,7 @@ export default function PendaftaranPekerjaPage() {
   // WhatsApp locked to the logged-in user's account
   const [lockedWhatsapp, setLockedWhatsapp] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
+  const [isAdminSerikat, setIsAdminSerikat] = useState(false);
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
   const [wasRestored, setWasRestored] = useState(false);
 
@@ -57,6 +58,7 @@ export default function PendaftaranPekerjaPage() {
 
   const [dokumenRekomendasi, setDokumenRekomendasi] = useState<File | null>(null);
   const [dokumenBukti, setDokumenBukti] = useState<File | null>(null);
+  const [isCurrentlyWorking, setIsCurrentlyWorking] = useState(false);
 
   // Riwayat Pekerjaan Sebelumnya array
   const emptyRiwayatItem = () => ({
@@ -269,7 +271,6 @@ export default function PendaftaranPekerjaPage() {
         setOtpSent(true);
         if (res.data.data?.debug_otp) {
           console.log("Local Dev OTP Code:", res.data.data.debug_otp);
-          toast.info(`[DEV MODE] OTP Code: ${res.data.data.debug_otp} (Lihat console log)`, { duration: 10000 });
         }
       } else {
         toast.error(res.data.message || "Gagal mengirim OTP.");
@@ -310,6 +311,15 @@ export default function PendaftaranPekerjaPage() {
         if (parsedUser?.whatsapp) {
           setLockedWhatsapp(parsedUser.whatsapp);
           setBaseData(prev => ({ ...prev, whatsapp: parsedUser.whatsapp }));
+        }
+        if (parsedUser?.role === 'petugas') {
+          setIsAdminSerikat(true);
+          const userSerikatName = parsedUser.serikat || parsedUser.nama_serikat || '';
+          setBaseData(prev => ({
+            ...prev,
+            anggota_organisasi: true,
+            nama_serikat: userSerikatName
+          }));
         }
       }
     } catch {}
@@ -483,7 +493,7 @@ export default function PendaftaranPekerjaPage() {
       );
 
       if (match) {
-        const label = field === 'nik' ? 'Nomor Kartu Pegawai' : 'Nomor Telepon';
+        const label = field === 'nik' ? 'NIK' : 'Nomor Telepon';
         setDuplicateWarning(prev => ({ ...prev, [field]: `${label} ini sudah terdaftar. Melanjutkan akan memperbarui data pekerja yang ada.` }));
         toast.info(`${label} ini sudah terdaftar.`, {
           description: "Anda tetap bisa melanjutkan untuk memperbarui datanya.",
@@ -509,7 +519,7 @@ export default function PendaftaranPekerjaPage() {
       return;
     }
     if (!baseData.nik) {
-      toast.error("Nomor Kartu Pegawai wajib diisi!");
+      toast.error("NIK wajib diisi!");
       scrollToField('nik', 1);
       return;
     }
@@ -524,12 +534,12 @@ export default function PendaftaranPekerjaPage() {
       scrollToField('keluhan_utama', 4);
       return;
     }
-    if (!pekerjaanSaatIni.nama_perusahaan) {
+    if (isCurrentlyWorking && !pekerjaanSaatIni.nama_perusahaan) {
       toast.error("Nama Perusahaan saat ini wajib diisi!");
       setStep(2);
       return;
     }
-    if (pekerjaanSaatIni.nama_perusahaan === 'Lainnya' && !pekerjaanSaatIni.nama_perusahaan_baru) {
+    if (isCurrentlyWorking && pekerjaanSaatIni.nama_perusahaan === 'Lainnya' && !pekerjaanSaatIni.nama_perusahaan_baru) {
       toast.error("Mohon isi nama perusahaan baru Anda!");
       setStep(2);
       return;
@@ -589,7 +599,7 @@ export default function PendaftaranPekerjaPage() {
       // Build riwayat array combining current job and previous jobs
       const allRiwayat: any[] = [];
 
-      if (pekerjaanSaatIni.nama_perusahaan || pekerjaanSaatIni.nama_perusahaan_baru) {
+      if (isCurrentlyWorking && (pekerjaanSaatIni.nama_perusahaan || pekerjaanSaatIni.nama_perusahaan_baru)) {
         allRiwayat.push({
           ...pekerjaanSaatIni,
           nama_perusahaan: pekerjaanSaatIni.nama_perusahaan_baru || pekerjaanSaatIni.nama_perusahaan,
@@ -749,7 +759,18 @@ export default function PendaftaranPekerjaPage() {
 
 
 
-        // 4. Advocacy Files
+        // 2. Pekerjaan Saat Ini & Riwayat Pekerjaan (Paklaring) Files
+        for (let i = 0; i < riwayatData.length; i++) {
+          if (savedRiwayat[i]) {
+            const rItem = riwayatData[i];
+            const pFiles = (rItem.file_bukti || []).filter((f: any) => f instanceof File);
+            if (pFiles.length > 0) {
+              const form = new FormData();
+              pFiles.forEach((f: File) => form.append('file_bukti[]', f));
+              uploadPromises.push(api.post(`/riwayat-pekerja/${savedRiwayat[i].id}/file`, form));
+            }
+          }
+        }
         const advSteps = [
           'riwayat_pajanan', 'persetujuan_dokter', 'perusahaan_lapor',
           'penetapan_pak', 'kompensasi_bpjstk', 'rehabilitasi_bpjskes'
@@ -869,9 +890,9 @@ export default function PendaftaranPekerjaPage() {
             variant="ghost"
             size="sm"
             className="text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 px-3 hidden sm:flex items-center gap-2"
-            onClick={() => router.push('/')}
+            onClick={() => router.push(isAdminSerikat ? '/dashboard-admin' : '/')}
           >
-            Kembali ke Beranda
+            {isAdminSerikat ? 'Kembali ke Dashboard Admin' : 'Kembali ke Beranda'}
           </Button>
           <Button
             variant="ghost"
@@ -981,56 +1002,66 @@ export default function PendaftaranPekerjaPage() {
                       <Input id="nama_lengkap" placeholder="Masukkan nama lengkap" className="h-11" value={baseData.nama_lengkap} onChange={e => setBaseData({ ...baseData, nama_lengkap: e.target.value })} />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="nik">Nomor Kartu Pegawai</Label>
+                      <Label htmlFor="nik">NIK</Label>
                       <Input
                         id="nik"
-                        placeholder="Masukkan Nomor Kartu Pegawai"
+                        placeholder="Masukkan NIK"
                         className={`h-11 ${duplicateWarning.nik ? 'border-amber-400 bg-amber-50/30' : ''}`}
                         value={baseData.nik}
-                        onChange={e => setBaseData({ ...baseData, nik: e.target.value })}
+                        onChange={e => setBaseData({ ...baseData, nik: e.target.value.replace(/\D/g, '') })}
                         onBlur={(e) => checkDuplicate('nik', e.target.value)}
                       />
                       {duplicateWarning.nik && <p className="text-[10px] text-amber-600 font-medium">{duplicateWarning.nik}</p>}
                     </div>
 
                     {/* Opsi Anggota Serikat Pekerja */}
-                    <div id="anggota-selector" className="space-y-2.5">
-                      <Label className="text-slate-700 font-bold">Apakah Anda Anggota Serikat Pekerja? <span className="text-red-500">*</span></Label>
-                      <div className="grid grid-cols-2 gap-3 p-1.5 bg-slate-50 rounded-xl border border-slate-200/60">
-                        <button 
-                          type="button"
-                          onClick={() => {
-                            setBaseData(prev => ({ ...prev, anggota_organisasi: true }));
-                            setIsWaVerified(false);
-                            setOtpSent(false);
-                          }}
-                          className={`py-2.5 px-3 text-xs font-bold rounded-lg transition-all ${
-                            baseData.anggota_organisasi === true 
-                              ? "bg-[#0ea5e9] text-white shadow-sm border border-[#0ea5e9]/50" 
-                              : "text-slate-500 hover:text-slate-800 bg-white border border-slate-200"
-                          }`}
-                        >
-                          Ya
-                        </button>
-                        <button 
-                          type="button"
-                          onClick={() => {
-                            setBaseData(prev => ({ ...prev, anggota_organisasi: false, nama_serikat: '' }));
-                            setIsWaVerified(false);
-                            setOtpSent(false);
-                          }}
-                          className={`py-2.5 px-3 text-xs font-bold rounded-lg transition-all ${
-                            baseData.anggota_organisasi === false 
-                              ? "bg-[#0ea5e9] text-white shadow-sm border border-[#0ea5e9]/50" 
-                              : "text-slate-500 hover:text-slate-800 bg-white border border-slate-200"
-                          }`}
-                        >
-                          Tidak
-                        </button>
+                    {!isAdminSerikat ? (
+                      <div id="anggota-selector" className="space-y-2.5">
+                        <Label className="text-slate-700 font-bold">Apakah Anda Anggota Serikat Pekerja? <span className="text-red-500">*</span></Label>
+                        <div className="grid grid-cols-2 gap-3 p-1.5 bg-slate-50 rounded-xl border border-slate-200/60">
+                          <button 
+                            type="button"
+                            onClick={() => {
+                              setBaseData(prev => ({ ...prev, anggota_organisasi: true }));
+                              setIsWaVerified(false);
+                              setOtpSent(false);
+                            }}
+                            className={`py-2.5 px-3 text-xs font-bold rounded-lg transition-all ${
+                              baseData.anggota_organisasi === true 
+                                ? "bg-[#0ea5e9] text-white shadow-sm border border-[#0ea5e9]/50" 
+                                : "text-slate-500 hover:text-slate-800 bg-white border border-slate-200"
+                            }`}
+                          >
+                            Ya
+                          </button>
+                          <button 
+                            type="button"
+                            onClick={() => {
+                              setBaseData(prev => ({ ...prev, anggota_organisasi: false, nama_serikat: '' }));
+                              setIsWaVerified(false);
+                              setOtpSent(false);
+                            }}
+                            className={`py-2.5 px-3 text-xs font-bold rounded-lg transition-all ${
+                              baseData.anggota_organisasi === false 
+                                ? "bg-[#0ea5e9] text-white shadow-sm border border-[#0ea5e9]/50" 
+                                : "text-slate-500 hover:text-slate-800 bg-white border border-slate-200"
+                            }`}
+                          >
+                            Tidak
+                          </button>
+                        </div>
                       </div>
-                    </div>
+                    ) : (
+                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-center gap-3">
+                        <ShieldAlert className="h-5 w-5 text-blue-500 shrink-0" />
+                        <div>
+                          <p className="text-[11px] font-bold text-blue-700 uppercase tracking-wide">Pendaftaran Via Admin</p>
+                          <p className="text-xs text-blue-600 mt-0.5">Pekerja otomatis didaftarkan sebagai anggota serikat <b>{baseData.nama_serikat}</b>.</p>
+                        </div>
+                      </div>
+                    )}
 
-                    {baseData.anggota_organisasi === true && (
+                    {!isAdminSerikat && baseData.anggota_organisasi === true && (
                       <div className="space-y-2 animate-in fade-in slide-in-from-top-2 relative">
                         <Label htmlFor="nama_serikat">Nama Serikat Pekerja <span className="text-red-500">*</span></Label>
                         <Input 
@@ -1126,7 +1157,7 @@ export default function PendaftaranPekerjaPage() {
                         {/* Email Input */}
                         <div className="space-y-2" id="email">
                           <Label htmlFor="email" className="flex items-center gap-1.5 font-semibold">
-                            Alamat Email Aktif <span className="text-red-500">*</span>
+                            Alamat Email Aktif (Opsional)
                           </Label>
                           <div className="flex">
                             <span className="inline-flex items-center px-4 rounded-l-lg border border-r-0 border-slate-200 bg-slate-50 text-slate-500 sm:text-sm font-bold">
@@ -1245,43 +1276,19 @@ export default function PendaftaranPekerjaPage() {
                     {/* 1. Provinsi Domisili */}
                     <div className="space-y-2">
                       <Label>Provinsi Domisili</Label>
-                      <Popover open={provOpen} onOpenChange={setProvOpen}>
-                        <PopoverTrigger render={
-                          <Button
-                            variant="outline"
-                            role="combobox"
-                            aria-expanded={provOpen}
-                            className="w-full h-11 justify-between bg-white border-slate-200 text-slate-700 font-normal hover:bg-slate-50"
-                          />
-                        }>
-                          {baseData.domisili ? baseData.domisili : "Pilih Provinsi..."}
-                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                        </PopoverTrigger>
-                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                          <Command>
-                            <CommandInput placeholder="Cari provinsi..." />
-                            <CommandEmpty>Provinsi tidak ditemukan.</CommandEmpty>
-                            <CommandGroup className="max-h-[300px] overflow-y-auto">
-                              <CommandList>
-                                {PROVINCES.map((prov) => (
-                                  <CommandItem
-                                    key={prov}
-                                    value={prov}
-                                    onSelect={(currentValue) => {
-                                      const exactMatch = PROVINCES.find(p => p.toLowerCase() === currentValue.toLowerCase()) || currentValue;
-                                      setBaseData({ ...baseData, domisili: exactMatch, kabupaten: '', kecamatan: '' });
-                                      setProvOpen(false);
-                                    }}
-                                  >
-                                    <Check className={cn("mr-2 h-4 w-4", baseData.domisili === prov ? "opacity-100" : "opacity-0")} />
-                                    {prov}
-                                  </CommandItem>
-                                ))}
-                              </CommandList>
-                            </CommandGroup>
-                          </Command>
-                        </PopoverContent>
-                      </Popover>
+                        <Select
+                          value={baseData.domisili || ''}
+                          onValueChange={(v) => setBaseData({ ...baseData, domisili: v || '', kabupaten: '', kecamatan: '' })}
+                        >
+                          <SelectTrigger className="w-full h-11 bg-white border-slate-200 text-slate-700 font-normal hover:bg-slate-50">
+                            <SelectValue placeholder="Pilih Provinsi..." />
+                          </SelectTrigger>
+                          <SelectContent className="max-h-[300px]">
+                            {PROVINCES.map((prov) => (
+                              <SelectItem key={prov} value={prov}>{prov}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       <p className="text-[10px] text-slate-400 font-medium ml-1">Pilih provinsi tempat Anda tinggal saat ini (untuk pemetaan).</p>
                     </div>
 
@@ -1289,98 +1296,48 @@ export default function PendaftaranPekerjaPage() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label>Kabupaten/Kota</Label>
-                        <Popover open={kabOpen} onOpenChange={setKabOpen}>
-                          <PopoverTrigger render={
-                            <Button
-                              variant="outline"
-                              role="combobox"
-                              aria-expanded={kabOpen}
-                              disabled={!baseData.domisili || loadingKabupaten}
-                              className="w-full h-11 justify-between bg-white border-slate-200 text-slate-700 font-normal hover:bg-slate-50 disabled:opacity-50"
-                            />
-                          }>
-                            {!baseData.domisili
-                              ? 'Pilih provinsi dulu'
-                              : loadingKabupaten
-                              ? 'Memuat data...'
-                              : baseData.kabupaten || 'Pilih Kabupaten/Kota'}
-                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                          </PopoverTrigger>
-                          <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                            <Command>
-                              <CommandInput placeholder="Cari kabupaten/kota..." />
-                              <CommandEmpty>Kabupaten/kota tidak ditemukan.</CommandEmpty>
-                              <CommandGroup className="max-h-[300px] overflow-y-auto">
-                                <CommandList>
-                                  {kabupatenList.map((kab) => (
-                                    <CommandItem
-                                      key={kab.id}
-                                      value={kab.name}
-                                      onSelect={(currentValue) => {
-                                        const exactMatch = kabupatenList.find(k => k.name.toLowerCase() === currentValue.toLowerCase());
-                                        if (exactMatch) {
-                                          setSelectedKabupatenId(exactMatch.id);
-                                          setBaseData({ ...baseData, kabupaten: exactMatch.name, kecamatan: '' });
-                                          setKabOpen(false);
-                                        }
-                                      }}
-                                    >
-                                      <Check className={cn("mr-2 h-4 w-4", baseData.kabupaten === kab.name ? "opacity-100" : "opacity-0")} />
-                                      {kab.name}
-                                    </CommandItem>
-                                  ))}
-                                </CommandList>
-                              </CommandGroup>
-                            </Command>
-                          </PopoverContent>
-                        </Popover>
+                        <Select
+                          value={baseData.kabupaten || ''}
+                          onValueChange={(v) => {
+                            const exactMatch = kabupatenList.find(k => k.name === v);
+                            if (exactMatch) {
+                              setSelectedKabupatenId(exactMatch.id);
+                              setBaseData({ ...baseData, kabupaten: exactMatch.name, kecamatan: '' });
+                            }
+                          }}
+                          disabled={!baseData.domisili || loadingKabupaten}
+                        >
+                          <SelectTrigger className="w-full h-11 bg-white border-slate-200 text-slate-700 font-normal hover:bg-slate-50 disabled:opacity-50">
+                            <SelectValue placeholder={!baseData.domisili ? 'Pilih provinsi dulu' : loadingKabupaten ? 'Memuat data...' : 'Pilih Kabupaten/Kota'} />
+                          </SelectTrigger>
+                          <SelectContent className="max-h-[300px]">
+                            {kabupatenList.map((kab) => (
+                              <SelectItem key={kab.id} value={kab.name}>{kab.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                       <div className="space-y-2">
                         <Label>Kecamatan</Label>
-                        <Popover open={kecOpen} onOpenChange={setKecOpen}>
-                          <PopoverTrigger render={
-                            <Button
-                              variant="outline"
-                              role="combobox"
-                              aria-expanded={kecOpen}
-                              disabled={!baseData.kabupaten || loadingKecamatan}
-                              className="w-full h-11 justify-between bg-white border-slate-200 text-slate-700 font-normal hover:bg-slate-50 disabled:opacity-50"
-                            />
-                          }>
-                            {!baseData.kabupaten
-                              ? 'Pilih kabupaten dulu'
-                              : loadingKecamatan
-                              ? 'Memuat data...'
-                              : baseData.kecamatan || 'Pilih Kecamatan'}
-                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                          </PopoverTrigger>
-                          <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                            <Command>
-                              <CommandInput placeholder="Cari kecamatan..." />
-                              <CommandEmpty>Kecamatan tidak ditemukan.</CommandEmpty>
-                              <CommandGroup className="max-h-[300px] overflow-y-auto">
-                                <CommandList>
-                                  {kecamatanList.map((kec) => (
-                                    <CommandItem
-                                      key={kec.id}
-                                      value={kec.name}
-                                      onSelect={(currentValue) => {
-                                        const exactMatch = kecamatanList.find(k => k.name.toLowerCase() === currentValue.toLowerCase());
-                                        if (exactMatch) {
-                                          setBaseData({ ...baseData, kecamatan: exactMatch.name });
-                                          setKecOpen(false);
-                                        }
-                                      }}
-                                    >
-                                      <Check className={cn("mr-2 h-4 w-4", baseData.kecamatan === kec.name ? "opacity-100" : "opacity-0")} />
-                                      {kec.name}
-                                    </CommandItem>
-                                  ))}
-                                </CommandList>
-                              </CommandGroup>
-                            </Command>
-                          </PopoverContent>
-                        </Popover>
+                        <Select
+                          value={baseData.kecamatan || ''}
+                          onValueChange={(v) => {
+                            const exactMatch = kecamatanList.find(k => k.name === v);
+                            if (exactMatch) {
+                              setBaseData({ ...baseData, kecamatan: exactMatch.name });
+                            }
+                          }}
+                          disabled={!baseData.kabupaten || loadingKecamatan}
+                        >
+                          <SelectTrigger className="w-full h-11 bg-white border-slate-200 text-slate-700 font-normal hover:bg-slate-50 disabled:opacity-50">
+                            <SelectValue placeholder={!baseData.kabupaten ? 'Pilih kabupaten dulu' : loadingKecamatan ? 'Memuat data...' : 'Pilih Kecamatan'} />
+                          </SelectTrigger>
+                          <SelectContent className="max-h-[300px]">
+                            {kecamatanList.map((kec) => (
+                              <SelectItem key={kec.id} value={kec.name}>{kec.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
 
@@ -1454,12 +1411,34 @@ export default function PendaftaranPekerjaPage() {
               </div>
 
               <div className="space-y-8">
+                {/* Section: Checkbox Pekerjaan Saat Ini */}
+                <div className="flex items-start space-x-3 bg-blue-50/50 p-4 rounded-xl border border-blue-100">
+                  <div className="flex items-center h-5 mt-0.5">
+                    <input
+                      id="is_currently_working"
+                      type="checkbox"
+                      className="h-4 w-4 rounded border-blue-300 text-blue-600 focus:ring-blue-600 transition-colors cursor-pointer"
+                      checked={isCurrentlyWorking}
+                      onChange={(e) => setIsCurrentlyWorking(e.target.checked)}
+                    />
+                  </div>
+                  <div className="flex flex-col">
+                    <label htmlFor="is_currently_working" className="text-sm font-bold text-blue-900 cursor-pointer">
+                      Apakah saat ini Anda sedang bekerja?
+                    </label>
+                    <p className="text-xs text-blue-600/70 mt-1">
+                      Centang kotak ini jika Anda masih aktif bekerja. Hilangkan centang jika Anda sedang tidak bekerja.
+                    </p>
+                  </div>
+                </div>
+
                 {/* Section: Pekerjaan Saat Ini */}
-                <div className="pt-6 border-t border-slate-100">
-                  <h3 className="flex items-center text-sm font-bold text-blue-600 mb-4 uppercase tracking-wider">
-                    <Briefcase className="h-4 w-4 mr-2" /> Pekerjaan Saat Ini
-                  </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {isCurrentlyWorking && (
+                  <div className="pt-6 border-t border-slate-100 animate-in fade-in slide-in-from-top-2">
+                    <h3 className="flex items-center text-sm font-bold text-blue-600 mb-4 uppercase tracking-wider">
+                      <Briefcase className="h-4 w-4 mr-2" /> Pekerjaan Saat Ini
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2 col-span-1 sm:col-span-2">
                       <Label>Nama Perusahaan Tempat Bekerja Sekarang</Label>
                       <Select 
@@ -1738,8 +1717,84 @@ export default function PendaftaranPekerjaPage() {
                         </div>
                       )}
                     </div>
+
+                    {/* Paklaring / Bukti Pekerjaan Saat Ini */}
+                    <div className="pt-6 border-t border-slate-100 mt-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <Label className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                          <FileCheck className="h-4 w-4 text-blue-500" /> Dokumen Paklaring / Bukti Kerja (Opsional)
+                        </Label>
+                      </div>
+                      <p className="text-xs text-slate-500 mb-3 leading-relaxed">
+                        Unggah bukti keterangan kerja/paklaring/kontrak (PDF, JPG, PNG). Maksimal 5MB.
+                      </p>
+                      
+                      <div className="space-y-4">
+                        <div className="relative group">
+                          <input
+                            type="file"
+                            accept=".pdf,image/jpeg,image/png,image/jpg"
+                            multiple
+                            className="hidden"
+                            id="paklaring_saatini"
+                            onChange={(e) => {
+                              if (e.target.files) {
+                                const files = Array.from(e.target.files);
+                                setPekerjaanSaatIni(prev => ({
+                                  ...prev,
+                                  file_bukti: [...(prev.file_bukti || []), ...files]
+                                }));
+                              }
+                            }}
+                          />
+                          <Label 
+                            htmlFor="paklaring_saatini"
+                            className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-slate-300 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer"
+                          >
+                            <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                              <UploadCloud className="h-8 w-8 text-slate-400 mb-2 group-hover:text-blue-500 transition-colors" />
+                              <p className="text-sm font-semibold text-slate-600">Klik untuk unggah dokumen</p>
+                              <p className="text-xs text-slate-500 mt-1">atau seret file ke sini</p>
+                            </div>
+                          </Label>
+                        </div>
+                        
+                        {pekerjaanSaatIni.file_bukti && pekerjaanSaatIni.file_bukti.length > 0 && (
+                          <div className="space-y-2 mt-4">
+                            {pekerjaanSaatIni.file_bukti.map((file, fIdx) => (
+                              <div key={fIdx} className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-lg shadow-sm">
+                                <div className="flex items-center gap-3 overflow-hidden">
+                                  <div className="p-2 bg-blue-50 rounded-lg shrink-0">
+                                    <FileText className="h-4 w-4 text-blue-600" />
+                                  </div>
+                                  <div className="truncate">
+                                    <p className="text-sm font-semibold text-slate-700 truncate">{file.name}</p>
+                                    <p className="text-xs text-slate-400">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                                  </div>
+                                </div>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-slate-400 hover:text-red-500 hover:bg-red-50 shrink-0"
+                                  onClick={() => {
+                                    setPekerjaanSaatIni(prev => ({
+                                      ...prev,
+                                      file_bukti: prev.file_bukti.filter((_, i) => i !== fIdx)
+                                    }));
+                                  }}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
+                )}
 
                 {/* Section 5: Riwayat Pekerjaan Sebelumnya */}
                 <div className="pt-6 border-t border-slate-100">
@@ -1885,14 +1940,12 @@ export default function PendaftaranPekerjaPage() {
                                   </Select>
                                 </div>
 
-                                {item.status_pekerjaan !== 'PKWTT' && (
                                   <div className="space-y-2 col-span-2 sm:col-span-1">
                                     <Label>Tanggal Keluar</Label>
                                     <Input type="date" className="h-11" value={item.tgl_keluar} onChange={(e) => {
                                       const newR = [...riwayatLalu]; newR[idx].tgl_keluar = e.target.value; setRiwayatLalu(newR);
                                     }} />
                                   </div>
-                                )}
                                 {item.status_pekerjaan === 'Outsourcing' && (
                                   <div className="space-y-2 col-span-2 sm:col-span-1 animate-in fade-in">
                                     <Label className="text-blue-600 font-bold">Nama Pihak Ketiga / Agensi</Label>
@@ -1933,6 +1986,200 @@ export default function PendaftaranPekerjaPage() {
                                       setRiwayatLalu(newR);
                                     }} 
                                   />
+                                </div>
+
+                                {/* Riwayat Mutasi Jabatan Section */}
+                                <div className="col-span-1 sm:col-span-2 pt-4 border-t border-slate-100 mt-4">
+                                  <div className="flex flex-col mb-3 space-y-2">
+                                    <div className="flex items-center justify-between">
+                                      <Label className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
+                                        <RefreshCw className="h-4 w-4 text-blue-500" /> Riwayat Mutasi Jabatan / Bagian (Opsional)
+                                      </Label>
+                                      <Button 
+                                        type="button" 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 font-bold text-xs h-8"
+                                        onClick={() => {
+                                          const newR = [...riwayatLalu];
+                                          if (!newR[idx].informal_data) newR[idx].informal_data = {};
+                                          if (!newR[idx].informal_data.mutasi_jabatan) newR[idx].informal_data.mutasi_jabatan = [];
+                                          newR[idx].informal_data.mutasi_jabatan.push({ bagian: '', jabatan: '', tahun_mulai: '', tahun_selesai: '', deskripsi_pekerjaan: '' });
+                                          setRiwayatLalu(newR);
+                                        }}
+                                      >
+                                        <Plus className="h-3.5 w-3.5 mr-1" /> Tambah Mutasi
+                                      </Button>
+                                    </div>
+                                    <p className="text-xs text-slate-500 font-medium">Jika Anda pernah dipindahkan ke bagian/departemen atau jabatan lain selama bekerja di perusahaan ini, silakan catat di sini.</p>
+                                  </div>
+
+                                  {(!item.informal_data?.mutasi_jabatan || item.informal_data.mutasi_jabatan.length === 0) ? (
+                                    <div className="text-center py-6 border border-dashed border-slate-200 rounded-xl bg-slate-50/50">
+                                      <RefreshCw className="h-6 w-6 mx-auto text-slate-300 mb-2" />
+                                      <p className="text-xs text-slate-400 font-medium">Belum ada riwayat mutasi jabatan.</p>
+                                    </div>
+                                  ) : (
+                                    <div className="space-y-3.5">
+                                      {item.informal_data.mutasi_jabatan.map((mut: any, mutIdx: number) => (
+                                        <div key={mutIdx} className="grid grid-cols-12 gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200/60 items-end animate-in fade-in duration-200">
+                                          <div className="col-span-4 space-y-1">
+                                            <Label className="text-[10px] font-bold text-slate-500 uppercase">Bagian / Departemen Baru</Label>
+                                            <Input 
+                                              placeholder="Contoh: Logistik" 
+                                              className="h-9 bg-white text-xs"
+                                              value={mut.bagian}
+                                              onChange={(e) => {
+                                                const newR = [...riwayatLalu];
+                                                newR[idx].informal_data.mutasi_jabatan[mutIdx].bagian = e.target.value;
+                                                setRiwayatLalu(newR);
+                                              }}
+                                            />
+                                          </div>
+                                          <div className="col-span-3 space-y-1">
+                                            <Label className="text-[10px] font-bold text-slate-500 uppercase">Jabatan Baru</Label>
+                                            <Input 
+                                              placeholder="Contoh: Supervisor" 
+                                              className="h-9 bg-white text-xs"
+                                              value={mut.jabatan}
+                                              onChange={(e) => {
+                                                const newR = [...riwayatLalu];
+                                                newR[idx].informal_data.mutasi_jabatan[mutIdx].jabatan = e.target.value;
+                                                setRiwayatLalu(newR);
+                                              }}
+                                            />
+                                          </div>
+                                          <div className="col-span-2 space-y-1">
+                                            <Label className="text-[10px] font-bold text-slate-500 uppercase">Tahun Mulai</Label>
+                                            <Input 
+                                              placeholder="2020" 
+                                              className="h-9 bg-white text-xs text-center"
+                                              value={mut.tahun_mulai}
+                                              onChange={(e) => {
+                                                const newR = [...riwayatLalu];
+                                                newR[idx].informal_data.mutasi_jabatan[mutIdx].tahun_mulai = e.target.value;
+                                                setRiwayatLalu(newR);
+                                              }}
+                                            />
+                                          </div>
+                                          <div className="col-span-2 space-y-1">
+                                            <Label className="text-[10px] font-bold text-slate-500 uppercase">Tahun Selesai</Label>
+                                            <Input 
+                                              placeholder="2024" 
+                                              className="h-9 bg-white text-xs text-center"
+                                              value={mut.tahun_selesai}
+                                              onChange={(e) => {
+                                                const newR = [...riwayatLalu];
+                                                newR[idx].informal_data.mutasi_jabatan[mutIdx].tahun_selesai = e.target.value;
+                                                setRiwayatLalu(newR);
+                                              }}
+                                            />
+                                          </div>
+                                          <div className="col-span-1 flex justify-center pb-0.5">
+                                            <Button 
+                                              type="button" 
+                                              variant="ghost" 
+                                              size="icon" 
+                                              className="h-9 w-9 text-slate-400 hover:text-red-500 hover:bg-red-50"
+                                              onClick={() => {
+                                                const newR = [...riwayatLalu];
+                                                newR[idx].informal_data.mutasi_jabatan = newR[idx].informal_data.mutasi_jabatan.filter((_: any, i: number) => i !== mutIdx);
+                                                setRiwayatLalu(newR);
+                                              }}
+                                            >
+                                              <X className="h-4 w-4" />
+                                            </Button>
+                                          </div>
+                                          <div className="col-span-12 space-y-1 mt-1">
+                                            <Label className="text-[10px] font-bold text-slate-500 uppercase">Deskripsi Pekerjaan</Label>
+                                            <Input 
+                                              placeholder="Jelaskan secara singkat pekerjaan Anda di posisi ini" 
+                                              className="h-9 bg-white text-xs"
+                                              value={mut.deskripsi_pekerjaan || ''}
+                                              onChange={(e) => {
+                                                const newR = [...riwayatLalu];
+                                                newR[idx].informal_data.mutasi_jabatan[mutIdx].deskripsi_pekerjaan = e.target.value;
+                                                setRiwayatLalu(newR);
+                                              }}
+                                            />
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+
+                                  {/* Paklaring / Bukti Riwayat Sebelumnya */}
+                                  <div className="pt-6 border-t border-slate-100 mt-6">
+                                    <div className="flex items-center justify-between mb-4">
+                                      <Label className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                                        <FileCheck className="h-4 w-4 text-blue-500" /> Dokumen Paklaring / Bukti Kerja (Opsional)
+                                      </Label>
+                                    </div>
+                                    <p className="text-xs text-slate-500 mb-3 leading-relaxed">
+                                      Unggah bukti keterangan kerja/paklaring (PDF, JPG, PNG). Maksimal 5MB.
+                                    </p>
+                                    
+                                    <div className="space-y-4">
+                                      <div className="relative group">
+                                        <input
+                                          type="file"
+                                          accept=".pdf,image/jpeg,image/png,image/jpg"
+                                          multiple
+                                          className="hidden"
+                                          id={`paklaring_riwayat_${idx}`}
+                                          onChange={(e) => {
+                                            if (e.target.files) {
+                                              const files = Array.from(e.target.files);
+                                              const newR = [...riwayatLalu];
+                                              newR[idx].file_bukti = [...(newR[idx].file_bukti || []), ...files];
+                                              setRiwayatLalu(newR);
+                                            }
+                                          }}
+                                        />
+                                        <Label 
+                                          htmlFor={`paklaring_riwayat_${idx}`}
+                                          className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-slate-300 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer"
+                                        >
+                                          <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                            <UploadCloud className="h-8 w-8 text-slate-400 mb-2 group-hover:text-blue-500 transition-colors" />
+                                            <p className="text-sm font-semibold text-slate-600">Klik untuk unggah dokumen</p>
+                                            <p className="text-xs text-slate-500 mt-1">atau seret file ke sini</p>
+                                          </div>
+                                        </Label>
+                                      </div>
+                                      
+                                      {item.file_bukti && item.file_bukti.length > 0 && (
+                                        <div className="space-y-2 mt-4">
+                                          {item.file_bukti.map((file: File, fIdx: number) => (
+                                            <div key={fIdx} className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-lg shadow-sm">
+                                              <div className="flex items-center gap-3 overflow-hidden">
+                                                <div className="p-2 bg-blue-50 rounded-lg shrink-0">
+                                                  <FileText className="h-4 w-4 text-blue-600" />
+                                                </div>
+                                                <div className="truncate">
+                                                  <p className="text-sm font-semibold text-slate-700 truncate">{file.name}</p>
+                                                  <p className="text-xs text-slate-400">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                                                </div>
+                                              </div>
+                                              <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-8 w-8 text-slate-400 hover:text-red-500 hover:bg-red-50 shrink-0"
+                                                onClick={() => {
+                                                  const newR = [...riwayatLalu];
+                                                  newR[idx].file_bukti = newR[idx].file_bukti.filter((_: any, i: number) => i !== fIdx);
+                                                  setRiwayatLalu(newR);
+                                                }}
+                                              >
+                                                <Trash2 className="h-4 w-4" />
+                                              </Button>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
                                 </div>
                               </div>
                             </div>
@@ -2172,11 +2419,19 @@ export default function PendaftaranPekerjaPage() {
 
           {/* Internal Form Footer */}
           <div className="mt-12 flex justify-between items-center border-t border-slate-100 pt-6">
-            <a href="https://wa.me/6285176876869" target="_blank" rel="noopener noreferrer" className="flex gap-2 cursor-pointer hover:opacity-80 transition-opacity group">
-              <ShieldAlert className="h-8 w-8 text-slate-200 group-hover:text-green-500 transition-colors" />
+            <a href="https://wa.me/6285176876869" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl cursor-pointer transition-all group max-w-md shadow-sm hover:shadow-md">
+              <div className="bg-emerald-500 p-2.5 rounded-lg text-white group-hover:scale-110 transition-transform shadow-sm">
+                <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/>
+                </svg>
+              </div>
               <div>
-                <p className="text-[10px] font-bold text-slate-700 group-hover:text-green-600 transition-colors">Butuh Bantuan?</p>
-                <p className="text-[10px] text-slate-500 group-hover:text-green-600/80 transition-colors">Hubungi admin via WhatsApp jika ada masalah dalam pengisian formulir.</p>
+                <p className="text-xs font-black text-emerald-800 uppercase tracking-wide flex items-center gap-1.5">
+                  Hubungi WhatsApp Admin
+                </p>
+                <p className="text-[10px] text-emerald-600 mt-1 leading-relaxed font-medium">
+                  Butuh bantuan pengisian form atau Anda <b>Pengurus Serikat</b> yang ingin mendaftar? Klik di sini.
+                </p>
               </div>
             </a>
             <div className="flex gap-2 text-right">

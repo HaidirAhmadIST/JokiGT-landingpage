@@ -68,6 +68,10 @@ export default function DashboardLayout({
   const [rejectionReason, setRejectionReason] = useState('');
   const [isRejectOpen, setIsRejectOpen] = useState(false);
   const [submittingResponse, setSubmittingResponse] = useState(false);
+  const hasAutoOpened = useRef(false);
+
+  // Profile reminder state
+  const [showProfileReminder, setShowProfileReminder] = useState(false);
 
   const fetchRequests = async () => {
     try {
@@ -161,13 +165,18 @@ export default function DashboardLayout({
   // Auto-select request matching query param if provided
   useEffect(() => {
     if (typeof window !== 'undefined' && requests.length > 0) {
-      const params = new URLSearchParams(window.location.search);
-      const urlId = params.get('id');
-      if (urlId) {
-        setSelectedId('approval_' + urlId);
-        setActiveTab('ALL');
-        setIsInboxOpen(true);
-      } else if (!selectedId) {
+      if (!hasAutoOpened.current) {
+        hasAutoOpened.current = true;
+        const params = new URLSearchParams(window.location.search);
+        const urlId = params.get('inbox_id');
+        if (urlId) {
+          setSelectedId('approval_' + urlId);
+          setActiveTab('ALL');
+          setIsInboxOpen(true);
+        }
+      }
+      
+      if (!selectedId) {
         // Default select first item matching activeTab if no selection
         const matches = requests.filter(r => activeTab === 'ALL' || r.status === activeTab);
         if (matches.length > 0) {
@@ -285,6 +294,11 @@ export default function DashboardLayout({
               userData = freshData;
               setUser(freshData);
               localStorage.setItem('user', JSON.stringify(freshData));
+
+              // Check if petugas has incomplete profile
+              if (freshData.role === 'petugas' && !freshData.phone && !freshData.whatsapp) {
+                setShowProfileReminder(true);
+              }
             }
           } catch (err: any) {
             console.warn('[Layout] Auth verification failed:', err.message);
@@ -429,6 +443,34 @@ export default function DashboardLayout({
 
   return (
     <div className="flex flex-col h-screen bg-[#f8fafc] font-sans">
+      
+      {/* PROFILE REMINDER MODAL */}
+      <Dialog open={showProfileReminder} onOpenChange={setShowProfileReminder}>
+        <DialogContent className="sm:max-w-[425px] rounded-2xl bg-white border-none shadow-2xl p-0 overflow-hidden">
+          <div className="px-6 py-6 border-b border-slate-100 flex items-start gap-4 bg-amber-50/50">
+            <div className="h-10 w-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
+              <ShieldAlert className="h-5 w-5" />
+            </div>
+            <div>
+              <DialogTitle className="text-lg font-bold text-slate-800">Lengkapi Informasi Kontak</DialogTitle>
+              <DialogDescription className="text-sm font-medium text-slate-500 mt-1">
+                Data profil Anda (WhatsApp/Telepon) belum lengkap. Mohon lengkapi agar mempermudah koordinasi.
+              </DialogDescription>
+            </div>
+          </div>
+          <div className="p-6 flex justify-end gap-3 bg-white">
+            <Button variant="ghost" onClick={() => setShowProfileReminder(false)} className="text-slate-500 hover:text-slate-700">
+              Nanti Saja
+            </Button>
+            <Button onClick={() => {
+              setShowProfileReminder(false);
+              router.push('/profile');
+            }} className="bg-[#0ea5e9] hover:bg-[#0284c7] text-white rounded-xl">
+              Lengkapi Sekarang
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
       
       {/* FULL-WIDTH TOP HEADER */}
       <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 z-20 shrink-0 shadow-sm print:hidden">

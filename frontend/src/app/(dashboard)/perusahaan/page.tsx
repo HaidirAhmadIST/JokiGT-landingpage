@@ -501,8 +501,8 @@ export default function PerusahaanPage() {
         </div>
         <div className="flex flex-col sm:flex-row items-end sm:items-center gap-3 w-full sm:w-auto">
 
-          {isStaffOrAbove && (
-            <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+          <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+            {isSuperAdmin && (
               <SheetTrigger
                 onClick={openCreate}
                 className={cn(
@@ -513,6 +513,9 @@ export default function PerusahaanPage() {
                 <Plus className="mr-2 h-5 w-5" />
                 Tambah Perusahaan
               </SheetTrigger>
+            )}
+            
+            {(isSuperAdmin || (isStaffOrAbove && editId)) && (
               <SheetContent className="sm:max-w-xl p-0 overflow-hidden flex flex-col bg-white border-l shadow-2xl">
                 <SheetHeader className="px-8 py-6 border-b border-slate-100 bg-white z-10">
                   <div className="flex justify-between items-start">
@@ -635,8 +638,8 @@ export default function PerusahaanPage() {
                   </Button>
                 </div>
               </SheetContent>
-            </Sheet>
-          )}
+            )}
+          </Sheet>
         </div>
       </div>
 

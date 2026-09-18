@@ -111,7 +111,6 @@ export default function LoginPage() {
         // If debug OTP exists in response, show a helpful alert for local dev testing
         if (res.data.data?.debug_otp) {
           console.log("Local Dev OTP Code:", res.data.data.debug_otp);
-          toast.info(`[DEV MODE] OTP Code: ${res.data.data.debug_otp} (Lihat console log)`, { duration: 10000 });
         }
       } else {
         toast.error(res.data.message || "Gagal mengirim OTP.");
@@ -224,7 +223,7 @@ export default function LoginPage() {
                     : "text-slate-500 hover:text-slate-800"
                 }`}
               >
-                Pengurus Serikat
+                Admin Serikat
               </button>
               <button 
                 type="button"
@@ -245,7 +244,7 @@ export default function LoginPage() {
             <form onSubmit={handleLogin} suppressHydrationWarning className="space-y-4 pt-2 animate-in fade-in duration-300">
               <div className="p-4 bg-blue-50/50 border border-blue-100/60 rounded-xl mb-2">
                 <p className="text-xs text-blue-600 font-medium leading-relaxed">
-                  Pengurus serikat masuk menggunakan Email/No. Telp dan kata sandi yang telah didaftarkan.
+                  Admin serikat masuk menggunakan Email/No. Telp dan kata sandi yang telah didaftarkan.
                 </p>
               </div>
               <div className="space-y-2">

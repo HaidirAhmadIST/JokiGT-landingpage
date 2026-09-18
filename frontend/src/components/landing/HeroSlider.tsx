@@ -43,6 +43,15 @@ const slides = [
     description: 'Dukungan penuh dalam proses verifikasi dan advokasi kasus PAK hingga mendapatkan solusi terbaik.',
     ctaText: 'Konsultasi Gratis',
     ctaLink: 'https://wa.me/6285176876869'
+  },
+  {
+    image: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?q=80&w=2070&auto=format&fit=crop',
+    author: 'Austin Distel',
+    badge: 'Admin Serikat',
+    title: 'Buat Akun Admin Serikat',
+    description: 'Jadilah bagian dari perlindungan pekerja! Hubungi tim kami via WhatsApp untuk mengaktifkan akun Admin Serikat Anda dengan cepat dan mudah.',
+    ctaText: 'Hubungi WhatsApp',
+    ctaLink: 'https://wa.me/6285176876869'
   }
 ];
 
@@ -129,7 +138,7 @@ export default function HeroSlider() {
                     {slide.ctaText} <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </Link>
-                {slide.ctaText !== 'Konsultasi Gratis' && (
+                {!slide.ctaLink.includes('wa.me') && (
                   <a href="https://wa.me/6285176876869" target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto">
                     <Button size="lg" variant="outline" className="w-full rounded-full px-8 h-14 text-base font-bold bg-white/10 backdrop-blur-md border-white/20 text-white hover:bg-white/20 transition-all hover:scale-105">
                       Konsultasi Gratis

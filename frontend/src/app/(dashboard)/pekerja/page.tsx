@@ -197,7 +197,7 @@ export default function PekerjaPage() {
     try {
       const res = await api.post('/admin/buat-pengurus', createPengurusData);
       setCreatedPengurusResult(res.data.data);
-      toast.success('Akun pengurus serikat berhasil dibuat!');
+      toast.success('Akun admin serikat berhasil dibuat!');
       fetchData();
     } catch (e: any) {
       toast.error(e?.response?.data?.message || 'Gagal membuat akun pengurus.');
@@ -255,7 +255,7 @@ export default function PekerjaPage() {
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <input
             type="text"
-            placeholder="Cari berdasarkan Nama atau Nomor Kartu Pegawai..."
+            placeholder="Cari berdasarkan Nama atau NIK..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full h-11 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0ea5e9]/30 focus:border-[#0ea5e9] transition-all"
@@ -287,7 +287,7 @@ export default function PekerjaPage() {
               <TableRow className="border-b border-slate-100 hover:bg-transparent">
                 <TableHead className="text-[11px] font-bold text-slate-400 tracking-widest uppercase bg-transparent w-12 pl-4 pr-1">NO.</TableHead>
                 <TableHead className="text-[11px] font-bold text-slate-400 tracking-widest uppercase bg-transparent w-[22%]">NAMA PEKERJA</TableHead>
-                <TableHead className="text-[11px] font-bold text-slate-400 tracking-widest uppercase bg-transparent w-[14%]">NO. KARTU PEGAWAI</TableHead>
+                <TableHead className="text-[11px] font-bold text-slate-400 tracking-widest uppercase bg-transparent w-[14%]">NIK</TableHead>
                 <TableHead className="text-[11px] font-bold text-slate-400 tracking-widest uppercase bg-transparent w-[18%]">PERUSAHAAN</TableHead>
                 <TableHead className="text-[11px] font-bold text-slate-400 tracking-widest uppercase bg-transparent w-[15%]">LOKASI / UNIT</TableHead>
                 <TableHead className="text-[11px] font-bold text-slate-400 tracking-widest uppercase bg-transparent w-[12%]">STATUS</TableHead>
@@ -430,7 +430,7 @@ export default function PekerjaPage() {
           perPage={perPage}
           lastPage={lastPage}
           onPageChange={setCurrentPage}
-          label="pekerja"
+          label="pekerja" 
         />
       </div>
 
@@ -604,10 +604,10 @@ export default function PekerjaPage() {
               <ShieldAlert className="h-7 w-7 text-indigo-500" />
             </div>
             <AlertDialogTitle className="text-xl font-black text-slate-900 text-center">
-              Buat Akun Pengurus Serikat
+              Buat Akun Admin Serikat
             </AlertDialogTitle>
             <AlertDialogDescription className="text-slate-500 text-center text-sm px-2">
-              Isi data di bawah untuk men-generate akun Pengurus Serikat. Password akan dibuatkan secara otomatis oleh sistem.
+              Isi data di bawah untuk men-generate akun Admin Serikat. Password akan dibuatkan secara otomatis oleh sistem.
             </AlertDialogDescription>
           </AlertDialogHeader>
 

@@ -51,8 +51,11 @@ export function useWilayah(provinsiNama: string, initialKabupaten?: string): Use
     setKecamatanList([]);
     setSelectedKabupatenId('');
 
-    fetch(`https://emsifa.github.io/api-wilayah-indonesia/api/regencies/${kodeProvinsi}.json`)
-      .then(res => res.json())
+    fetch(`/data-bps/regencies/${kodeProvinsi}.json`)
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to fetch');
+        return res.json();
+      })
       .then((data: WilayahItem[]) => {
         setKabupatenList(data || []);
 
@@ -81,8 +84,11 @@ export function useWilayah(provinsiNama: string, initialKabupaten?: string): Use
     setLoadingKecamatan(true);
     setKecamatanList([]);
 
-    fetch(`https://emsifa.github.io/api-wilayah-indonesia/api/districts/${selectedKabupatenId}.json`)
-      .then(res => res.json())
+    fetch(`/data-bps/districts/${selectedKabupatenId}.json`)
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to fetch');
+        return res.json();
+      })
       .then((data: WilayahItem[]) => {
         setKecamatanList(data || []);
       })

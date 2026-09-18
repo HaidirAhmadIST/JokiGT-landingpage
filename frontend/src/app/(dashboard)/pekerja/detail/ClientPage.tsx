@@ -547,6 +547,7 @@ export default function PekerjaDetailPage() {
   };
 
   const completedStepsCount = advSteps.filter(step => !!getFilePath(step.key)).length;
+  const isProfilePetugas = data?.user?.role === 'petugas';
 
   return (
     <div className="bg-[#f8fafc] min-h-screen pb-20 font-sans text-slate-800">
@@ -560,7 +561,7 @@ export default function PekerjaDetailPage() {
           <span className="text-sm font-medium text-slate-500">Kembali ke Daftar Pekerja</span>
         </div>
         
-        {isStaffOrAbove && (
+        {isStaffOrAbove && !isProfilePetugas && (
           <Button 
             variant="outline" 
             size="sm" 
@@ -595,7 +596,7 @@ export default function PekerjaDetailPage() {
 
             <div>
               <h1 className="text-3xl font-extrabold tracking-tight text-[#1e293b]">{data.nama_lengkap}</h1>
-              <p className="text-slate-500 font-medium tracking-wide mt-1 text-sm">No. Kartu Pegawai: {data.nik}</p>
+              <p className="text-slate-500 font-medium tracking-wide mt-1 text-sm">NIK: {data.nik}</p>
               <p className="text-slate-400 text-[13px] mt-1.5 flex items-center gap-1.5 flex-wrap">
                 {data.jenis_kelamin && (
                   <span className="inline-flex items-center gap-1">
@@ -632,7 +633,7 @@ export default function PekerjaDetailPage() {
                 }`}>
                   <User className="h-2.5 w-2.5 mr-1" />
                   {data.user?.role === 'petugas'
-                    ? `Pengurus Serikat${data.nama_serikat ? ` (${data.nama_serikat})` : ''}`
+                    ? `Admin Serikat${data.nama_serikat ? ` (${data.nama_serikat})` : ''}`
                     : data.anggota_organisasi 
                       ? `Anggota Serikat${data.nama_serikat ? ` (${data.nama_serikat})` : ''}` 
                       : 'Bukan Anggota Serikat'}
@@ -648,6 +649,7 @@ export default function PekerjaDetailPage() {
           </div>
 
           {/* Right: Stats */}
+          {!isProfilePetugas && (
           <div className="flex flex-wrap lg:flex-nowrap gap-4 w-full lg:w-auto h-full">
             <div className={`bg-slate-50/50 border border-slate-100 rounded-xl p-4 flex-1 min-w-[170px] relative transition-all ${isStaffOrAbove ? 'hover:bg-blue-50/30 cursor-pointer group/status border-dashed' : ''}`}>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Status Kesehatan</p>
@@ -702,15 +704,18 @@ export default function PekerjaDetailPage() {
               </div>
             </div>
           </div>
+          )}
         </div>
 
         {/* MAIN CONTENT GRID */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
           {/* LEFT COLUMN (Wider) */}
-          <div className="lg:col-span-8 space-y-6">
+          <div className={`space-y-6 ${isProfilePetugas ? 'lg:col-span-12' : 'lg:col-span-8'}`}>
             
             {/* Diagnosa Awal */}
+            {!isProfilePetugas && (
+              <>
             <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6">
                <h3 className="text-sm font-bold text-[#1e293b] flex items-center mb-6">
                  <Stethoscope className="h-4 w-4 text-[#0ea5e9] mr-2" /> Diagnosa Awal
@@ -782,6 +787,8 @@ export default function PekerjaDetailPage() {
                  </div>
                </div>
             </div>
+              </>
+            )}
 
             {/* Contact Info Card */}
             <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6">
@@ -813,6 +820,7 @@ export default function PekerjaDetailPage() {
             </div>
 
             {/* Admin Note Card */}
+            {!isProfilePetugas && (
             <div className="bg-[#fffdf5] border border-orange-100/60 shadow-sm rounded-2xl p-6 relative overflow-hidden">
               <div className="absolute top-0 left-0 w-1.5 h-full bg-orange-300"></div>
               <div className="flex justify-between items-start mb-3">
@@ -855,8 +863,11 @@ export default function PekerjaDetailPage() {
                 <span className="text-[10px] font-semibold text-orange-600/70">Terakhir diubah oleh Admin Sentinel</span>
               </div>
             </div>
+            )}
 
             {/* ACTION BAR: Rekam Jejak Terpadu */}
+            {!isProfilePetugas && (
+              <>
             <div className="bg-gradient-to-r from-[#0ea5e9] to-blue-600 rounded-2xl p-6 shadow-md flex flex-col md:flex-row items-center justify-between gap-4 text-white">
               <div className="flex items-center gap-4">
                 <div className="p-3 bg-white/20 backdrop-blur-md rounded-xl">
@@ -1001,6 +1012,7 @@ export default function PekerjaDetailPage() {
                                                   </span>
                                                 </div>
                                                 <p className="text-[11px] text-slate-500 font-medium">Jabatan: {m.jabatan || '-'}</p>
+                                                {m.deskripsi_pekerjaan && <p className="text-[10px] text-slate-500 mt-1 italic">{m.deskripsi_pekerjaan}</p>}
                                               </div>
                                             </div>
                                           ))}
@@ -1065,7 +1077,7 @@ export default function PekerjaDetailPage() {
                                       onClick={() => downloadRiwayatDoc(r.id)}
                                       className="h-9 w-full bg-blue-50 text-[#0ea5e9] hover:bg-blue-100 border border-blue-100 rounded-xl font-bold transition-all" >
 
-                                      <Download className="h-4 w-4 mr-2" /> Unduh Bukti Riwayat / Pajanan
+                                      <Download className="h-4 w-4 mr-2" /> Unduh Paklaring / Bukti Kerja
                                     </Button>
                                   </div>
                                 )}
@@ -1220,6 +1232,7 @@ export default function PekerjaDetailPage() {
                                   <h5 className="text-base font-extrabold text-slate-900 mb-1">Pemeriksaan Mandiri</h5>
                                   <p className="text-amber-500 text-[10px] font-bold uppercase tracking-widest mb-4">Luar Riwayat Kerja</p>
                                   
+  
                                   <div className="space-y-4">
                                     {orphanMedis.map((m: any, mIdx: number) => (
                                       <div key={mIdx} className="p-3 bg-amber-50/20 rounded-xl border border-amber-100">
@@ -1360,7 +1373,7 @@ export default function PekerjaDetailPage() {
                                                  <div className="w-1 h-1 rounded-full bg-blue-400" />
                                                  {m.bagian || '-'}
                                                </div>
-                                               <span className="text-[8px] font-bold text-slate-400">{m.tahun || '-'}</span>
+                                               <span className="text-[8px] font-bold text-slate-400">{m.tahun_mulai ? `${m.tahun_mulai}–${m.tahun_selesai || 'Skg'}` : (m.tahun || '-')}</span>
                                              </div>
                                            ))}
                                          </div>
@@ -1389,7 +1402,7 @@ export default function PekerjaDetailPage() {
                                  onClick={(e) => { e.stopPropagation(); downloadRiwayatDoc(r.id); }}
                                  className="h-6 text-[9px] font-bold text-[#0ea5e9] hover:bg-blue-50 border border-blue-100 rounded px-2" >
 
-                                 <FileCheck className="h-2 w-2 mr-1" /> Bukti
+                                 <FileCheck className="h-2 w-2 mr-1" /> Paklaring
                                </Button>
                              )}
                            </div>
@@ -1527,9 +1540,12 @@ export default function PekerjaDetailPage() {
               </div>
             </div>
           </div>
+              </>
+            )}
           </div>
 
           {/* RIGHT COLUMN (Advocacy) */}
+          {!isProfilePetugas && (
           <div className="lg:col-span-4 space-y-6">
             {/* Status Advokasi Box */}
             <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6">
@@ -1636,12 +1652,13 @@ export default function PekerjaDetailPage() {
                </div>
             </div>
           </div>
-         </div>
+          )}
         </div>
 
 
         {/* FULL WIDTH SECTION BELOW THE GRID */}
         {/* Riwayat Pajanan Section (Full Width) */}
+        {!isProfilePetugas && (
         <div className="bg-white border border-slate-100 shadow-sm rounded-2xl overflow-hidden mt-8 mb-12">
           <div className="p-6 border-b border-slate-100 bg-white flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -1765,8 +1782,9 @@ export default function PekerjaDetailPage() {
                                       <div>
                                         <p className="text-[11px] font-black text-slate-700 leading-none uppercase">{m.bagian || '-'}</p>
                                         <p className="text-[10px] text-slate-600 mt-1.5 font-bold">{m.jabatan || '-'}</p>
+                                        {m.deskripsi_pekerjaan && <p className="text-[10px] text-slate-500 mt-1 italic">{m.deskripsi_pekerjaan}</p>}
                                       </div>
-                                      <span className="text-[11px] font-extrabold text-slate-500 tracking-tighter shrink-0">{m.tahun || '-'}</span>
+                                      <span className="text-[11px] font-extrabold text-slate-500 tracking-tighter shrink-0">{m.tahun_mulai ? `${m.tahun_mulai}–${m.tahun_selesai || 'Sekarang'}` : (m.tahun || '-')}</span>
                                     </div>
                                   </div>
                                 ))}
@@ -1867,13 +1885,15 @@ export default function PekerjaDetailPage() {
                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Alat Pelindung Diri</span>
              </div>
              <div className="flex items-center gap-3">
-               <div className="h-2 w-2 rounded-full bg-[#0ea5e9] shadow-sm" />
-               <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Akumulasi Masa Kerja</span>
-             </div>
-          </div>
+                <div className="h-2 w-2 rounded-full bg-[#0ea5e9] shadow-sm" />
+                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Akumulasi Masa Kerja</span>
+              </div>
+           </div>
         </div>
+        )}
+      </div>
 
-
+      {!isProfilePetugas && (
       <button 
         onClick={handleExportPdf}
         className="fixed bottom-8 right-8 z-50 bg-[#0ea5e9] hover:bg-[#0284c7] text-white rounded-full w-14 h-14 shadow-lg shadow-blue-500/30 flex items-center justify-center transition-transform hover:scale-105 active:scale-95"
@@ -1881,6 +1901,7 @@ export default function PekerjaDetailPage() {
       >
         <Printer className="h-6 w-6" />
       </button>
+      )}
 
       {/* Edit Riwayat Pajanan Dialog */}
       <Dialog open={isEditRiwayatOpen} onOpenChange={setIsEditRiwayatOpen}>

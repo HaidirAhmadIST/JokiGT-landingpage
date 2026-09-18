@@ -61,13 +61,12 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { simpanKasusSchema, SimpanKasusFormData } from '@/lib/validations/advokasi';
 
-const tabs = ['Semua Kasus', 'PAK'];
-
+// Tab Semua Kasus dihapus, default hanya menampilkan PAK
 
 export default function AdvokasiPage() {
   const router = useRouter();
   const { isStaffOrAbove } = useRole();
-  const [activeTab, setActiveTab] = useState('Semua Kasus');
+  const [activeTab, setActiveTab] = useState('PAK');
   const [sheetOpen, setSheetOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [perPage] = useState(10);
@@ -180,9 +179,9 @@ export default function AdvokasiPage() {
     <div className="space-y-8 animate-in fade-in duration-500 max-w-7xl mx-auto">
       {/* Header */}
       <div>
-        <h1 className="text-[28px] font-extrabold tracking-tight text-[#0f172a]">Dashboard Advokasi</h1>
+        <h1 className="text-[28px] font-extrabold tracking-tight text-[#0f172a]">Dashboard Rekam Jejak PAK</h1>
         <p className="text-[#64748b] mt-1.5 text-[15px]">
-          Pantau progres kasus advokasi yang sedang berjalan secara real-time
+          Pantau progres rekam jejak PAK yang sedang berjalan secara real-time
         </p>
       </div>
 
@@ -198,25 +197,7 @@ export default function AdvokasiPage() {
         <div className="px-6 pt-6 pb-0 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <h2 className="text-lg font-bold text-[#0f172a]">Daftar Kasus Aktif</h2>
           <div className="flex items-center gap-3 flex-wrap">
-            {/* Tabs */}
-            <div className="flex border-b border-slate-200">
-              {tabs.map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  suppressHydrationWarning
-                  className={`px-4 pb-3 text-sm font-semibold whitespace-nowrap transition-colors relative ${activeTab === tab
-                    ? 'text-[#0284c7]'
-                    : 'text-[#94a3b8] hover:text-slate-600'
-                    }`}
-                >
-                  {tab}
-                  {activeTab === tab && (
-                    <span className="absolute bottom-0 inset-x-0 h-[2px] bg-[#0284c7] rounded-t" />
-                  )}
-                </button>
-              ))}
-            </div>
+            {/* Tabs dihilangkan sesuai permintaan (hanya PAK yang aktif) */}
 
             {isStaffOrAbove && (
               <Button onClick={() => setSheetOpen(true)} className="h-9 px-4 text-sm font-bold bg-[#0284c7] hover:bg-[#0369a1] text-white">
@@ -379,7 +360,12 @@ export default function AdvokasiPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="text-xs font-bold text-slate-600">Tahap Saat Ini</Label>
-                  <Select value={formData.tahap} onValueChange={(v) => setValue('tahap', v || '')}>
+                  <Select value={formData.tahap} onValueChange={(v) => {
+                    setValue('tahap', v || '');
+                    if (v !== 'Sengketa PHI') {
+                      setValue('status_detail', 'Dalam Proses');
+                    }
+                  }}>
                     <SelectTrigger className="h-11 bg-slate-50/50 border-slate-200 focus:ring-[#0ea5e9]">
                       <SelectValue />
                     </SelectTrigger>
@@ -400,10 +386,14 @@ export default function AdvokasiPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Dalam Proses">Dalam Proses</SelectItem>
-                      <SelectItem value="Verifikasi Dokumen">Verifikasi Dokumen</SelectItem>
-                      <SelectItem value="Mediasi 1">Mediasi 1</SelectItem>
-                      <SelectItem value="Mediasi 2">Mediasi 2</SelectItem>
-                      <SelectItem value="Sidang">Sidang</SelectItem>
+                      {formData.tahap === 'Sengketa PHI' && (
+                        <>
+                          <SelectItem value="Verifikasi Dokumen">Verifikasi Dokumen</SelectItem>
+                          <SelectItem value="Mediasi 1">Mediasi 1</SelectItem>
+                          <SelectItem value="Mediasi 2">Mediasi 2</SelectItem>
+                          <SelectItem value="Sidang">Sidang</SelectItem>
+                        </>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -418,7 +408,7 @@ export default function AdvokasiPage() {
               </div>
 
               <div className="space-y-2">
-                <Label className="text-xs font-bold text-slate-600">Tanggal Pelaporan</Label>
+                <Label className="text-xs font-bold text-slate-600">Tanggal Awal Pelaporan</Label>
                 <Input type="date" className="h-11 bg-slate-50/50 border-slate-200 focus-visible:ring-[#0ea5e9]"
                   {...register('tanggal_pelaporan')} />
                 {errors.tanggal_pelaporan && <p className="text-red-500 text-[11px] font-medium">{errors.tanggal_pelaporan.message}</p>}

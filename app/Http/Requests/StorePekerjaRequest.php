@@ -32,12 +32,8 @@ class StorePekerjaRequest extends FormRequest
             'perusahaan_id' => [
                 'nullable',
                 'exists:perusahaan,id',
-                Rule::requiredIf(function () {
-                    $status = $this->riwayat[0]['status_pekerjaan'] ?? null;
-                    return !in_array($status, ['Outsourcing']);
-                }),
             ],
-            'nik' => ['required', 'string', 'max:100'],
+            'nik' => ['required', 'string', 'regex:/^[0-9]+$/', 'max:100'],
             'nama_lengkap' => ['required', 'string', 'max:255'],
             'status_kesehatan' => ['required', 'in:sehat,sehat_dengan_catatan,tidak_sehat'],
             'catatan_admin' => ['nullable', 'string'],
@@ -80,11 +76,11 @@ class StorePekerjaRequest extends FormRequest
             // Detail Medis (Transactional) Data (Optional)
             'medis' => ['nullable', 'array'],
             'medis.*.tanggal_pemeriksaan' => ['required', 'date', 'before_or_equal:today'],
-            'medis.*.tempat_pemeriksaan' => ['required', 'string', 'max:255'],
+            'medis.*.tempat_pemeriksaan' => ['nullable', 'string', 'max:255'],
             'medis.*.jenis_pemeriksaan' => ['required'], // Allowing more flexible clinical terms as requested by client
-            'medis.*.dokter' => ['required', 'string', 'max:255'],
-            'medis.*.status_kesehatan' => ['required', 'in:sehat,sehat_dengan_catatan,tidak_sehat'],
-            'medis.*.hasil_diagnosis' => ['required', 'string'],
+            'medis.*.dokter' => ['nullable', 'string', 'max:255'],
+            'medis.*.status_kesehatan' => ['nullable', 'in:sehat,sehat_dengan_catatan,tidak_sehat'],
+            'medis.*.hasil_diagnosis' => ['nullable', 'string'],
             'medis.*.golongan_darah' => ['nullable', 'string', 'in:A,B,AB,O'],
             'medis.*.rhesus' => ['nullable', 'string', 'in:+,-'],
             'medis.*.riwayat_penyakit' => ['nullable', 'string'],
