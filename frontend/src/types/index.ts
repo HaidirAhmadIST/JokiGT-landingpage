@@ -73,6 +73,12 @@ export interface RiwayatPekerja {
   jenis_pajanan?: string;
   /** Durasi pajanan dalam satuan tahun. */
   durasi_pajanan?: number | string;
+  alamat_perusahaan?: string;
+  nama_agen_penyalur?: string;
+  alamat_agen_penyalur?: string;
+  lama_bekerja?: string | number;
+  tanggal_selesai_kontrak?: string;
+  bpjs_bpu?: string;
   /** Data tambahan untuk pekerja informal, disimpan sebagai JSON di DB. */
   informal_data?: InformalData | string;
   /** Deskripsi tugas atau tanggung jawab di pekerjaan tersebut. */

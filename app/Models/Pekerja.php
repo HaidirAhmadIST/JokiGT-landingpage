@@ -70,7 +70,7 @@ class Pekerja extends Model
      */
     public function riwayatPekerja(): HasMany
     {
-        return $this->hasMany(RiwayatPekerja::class);
+        return $this->hasMany(RiwayatPekerja::class)->orderBy('tgl_masuk', 'desc');
     }
 
     /**
@@ -86,7 +86,7 @@ class Pekerja extends Model
      */
     public function detailMedis(): HasMany
     {
-        return $this->hasMany(DetailMedis::class);
+        return $this->hasMany(DetailMedis::class)->orderBy('tgl_pemeriksaan', 'desc');
     }
 
     /**
@@ -107,10 +107,28 @@ class Pekerja extends Model
 
     /**
      * Get the current/latest active employment record.
+     * Aktif = tgl_keluar NULL dan status_pekerjaan bukan status berhenti.
      */
     public function currentJob(): HasOne
     {
-        return $this->hasOne(RiwayatPekerja::class)->whereNull('tgl_keluar');
+        return $this->hasOne(RiwayatPekerja::class)
+            ->whereNull('tgl_keluar')
+            ->where(function ($q) {
+                $q->whereNull('status_pekerjaan')
+                  ->orWhereNotIn('status_pekerjaan', [
+                      'Sudah Berhenti', 'Kontrak Habis', 'PHK', 'Pensiun', 'Mengundurkan Diri', 'Tidak Bekerja'
+                  ]);
+            })
+            ->latest('tgl_masuk');
+    }
+
+    /**
+     * Get the most recent employment record regardless of active status.
+     * Digunakan untuk menampilkan info pekerjaan terakhir mantan pekerja.
+     */
+    public function latestJob(): HasOne
+    {
+        return $this->hasOne(RiwayatPekerja::class)->latest('tgl_masuk');
     }
 
     // =========================================================================
@@ -170,6 +188,7 @@ class Pekerja extends Model
             'detailMedis',                // Juga load semua detail_medis (termasuk yang NULL riwayat_pekerja_id)
             'riwayatMedis',
             'statusAdvokasi',
+            'latestJob',                  // Pekerjaan terakhir (untuk mantan pekerja)
         ]);
     }
 
@@ -183,7 +202,8 @@ class Pekerja extends Model
             'perusahaan',
             'statusAdvokasi',
             'latestDetailMedis',
-            'currentJob', // Added for smart company info in lists
+            'currentJob',  // Pekerjaan aktif
+            'latestJob',   // Pekerjaan terakhir (untuk mantan pekerja)
         ]);
     }
 }

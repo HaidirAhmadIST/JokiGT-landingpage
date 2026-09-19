@@ -323,7 +323,7 @@ class AdvokasiService
                 // Automatically set boolean and date
                 $status->{$stepKey} = true;
                 if (isset($dateColumns[$stepKey])) {
-                    $status->{$dateColumns[$stepKey]} = now();
+                    $status->{$dateColumns[$stepKey]} = isset($data['tanggal']) && !empty($data['tanggal']) ? $data['tanggal'] : now();
                 }
             }
         }
@@ -347,7 +347,7 @@ class AdvokasiService
                 
                 // If becomes true via checkbox, record date
                 if ($wasFalse && $status->{$field} && isset($dateColumns[$field])) {
-                    $status->{$dateColumns[$field]} = now();
+                    $status->{$dateColumns[$field]} = isset($data['tanggal']) && !empty($data['tanggal']) ? $data['tanggal'] : now();
                 }
             }
         }

@@ -73,6 +73,6 @@ class RiwayatPekerja extends Model
      */
     public function detailMedis(): HasMany
     {
-        return $this->hasMany(DetailMedis::class)->orderBy('tgl_pemeriksaan', 'asc');
+        return $this->hasMany(DetailMedis::class)->orderBy('tgl_pemeriksaan', 'desc');
     }
 }

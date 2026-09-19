@@ -893,11 +893,11 @@ export default function DashboardLayout({
                                 </div>
                                 <div>
                                   <div className="flex items-center gap-2">
-                                    <h3 className="text-xs font-extrabold text-slate-800">
+                                    <h4 className="text-sm font-extrabold text-slate-800">
                                       {d.requester?.nama || 'Admin Staff'}
-                                    </h3>
-                                    <span className="px-2 py-0.5 bg-slate-100 text-slate-500 rounded text-[8px] font-bold uppercase tracking-wider">
-                                      Staff
+                                    </h4>
+                                    <span className="px-2 py-0.5 bg-slate-100 text-slate-500 rounded text-[9px] font-bold uppercase tracking-wider">
+                                      {d.requester?.role === 'viewer' ? 'Pekerja' : d.requester?.role === 'petugas' ? 'Admin Serikat' : d.requester?.role === 'admin' ? 'SuperAdmin' : (d.requester?.role || 'Sistem')}
                                     </span>
                                   </div>
                                   <p className="text-[10px] text-slate-400 font-medium mt-0.5">
@@ -938,11 +938,23 @@ export default function DashboardLayout({
                                   <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest">DETAIL PERUBAHAN DATA</h4>
                                   <div className="border border-slate-100 rounded-xl overflow-hidden shadow-sm bg-white">
                                     <table className="w-full text-left border-collapse">
+                                      <thead>
+                                        <tr className="bg-slate-50 border-b border-slate-100">
+                                          <th className="px-4 py-2.5 text-[9px] font-extrabold text-slate-500 uppercase tracking-wider">Keterangan Input</th>
+                                          <th className="px-4 py-2.5 text-[9px] font-extrabold text-slate-500 uppercase tracking-wider">Isi Data</th>
+                                        </tr>
+                                      </thead>
                                       <tbody className="divide-y divide-slate-50 text-[11px] font-semibold text-slate-700">
                                         {Object.entries(d.payload).map(([key, val]) => (
                                           <tr key={key} className="hover:bg-slate-50/50">
-                                            <td className="px-4 py-2.5 font-bold text-[#0284c7]">{key}</td>
-                                            <td className="px-4 py-2.5 font-medium whitespace-pre-wrap">{typeof val === 'boolean' ? (val ? 'TRUE' : 'FALSE') : val === null || val === '' ? '-' : JSON.stringify(val)}</td>
+                                            <td className="px-4 py-2.5 font-bold text-[#0284c7]">{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</td>
+                                            <td className="px-4 py-2.5 font-medium whitespace-pre-wrap break-words max-w-[200px] md:max-w-md">
+                                              {typeof val === 'boolean' 
+                                                ? (val ? 'Ya' : 'Tidak') 
+                                                : val === null || val === '' 
+                                                ? '-' 
+                                                : Array.isArray(val) ? val.join(', ') : (val as any).toString()}
+                                            </td>
                                           </tr>
                                         ))}
                                       </tbody>

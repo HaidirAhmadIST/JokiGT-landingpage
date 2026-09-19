@@ -143,7 +143,7 @@ class AdvokasiController extends Controller
                             $columnName => $path,
                             $actualNameColumn => $fileName,
                             $stepKey => true,
-                            $dateColumns[$stepKey] => now()->toDateTimeString()
+                            $dateColumns[$stepKey] => $request->input('tanggal') ?: now()->toDateTimeString()
                         ];
                         
                         $reason = "Mengunggah dokumen bukti untuk langkah: " . ucwords(str_replace('_', ' ', $stepKey));

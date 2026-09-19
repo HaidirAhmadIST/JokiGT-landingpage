@@ -10,6 +10,9 @@ import {
   Briefcase, ShieldAlert, CheckCircle2, Circle, Edit3,
   Download, Image as ImageIcon, Activity, FileText, FileCheck, ClipboardList, HeartPulse, HardHat, Zap, Building2, User, RefreshCw, Plus, History as TenureIcon, Stethoscope
 } from 'lucide-react';
+import AdvokasiSidebar from '@/components/pekerja-detail/AdvokasiSidebar';
+import PajananTable from '@/components/pekerja-detail/PajananTable';
+import FaktorPAKModal from '@/components/pekerja-detail/FaktorPAKModal';
 import { format, differenceInYears, differenceInMonths, parseISO, isValid } from 'date-fns';
 import { id as localeID } from 'date-fns/locale';
 import { useRole } from '@/hooks/useRole';
@@ -473,10 +476,10 @@ export default function PekerjaDetailPage() {
 
   const terkiniMedis = data.detail_medis?.[0]; // Assuming first is most recent
 
-  // Interactive Health Filtering Logic — menggunakan relasi eksplisit riwayat_pekerja_id
+  // Interactive Health Filtering Logic Ã¢â‚¬â€ menggunakan relasi eksplisit riwayat_pekerja_id
   const filteredHealthRecords = (() => {
     if (selectedJobId === null) {
-      // "Lihat Semua" — tampilkan seluruh detail_medis
+      // "Lihat Semua" Ã¢â‚¬â€ tampilkan seluruh detail_medis
       return data?.detail_medis || [];
     }
     
@@ -504,7 +507,7 @@ export default function PekerjaDetailPage() {
     }) || [];
   })();
 
-  const getFilePath = (stepKey: string) => {
+  const getFilePath = (stepKey: string): string | undefined => {
     const map: Record<string, string> = {
       'riwayat_pajanan': 'bukti_pajanan_path',
       'persetujuan_dokter': 'bukti_persetujuan_dokter_path',
@@ -513,13 +516,13 @@ export default function PekerjaDetailPage() {
       'kompensasi_bpjstk': 'bukti_kompensasi_bpjstk_path',
       'rehabilitasi_bpjskes': 'bukti_rehabilitasi_bpjskes_path',
     };
-    return adv?.[map[stepKey]];
+    return adv?.[map[stepKey]] as string | undefined;
   };
 
   const currentStepIdx = advSteps.findIndex(step => !isStepCompleted(step.key));
   const activeStepIndex = currentStepIdx === -1 ? advSteps.length : currentStepIdx;
 
-  const getUploadDate = (stepKey: string) => {
+  const getUploadDate = (stepKey: string): string | null | undefined => {
     if (!data?.status_advokasi) return null;
     const validColumns: Record<string, string> = {
       riwayat_pajanan: 'bukti_pajanan_at',
@@ -529,7 +532,7 @@ export default function PekerjaDetailPage() {
       kompensasi_bpjstk: 'bukti_kompensasi_bpjstk_at',
       rehabilitasi_bpjskes: 'bukti_rehabilitasi_bpjskes_at'
     };
-    return data.status_advokasi[validColumns[stepKey]];
+    return data.status_advokasi[validColumns[stepKey]] as string | null | undefined;
   };
 
   const formatDate = (dateString: string) => {
@@ -600,17 +603,17 @@ export default function PekerjaDetailPage() {
               <p className="text-slate-400 text-[13px] mt-1.5 flex items-center gap-1.5 flex-wrap">
                 {data.jenis_kelamin && (
                   <span className="inline-flex items-center gap-1">
-                    <span>{data.jenis_kelamin === 'L' ? '♂' : '♀'}</span>
+                    <span>{data.jenis_kelamin === 'L' ? 'Ã¢â„¢â€š' : 'Ã¢â„¢â‚¬'}</span>
                     <span className="font-semibold text-slate-500">{data.jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan'}</span>
                   </span>
                 )}
-                {data.jenis_kelamin && data.tanggal_lahir && isValid(parseISO(data.tanggal_lahir)) && <span className="text-slate-300">•</span>}
+                {data.jenis_kelamin && data.tanggal_lahir && isValid(parseISO(data.tanggal_lahir)) && <span className="text-slate-300">Ã¢â‚¬Â¢</span>}
                 {data.tanggal_lahir && isValid(parseISO(data.tanggal_lahir)) && (
                   <span className="font-semibold text-slate-500">
                     {differenceInYears(new Date(), parseISO(data.tanggal_lahir))} Tahun
                   </span>
                 )}
-                {data.tanggal_lahir && isValid(parseISO(data.tanggal_lahir)) && <span className="text-slate-300">•</span>}
+                {data.tanggal_lahir && isValid(parseISO(data.tanggal_lahir)) && <span className="text-slate-300">Ã¢â‚¬Â¢</span>}
                 {data.tanggal_lahir && isValid(parseISO(data.tanggal_lahir)) && (
                   <span className="text-slate-400">
                     Lahir {format(parseISO(data.tanggal_lahir), 'dd MMM yyyy', { locale: localeID })}
@@ -895,7 +898,7 @@ export default function PekerjaDetailPage() {
                       </div>
                       <div>
                         <DialogTitle className="text-xl font-extrabold text-[#1e293b]">Rekam Jejak Pekerja</DialogTitle>
-                        <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">{data.nama_lengkap} • NIK: {data.nik}</p>
+                        <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">{data.nama_lengkap} Ã¢â‚¬Â¢ NIK: {data.nik}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3 mr-8">
@@ -973,7 +976,7 @@ export default function PekerjaDetailPage() {
                                   <div>
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Periode Kerja</p>
                                     <p className="text-sm font-semibold text-slate-700">
-                                      {r.tgl_masuk ? format(parseISO(r.tgl_masuk), 'MMM yyyy', {locale: localeID}) : '-'} — {r.tgl_keluar ? format(parseISO(r.tgl_keluar), 'MMM yyyy', {locale: localeID}) : 'Sekarang'}
+                                      {r.tgl_masuk ? format(parseISO(r.tgl_masuk), 'MMM yyyy', {locale: localeID}) : '-'} Ã¢â‚¬â€ {r.tgl_keluar ? format(parseISO(r.tgl_keluar), 'MMM yyyy', {locale: localeID}) : 'Sekarang'}
                                     </p>
                                   </div>
                                   <div>
@@ -1008,7 +1011,7 @@ export default function PekerjaDetailPage() {
                                                 <div className="flex justify-between items-center mb-0.5">
                                                   <p className="text-xs font-bold text-slate-800">{m.bagian || '-'}</p>
                                                   <span className="text-[10px] font-bold text-slate-400">
-                                                    {m.tahun_mulai ? `${m.tahun_mulai}–${m.tahun_selesai || 'Sekarang'}` : (m.tahun || '-')}
+                                                    {m.tahun_mulai ? `${m.tahun_mulai}Ã¢â‚¬â€œ${m.tahun_selesai || 'Sekarang'}` : (m.tahun || '-')}
                                                   </span>
                                                 </div>
                                                 <p className="text-[11px] text-slate-500 font-medium">Jabatan: {m.jabatan || '-'}</p>
@@ -1333,7 +1336,7 @@ export default function PekerjaDetailPage() {
                              </div>
                              <div className="flex flex-col gap-0.5 mb-1">
                                <p className="text-[11px] text-slate-400 font-medium truncate">
-                                 {`${r.bagian || r.jabatan || 'Produksi'}`} • {wText}
+                                 {`${r.bagian || r.jabatan || 'Produksi'}`} Ã¢â‚¬Â¢ {wText}
                                </p>
                                {r.deskripsi_usaha && (
                                    <p className="text-[10px] text-amber-600 font-bold truncate flex items-center gap-1 mt-0.5">
@@ -1373,7 +1376,7 @@ export default function PekerjaDetailPage() {
                                                  <div className="w-1 h-1 rounded-full bg-blue-400" />
                                                  {m.bagian || '-'}
                                                </div>
-                                               <span className="text-[8px] font-bold text-slate-400">{m.tahun_mulai ? `${m.tahun_mulai}–${m.tahun_selesai || 'Skg'}` : (m.tahun || '-')}</span>
+                                               <span className="text-[8px] font-bold text-slate-400">{m.tahun_mulai ? `${m.tahun_mulai}Ã¢â‚¬â€œ${m.tahun_selesai || 'Skg'}` : (m.tahun || '-')}</span>
                                              </div>
                                            ))}
                                          </div>
@@ -1427,7 +1430,53 @@ export default function PekerjaDetailPage() {
                   </h3>
                 </div>
 
+                {/* PROFIL KESEHATAN DASAR (dari registrasi) */}
+                <div className="mb-8 bg-slate-50/50 rounded-xl p-5 border border-slate-100">
+                  <h4 className="text-[11px] font-black text-slate-800 uppercase tracking-wider mb-4 flex items-center">
+                    <User className="h-3.5 w-3.5 mr-2 text-slate-400" /> Profil Kesehatan Dasar
+                  </h4>
+                  {(() => {
+                    const rm = data?.riwayat_medis;
+                    if (!rm) return <p className="text-xs text-slate-400 italic">Belum ada data profil kesehatan dasar.</p>;
+                    return (
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Gol. Darah</p>
+                          <p className="text-xs font-bold text-slate-700">{rm.golongan_darah || '-'}</p>
+                        </div>
+                        <div>
+                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Riwayat Operasi</p>
+                          <p className="text-xs font-bold text-slate-700">{rm.riwayat_operasi || '-'}</p>
+                        </div>
+                        <div className="col-span-2">
+                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Keluhan Utama</p>
+                          <p className="text-xs font-medium text-slate-700">{rm.keluhan_utama || '-'}</p>
+                        </div>
+                        <div className="col-span-2">
+                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Riwayat Penyakit (Terdahulu & Keluarga)</p>
+                          <p className="text-xs font-medium text-slate-700">{rm.riwayat_penyakit || '-'}</p>
+                        </div>
+                        <div className="col-span-2">
+                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Diagnosa Dokter</p>
+                          <p className="text-xs font-medium text-slate-700">{rm.diagnosa_dokter || '-'}</p>
+                        </div>
+                        <div>
+                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Obat Rutin</p>
+                          <p className="text-xs font-medium text-slate-700">{rm.obat_rutin || '-'}</p>
+                        </div>
+                        <div>
+                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Alergi</p>
+                          <p className="text-xs font-medium text-slate-700">{rm.alergi || '-'}</p>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+
                 <div className="flex-1">
+                  <h4 className="text-[11px] font-black text-slate-800 uppercase tracking-wider mb-4 flex items-center">
+                    <Stethoscope className="h-3.5 w-3.5 mr-2 text-slate-400" /> Catatan Pemeriksaan (MCU)
+                  </h4>
                   {isHealthLoading ? (
                     <div className="space-y-4">
                       {[1, 2, 3].map((i) => (
@@ -1547,351 +1596,33 @@ export default function PekerjaDetailPage() {
           {/* RIGHT COLUMN (Advocacy) */}
           {!isProfilePetugas && (
           <div className="lg:col-span-4 space-y-6">
-            {/* Status Advokasi Box */}
-            <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6">
-               <h3 className="text-sm font-bold text-[#1e293b] flex items-center mb-6">
-                 <ShieldAlert className="h-4 w-4 text-[#0ea5e9] mr-2" /> Status Advokasi
-               </h3>
-               
-               <div className="relative pl-3 space-y-6">
-                 {/* Timeline line connecting items */}
-                 <div className="absolute top-2 bottom-5 left-[19px] w-[2px] bg-slate-100 rounded-full" />
-                 
-                 {advSteps.map((step, idx) => {
-                    const isCompleted = isStepCompleted(step.key);
-                    const hasFile = !!getFilePath(step.key);
-                    const isCurrent = idx === activeStepIndex;
-                    
-                    return (
-                      <div key={step.key} className="relative z-10 flex items-start group">
-                        {/* Interactive Toggle Target on the Icon */}
-                        <button 
-                          onClick={() => {
-                            if (isStaffOrAbove) toggleAdvokasi(step.key, !isCompleted);
-                          }}
-                          disabled={!isStaffOrAbove}
-                          className={`mt-0.5 z-20 flex-shrink-0 mr-4 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#0ea5e9] rounded-full transition-transform transform ${isStaffOrAbove ? 'active:scale-90' : 'cursor-default'}`}
-                          title={isStaffOrAbove ? "Klik untuk mengubah status" : ""}
-                        >
-                          {hasFile ? (
-                             <CheckCircle2 className="h-6 w-6 text-emerald-500 bg-white" />
-                          ) : isCurrent ? (
-                             <div className="h-6 w-6 rounded-full border-[3px] border-[#0ea5e9] bg-white flex items-center justify-center">
-                               <div className="h-2 w-2 rounded-full bg-[#0ea5e9]" />
-                             </div>
-                          ) : (
-                             <Circle className="h-6 w-6 text-slate-200 fill-white" />
-                          )}
-                        </button>
-
-                        <div className="flex-1 pb-1">
-                          <p className={`text-[13px] font-bold ${hasFile ? 'text-slate-800' : isCurrent ? 'text-[#0ea5e9]' : 'text-slate-400'}`}>
-                            {step.label}
-                          </p>
-                          <p className={`text-[10px] mt-1 ${hasFile ? 'text-emerald-500 font-bold' : 'text-slate-400'}`}>
-                            {hasFile ? 'Dokumen Terunggah' : isCurrent ? 'Sedang Berjalan' : 'Belum Dimulai'}
-                          </p>
-
-                          <div className="mt-3 p-3 bg-slate-50 border border-slate-100 rounded-lg">
-                             <div className="flex justify-between items-center mb-2">
-                               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Dokumen / Bukti Pendukung</span>
-                               {!!getFilePath(step.key) && !!getUploadDate(step.key) && (
-                                 <span className="text-[9px] font-medium text-slate-400 italic">
-                                   Diunggah: {formatDate(getUploadDate(step.key) as string)}
-                                 </span>
-                               )}
-                             </div>
-                             
-                             <div className="flex flex-col gap-2">
-                               {!isStaffOrAbove ? (
-                                  <div className="h-10 w-full border border-slate-200 border-dashed rounded-md flex items-center justify-center px-3 text-[10px] font-medium text-slate-400 italic">
-                                     Akses unggah hanya untuk Staff
-                                  </div>
-                                ) : (
-                                 <div className="relative w-full">
-                                   <input 
-                                      type="file" 
-                                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
-                                      accept=".pdf,.jpg,.jpeg,.png"
-                                      onChange={(e) => handleFileUpload(step.key, e)}
-                                      disabled={uploadLoading === step.key}
-                                   />
-                                   <div className={`h-10 w-full bg-white border ${uploadLoading === step.key ? 'border-[#0ea5e9] bg-blue-50' : 'border-slate-200 border-dashed'} rounded-md flex items-center justify-center px-3 text-[10px] font-bold text-[#0ea5e9] hover:bg-blue-50 transition-colors whitespace-nowrap`}>
-                                      {uploadLoading === step.key ? 'Mengunggah...' : '+ Pilih File Bukti (Max 5MB)'}
-                                   </div>
-                                 </div>
-                               )}
-
-                               {getFilePath(step.key) ? (
-                                  <div className="flex gap-2">
-                                    <button onClick={() => downloadFile(step.key)} className="h-10 flex-1 bg-white border border-slate-200 rounded-md flex items-center justify-center text-[10px] font-bold text-slate-600 hover:text-[#0ea5e9] hover:border-[#0ea5e9] transition-colors cursor-pointer">
-                                       <FileText className="h-3.5 w-3.5 mr-1.5" /> Lihat Terunggah
-                                    </button>
-                                    {isStaffOrAbove && (
-                                      <button 
-                                        onClick={() => handleDeleteAdvokasiFile(step.key)} 
-                                        disabled={deleteLoading === step.key}
-                                        className="h-10 px-3 bg-white border border-slate-200 rounded-md flex items-center justify-center text-[10px] font-bold text-rose-500 hover:bg-rose-50 hover:border-rose-200 transition-colors cursor-pointer disabled:opacity-50"
-                                        title="Hapus Dokumen"
-                                      >
-                                        <Trash2 className="h-4 w-4" />
-                                      </button>
-                                    )}
-                                  </div>
-                               ) : isStaffOrAbove ? (
-                                  <div className="h-10 w-full border border-slate-200 border-dashed rounded-md flex items-center justify-center px-3 text-[10px] font-medium text-slate-400 italic">
-                                     Belum ada dokumen terunggah
-                                  </div>
-                               ) : null}
-                             </div>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                 })}
-               </div>
-            </div>
+            <AdvokasiSidebar
+              advSteps={advSteps}
+              activeStepIndex={activeStepIndex}
+              isStepCompleted={isStepCompleted}
+              getFilePath={getFilePath}
+              getUploadDate={getUploadDate}
+              formatDate={formatDate}
+              isStaffOrAbove={isStaffOrAbove}
+              toggleAdvokasi={toggleAdvokasi}
+              uploadLoading={uploadLoading}
+              deleteLoading={deleteLoading}
+              fileToDelete={fileToDelete}
+              setFileToDelete={setFileToDelete}
+              handleFileUpload={handleFileUpload}
+              downloadFile={downloadFile}
+              handleDeleteAdvokasiFile={handleDeleteAdvokasiFile}
+              confirmDeleteAdvokasiFile={confirmDeleteAdvokasiFile}
+            />
           </div>
           )}
         </div>
 
 
-        {/* FULL WIDTH SECTION BELOW THE GRID */}
-        {/* Riwayat Pajanan Section (Full Width) */}
-        {!isProfilePetugas && (
-        <div className="bg-white border border-slate-100 shadow-sm rounded-2xl overflow-hidden mt-8 mb-12">
-          <div className="p-6 border-b border-slate-100 bg-white flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 rounded-xl text-blue-600">
-                <Zap className="h-4 w-4" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-[#1e293b]">Riwayat Pajanan & APD</h3>
-                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tight">Profil Risiko Lingkungan & Alat Pelindung Diri</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold text-slate-700 uppercase tracking-widest bg-slate-50 px-4 py-2 rounded-xl border border-slate-200">
-                Total {data.riwayat_pekerja?.length || 0} Pengalaman Terdata
-              </span>
-            </div>
-          </div>
-          
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left border-collapse">
-              <thead>
-                <tr className="bg-white border-b-2 border-slate-100">
-                  <th className="px-10 py-6 text-[11px] font-extrabold text-slate-800 uppercase tracking-widest w-[35%]">Identitas Pekerjaan</th>
-                  <th className="px-8 py-6 text-[11px] font-extrabold text-slate-800 uppercase tracking-widest w-[20%] text-center">Profil Pajanan</th>
-                  <th className="px-8 py-6 text-[11px] font-extrabold text-slate-800 uppercase tracking-widest w-[30%]">Alat Pelindung Diri (APD)</th>
-                  <th className="px-10 py-6 text-[11px] font-extrabold text-slate-800 uppercase tracking-widest w-[15%] text-right">Durasi Kerja</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {data.riwayat_pekerja?.some((r: any) => r.jenis_pajanan || r.durasi_pajanan || r.informal_data) ? (
-                  data.riwayat_pekerja.map((r: any, idx: number) => {
-                    const info = typeof r.informal_data === 'string' ? JSON.parse(r.informal_data || '{}') : (r.informal_data || {});
-                    const mutations = info?.mutasi_jabatan || [];
-                    const apdDisediakan = info?.apd_disediakan || info?.apd_list || '';
-                    const apdMandiri = info?.jenis_apd_sendiri || '';
-                    
-                    if (!r.jenis_pajanan && !r.durasi_pajanan && !apdDisediakan && !apdMandiri) return null;
 
-                    return (
-                      <tr key={idx}>
-                        {/* Column 1: Company & Refined Mutation Timeline */}
-                        <td className="px-10 py-10 align-top">
-                          <div className="flex flex-col">
-                            <p className="font-extrabold text-[#1e293b] text-[17px] tracking-tight">{r.nama_perusahaan}</p>
-                            <div className="flex items-center gap-2 mt-2">
-                              <span className="px-3 py-1 bg-slate-100 text-slate-600 text-[10px] font-black rounded-lg uppercase tracking-wider">
-                                {r.bagian || r.jabatan || 'Pekerja'}
-                              </span>
-                              {r.status_pekerjaan && (
-                                <span className="px-3 py-1 bg-indigo-50 text-indigo-600 text-[10px] font-black rounded-lg uppercase tracking-wider">
-                                  {r.status_pekerjaan}
-                                </span>
-                              )}
-                            </div>
-
-                            {/* Info Pekerjaan Tambahan */}
-                            {(r.deskripsi_pekerjaan || r.nama_agen_penyalur || r.tanggal_selesai_kontrak) && (
-                              <div className="mt-4 space-y-3">
-                                {r.deskripsi_pekerjaan && (
-                                  <div className="text-[11px] text-slate-600">
-                                    <span className="font-bold uppercase tracking-wider text-slate-400 block mb-0.5">Deskripsi Pekerjaan:</span>
-                                    <span className="leading-relaxed">{r.deskripsi_pekerjaan}</span>
-                                  </div>
-                                )}
-                                {r.nama_agen_penyalur && (
-                                  <div className="text-[11px] text-slate-600">
-                                    <span className="font-bold uppercase tracking-wider text-slate-400 block mb-0.5">Agen Penyalur:</span>
-                                    <span>{r.nama_agen_penyalur}</span>
-                                    {r.alamat_agen_penyalur && <span className="block text-slate-500 mt-0.5">{r.alamat_agen_penyalur}</span>}
-                                  </div>
-                                )}
-                                {r.tanggal_selesai_kontrak && (
-                                  <div className="text-[11px] text-slate-600">
-                                    <span className="font-bold uppercase tracking-wider text-slate-400 block mb-0.5">Selesai Kontrak:</span>
-                                    <span>{format(parseISO(r.tanggal_selesai_kontrak), 'dd MMM yyyy', { locale: localeID })}</span>
-                                  </div>
-                                )}
-                                {info?.bpjs_bpu && (
-                                  <div className="text-[11px] text-slate-600">
-                                    <span className="font-bold uppercase tracking-wider text-slate-400 block mb-0.5">BPJS Ketenagakerjaan:</span>
-                                    <span>{info.bpjs_bpu === 'PU' ? 'Penerima Upah (PU)' : info.bpjs_bpu === 'BPU' ? 'Bukan Penerima Upah (BPU)' : info.bpjs_bpu}</span>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-
-                            {/* K3 Info */}
-                            {(info?.training_k3 || info?.ada_p2k3) && (
-                              <div className="mt-5 p-3 bg-emerald-50/50 border border-emerald-100 rounded-xl">
-                                <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-2 flex items-center gap-1.5">
-                                  <ShieldAlert className="h-3 w-3" /> Info Keselamatan (K3)
-                                </p>
-                                <div className="space-y-2">
-                                  {info.training_k3 && (
-                                    <div className="flex flex-col gap-0.5">
-                                      <span className="text-[10px] font-semibold text-slate-500">Pelatihan K3: <span className="font-bold text-slate-700">{info.training_k3 === 'Pernah' ? 'Pernah Mengikuti' : 'Belum Pernah'}</span></span>
-                                      {info.training_k3 === 'Pernah' && info.jenis_pelatihan_k3 && (
-                                        <span className="text-[10px] text-slate-500">- Jenis: {info.jenis_pelatihan_k3}</span>
-                                      )}
-                                      {info.training_k3 === 'Pernah' && info.terakhir_pelatihan_k3 && (
-                                        <span className="text-[10px] text-slate-500">- Terakhir: {info.terakhir_pelatihan_k3}</span>
-                                      )}
-                                    </div>
-                                  )}
-                                  {info.ada_p2k3 && (
-                                    <div className="flex flex-col gap-0.5 mt-1">
-                                      <span className="text-[10px] font-semibold text-slate-500">P2K3 di Perusahaan: <span className="font-bold text-slate-700">{info.ada_p2k3}</span></span>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Timeline Mutasi */}
-                            {mutations.length > 0 && (
-                              <div className="mt-6 ml-2 border-l-[2px] border-slate-100 space-y-6">
-                                {mutations.map((m: any, midx: number) => (
-                                  <div key={midx} className="relative pl-8">
-                                    <div className="absolute left-[-6px] top-1 h-3 w-3 rounded-full bg-[#0ea5e9] border-2 border-white" />
-                                    <div className="flex justify-between items-start gap-6">
-                                      <div>
-                                        <p className="text-[11px] font-black text-slate-700 leading-none uppercase">{m.bagian || '-'}</p>
-                                        <p className="text-[10px] text-slate-600 mt-1.5 font-bold">{m.jabatan || '-'}</p>
-                                        {m.deskripsi_pekerjaan && <p className="text-[10px] text-slate-500 mt-1 italic">{m.deskripsi_pekerjaan}</p>}
-                                      </div>
-                                      <span className="text-[11px] font-extrabold text-slate-500 tracking-tighter shrink-0">{m.tahun_mulai ? `${m.tahun_mulai}–${m.tahun_selesai || 'Sekarang'}` : (m.tahun || '-')}</span>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        </td>
-
-                        {/* Column 2: Exposure Profiles */}
-                        <td className="px-8 py-10 align-middle">
-                          <div className="flex flex-wrap justify-center gap-3">
-                            {r.jenis_pajanan ? r.jenis_pajanan.split(',').map((p: string, pIdx: number) => (
-                              <div key={pIdx} className="flex items-center gap-2 px-4 py-2 bg-amber-50/50 text-amber-700 rounded-2xl border border-amber-100">
-                                <span className="text-[11px] font-black uppercase tracking-tight">{p.trim()}</span>
-                              </div>
-                            )) : (
-                              <span className="text-slate-500 text-[11px] font-bold italic">Tidak Ada Pajanan</span>
-                            )}
-                          </div>
-                        </td>
-
-                        {/* Column 3: PPE (APD) Analysis */}
-                        <td className="px-8 py-10 align-middle">
-                          <div className="space-y-6">
-                            {apdDisediakan && (
-                              <div className="flex flex-col gap-2">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-[9px] font-black text-[#0ea5e9] uppercase tracking-[0.2em]">STANDAR PERUSAHAAN</span>
-                                </div>
-                                <div className="p-4 bg-blue-50/40 rounded-2xl border border-blue-100/50">
-                                  <p className="text-[12px] font-bold text-slate-700 leading-relaxed italic">
-                                    &quot;{apdDisediakan}&quot;
-                                  </p>
-                                  {info?.akses_apd && (
-                                    <div className="mt-3 pt-3 border-t border-blue-100 flex items-center gap-2">
-                                      <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Akses APD:</span>
-                                      <span className="text-[11px] font-semibold text-slate-700">{info.akses_apd}</span>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            )}
-                            {apdMandiri && (
-                              <div className="flex flex-col gap-2">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-[9px] font-black text-rose-500 uppercase tracking-[0.2em]">PROTEKSI MANDIRI</span>
-                                </div>
-                                <div className="p-4 bg-rose-50/40 rounded-2xl border border-rose-100/50">
-                                  <p className="text-[12px] font-bold text-slate-700 leading-relaxed italic">
-                                    &quot;{apdMandiri}&quot;
-                                  </p>
-                                </div>
-                              </div>
-                            )}
-                            {!apdDisediakan && !apdMandiri && (
-                              <div className="flex items-center gap-2 text-slate-300">
-                                <FileText className="h-4 w-4 opacity-50" />
-                                <span className="text-[11px] font-bold italic">Dokumentasi APD tidak ditemukan</span>
-                              </div>
-                            )}
-                          </div>
-                        </td>
-
-                        {/* Column 4: Tenure Duration */}
-                        <td className="px-10 py-10 align-middle text-right">
-                          <div className="inline-flex flex-col items-end">
-                            <div className="flex flex-col items-end min-w-[110px] pr-4">
-                              <span className="text-[36px] font-black leading-none text-[#0ea5e9]">{r.durasi_pajanan || 0}</span>
-                              <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest mt-1">TAHUN</span>
-                            </div>
-                            <div className="flex items-center gap-2 mt-4 text-slate-600 font-bold">
-                              <span className="text-[10px] font-black tracking-widest uppercase">MULAI {r.tgl_masuk?.substring(0,4) || '-'}</span>
-                            </div>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
-                ) : (
-                  <tr>
-                    <td colSpan={4} className="px-10 py-32 text-center bg-slate-50/30">
-                      <Zap className="h-16 w-16 text-slate-100 mx-auto mb-5" />
-                      <h4 className="text-lg font-black text-slate-500 uppercase tracking-[0.4em]">BELUM ADA DATA PAJANAN</h4>
-                      <p className="text-sm text-slate-400 mt-2 font-medium">Lengkapi riwayat pekerjaan untuk memunculkan profil pajanan</p>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-          <div className="p-6 bg-slate-50/50 border-t border-slate-100 flex justify-center gap-12">
-             <div className="flex items-center gap-3">
-               <div className="h-2 w-2 rounded-full bg-amber-500 shadow-sm" />
-               <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Risiko Lingkungan</span>
-             </div>
-             <div className="flex items-center gap-3">
-               <div className="h-2 w-2 rounded-full bg-indigo-500 shadow-sm" />
-               <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Alat Pelindung Diri</span>
-             </div>
-             <div className="flex items-center gap-3">
-                <div className="h-2 w-2 rounded-full bg-[#0ea5e9] shadow-sm" />
-                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Akumulasi Masa Kerja</span>
-              </div>
-           </div>
-        </div>
-        )}
-      </div>
+      {!isProfilePetugas && (
+        <PajananTable riwayatPekerja={data.riwayat_pekerja || []} />
+      )}
 
       {!isProfilePetugas && (
       <button 
@@ -2057,33 +1788,9 @@ export default function PekerjaDetailPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      {/* Delete Document Confirmation Dialog */}
-      <AlertDialog open={!!fileToDelete} onOpenChange={(open) => !open && setFileToDelete(null)}>
-        <AlertDialogContent className="rounded-2xl border-none shadow-2xl">
-          <AlertDialogHeader>
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-rose-50 mb-2">
-              <Trash2 className="h-7 w-7 text-rose-500" />
-            </div>
-            <AlertDialogTitle className="text-xl font-black text-slate-900 text-center">Hapus Dokumen?</AlertDialogTitle>
-            <AlertDialogDescription className="text-slate-500 text-center text-sm px-2">
-              Apakah Anda yakin ingin menghapus dokumen ini? Status advokasi tahap ini akan kembali menjadi Belum Dimulai.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="sm:justify-center gap-3 mt-4">
-            <AlertDialogCancel className="rounded-xl border-slate-200 text-slate-500 font-bold hover:bg-slate-50 px-6">
-              Batalkan
-            </AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={confirmDeleteAdvokasiFile}
-              className="rounded-xl bg-rose-600 text-white font-bold hover:bg-rose-700 shadow-lg shadow-rose-200 border-none px-6"
-            >
-              Ya, Hapus Dokumen
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       {/* Delete Confirmation Dialog */}
+
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent className="rounded-2xl border-none shadow-2xl">
           <AlertDialogHeader>
@@ -2108,97 +1815,21 @@ export default function PekerjaDetailPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      {/* MODAL TENTUKAN PAK */}
-      {isFaktorModalOpen && data && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200">
-            <div className="p-6 border-b border-slate-100 bg-slate-50/50">
-              <h3 className="text-xl font-black text-slate-800 tracking-tight">
-                Klasifikasi Penyakit Akibat Kerja
-              </h3>
-              <p className="text-sm text-slate-500 mt-1.5 font-medium flex items-center gap-2 flex-wrap">
-                Menentukan faktor untuk pekerja: 
-                <span className="font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">{data.nama_lengkap}</span>
-                <span>dari</span>
-                <span className="font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">
-                  {data.riwayat_pekerja?.find((r: any) => !r.tgl_keluar)?.nama_perusahaan || data.riwayat_pekerja?.[0]?.nama_perusahaan || 'Perusahaan Tidak Diketahui'}
-                </span>
-              </p>
-            </div>
-            
-            <div className="p-6 overflow-y-auto space-y-6">
-              {[
-                { 
-                  title: 'Kategori I (Penyebab)', 
-                  options: ['Faktor Kimia', 'Faktor Fisika', 'Faktor Biologi'],
-                  activeClass: 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-200 scale-[1.02]',
-                  inactiveClass: 'bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:bg-blue-50'
-                },
-                { 
-                  title: 'Kategori II (Target Organ)', 
-                  options: ['Pernafasan', 'Kulit', 'Otot & Kerangka', 'Mental & Perilaku'],
-                  activeClass: 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-200 scale-[1.02]',
-                  inactiveClass: 'bg-white text-slate-600 border-slate-200 hover:border-emerald-300 hover:bg-emerald-50'
-                },
-                { 
-                  title: 'Kategori III (Kanker)', 
-                  options: ['Kanker Akibat Kerja'],
-                  activeClass: 'bg-rose-600 text-white border-rose-600 shadow-md shadow-rose-200 scale-[1.02]',
-                  inactiveClass: 'bg-white text-slate-600 border-slate-200 hover:border-rose-300 hover:bg-rose-50'
-                },
-                { 
-                  title: 'Kategori IV (Penyakit Spesifik Lainnya)', 
-                  options: ['Nystagmus pada penambang'],
-                  activeClass: 'bg-amber-600 text-white border-amber-600 shadow-md shadow-amber-200 scale-[1.02]',
-                  inactiveClass: 'bg-white text-slate-600 border-slate-200 hover:border-amber-300 hover:bg-amber-50'
-                }
-              ].map((group, idx) => (
-                <div key={idx} className="space-y-3">
-                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest">{group.title}</h4>
-                  <div className="flex flex-wrap gap-2.5">
-                    {group.options.map((opt) => (
-                      <button
-                        key={opt}
-                        onClick={() => setSelectedFaktor(opt)}
-                        className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 border ${
-                          selectedFaktor === opt ? group.activeClass : group.inactiveClass
-                        }`}
-                      >
-                        {opt}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="p-5 border-t border-slate-100 bg-slate-50 flex justify-between items-center">
-              <div>
-                {selectedFaktor ? (
-                  <p className="text-sm text-slate-500">Terpilih: <span className="font-bold text-slate-800">{selectedFaktor}</span></p>
-                ) : (
-                  <p className="text-sm text-amber-600 font-medium italic">Pilih salah satu faktor di atas</p>
-                )}
-              </div>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setIsFaktorModalOpen(false)}
-                  className="px-5 py-2.5 text-sm font-bold text-slate-500 bg-white border border-slate-200 hover:bg-slate-100 rounded-xl transition-colors"
-                >
-                  Batal
-                </button>
-                <button
-                  onClick={handleSaveFaktor}
-                  disabled={savingFaktor || !selectedFaktor}
-                  className="px-6 py-2.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-all shadow-sm hover:shadow shadow-blue-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {savingFaktor ? 'Menyimpan...' : 'Simpan Data'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <FaktorPAKModal
+        isOpen={isFaktorModalOpen && !!data}
+        onClose={() => setIsFaktorModalOpen(false)}
+        workerName={data.nama_lengkap}
+        companyName={data.riwayat_pekerja?.find((r: any) => !r.tgl_keluar)?.nama_perusahaan || data.riwayat_pekerja?.[0]?.nama_perusahaan || 'Perusahaan Tidak Diketahui'}
+        selectedFaktor={selectedFaktor}
+        setSelectedFaktor={setSelectedFaktor}
+        savingFaktor={savingFaktor}
+        handleSaveFaktor={handleSaveFaktor}
+      />
+      </div>
     </div>
   );
 }
+
+
+
+

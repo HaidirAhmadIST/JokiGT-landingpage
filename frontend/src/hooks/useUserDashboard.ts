@@ -10,6 +10,7 @@ import type { PekerjaFull, RiwayatPekerja, User } from '@/types';
 export interface UploadForm {
   step_key: string;
   file: File | null;
+  tanggal: string;
 }
 
 export interface ProfileForm {
@@ -32,6 +33,7 @@ export interface ProfileForm {
 export interface AdvForm {
   jenis_kasus: string;
   catatan: string;
+  status_kesehatan_likert?: string;
 }
 
 export interface ExposureForm {
@@ -46,6 +48,15 @@ export interface ExposureForm {
   apd_disediakan: string;
   jenis_apd_sendiri: string;
   deskripsi_pekerjaan: string;
+  alamat_perusahaan: string;
+  bagian: string;
+  nama_agen_penyalur: string;
+  alamat_agen_penyalur: string;
+  lama_bekerja: string;
+  tanggal_selesai_kontrak: string;
+  bpjs_bpu: string;
+  mutasi_jabatan: any[];
+  pajanan_details: any;
 }
 
 export interface MedisForm {
@@ -96,7 +107,7 @@ export function useUserDashboard() {
   // ── Modal State ────────────────────────────────────────────────────────────
   const [uploadModal, setUploadModal] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [uploadForm, setUploadForm] = useState<UploadForm>({ step_key: '', file: null });
+  const [uploadForm, setUploadForm] = useState<UploadForm>({ step_key: '', file: null, tanggal: '' });
 
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [profileForm, setProfileForm] = useState<ProfileForm>({
@@ -116,7 +127,10 @@ export function useUserDashboard() {
     id: null, nama_perusahaan: '', jabatan: '', status_pekerjaan: '',
     tgl_masuk: '', tgl_keluar: '', jenis_pajanan: '', durasi_pajanan: '',
     apd_disediakan: '', jenis_apd_sendiri: '',
-    deskripsi_pekerjaan: '',
+    deskripsi_pekerjaan: '', alamat_perusahaan: '', bagian: '',
+    nama_agen_penyalur: '', alamat_agen_penyalur: '',
+    lama_bekerja: '', tanggal_selesai_kontrak: '', bpjs_bpu: '',
+    mutasi_jabatan: [], pajanan_details: {},
   });
 
   const [isMedisModalOpen, setIsMedisModalOpen] = useState(false);
@@ -256,13 +270,14 @@ export function useUserDashboard() {
       const fd = new FormData();
       fd.append('step_key', uploadForm.step_key);
       fd.append('file[]', uploadForm.file);
+      if (uploadForm.tanggal) fd.append('tanggal', uploadForm.tanggal);
       const res = await api.post(`/pekerja/${pekerja!.id}/advokasi`, fd, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       if (res.data.status === 'success') {
-        toast.success(res.data.message || 'Dokumen berhasil diunggah untuk persetujuan.');
+        toast.success(res.data.message || 'Dokumen berhasil diunggah.');
         setUploadModal(false);
-        setUploadForm({ step_key: '', file: null });
+        setUploadForm({ step_key: '', file: null, tanggal: '' });
         fetchData();
         fetchRequests();
       }
@@ -326,8 +341,22 @@ export function useUserDashboard() {
   /** Memperbarui atau membuat kasus advokasi baru. */
   const handleUpdateAdvokasi = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!advForm.status_kesehatan_likert) {
+      toast.error('Mohon isi indikator kondisi kesehatan Anda.');
+      return;
+    }
+
     setAdvLoading(true);
     try {
+      // 1. Update status_kesehatan di tabel pekerja berdasarkan skala Likert
+      const score = parseInt(advForm.status_kesehatan_likert);
+      let status_kesehatan = 'sehat';
+      if (score >= 4) status_kesehatan = 'tidak_sehat';
+      else if (score === 3) status_kesehatan = 'sehat_dengan_catatan';
+
+      await api.put(`/pekerja/${pekerja!.id}`, { status_kesehatan });
+
+      // 2. Post advokasi
       const res = await api.post(`/pekerja/${pekerja!.id}/advokasi`, advForm);
       toast.success(res.data.message || 'Detail advokasi diperbarui!');
       setIsAdvModalOpen(false);
@@ -346,6 +375,15 @@ export function useUserDashboard() {
     e.preventDefault();
     setExposureLoading(true);
     try {
+      // Ambil data informal_data yang sudah ada agar tidak ditimpa
+      const existingRiwayat = pekerja?.riwayat_pekerja?.find((r: any) => r.id === exposureForm.id);
+      let existingInformalData: Record<string, any> = {};
+      try {
+        existingInformalData = typeof existingRiwayat?.informal_data === 'string'
+          ? JSON.parse(existingRiwayat.informal_data)
+          : (existingRiwayat?.informal_data as Record<string, any> || {});
+      } catch { /* ignore parse error */ }
+
       const data = {
         nama_perusahaan: exposureForm.nama_perusahaan,
         jabatan: exposureForm.jabatan,
@@ -355,9 +393,24 @@ export function useUserDashboard() {
         jenis_pajanan: exposureForm.jenis_pajanan,
         durasi_pajanan: exposureForm.durasi_pajanan ? parseInt(exposureForm.durasi_pajanan) : null,
         deskripsi_pekerjaan: exposureForm.deskripsi_pekerjaan,
+        alamat_perusahaan: exposureForm.alamat_perusahaan,
+        bagian: exposureForm.bagian,
+        nama_agen_penyalur: exposureForm.nama_agen_penyalur,
+        alamat_agen_penyalur: exposureForm.alamat_agen_penyalur,
+        // Kolom standar
+        lama_bekerja: exposureForm.lama_bekerja ? parseInt(exposureForm.lama_bekerja) : null,
+        tanggal_selesai_kontrak: exposureForm.tanggal_selesai_kontrak || null,
+        bpjs_bpu: exposureForm.bpjs_bpu,
+        // Merge: pertahankan semua data lama dan update dengan form baru
         informal_data: {
+          ...existingInformalData,
+          lama_bekerja: exposureForm.lama_bekerja,
+          tanggal_selesai_kontrak: exposureForm.tanggal_selesai_kontrak,
+          bpjs_bpu: exposureForm.bpjs_bpu,
           apd_disediakan: exposureForm.apd_disediakan,
           jenis_apd_sendiri: exposureForm.jenis_apd_sendiri,
+          mutasi_jabatan: exposureForm.mutasi_jabatan,
+          pajanan_details: exposureForm.pajanan_details,
         },
       };
 
@@ -375,7 +428,7 @@ export function useUserDashboard() {
     } finally {
       setExposureLoading(false);
     }
-  }, [exposureForm, fetchData]);
+  }, [exposureForm, pekerja, fetchData]);
 
   /** Memperbarui atau menambah catatan medis baru. */
   const handleUpdateMedis = useCallback(async (e: React.FormEvent) => {
@@ -464,16 +517,20 @@ export function useUserDashboard() {
       id: null, nama_perusahaan: '', jabatan: '', status_pekerjaan: 'Sudah Berhenti',
       tgl_masuk: '', tgl_keluar: '', jenis_pajanan: '', durasi_pajanan: '',
       apd_disediakan: '', jenis_apd_sendiri: '', deskripsi_pekerjaan: '',
+      alamat_perusahaan: '', bagian: '', nama_agen_penyalur: '',
+      alamat_agen_penyalur: '', 
+      lama_bekerja: '', tanggal_selesai_kontrak: '', bpjs_bpu: '',
+      mutasi_jabatan: [], pajanan_details: {},
     });
     setIsExposureModalOpen(true);
   }, []);
 
   const openExposureEdit = useCallback((r: RiwayatPekerja) => {
-    let info: Record<string, string> = {};
+    let info: Record<string, any> = {};
     try {
       info = typeof r.informal_data === 'string'
         ? JSON.parse(r.informal_data)
-        : (r.informal_data as Record<string, string> || {});
+        : (r.informal_data as Record<string, any> || {});
     } catch { /* data mungkin bukan JSON valid */ }
 
     setExposureForm({
@@ -485,9 +542,18 @@ export function useUserDashboard() {
       tgl_keluar: r.tgl_keluar || '',
       jenis_pajanan: r.jenis_pajanan || '',
       durasi_pajanan: r.durasi_pajanan?.toString() || '',
+      deskripsi_pekerjaan: r.deskripsi_pekerjaan || '',
+      alamat_perusahaan: r.alamat_perusahaan || '',
+      bagian: r.bagian || '',
+      nama_agen_penyalur: r.nama_agen_penyalur || '',
+      alamat_agen_penyalur: r.alamat_agen_penyalur || '',
+      lama_bekerja: r.lama_bekerja?.toString() || info.lama_bekerja || '',
+      tanggal_selesai_kontrak: r.tanggal_selesai_kontrak || info.tanggal_selesai_kontrak || '',
+      bpjs_bpu: r.bpjs_bpu || info.bpjs_bpu || '',
       apd_disediakan: info.apd_disediakan || '',
       jenis_apd_sendiri: info.jenis_apd_sendiri || '',
-      deskripsi_pekerjaan: r.deskripsi_pekerjaan || '',
+      mutasi_jabatan: info.mutasi_jabatan || [],
+      pajanan_details: info.pajanan_details || {},
     });
     setIsExposureModalOpen(true);
   }, []);

@@ -57,11 +57,14 @@ export function useWilayah(provinsiNama: string, initialKabupaten?: string): Use
         return res.json();
       })
       .then((data: WilayahItem[]) => {
-        setKabupatenList(data || []);
+        const sorted = (data || []).slice().sort((a, b) =>
+          a.name.localeCompare(b.name, 'id')
+        );
+        setKabupatenList(sorted);
 
         // Jika ada nilai awal (edit mode), cari ID-nya dan trigger fetch kecamatan
         if (initialKabupaten) {
-          const found = (data || []).find(
+          const found = sorted.find(
             (k) => k.name.toLowerCase() === initialKabupaten.toLowerCase()
           );
           if (found) {
@@ -90,7 +93,10 @@ export function useWilayah(provinsiNama: string, initialKabupaten?: string): Use
         return res.json();
       })
       .then((data: WilayahItem[]) => {
-        setKecamatanList(data || []);
+        const sorted = (data || []).slice().sort((a, b) =>
+          a.name.localeCompare(b.name, 'id')
+        );
+        setKecamatanList(sorted);
       })
       .catch(() => setKecamatanList([]))
       .finally(() => setLoadingKecamatan(false));

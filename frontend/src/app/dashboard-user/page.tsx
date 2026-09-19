@@ -35,8 +35,11 @@ import { useDashboardStats } from '@/hooks/useDashboardStats';
 import { PROVINCES } from '@/lib/provinces';
 import { useWilayah } from '@/hooks/useWilayah';
 import type { StatusAdvokasi, RiwayatPekerja, DetailMedis } from '@/types';
-
-
+import { HazardIdentification } from '@/components/registration/HazardIdentification';
+import UserSummaryCards from '@/components/dashboard-user/UserSummaryCards';
+import AdvokasiDocuments from '@/components/dashboard-user/AdvokasiDocuments';
+import RiwayatPekerjaanTable from '@/components/dashboard-user/RiwayatPekerjaanTable';
+import ExposureModal from '@/components/dashboard-user/ExposureModal';
 
 const API_BASE = (process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api').replace('/api', '');
 
@@ -120,7 +123,13 @@ export default function UserDashboardPage() {
 
   // ── Derived data ────────────────────────────────────────────────────────────
   const adv = (pekerja?.status_advokasi ?? (pekerja as any)?.statusAdvokasi ?? null) as StatusAdvokasi | null;
-  const job = pekerja?.riwayat_pekerja?.find((r: any) => !r.tgl_keluar) ?? pekerja?.riwayat_pekerja?.[0] ?? null;
+  // current_job: dari backend (lebih akurat — mempertimbangkan status_pekerjaan juga)
+  const activeJob = (pekerja as any)?.current_job 
+    ?? pekerja?.riwayat_pekerja?.find((r: any) => !r.tgl_keluar && !['Sudah Berhenti','Kontrak Habis','PHK','Pensiun','Mengundurkan Diri','Tidak Bekerja'].includes(r.status_pekerjaan))
+    ?? null;
+  const hasHistory = pekerja?.riwayat_pekerja && pekerja.riwayat_pekerja.length > 0;
+  // latest_job: pekerjaan terakhir (dari backend), untuk ditampilkan di kartu mantan pekerja
+  const lastJob = (pekerja as any)?.latest_job ?? pekerja?.riwayat_pekerja?.[0] ?? null;
   const medis = pekerja?.latest_detail_medis ?? null;
   const hCfg = healthConfig[pekerja?.status_kesehatan ?? 'sehat'] ?? healthConfig.sehat;
   const done = adv ? STEPS.filter(s => (adv as any)[s.key]).length : 0;
@@ -280,51 +289,10 @@ export default function UserDashboardPage() {
 
 
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {[
-            { icon: Briefcase, label: 'Status Kerja', value: job?.status_pekerjaan ?? '-', cls: 'text-blue-600 bg-blue-50' },
-            { icon: Building2, label: 'Perusahaan', value: job?.nama_perusahaan ?? '-', cls: 'text-indigo-600 bg-indigo-50' },
-            { icon: User2, label: 'Jabatan', value: job?.jabatan ?? '-', cls: 'text-rose-600 bg-rose-50' },
-            { icon: MapPin, label: 'Domisili', value: pekerja?.domisili ?? '-', cls: 'text-emerald-600 bg-emerald-50' },
-          ].map((c, i) => (
-            <Card key={i} className="group rounded-[20px] border-slate-100 shadow-sm p-5 hover:shadow-md transition-all duration-300 bg-white">
-              <div className={'w-10 h-10 rounded-xl flex items-center justify-center mb-4 ' + c.cls}>
-                <c.icon className="h-5 w-5" />
-              </div>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{c.label}</p>
-              <p className="text-sm font-bold text-slate-800 break-words leading-relaxed">{c.value}</p>
-            </Card>
-          ))}
-        </div>
+        <UserSummaryCards pekerja={pekerja} />
 
-        <div className="grid md:grid-cols-2 gap-6">
-          <Card className={cn("rounded-[24px] border shadow-sm p-6 overflow-hidden relative group", hCfg.bg)}>
-            <div className="absolute top-[-20px] right-[-20px] opacity-10 transition-transform group-hover:scale-125 duration-500">
-              <HeartPulse className="h-32 w-32" />
-            </div>
-            <div className="flex items-center gap-2 mb-6 relative z-10">
-              <Activity className="h-4 w-4 text-slate-400" />
-              <h2 className="text-xs font-black text-slate-400 tracking-widest">STATUS KESEHATAN</h2>
-            </div>
-            <div className="flex items-center gap-5 relative z-10">
-              <div className={cn("h-16 w-16 rounded-2xl flex items-center justify-center shadow-inner", hCfg.bg.replace('bg-','bg-white/50 '))}>
-                <div className={cn("h-4 w-4 rounded-full animate-ping absolute", hCfg.dot)} />
-                <div className={cn("h-4 w-4 rounded-full relative", hCfg.dot)} />
-              </div>
-              <div>
-                <p className={cn("text-xl font-black tracking-tight", hCfg.color)}>{hCfg.label}</p>
-                <p className="text-xs font-medium text-slate-500 mt-1">
-                  Pembaruan: {medis ? fmt(medis.updated_at) : '-'}
-                </p>
-              </div>
-            </div>
-            {medis && (
-              <div className="mt-6 bg-white/40 backdrop-blur-sm rounded-xl p-4 border border-white/50 relative z-10">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Diagnosis Terbaru</p>
-                <p className="text-sm font-bold text-slate-800">{medis.hasil_diagnosis ?? '-'}</p>
-              </div>
-            )}
-          </Card>
+
+        <div className="grid grid-cols-1 gap-6">
 
           <Card className="rounded-[24px] border-slate-100 shadow-sm p-6 overflow-hidden relative group bg-white">
             <div className="absolute top-[-20px] right-[-20px] opacity-[0.03] transition-transform group-hover:rotate-12 duration-500 pointer-events-none">
@@ -334,7 +302,7 @@ export default function UserDashboardPage() {
               <AlertCircle className="h-4 w-4 text-[#0284c7]" />
               <h2 className="text-xs font-black text-[#94a3b8] tracking-widest">RINGKASAN ADVOKASI</h2>
             </div>
-            {adv && !adv.jenis_kasus && (
+            {adv && !adv.jenis_kasus && !requests.some(r => r.model_type === 'StatusAdvokasi' && r.status === 'PENDING' && r.payload?.jenis_kasus) && (
               <button 
                 onClick={openAdvEdit}
                 className="absolute top-6 right-6 p-2 rounded-lg text-slate-400 hover:text-[#0284c7] hover:bg-blue-50 transition-all"
@@ -379,14 +347,23 @@ export default function UserDashboardPage() {
               </div>
             ) : (
               <div className="py-8 text-center relative z-10 flex flex-col items-center gap-4">
-                <p className="text-sm text-slate-400 font-medium italic">Belum ada kasus advokasi aktif.</p>
-                <Button 
-                  onClick={openAdvEdit}
-                  variant="outline"
-                  className="rounded-xl border-blue-200 text-[#0284c7] hover:bg-blue-50 font-bold text-xs"
-                >
-                  Ajukan Advokasi Baru
-                </Button>
+                {requests.some(r => r.model_type === 'StatusAdvokasi' && r.status === 'PENDING' && r.payload?.jenis_kasus) ? (
+                  <>
+                    <Clock className="h-8 w-8 text-amber-400 mb-2 animate-pulse" />
+                    <p className="text-sm text-amber-600 font-bold italic animate-pulse">Pengajuan advokasi Anda sedang diproses, mohon tunggu.</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm text-slate-400 font-medium italic">Belum ada kasus advokasi aktif.</p>
+                    <Button 
+                      onClick={openAdvEdit}
+                      variant="outline"
+                      className="rounded-xl border-blue-200 text-[#0284c7] hover:bg-blue-50 font-bold text-xs"
+                    >
+                      Ajukan Advokasi Baru
+                    </Button>
+                  </>
+                )}
               </div>
             )}
           </Card>
@@ -437,215 +414,23 @@ export default function UserDashboardPage() {
           </Card>
         )}
 
-        {adv && (
-          <Card className="rounded-[24px] border-slate-100 shadow-sm p-6">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-2">
-                <FileStack className="h-4 w-4 text-[#0284c7]" />
-                <h2 className="text-xs font-black text-[#94a3b8] tracking-widest uppercase">Dokumen Bukti</h2>
-              </div>
-            </div>
-            <div className="space-y-4">
-              {STEPS.map((step, i) => {
-                const isDone = !!(adv?.[step.key]);
-                const isPending = requests.some(r => 
-                  r.model_type === 'StatusAdvokasi' && 
-                  r.status === 'PENDING' && 
-                  r.payload?.step_key === step.key
-                );
-                const isActive = !isDone && !isPending && (i === 0 || !!(adv?.[STEPS[i-1]?.key]));
-                const docKey = DOC_KEYS.find(d => d.key === step.key);
-                const hasDoc = docKey ? (adv?.[docKey.pathKey] as string | undefined) : undefined;
-                const docDate = docKey ? (adv?.[docKey.dateKey] as string | undefined) : undefined;
-                const Icon = step.icon;
-                return (
-                  <div key={step.key} className={cn(
-                    "flex flex-col sm:flex-row sm:items-center gap-4 p-4 rounded-2xl border transition-all",
-                    isDone ? "bg-emerald-50/40 border-emerald-100" :
-                    isPending ? "bg-amber-50/40 border-amber-100 ring-1 ring-amber-500/10 shadow-sm animate-pulse" :
-                    isActive ? "bg-blue-50/40 border-blue-100 ring-1 ring-blue-500/10 shadow-sm" :
-                    "bg-slate-50/50 border-slate-100 opacity-60"
-                  )}>
-                    <div className={cn(
-                      "h-12 w-12 rounded-xl flex items-center justify-center shrink-0 shadow-sm",
-                      isDone ? step.color + " text-white" :
-                      isPending ? "bg-white border-2 border-amber-500 text-amber-500" :
-                      isActive ? "bg-white border-2 border-blue-500 text-blue-600" :
-                      "bg-slate-200 text-slate-400"
-                    )}>
-                      {isDone ? <CheckCircle2 className="h-6 w-6" /> : isPending ? <Clock className="h-5 w-5 text-amber-500" /> : <Icon className="h-5 w-5" />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 mb-1">
-                        <h4 className={cn("text-sm font-black", (isDone ? "text-slate-800" : isPending ? "text-amber-700" : isActive ? "text-blue-700" : "text-slate-400"))}>
-                          {docKey?.name ?? step.label}
-                        </h4>
-                        <span className={cn(
-                          "text-[9px] font-black px-2 py-0.5 rounded-full border uppercase tracking-wider",
-                          isDone ? "bg-emerald-100 text-emerald-700 border-emerald-200" :
-                          isPending ? "bg-amber-100 text-amber-700 border-amber-200" :
-                          isActive ? "bg-blue-100 text-blue-700 border-blue-200" :
-                          "bg-slate-100 text-slate-400 border-slate-200"
-                        )}>
-                          {isDone ? 'SELESAI' : isPending ? 'KONFIRMASI' : isActive ? 'DI PROSES' : 'MENUNGGU'}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        {isDone && docDate && (
-                          <div className="flex items-center gap-1 text-[10px] text-slate-400 font-bold">
-                            <Calendar className="h-3 w-3" /> {fmt(docDate)}
-                          </div>
-                        )}
-                        {isPending && <p className="text-[10px] text-amber-600 font-bold italic">Menunggu konfirmasi berkas oleh Admin</p>}
-                        {isActive && !hasDoc && <p className="text-[10px] text-blue-500 font-bold italic">Unggah dokumen untuk memulai</p>}
-                        {isActive && hasDoc && <p className="text-[10px] text-emerald-600 font-bold italic">Dokumen terunggah</p>}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {hasDoc && (
-                        <button
-                          onClick={() => handleViewFile('/pekerja/' + pekerja?.id + '/files/advokasi/' + step.key)}
-                          className="p-2.5 rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-blue-600 hover:border-blue-200 transition-all shadow-sm"
-                          title="Download"
-                        >
-                          <Download className="h-4 w-4" />
-                        </button>
-                      )}
-                      {(isActive || isDone) && (
-                        <button
-                          onClick={() => { setUploadForm({ step_key: step.key, file: null }); setUploadModal(true); }}
-                          className={cn(
-                            "p-2.5 rounded-xl border transition-all shadow-sm",
-                            (isActive && !hasDoc ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700" : "bg-white border-slate-200 text-slate-400 hover:text-blue-600")
-                          )}
-                          title="Upload"
-                        >
-                          <Upload className="h-4 w-4" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </Card>
-        )}
+        <AdvokasiDocuments 
+          adv={adv} 
+          requests={requests} 
+          pekerja={pekerja} 
+          STEPS={STEPS} 
+          DOC_KEYS={DOC_KEYS} 
+          fmt={fmt} 
+          handleViewFile={handleViewFile} 
+          setUploadForm={setUploadForm} 
+          setUploadModal={setUploadModal} 
+        />
 
-        <Card id="section-pajanan" className="rounded-[24px] border-slate-100 shadow-sm p-6 bg-white overflow-hidden relative scroll-mt-32 transition-all duration-500">
-          <div className="absolute top-[-20px] right-[-20px] opacity-[0.02] pointer-events-none">
-             <Zap className="h-40 w-40" />
-          </div>
-          <div className="flex items-center justify-between mb-6 relative z-10">
-            <div className="flex items-center gap-2">
-              <Zap className="h-4 w-4 text-amber-500" />
-              <h2 className="text-xs font-black text-[#94a3b8] tracking-widest uppercase">Riwayat Pekerjaan & Pajanan</h2>
-            </div>
-            <Button 
-              onClick={openExposureAdd}
-              size="sm"
-              className="h-8 px-3 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 border-none font-bold text-[10px]"
-            >
-              <FilePlus className="h-3.5 w-3.5 mr-1.5" /> Tambah Riwayat
-            </Button>
-          </div>
-          
-          <div className="overflow-x-auto relative z-10">
-            <table className="w-full text-sm text-left border-separate border-spacing-y-2">
-              <thead className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                <tr>
-                  <th className="px-4 py-2 w-[25%]">Perusahaan / Proyek</th>
-                  <th className="px-4 py-2 w-[20%]">Jenis Pajanan</th>
-                  <th className="px-4 py-2 w-[35%]">APD yang Digunakan</th>
-                  <th className="px-4 py-2 w-[12%] text-center">Durasi</th>
-                  <th className="px-4 py-2 w-[8%] text-right">Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                {pekerja?.riwayat_pekerja?.some((r: any) => r.jenis_pajanan || r.durasi_pajanan || r.informal_data) ? (
-                  pekerja.riwayat_pekerja.map((r: any, idx: number) => {
-                    const hasData = r.jenis_pajanan || r.durasi_pajanan || r.informal_data;
-                    if (!hasData) return null;
-                    
-                    return (
-                      <tr key={idx} className="group">
-                        <td className="px-4 py-4 bg-slate-50/50 rounded-l-2xl border-y border-l border-slate-100 group-hover:bg-blue-50/30 transition-colors">
-                          <p className="font-bold text-slate-800">{r.nama_perusahaan}</p>
-                          <p className="text-[10px] text-slate-400 font-medium">{r.jabatan || 'Pekerja'}</p>
-                        </td>
-                        <td className="px-4 py-4 bg-slate-50/50 border-y border-slate-100 group-hover:bg-blue-50/30 transition-colors">
-                          <span className="inline-flex px-2 py-0.5 bg-amber-50 text-amber-600 rounded text-[10px] font-black uppercase tracking-wide border border-amber-100">
-                            {r.jenis_pajanan || '-'}
-                          </span>
-                        </td>
-                        <td className="px-4 py-4 bg-slate-50/50 border-y border-slate-100 group-hover:bg-blue-50/30 transition-colors">
-                           <div className="flex flex-col gap-1.5">
-                             {(() => {
-                                try {
-                                  const info = typeof r.informal_data === 'string' ? JSON.parse(r.informal_data) : r.informal_data;
-                                  const provided = info?.apd_disediakan;
-                                  const own = info?.jenis_apd_sendiri;
-                                  const legacy = info?.apd_list;
-                                  
-                                  const hasProvided = provided && provided !== '-' && provided.toLowerCase() !== 'tidak ada';
-                                  const hasOwn = own && own !== '-' && own.toLowerCase() !== 'tidak ada';
-
-                                  if (!hasProvided && !hasOwn && !legacy) return <span className="text-slate-400 italic text-[11px]">-</span>;
-
-                                  return (
-                                    <div className="flex flex-col gap-2 py-1">
-                                      {hasProvided && (
-                                        <div className="flex flex-col">
-                                          <span className="text-[8px] font-black text-blue-500 uppercase tracking-tighter mb-0.5">Disediakan Perusahaan:</span>
-                                          <span className="text-[11px] text-slate-700 font-bold leading-snug">{provided}</span>
-                                        </div>
-                                      )}
-                                      {hasOwn && (
-                                        <div className="flex flex-col">
-                                          <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter mb-0.5">Milik Mandiri:</span>
-                                          <span className="text-[11px] text-slate-700 font-bold leading-snug">{own}</span>
-                                        </div>
-                                      )}
-                                      {!hasProvided && !hasOwn && legacy && (
-                                         <div className="flex flex-col">
-                                           <span className="text-[8px] font-black text-blue-400 uppercase tracking-tighter mb-0.5">Riwayat APD:</span>
-                                           <span className="text-[11px] text-slate-600 font-medium leading-snug">{legacy}</span>
-                                         </div>
-                                      )}
-                                    </div>
-                                  );
-                                } catch(e) { return <span className="text-slate-400">-</span>; }
-                             })()}
-                           </div>
-                        </td>
-                         <td className="px-4 py-4 bg-slate-50/50 border-y border-slate-100 group-hover:bg-blue-50/30 transition-colors text-center whitespace-nowrap">
-                           <span className="inline-flex items-center px-3 py-1 bg-white text-blue-600 rounded-full border border-blue-100 text-[11px] font-black shadow-sm">
-                             {r.durasi_pajanan ? `${r.durasi_pajanan} Tahun` : '-'}
-                           </span>
-                         </td>
-                        <td className="px-4 py-4 bg-slate-50/50 rounded-r-2xl border-y border-r border-slate-100 group-hover:bg-blue-50/30 transition-colors text-right">
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => openExposureEdit(r)}
-                            className="h-8 w-8 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
-                          >
-                            <Settings className="h-4 w-4" />
-                          </Button>
-                        </td>
-                      </tr>
-                    );
-                  })
-                ) : (
-                  <tr>
-                    <td colSpan={4} className="px-4 py-10 text-center text-slate-400 italic">
-                      Tidak ada data riwayat pajanan yang tercatat.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </Card>
+        <RiwayatPekerjaanTable 
+          pekerja={pekerja} 
+          openExposureAdd={openExposureAdd} 
+          openExposureEdit={openExposureEdit} 
+        />
 
         <div className="grid lg:grid-cols-2 gap-8">
           <Card className="rounded-[24px] border-slate-100 shadow-sm p-6 bg-white">
@@ -707,7 +492,9 @@ export default function UserDashboardPage() {
                                         <p className={cn("text-[10px] font-bold truncate", selectedRiwayatId === r.id ? "text-white" : "text-slate-700")}>{m.bagian || '-'}</p>
                                         <p className={cn("text-[8px] font-medium", selectedRiwayatId === r.id ? "text-blue-200" : "text-slate-400")}>{m.jabatan || '-'}</p>
                                       </div>
-                                      <span className={cn("text-[9px] font-bold shrink-0", selectedRiwayatId === r.id ? "text-blue-100" : "text-slate-400")}>{m.tahun || '-'}</span>
+                                      <span className={cn("text-[9px] font-bold shrink-0", selectedRiwayatId === r.id ? "text-blue-100" : "text-slate-400")}>
+                                        {m.tahun_mulai ? `${m.tahun_mulai} - ${m.tahun_selesai || 'Sekarang'}` : '-'}
+                                      </span>
                                     </div>
                                   ))}
                                 </div>
@@ -738,7 +525,23 @@ export default function UserDashboardPage() {
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-slate-400 italic text-center py-10">Belum ada data riwayat.</p>
+              <div className="flex flex-col items-center justify-center py-10 text-center space-y-3">
+                <div className="h-14 w-14 rounded-2xl bg-slate-50 flex items-center justify-center border border-dashed border-slate-200">
+                  <Briefcase className="h-7 w-7 text-slate-300" />
+                </div>
+                <div className="max-w-[220px]">
+                  <p className="text-xs font-black text-slate-700">Belum Ada Riwayat Pekerjaan</p>
+                  <p className="text-[10px] text-slate-400 font-medium mt-1">Data dari form pendaftaran akan tampil di sini setelah tersimpan.</p>
+                </div>
+                <Button
+                  onClick={openExposureAdd}
+                  size="sm"
+                  variant="outline"
+                  className="h-8 px-4 rounded-xl border-blue-200 text-blue-600 hover:bg-blue-50 font-bold text-[10px] mt-2"
+                >
+                  <Plus className="h-3 w-3 mr-1" /> Tambah Riwayat Pekerjaan
+                </Button>
+              </div>
             )}
           </Card>
 
@@ -747,7 +550,7 @@ export default function UserDashboardPage() {
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <HeartPulse className="h-4 w-4 text-[#0284c7]" />
-                  <h2 className="text-xs font-black text-[#94a3b8] tracking-widest uppercase">Riwayat Kesehatan</h2>
+                  <h2 className="text-xs font-black text-[#94a3b8] tracking-widest uppercase">Data Medis</h2>
                 </div>
                 {selectedRiwayatId && (
                   <Button 
@@ -759,102 +562,171 @@ export default function UserDashboardPage() {
                   </Button>
                 )}
               </div>
-              {selectedRiwayatId && (
-                <div className="flex items-center gap-2 px-3 py-2 bg-blue-50/50 text-blue-700 rounded-2xl border border-blue-100/50 w-fit">
-                  <div className="h-6 w-6 rounded-lg bg-blue-600 flex items-center justify-center shadow-md shadow-blue-100">
-                    <Building2 className="h-3 w-3 text-white" />
-                  </div>
-                  <span className="text-[11px] font-black uppercase tracking-tight pr-1">
-                    {pekerja?.riwayat_pekerja?.find((r: any) => r.id === selectedRiwayatId)?.nama_perusahaan}
-                  </span>
-                </div>
-              )}
             </div>
-            
+
+            {/* ── Baseline Medis (dari form pendaftaran) ──────────────────── */}
             {(() => {
-              const selectedJob = pekerja?.riwayat_pekerja?.find((r: any) => r.id === selectedRiwayatId);
-              const medicalRecords = selectedJob?.detail_medis || [];
-              
-              if (medicalRecords.length > 0) {
-                return (
-                  <div className="space-y-4">
-                    {medicalRecords.map((m: any, idx: number) => (
-                      <div key={idx} className="p-5 rounded-[20px] bg-slate-50/50 border border-slate-100 hover:border-blue-200 transition-all">
-                        <div className="flex items-start justify-between mb-4">
-                          <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center shadow-sm">
-                              <ClipboardList className="h-5 w-5 text-blue-500" />
-                            </div>
-                            <div>
-                              <p className="text-sm font-black text-slate-800">{m.jenis_pemeriksa || m.jenis_pemeriksaan || '-'}</p>
-                              <p className="text-[10px] text-slate-400 font-bold flex items-center gap-1">
-                                <Calendar className="h-3 w-3" /> {fmt(m.tgl_pemeriksaan || m.tanggal_pemeriksaan)}
-                              </p>
-                            </div>
-                          </div>
-                          <span className={cn(
-                            "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border",
-                            m.status_kesehatan === 'sehat' ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
-                            m.status_kesehatan === 'tidak_sehat' ? "bg-red-50 text-red-600 border-red-100" :
-                            "bg-amber-50 text-amber-600 border-amber-100"
-                          )}>
-                            {formatHealthStatus(m.status_kesehatan)}
-                          </span>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => openMedisEdit(m)}
-                            className="h-8 w-8 text-slate-400 hover:text-blue-600"
-                          >
-                            <Settings className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
-                        
-                        <div className="grid grid-cols-2 gap-4 mt-4">
-                          <div className="space-y-1">
-                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Diagnosis</p>
-                            <p className="text-xs text-slate-700 font-bold leading-relaxed">{m.hasil_diagnosis || '-'}</p>
-                          </div>
-                          <div className="space-y-1">
-                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Rekomendasi</p>
-                            <p className="text-xs text-slate-700 font-bold leading-relaxed italic">{m.rekomendasi || '-'}</p>
-                          </div>
-                          <div className="space-y-1 col-span-2 pt-2 border-t border-slate-100">
-                             <div className="flex items-center justify-between">
-                               <div className="flex items-center gap-2">
-                                  <User className="h-3 w-3 text-slate-400" />
-                                  <p className="text-[10px] font-bold text-slate-500">Pemeriksa: <span className="text-slate-700">{m.dokter_pemeriksa || m.dokter || '-'}</span></p>
-                               </div>
-                               {m.file_hasil && (
-                                 <Button 
-                                   variant="ghost" 
-                                   size="sm" 
-                                   onClick={() => handleViewFile('/detail-medis/' + m.id + '/file')}
-                                   className="h-7 text-[9px] font-black text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                                 >
-                                   <Download className="h-3 w-3 mr-1" /> Unduh Berkas
-                                 </Button>
-                               )}
-                             </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                );
-              }
+              const rm = (pekerja as any)?.riwayat_medis;
+              if (!rm) return null;
+              const hasAnyData = rm.keluhan_utama || rm.diagnosa_dokter || rm.golongan_darah || 
+                                 (rm.riwayat_penyakit?.length > 0) || (rm.alergi?.length > 0) ||
+                                 (rm.riwayat_operasi?.length > 0) || rm.obat_rutin;
+              if (!hasAnyData) return null;
               return (
-                <div className="flex flex-col items-center justify-center py-20 text-center space-y-3">
-                  <div className="h-16 w-16 rounded-full bg-slate-50 flex items-center justify-center border-2 border-dashed border-slate-200">
-                    <HeartPulse className="h-8 w-8 text-slate-300" />
+                <div className="mb-5 p-4 rounded-2xl bg-gradient-to-br from-blue-50/60 to-indigo-50/40 border border-blue-100">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="h-7 w-7 rounded-lg bg-blue-600 flex items-center justify-center shadow-sm">
+                      <ClipboardList className="h-4 w-4 text-white" />
+                    </div>
+                    <p className="text-[10px] font-black text-blue-700 uppercase tracking-widest">Profil Kesehatan Dasar</p>
+                    <span className="ml-auto text-[8px] font-black bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full border border-blue-200">DARI PENDAFTARAN</span>
                   </div>
-                  <div className="max-w-[200px]">
-                    <p className="text-sm font-black text-slate-800">Tidak Ada Data Medis</p>
-                    <p className="text-[10px] text-slate-400 font-medium">Belum ada catatan kesehatan yang terlampir untuk periode pekerjaan ini.</p>
+                  <div className="grid grid-cols-2 gap-y-4 gap-x-6 mt-2">
+                    {rm.golongan_darah && (
+                      <div>
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Golongan Darah</p>
+                        <p className="text-sm font-bold text-slate-800">{rm.golongan_darah}</p>
+                      </div>
+                    )}
+                    {rm.keluhan_utama && (
+                      <div className="col-span-2">
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Keluhan Utama</p>
+                        <p className="text-sm font-bold text-slate-800 leading-relaxed">{rm.keluhan_utama}</p>
+                      </div>
+                    )}
+                    {rm.diagnosa_dokter && (
+                      <div className="col-span-2">
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Diagnosa Dokter</p>
+                        <p className="text-sm font-bold text-slate-800 leading-relaxed">{rm.diagnosa_dokter}</p>
+                      </div>
+                    )}
+                    {rm.riwayat_penyakit?.length > 0 && (
+                      <div className="col-span-2">
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Riwayat Penyakit</p>
+                        <p className="text-sm font-bold text-slate-800">
+                          {(Array.isArray(rm.riwayat_penyakit) ? rm.riwayat_penyakit : rm.riwayat_penyakit.split(',')).map((p: string) => p.trim()).join(', ')}
+                        </p>
+                      </div>
+                    )}
+                    {rm.alergi?.length > 0 && (
+                      <div>
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Alergi</p>
+                        <p className="text-sm font-bold text-slate-800">
+                          {(Array.isArray(rm.alergi) ? rm.alergi : rm.alergi.split(',')).map((a: string) => a.trim()).join(', ')}
+                        </p>
+                      </div>
+                    )}
+                    {rm.obat_rutin && (
+                      <div>
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Obat Rutin</p>
+                        <p className="text-sm font-bold text-slate-800">{rm.obat_rutin}</p>
+                      </div>
+                    )}
+                    {rm.riwayat_operasi?.length > 0 && (
+                      <div className="col-span-2">
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Riwayat Operasi</p>
+                        <p className="text-sm font-bold text-slate-800">
+                          {(Array.isArray(rm.riwayat_operasi) ? rm.riwayat_operasi : rm.riwayat_operasi.split(',')).map((o: string) => o.trim()).join(', ')}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               );
             })()}
+
+            {/* ── Catatan Pemeriksaan per Pekerjaan ──────────────────────── */}
+            {selectedRiwayatId && (
+              <>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-xl w-fit">
+                    <Building2 className="h-3 w-3 text-slate-400" />
+                    <span className="text-[10px] font-black text-slate-600 uppercase tracking-tight">
+                      {pekerja?.riwayat_pekerja?.find((r: any) => r.id === selectedRiwayatId)?.nama_perusahaan}
+                    </span>
+                  </div>
+                </div>
+                {(() => {
+                  const selectedJob = pekerja?.riwayat_pekerja?.find((r: any) => r.id === selectedRiwayatId);
+                  const medicalRecords = selectedJob?.detail_medis || [];
+                  if (medicalRecords.length > 0) {
+                    return (
+                      <div className="space-y-3">
+                        {medicalRecords.map((m: any, idx: number) => (
+                          <div key={idx} className="p-4 rounded-[18px] bg-slate-50/50 border border-slate-100 hover:border-blue-200 transition-all">
+                            <div className="flex items-start justify-between mb-3">
+                              <div className="flex items-center gap-3">
+                                <div className="h-9 w-9 rounded-xl bg-white border border-slate-100 flex items-center justify-center shadow-sm">
+                                  <ClipboardList className="h-4 w-4 text-blue-500" />
+                                </div>
+                                <div>
+                                  <p className="text-xs font-black text-slate-800">{m.jenis_pemeriksa || m.jenis_pemeriksaan || '-'}</p>
+                                  <p className="text-[10px] text-slate-400 font-bold flex items-center gap-1">
+                                    <Calendar className="h-2.5 w-2.5" /> {fmt(m.tgl_pemeriksaan || m.tanggal_pemeriksaan)}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                <span className={cn(
+                                  "px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border",
+                                  m.status_kesehatan === 'sehat' ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
+                                  m.status_kesehatan === 'tidak_sehat' ? "bg-red-50 text-red-600 border-red-100" :
+                                  "bg-amber-50 text-amber-600 border-amber-100"
+                                )}>
+                                  {formatHealthStatus(m.status_kesehatan)}
+                                </span>
+                                <Button variant="ghost" size="icon" onClick={() => openMedisEdit(m)} className="h-7 w-7 text-slate-400 hover:text-blue-600">
+                                  <Settings className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                              {m.hasil_diagnosis && (
+                                <div className="space-y-0.5">
+                                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Diagnosis</p>
+                                  <p className="text-xs text-slate-700 font-bold leading-relaxed">{m.hasil_diagnosis}</p>
+                                </div>
+                              )}
+                              {m.rekomendasi && (
+                                <div className="space-y-0.5">
+                                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Rekomendasi</p>
+                                  <p className="text-xs text-slate-700 leading-relaxed italic">{m.rekomendasi}</p>
+                                </div>
+                              )}
+                              {(m.dokter_pemeriksa || m.dokter) && (
+                                <div className="col-span-2 flex items-center gap-1.5 pt-2 border-t border-slate-100">
+                                  <User className="h-3 w-3 text-slate-400" />
+                                  <p className="text-[10px] font-bold text-slate-500">Pemeriksa: <span className="text-slate-700">{m.dokter_pemeriksa || m.dokter}</span></p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className="flex flex-col items-center justify-center py-10 text-center space-y-2">
+                      <HeartPulse className="h-8 w-8 text-slate-200" />
+                      <p className="text-xs font-bold text-slate-400">Belum ada catatan pemeriksaan</p>
+                      <p className="text-[10px] text-slate-300">untuk periode pekerjaan ini.</p>
+                    </div>
+                  );
+                })()}
+              </>
+            )}
+
+            {!selectedRiwayatId && !(pekerja as any)?.riwayat_medis && (
+              <div className="flex flex-col items-center justify-center py-16 text-center space-y-3">
+                <div className="h-16 w-16 rounded-full bg-slate-50 flex items-center justify-center border-2 border-dashed border-slate-200">
+                  <HeartPulse className="h-8 w-8 text-slate-300" />
+                </div>
+                <div className="max-w-[200px]">
+                  <p className="text-sm font-black text-slate-800">Tidak Ada Data Medis</p>
+                  <p className="text-[10px] text-slate-400 font-medium">Pilih pekerjaan di sebelah kiri untuk melihat catatan kesehatan.</p>
+                </div>
+              </div>
+            )}
           </Card>
         </div>
 
@@ -917,6 +789,15 @@ export default function UserDashboardPage() {
                 </select>
               </div>
               <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tanggal Aktivitas (Opsional)</label>
+                <input 
+                  type="date"
+                  className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-4 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                  value={uploadForm.tanggal}
+                  onChange={(e) => setUploadForm({ ...uploadForm, tanggal: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">File Dokumen</label>
                 <div className="relative group">
                   <input 
@@ -947,14 +828,14 @@ export default function UserDashboardPage() {
 
       {/* Profile Edit Modal */}
       <Dialog open={isProfileModalOpen} onOpenChange={setIsProfileModalOpen}>
-        <DialogContent className="sm:max-w-[425px] rounded-[24px]">
+        <DialogContent className="sm:max-w-[550px] rounded-[24px]">
           <DialogHeader>
             <DialogTitle className="text-xl font-black text-slate-800">Edit Profil Saya</DialogTitle>
             <DialogDescription className="text-xs font-medium text-slate-500">
               Perbarui informasi kontak agar tim advokasi dapat menghubungi Anda dengan mudah.
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleUpdateProfile} className="space-y-4 py-4 max-h-[70vh] overflow-y-auto px-1">
+          <form onSubmit={handleUpdateProfile} className="space-y-4 py-4 max-h-[70vh] overflow-y-auto overflow-x-hidden px-2">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="nik" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">NIK</Label>
@@ -1201,13 +1082,41 @@ export default function UserDashboardPage() {
                 className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold text-slate-700 cursor-not-allowed"
               />
             </div>
+            <div className="space-y-3">
+              <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Bagaimana kondisi kesehatan Anda saat ini? <span className="text-red-500">*</span></Label>
+              <div className="flex flex-col sm:flex-row items-center gap-3 justify-between bg-slate-50 p-4 rounded-xl border border-slate-200">
+                <span className="text-[10px] font-black text-emerald-600 uppercase tracking-wide">Sangat Sehat (1)</span>
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4, 5].map((score) => (
+                    <button
+                      key={score}
+                      type="button"
+                      onClick={() => setAdvForm({...advForm, status_kesehatan_likert: score.toString()})}
+                      className={cn(
+                        "h-10 w-10 rounded-full text-sm font-black transition-all duration-200",
+                        advForm.status_kesehatan_likert === score.toString()
+                          ? score <= 2 
+                            ? "bg-emerald-500 text-white shadow-lg shadow-emerald-200 scale-110" 
+                            : score === 3 
+                              ? "bg-amber-500 text-white shadow-lg shadow-amber-200 scale-110"
+                              : "bg-rose-500 text-white shadow-lg shadow-rose-200 scale-110"
+                          : "bg-white text-slate-400 border-2 border-slate-200 hover:border-slate-300 hover:text-slate-600"
+                      )}
+                    >
+                      {score}
+                    </button>
+                  ))}
+                </div>
+                <span className="text-[10px] font-black text-rose-600 uppercase tracking-wide text-center sm:text-right">Sangat Tidak Sehat (5)</span>
+              </div>
+            </div>
             <div className="space-y-2">
               <Label htmlFor="adv-note" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Catatan / Pesan untuk Admin</Label>
               <Textarea 
                 id="adv-note"
                 placeholder="Jelaskan secara singkat kronologi atau kebutuhan Anda..."
                 className="rounded-xl bg-slate-50 border-slate-200 min-h-[120px] font-bold focus:ring-blue-500"
-                value={advForm.catatan}
+                value={advForm.catatan || ''}
                 onChange={(e) => setAdvForm({...advForm, catatan: e.target.value})}
               />
             </div>
@@ -1221,152 +1130,18 @@ export default function UserDashboardPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isExposureModalOpen} onOpenChange={setIsExposureModalOpen}>
-        <DialogContent className="w-[95vw] sm:max-w-[480px] rounded-[24px]">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-black text-slate-800">Edit Riwayat & Pajanan</DialogTitle>
-            <DialogDescription className="text-xs font-medium text-slate-500">
-              Perbarui detail pekerjaan dan informasi pajanan Anda untuk mempermudah deteksi PAK.
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleUpdateExposure} className="space-y-4 py-4 max-h-[75vh] overflow-y-auto px-1">
-            <div className="space-y-2">
-              <Label htmlFor="perusahaan" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nama Perusahaan / Proyek</Label>
-              <Input 
-                id="perusahaan"
-                className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500"
-                value={exposureForm.nama_perusahaan}
-                onChange={(e) => setExposureForm({...exposureForm, nama_perusahaan: e.target.value})}
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="jabatan" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Jabatan</Label>
-                <Input 
-                  id="jabatan"
-                  placeholder="Contoh: Welder, Admin..."
-                  className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500"
-                  value={exposureForm.jabatan}
-                  onChange={(e) => setExposureForm({...exposureForm, jabatan: e.target.value})}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Status Kerja</Label>
-                <Select 
-                  value={exposureForm.status_pekerjaan} 
-                  onValueChange={(v) => setExposureForm({...exposureForm, status_pekerjaan: v || ''})}
-                >
-                  <SelectTrigger className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500">
-                    <SelectValue placeholder="Pilih..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Masih Bekerja">Masih Bekerja</SelectItem>
-                    <SelectItem value="Sudah Berhenti">Sudah Berhenti</SelectItem>
-                    <SelectItem value="Kontrak Selesai">Kontrak Selesai</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="masuk" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tgl Masuk</Label>
-                <Input 
-                  id="masuk"
-                  type="date"
-                  className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500"
-                  value={exposureForm.tgl_masuk}
-                  onChange={(e) => setExposureForm({...exposureForm, tgl_masuk: e.target.value})}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="keluar" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tgl Keluar (Opsional)</Label>
-                <Input 
-                  id="keluar"
-                  type="date"
-                  disabled={exposureForm.status_pekerjaan === 'Masih Bekerja'}
-                  className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500 disabled:opacity-50"
-                  value={exposureForm.tgl_keluar}
-                  onChange={(e) => setExposureForm({...exposureForm, tgl_keluar: e.target.value})}
-                />
-              </div>
-            </div>
-
-            <div className="h-px bg-slate-100 my-2" />
-
-            <div className="grid grid-cols-2 gap-4">
-              <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Jenis Pajanan</Label>
-              <Select 
-                value={exposureForm.jenis_pajanan} 
-                onValueChange={(v) => setExposureForm({...exposureForm, jenis_pajanan: v || ''})}
-              >
-                <SelectTrigger className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500">
-                  <SelectValue placeholder="Pilih Jenis Pajanan..." />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl border-slate-100">
-                  <SelectItem value="Faktor Fisika" className="font-bold text-slate-700">Faktor Fisika</SelectItem>
-                  <SelectItem value="Faktor Kimia" className="font-bold text-slate-700">Faktor Kimia</SelectItem>
-                  <SelectItem value="Faktor Biologi" className="font-bold text-slate-700">Faktor Biologi</SelectItem>
-                  <SelectItem value="Faktor Ergonomi" className="font-bold text-slate-700">Faktor Ergonomi</SelectItem>
-                  <SelectItem value="Faktor Psikososial" className="font-bold text-slate-700">Faktor Psikososial</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="durasi" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Durasi Pajanan (Tahun)</Label>
-              <Input 
-                id="durasi"
-                type="number"
-                placeholder="Contoh: 3"
-                className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500"
-                value={exposureForm.durasi_pajanan}
-                onChange={(e) => setExposureForm({...exposureForm, durasi_pajanan: e.target.value})}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="deskripsi" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Deskripsi Pekerjaan / Tanggung Jawab</Label>
-              <Textarea 
-                id="deskripsi"
-                placeholder="Jelaskan apa yang Anda kerjakan di posisi ini..."
-                className="rounded-xl bg-slate-50 border-slate-200 min-h-[80px] font-bold focus:ring-blue-500 resize-none"
-                value={exposureForm.deskripsi_pekerjaan}
-                onChange={(e) => setExposureForm({...exposureForm, deskripsi_pekerjaan: e.target.value})}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="apd_dist" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">APD yang Disediakan Perusahaan</Label>
-              <Input 
-                id="apd_dist"
-                placeholder="Contoh: Masker N95, Sarung Tangan..."
-                className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500"
-                value={exposureForm.apd_disediakan}
-                onChange={(e) => setExposureForm({...exposureForm, apd_disediakan: e.target.value})}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="apd_own" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">APD yang Dibawa Mandiri</Label>
-              <Input 
-                id="apd_own"
-                placeholder="Contoh: Masker Kain sendiri..."
-                className="rounded-xl bg-slate-50 border-slate-200 h-11 font-bold focus:ring-blue-500"
-                value={exposureForm.jenis_apd_sendiri}
-                onChange={(e) => setExposureForm({...exposureForm, jenis_apd_sendiri: e.target.value})}
-              />
-            </div>
-            <DialogFooter className="pt-2">
-              <Button type="submit" disabled={exposureLoading} className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black shadow-lg shadow-blue-100 transition-all">
-                {exposureLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
-                Simpan Data Pajanan
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <ExposureModal 
+        isOpen={isExposureModalOpen}
+        onOpenChange={setIsExposureModalOpen}
+        exposureForm={exposureForm}
+        setExposureForm={setExposureForm}
+        handleUpdateExposure={handleUpdateExposure}
+        exposureLoading={exposureLoading}
+      />
 
       {/* Health History Modal */}
       <Dialog open={isMedisModalOpen} onOpenChange={setIsMedisModalOpen}>
-        <DialogContent className="sm:max-w-[480px] rounded-[24px]">
+        <DialogContent className="sm:max-w-[550px] rounded-[24px]">
           <DialogHeader>
             <DialogTitle className="text-xl font-black text-slate-800">
               {medisForm.id ? 'Edit Catatan Medis' : 'Tambah Catatan Medis'}
@@ -1558,16 +1333,13 @@ export default function UserDashboardPage() {
                           >
                             <ArrowLeft className="h-4 w-4" />
                           </button>
-                          <div className="h-10 w-10 rounded-lg bg-sky-100 text-[#0284c7] flex items-center justify-center shrink-0">
-                            <User className="h-5 w-5" />
-                          </div>
                           <div>
                             <div className="flex items-center gap-2">
                               <h3 className="text-xs font-extrabold text-slate-800">
-                                Diajukan oleh {selectedRequest.requester?.nama || 'Admin Staff'}
+                                Diajukan oleh {selectedRequest.requester?.nama || 'Sistem'}
                               </h3>
                               <span className="px-2 py-0.5 bg-slate-100 text-slate-500 rounded text-[8px] font-bold uppercase tracking-wider">
-                                Staff
+                                {selectedRequest.requester?.role === 'viewer' ? 'Pekerja' : selectedRequest.requester?.role === 'petugas' ? 'Admin Serikat' : selectedRequest.requester?.role === 'admin' ? 'SuperAdmin' : 'Sistem'}
                               </span>
                             </div>
                             <p className="text-[10px] text-slate-400 font-medium mt-0.5">
@@ -1604,7 +1376,7 @@ export default function UserDashboardPage() {
                         <div className="grid grid-cols-2 gap-4">
                           <div>
                             <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">KATEGORI DATA</h4>
-                            <p className="text-xs font-extrabold text-slate-800">{selectedRequest.model_type}</p>
+                            <p className="text-xs font-extrabold text-slate-800">{selectedRequest.model_type.replace(/([A-Z])/g, ' $1').trim()}</p>
                           </div>
                           <div>
                             <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">STATUS AKTUAL</h4>
@@ -1622,20 +1394,20 @@ export default function UserDashboardPage() {
                               <table className="w-full text-left border-collapse">
                                 <thead>
                                   <tr className="bg-slate-50 border-b border-slate-100">
-                                    <th className="px-4 py-2.5 text-[9px] font-extrabold text-slate-500 uppercase tracking-wider">Nama Data</th>
-                                    <th className="px-4 py-2.5 text-[9px] font-extrabold text-slate-500 uppercase tracking-wider">Nilai Data</th>
+                                    <th className="px-4 py-2.5 text-[9px] font-extrabold text-slate-500 uppercase tracking-wider">Keterangan Input</th>
+                                    <th className="px-4 py-2.5 text-[9px] font-extrabold text-slate-500 uppercase tracking-wider">Isi Data</th>
                                   </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-50 text-[11px] font-semibold text-slate-700">
                                   {Object.entries(selectedRequest.payload).map(([key, val]) => (
                                     <tr key={key} className="hover:bg-slate-50/50">
-                                      <td className="px-4 py-2.5 font-bold text-[#0284c7]">{key}</td>
-                                      <td className="px-4 py-2.5 font-medium whitespace-pre-wrap max-w-md">
+                                      <td className="px-4 py-2.5 font-bold text-[#0284c7]">{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</td>
+                                      <td className="px-4 py-2.5 font-medium whitespace-pre-wrap break-words max-w-[200px] md:max-w-md">
                                         {typeof val === 'boolean' 
-                                          ? (val ? 'Aktif' : 'Nonaktif') 
+                                          ? (val ? 'Ya' : 'Tidak') 
                                           : val === null || val === '' 
-                                            ? '-' 
-                                            : JSON.stringify(val, null, 2)}
+                                          ? '-' 
+                                          : Array.isArray(val) ? val.join(', ') : (val as any).toString()}
                                       </td>
                                     </tr>
                                   ))}

@@ -285,7 +285,9 @@ export default function FormDetailMedis({ data, onChange }: FormDetailMedisProps
                     <span className="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs">
                       {idx + 1}
                     </span>
-                    Pemeriksaan #{idx + 1}
+                    {m.tanggal_pemeriksaan 
+                      ? `Pemeriksaan (${new Date(m.tanggal_pemeriksaan).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'})})` 
+                      : `Pemeriksaan #${idx + 1}`}
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                     {/* Row 1: Tanggal & Tempat */}

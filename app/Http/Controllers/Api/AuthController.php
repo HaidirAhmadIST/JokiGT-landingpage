@@ -79,7 +79,7 @@ class AuthController extends Controller
         
         // Load full pekerja relations for any role that has a pekerja profile (viewer or petugas)
         $user->load(['pekerja' => function ($query) {
-            $query->with(['perusahaan', 'riwayatPekerja.detailMedis', 'detailMedis', 'riwayatMedis', 'statusAdvokasi', 'currentJob']);
+            $query->with(['perusahaan', 'riwayatPekerja.detailMedis', 'detailMedis', 'riwayatMedis', 'statusAdvokasi', 'currentJob', 'latestJob']);
         }]);
 
         return response()->json([

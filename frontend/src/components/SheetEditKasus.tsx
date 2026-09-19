@@ -173,88 +173,45 @@ export default function SheetEditKasus({ open, onOpenChange, data, onSuccess }: 
         <div className="flex-1 overflow-y-auto px-8 py-6">
           <form id="edit-advokasi-form" className="space-y-8 pb-4">
             
-            {/* Section 01: Milestone Checklist — NEW */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-[#10b981] text-white text-[10px] font-bold">✓</span>
-                <h3 className="text-xs font-bold text-[#94a3b8] uppercase tracking-widest">CHECKLIST MILESTONE</h3>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                {milestones.map((m, i) => {
-                  const Icon = m.icon;
-                  // @ts-expect-error key access on object
-                  const checked = formData[m.key];
-                  return (
-                    <div 
-                      key={m.key} 
-                      className={cn(
-                        "flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer",
-                        checked ? "bg-emerald-50 border-emerald-200" : "bg-white border-slate-100 hover:border-slate-200"
-                      )}
-                      onClick={() => setFormData({ ...formData, [m.key]: !checked })}
-                    >
-                      <Checkbox 
-                        id={m.key} 
-                        checked={checked}
-                        onCheckedChange={(v) => setFormData({ ...formData, [m.key]: !!v })}
-                        className="data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500"
-                      />
-                      <div className="flex flex-col min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <span className={cn("text-[9px] font-black px-1 rounded-sm border", checked ? "bg-emerald-100 text-emerald-600 border-emerald-200" : "bg-slate-50 text-slate-400 border-slate-100")}>
-                            0{i + 1}
-                          </span>
-                          <Label htmlFor={m.key} className="text-xs font-bold text-slate-700 cursor-pointer truncate">{m.label}</Label>
-                        </div>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          <Icon className={cn("h-3 w-3", checked ? "text-emerald-500" : "text-slate-400")} />
-                          <span className={cn("text-[10px] font-medium", checked ? "text-emerald-600" : "text-slate-400")}>
-                            {checked ? 'Selesai' : 'Belum'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Section 02: Kasus */}
+            {/* Section 01: Identitas Pekerja & Kasus */}
             <div className="space-y-5">
               <div className="flex items-center gap-2">
                 <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-[#0ea5e9] text-white text-[10px] font-bold">01</span>
-                <h3 className="text-xs font-bold text-[#94a3b8] uppercase tracking-widest">JENIS KASUS</h3>
+                <h3 className="text-xs font-bold text-[#94a3b8] uppercase tracking-widest">IDENTITAS KASUS</h3>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                {caseTypes.map((type) => {
-                  const Icon = type.icon;
-                  const isActive = formData.jenis_kasus === type.id;
-                  return (
-                    <button
-                      key={type.id}
-                      type="button"
-                      onClick={() => setFormData({ ...formData, jenis_kasus: type.id })}
-                      className={cn(
-                        "flex flex-col items-start p-4 rounded-[16px] border-2 text-left transition-all duration-200",
-                        isActive
-                          ? "border-[#0ea5e9] bg-[#f0f9ff] ring-1 ring-[#0ea5e9]/20 shadow-sm"
-                          : "border-slate-100 bg-white hover:border-slate-200 hover:bg-slate-50"
-                      )}
-                    >
-                      <div className={cn("p-2 rounded-lg mb-3", type.bg, type.color)}>
-                        <Icon className="h-5 w-5" />
-                      </div>
-                      <span className={cn("text-sm font-bold block", isActive ? "text-[#0369a1]" : "text-slate-700")}>
-                        {type.label}
-                      </span>
-                    </button>
-                  );
-                })}
+              <div className="space-y-3 pt-2">
+                <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Jenis Kasus Advokasi</Label>
+                <div className="grid grid-cols-1 gap-3">
+                  {caseTypes.map((type) => {
+                    const Icon = type.icon;
+                    const isActive = formData.jenis_kasus === type.id;
+                    return (
+                      <button
+                        key={type.id}
+                        type="button"
+                        onClick={() => setFormData({ ...formData, jenis_kasus: type.id })}
+                        className={cn(
+                          "flex flex-col items-start p-4 rounded-[16px] border-2 text-left transition-all duration-200",
+                          isActive
+                            ? "border-[#0ea5e9] bg-[#f0f9ff] ring-1 ring-[#0ea5e9]/20 shadow-sm"
+                            : "border-slate-100 bg-white hover:border-slate-200 hover:bg-slate-50"
+                        )}
+                      >
+                        <div className={cn("p-2 rounded-lg mb-3", type.bg, type.color)}>
+                          <Icon className="h-5 w-5" />
+                        </div>
+                        <span className={cn("text-sm font-bold block", isActive ? "text-[#0369a1]" : "text-slate-700")}>
+                          {type.label}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
-            {/* Section 02: Progres */}
+            {/* Section 02: Status Progres */}
             <div className="space-y-5">
               <div className="flex items-center gap-2">
                 <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-[#0ea5e9] text-white text-[10px] font-bold">02</span>
@@ -263,23 +220,29 @@ export default function SheetEditKasus({ open, onOpenChange, data, onSuccess }: 
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-xs font-bold text-slate-600">TAHAP SAAT INI</Label>
+                  <Label className="text-xs font-bold text-slate-600">Tahap Saat Ini</Label>
                   <Select 
                     value={formData.tahap} 
-                    onValueChange={(v) => setFormData({ ...formData, tahap: v || '' })}
+                    onValueChange={(v) => {
+                      setFormData({ ...formData, tahap: v || '' });
+                      if (v !== 'Sengketa PHI') {
+                        setFormData((prev) => ({ ...prev, status_detail: 'Dalam Proses' }));
+                      }
+                    }}
                   >
                     <SelectTrigger className="h-11 bg-slate-50/50 border-slate-200 focus:ring-[#0ea5e9]">
                       <SelectValue placeholder="Pilih Tahap" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="UPTD">UPTD</SelectItem>
-                      <SelectItem value="BPJS">BPJS (MEDIATOR)</SelectItem>
-                      <SelectItem value="Pengadilan">PENGADILAN (COURT)</SelectItem>
+                      <SelectItem value="Evaluasi Medis">Evaluasi Medis</SelectItem>
+                      <SelectItem value="Verifikasi BPJS">Verifikasi BPJS</SelectItem>
+                      <SelectItem value="Investigasi UPTD">Investigasi UPTD</SelectItem>
+                      <SelectItem value="Sengketa PHI">Sengketa PHI</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs font-bold text-slate-600">STATUS DETAIL</Label>
+                  <Label className="text-xs font-bold text-slate-600">Status Detail</Label>
                   <Select 
                     value={formData.status_detail} 
                     onValueChange={(v) => setFormData({ ...formData, status_detail: v || '' })}
@@ -288,15 +251,59 @@ export default function SheetEditKasus({ open, onOpenChange, data, onSuccess }: 
                       <SelectValue placeholder="Pilih Status" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Verifikasi Dokumen">Verifikasi Dokumen</SelectItem>
-                      <SelectItem value="DALAM PROSES">Dalam Proses</SelectItem>
-                      <SelectItem value="Pemeriksaan Berkas">Pemeriksaan Berkas</SelectItem>
-                      <SelectItem value="Mediasi 1">Mediasi 1</SelectItem>
-                      <SelectItem value="Mediasi 2">Mediasi 2</SelectItem>
-                      <SelectItem value="Menunggu Putusan">Menunggu Putusan</SelectItem>
-                      <SelectItem value="SELESAI">Selesai</SelectItem>
+                      <SelectItem value="Dalam Proses">Dalam Proses</SelectItem>
+                      {formData.tahap === 'Sengketa PHI' && (
+                        <>
+                          <SelectItem value="Verifikasi Dokumen">Verifikasi Dokumen</SelectItem>
+                          <SelectItem value="Mediasi 1">Mediasi 1</SelectItem>
+                          <SelectItem value="Mediasi 2">Mediasi 2</SelectItem>
+                          <SelectItem value="Sidang">Sidang</SelectItem>
+                        </>
+                      )}
                     </SelectContent>
                   </Select>
+                </div>
+              </div>
+
+              <div className="space-y-3 pt-4 border-t border-slate-100">
+                <Label className="text-xs font-bold text-slate-600">CHECKLIST MILESTONE</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  {milestones.map((m, i) => {
+                    const Icon = m.icon;
+                    // @ts-expect-error key access on object
+                    const checked = formData[m.key];
+                    return (
+                      <div 
+                        key={m.key} 
+                        className={cn(
+                          "flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer",
+                          checked ? "bg-emerald-50 border-emerald-200" : "bg-white border-slate-100 hover:border-slate-200"
+                        )}
+                        onClick={() => setFormData({ ...formData, [m.key]: !checked })}
+                      >
+                        <Checkbox 
+                          id={m.key} 
+                          checked={checked}
+                          onCheckedChange={(v) => setFormData({ ...formData, [m.key]: !!v })}
+                          className="data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500"
+                        />
+                        <div className="flex flex-col min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className={cn("text-[9px] font-black px-1 rounded-sm border", checked ? "bg-emerald-100 text-emerald-600 border-emerald-200" : "bg-slate-50 text-slate-400 border-slate-100")}>
+                              0{i + 1}
+                            </span>
+                            <Label htmlFor={m.key} className="text-xs font-bold text-slate-700 cursor-pointer truncate">{m.label}</Label>
+                          </div>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <Icon className={cn("h-3 w-3", checked ? "text-emerald-500" : "text-slate-400")} />
+                            <span className={cn("text-[10px] font-medium", checked ? "text-emerald-600" : "text-slate-400")}>
+                              {checked ? 'Selesai' : 'Belum'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -309,7 +316,7 @@ export default function SheetEditKasus({ open, onOpenChange, data, onSuccess }: 
               </div>
 
               <div className="space-y-2">
-                <Label className="text-xs font-bold text-slate-600">TANGGAL PELAPORAN</Label>
+                <Label className="text-xs font-bold text-slate-600">Tanggal Pelaporan</Label>
                 <Input 
                   type="date" 
                   className="h-11 bg-slate-50/50 border-slate-200 focus-visible:ring-[#0ea5e9]"
@@ -319,7 +326,7 @@ export default function SheetEditKasus({ open, onOpenChange, data, onSuccess }: 
               </div>
 
               <div className="space-y-2">
-                <Label className="text-xs font-bold text-slate-600">CATATAN UPDATE KASUS</Label>
+                <Label className="text-xs font-bold text-slate-600">Catatan Update Kasus</Label>
                 <Textarea 
                   placeholder="Berikan ringkasan progres atau catatan penting..." 
                   className="min-h-[120px] resize-none bg-slate-50/50 border-slate-200 focus-visible:ring-[#0ea5e9]"

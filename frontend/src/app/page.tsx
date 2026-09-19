@@ -119,9 +119,6 @@ export default function LandingPage() {
 
           <div className="grid md:grid-cols-2 gap-8">
             <div className="bg-white rounded-3xl p-8 border border-slate-100 shadow-xl shadow-slate-200/40 hover:-translate-y-2 transition-transform duration-300">
-              <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-6 border bg-emerald-50 text-emerald-500 border-emerald-100">
-                <ShieldCheck className="h-6 w-6" />
-              </div>
               <h3 className="text-xl font-black text-slate-800 mb-3">Hak Pekerja</h3>
               <p className="text-slate-500 font-medium leading-relaxed">
                 Setiap pekerja berhak mendapatkan perlindungan Jaminan sosial ketenagakerjaan, mendapatkan pemeriksaan medis berkala, mendapatkan Kompensasi dan rehabilitasi jika mengalami PAK.
@@ -129,9 +126,6 @@ export default function LandingPage() {
             </div>
 
             <div className="bg-white rounded-3xl p-8 border border-slate-100 shadow-xl shadow-slate-200/40 hover:-translate-y-2 transition-transform duration-300">
-              <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-6 border bg-rose-50 text-rose-500 border-rose-100">
-                <HeartPulse className="h-6 w-6" />
-              </div>
               <h3 className="text-xl font-black text-slate-800 mb-3">Apa itu PAK?</h3>
               <p className="text-slate-500 font-medium leading-relaxed">
                 Penyakit Akibat Kerja (PAK) adalah penyakit yang disebabkan oleh pekerjaan atau lingkungan kerja. Meliputi pajanan Faktor Fisik (Bising, Radiasi), Kimia (Debu, Asbes, Gas), Biologi (Bakteri, virus), Postur tubuh, dan Psikososial.
@@ -183,28 +177,19 @@ export default function LandingPage() {
           <div className="grid md:grid-cols-3 gap-8">
             {[
               { 
-                icon: HeartPulse, 
                 title: 'Pencatatan Medis Digital', 
                 desc: 'Simpan riwayat kesehatan, pajanan, dan diagnosis pekerja dalam satu platform yang aman dan terpusat.',
-                color: 'text-rose-500', bg: 'bg-rose-50', border: 'border-rose-100'
               },
               { 
-                icon: Activity, 
                 title: 'Monitor Advokasi Real-time', 
                 desc: 'Pantau status penanganan kasus, kompensasi, hingga rehabilitasi secara transparan dari dashboard Anda.',
-                color: 'text-blue-500', bg: 'bg-blue-50', border: 'border-blue-100'
               },
               { 
-                icon: Shield, 
                 title: 'Keamanan Data Prioritas', 
                 desc: 'Informasi rekam medis dilindungi dengan enkripsi standar industri untuk menjaga privasi data pekerja.',
-                color: 'text-emerald-500', bg: 'bg-emerald-50', border: 'border-emerald-100'
               }
             ].map((f, i) => (
               <div key={i} className="bg-white rounded-3xl p-8 border border-slate-100 shadow-xl shadow-slate-200/40 hover:-translate-y-2 transition-transform duration-300">
-                <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center mb-6 border", f.bg, f.color, f.border)}>
-                  <f.icon className="h-6 w-6" />
-                </div>
                 <h3 className="text-xl font-black text-slate-800 mb-3">{f.title}</h3>
                 <p className="text-slate-500 font-medium leading-relaxed">{f.desc}</p>
               </div>

@@ -282,14 +282,6 @@ export default function AdvokasiPage() {
                                 className="flex flex-col items-start py-3 px-4 cursor-pointer"
                               >
                                 <div className="flex items-center gap-3 w-full">
-                                  <div className="h-10 w-10 rounded-full overflow-hidden bg-slate-100 border border-slate-200 shrink-0">
-                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                    <img 
-                                      src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${worker.nama_lengkap || 'Guest'}`} 
-                                      alt={worker.nama_lengkap} 
-                                      className="w-full h-full object-cover" 
-                                    />
-                                  </div>
                                   <div className="flex flex-col flex-1 min-w-0">
                                     <div className="flex items-center justify-between">
                                       <span className="font-bold text-slate-800 truncate">{worker.nama_lengkap}</span>

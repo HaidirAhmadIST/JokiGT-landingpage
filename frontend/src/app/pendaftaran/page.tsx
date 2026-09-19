@@ -276,11 +276,16 @@ export default function PendaftaranPekerjaPage() {
         toast.error(res.data.message || "Gagal mengirim OTP.");
       }
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Gagal mengirim OTP. Pastikan Email Anda aktif.");
+      if (err.response?.status === 429) {
+        toast.error("Terlalu banyak percobaan. Silakan tunggu 1 menit sebelum mencoba lagi.");
+      } else {
+        toast.error(err.response?.data?.message || "Gagal mengirim OTP. Pastikan Email Anda aktif.");
+      }
     } finally {
       setSendingOtp(false);
     }
   };
+
 
   const verifyRegOtpCode = async () => {
     if (!otpCode || otpCode.length !== 6) {

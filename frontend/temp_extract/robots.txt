@@ -1,7 +1,0 @@
-User-Agent: *
-Allow: /
-Disallow: /dashboard/
-Disallow: /dashboard-admin/
-Disallow: /dashboard-user/
-
-Sitemap: https://rekamjejakpak.com/sitemap.xml

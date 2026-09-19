@@ -82,9 +82,11 @@ export default function AdvokasiDetailPage() {
   const [docForm, setDocForm] = useState<{
     step_key: string;
     file: File | null;
+    tanggal: string;
   }>({
     step_key: '',
-    file: null
+    file: null,
+    tanggal: ''
   });
 
   const { data, isLoading: loading, refetch } = useGetAdvokasiDetail(id);
@@ -177,8 +179,8 @@ export default function AdvokasiDetailPage() {
       perusahaan: r.nama_perusahaan || r.namaPerusahaan
     })) : [];
   }).sort((a: any, b: any) => {
-    const yearA = parseInt(a.tahun?.toString().split('-')[0] || '0');
-    const yearB = parseInt(b.tahun?.toString().split('-')[0] || '0');
+    const yearA = parseInt((a.tahun_mulai || a.tahun)?.toString().split('-')[0] || '0');
+    const yearB = parseInt((b.tahun_mulai || b.tahun)?.toString().split('-')[0] || '0');
     return yearB - yearA;
   });
 
@@ -235,6 +237,7 @@ export default function AdvokasiDetailPage() {
       const formData = new FormData();
       formData.append('step_key', docForm.step_key);
       formData.append('file[]', docForm.file);
+      if (docForm.tanggal) formData.append('tanggal', docForm.tanggal);
       if (data.jenis_kasus) formData.append('jenis_kasus', data.jenis_kasus);
       if (data.tahap) formData.append('tahap', data.tahap);
 
@@ -250,7 +253,7 @@ export default function AdvokasiDetailPage() {
           }
         });
         setIsDocModalOpen(false);
-        setDocForm({ step_key: '', file: null });
+        setDocForm({ step_key: '', file: null, tanggal: '' });
         refetch();
       }
     } catch (err: any) {
@@ -361,15 +364,7 @@ export default function AdvokasiDetailPage() {
               <h3 className="text-xs font-bold text-[#94a3b8] tracking-widest">PROFIL PEKERJA</h3>
             </div>
             <div className="flex items-start gap-6">
-              <div className="h-20 w-20 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 shrink-0 relative shadow-sm">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img 
-                  src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${data.pekerja?.nama_lengkap || 'Guest'}`}
-                  alt={data.pekerja?.nama_lengkap || 'Pekerja'}
-                  className="w-full h-full object-cover object-top"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-x-8 gap-y-4 flex-1">
+              <div className="grid grid-cols-2 gap-x-8 gap-y-4 w-full">
                 <div>
                   <p className="text-[10px] font-bold text-[#94a3b8] tracking-wider">NAMA LENGKAP</p>
                   <p className="text-sm font-bold text-[#1e293b] mt-0.5">{data.pekerja?.nama_lengkap}</p>
@@ -520,7 +515,9 @@ export default function AdvokasiDetailPage() {
                       <div className="min-w-0 flex-1 pt-0.5">
                         <div className="flex justify-between items-start mb-1">
                           <p className="text-sm font-bold text-slate-800 truncate uppercase tracking-tight">{m.bagian || '-'}</p>
-                          <span className="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded border border-slate-100">{m.tahun || '-'}</span>
+                          <span className="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded border border-slate-100">
+                            {m.tahun_mulai ? `${m.tahun_mulai} - ${m.tahun_selesai || 'Sekarang'}` : (m.tahun || '-')}
+                          </span>
                         </div>
                         <p className="text-xs text-slate-500 font-medium">Jabatan: <span className="text-slate-700 font-bold">{m.jabatan || '-'}</span></p>
                         <p className="text-[10px] text-[#0284c7] font-bold mt-1.5 uppercase tracking-tighter opacity-70">Perusahaan: {m.perusahaan}</p>
@@ -659,6 +656,15 @@ export default function AdvokasiDetailPage() {
                 accept=".pdf,.jpg,.jpeg,.png"
                 onChange={(e) => setDocForm({ ...docForm, file: e.target.files?.[0] || null })}
                 className="h-11 rounded-xl bg-slate-50 border-slate-200 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-[#0ea5e9] file:text-white hover:file:bg-[#0369a1] transition-colors cursor-pointer"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-bold text-slate-600">TANGGAL AKTIVITAS (OPSIONAL)</Label>
+              <Input 
+                type="date"
+                value={docForm.tanggal}
+                onChange={(e) => setDocForm({ ...docForm, tanggal: e.target.value })}
+                className="h-11 rounded-xl bg-slate-50 border-slate-200 px-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0ea5e9] focus:border-[#0ea5e9]"
               />
             </div>
             <div className="flex gap-2 justify-end pt-4 border-t border-slate-100 mt-6">

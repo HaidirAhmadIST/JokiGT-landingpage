@@ -22,7 +22,9 @@ return [
     'allowed_origins' => [
         'https://rekamjejakpak.com', // Domain Production
         'https://www.rekamjejakpak.com', 
-        'http://localhost:3000'    // Akses development frontend (Next.js)
+        'http://localhost:3000',    // Akses development frontend (Next.js)
+        'http://127.0.0.1:3000',
+        '*'
     ],
 
     'allowed_origins_patterns' => [],
