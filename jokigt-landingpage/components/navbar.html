@@ -1,0 +1,62 @@
+<!--
+    COMPONENT: Navbar / Header
+    File: components/navbar.html
+    Digunakan di: dekstop.html (versi desktop)
+    ============================================================
+    Cara penggunaan:
+    Salin konten <header>...</header> ini ke bagian
+    paling atas <body> di dekstop.html
+    ============================================================
+-->
+
+<!-- NAVBAR — DESKTOP -->
+<header class="sticky top-0 z-50 bg-white/80 backdrop-blur border-b border-emerald-100">
+    <div class="max-w-7xl mx-auto px-8 h-20 flex items-center justify-between">
+
+        <!-- Logo -->
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-emerald-500 rounded-lg flex items-center text-white font-bold justify-center shadow-sm">GT</div>
+            <span class="text-xl font-bold tracking-tight text-emerald-700">JokiGT</span>
+        </div>
+
+        <!-- Navigation Links -->
+        <nav class="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
+            <a href="#keunggulan" class="hover:text-emerald-600 transition">Keunggulan</a>
+            <a href="#paket"      class="hover:text-emerald-600 transition">Paket</a>
+            <a href="#testimoni"  class="hover:text-emerald-600 transition">Testimoni</a>
+            <a href="#faq"        class="hover:text-emerald-600 transition">FAQ</a>
+        </nav>
+
+        <!-- CTA Button -->
+        <button
+            onclick="openOrderModal()"
+            id="nav-cta-btn"
+            class="bg-emerald-500 text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-emerald-600 transition shadow-sm">
+            Pesan Sekarang
+        </button>
+
+    </div>
+</header>
+
+
+<!--
+    NAVBAR — MOBILE
+    Digunakan di: mobile.html
+    ============================================================
+-->
+
+<!-- NAVBAR — MOBILE -->
+<header class="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-emerald-100 px-6 h-16 flex items-center justify-between">
+
+    <!-- Logo -->
+    <div class="flex items-center gap-2">
+        <div class="w-8 h-8 bg-emerald-500 rounded-lg flex items-center text-white font-bold text-xs justify-center shadow-sm">GT</div>
+        <span class="font-bold text-base text-emerald-700">JokiGT</span>
+    </div>
+
+    <!-- CTA Button (Mobile) -->
+    <a href="#paket" class="bg-emerald-500 text-white px-4 py-2 rounded-lg text-xs font-semibold hover:bg-emerald-600 transition">
+        Pesan
+    </a>
+
+</header>
