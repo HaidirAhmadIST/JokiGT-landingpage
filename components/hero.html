@@ -1,0 +1,103 @@
+<!--
+    COMPONENT: Hero Section
+    File: components/hero.html
+    Digunakan di: dekstop.html & mobile.html
+    ============================================================
+    Gambar banner berada di: assets/img/banner.jpg
+    ============================================================
+-->
+
+<!-- ========================
+     HERO — DESKTOP VERSION
+     ======================== -->
+<section class="max-w-7xl mx-auto px-8 py-20 grid grid-cols-2 gap-12 items-center">
+
+    <!-- Left: Teks & CTA -->
+    <div class="space-y-6">
+        <span class="text-xs uppercase tracking-widest text-slate-400 font-semibold">01 • Hero</span>
+
+        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-slate-200 text-xs font-medium text-slate-600">
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            Dipercaya 2.500+ pemain Growtopia
+        </div>
+
+        <h1 class="text-5xl font-extrabold tracking-tight text-slate-900 leading-tight">
+            Level Up Growtopia Cepat, Aman, &amp; Anti-Ribet
+        </h1>
+
+        <p class="text-lg text-slate-600 leading-relaxed">
+            Serahkan grinding level ke joki profesional kami. Progres jelas, akun dijaga,
+            dan kamu tinggal main saat level target tercapai.
+        </p>
+
+        <!-- CTA Buttons -->
+        <div class="flex items-center gap-4 pt-2">
+            <button onclick="openOrderModal()" id="hero-cta-btn"
+                class="bg-emerald-500 text-white px-7 py-3.5 rounded-xl font-semibold hover:bg-emerald-600 transition shadow-md">
+                Pesan Joki Sekarang
+            </button>
+            <a href="#paket"
+                class="border border-emerald-300 text-emerald-700 px-7 py-3.5 rounded-xl font-semibold hover:bg-emerald-50 transition">
+                Lihat Paket
+            </a>
+        </div>
+
+        <!-- Trust Badges -->
+        <div class="flex items-center gap-6 pt-4 text-xs font-medium text-slate-500">
+            <span class="flex items-center gap-1.5">🛡️ Garansi Akun Aman</span>
+            <span class="flex items-center gap-1.5">⚡ Garansi Refund 100%</span>
+            <span class="flex items-center gap-1.5">💬 Support 24/7</span>
+        </div>
+    </div>
+
+    <!-- Right: Banner Image -->
+    <div class="rounded-2xl overflow-hidden shadow-xl border border-emerald-100 h-[380px]">
+        <img
+            src="../assets/img/banner.jpg"
+            alt="JokiGT Level Services Banner"
+            class="w-full h-full object-cover object-center" />
+    </div>
+
+</section>
+
+
+<!-- ========================
+     HERO — MOBILE VERSION
+     ======================== -->
+<!--
+    Uncomment blok ini ketika dipakai di mobile.html,
+    dan hapus / comment blok DESKTOP di atas.
+-->
+<!--
+<section class="px-6 py-10 space-y-6 text-center">
+    <span class="text-[10px] uppercase tracking-widest text-slate-400 font-semibold">01 • Hero</span>
+
+    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-slate-200 text-xs text-slate-600 mx-auto">
+        <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Dipercaya 2.500+ pemain
+    </div>
+
+    <h1 class="text-3xl font-extrabold tracking-tight text-slate-900 leading-tight">
+        Level Up Growtopia Cepat, Aman, &amp; Anti-Ribet
+    </h1>
+
+    <p class="text-sm text-slate-600 leading-relaxed">
+        Serahkan grinding level ke joki profesional kami. Progres jelas, akun dijaga, dan kamu tinggal main.
+    </p>
+
+    <div class="rounded-xl overflow-hidden shadow-md border border-emerald-100 h-48">
+        <img src="../assets/img/banner.jpg" alt="JokiGT Level Services Banner"
+            class="w-full h-full object-cover object-center" />
+    </div>
+
+    <div class="space-y-3 pt-2">
+        <button onclick="openOrderModalM()" id="m-hero-cta-btn"
+            class="block w-full bg-emerald-500 text-white py-3.5 rounded-xl font-semibold text-sm text-center hover:bg-emerald-600 transition shadow-md">
+            Pesan Joki Sekarang
+        </button>
+        <a href="#paket"
+            class="block w-full border border-emerald-300 text-emerald-700 py-3.5 rounded-xl font-semibold text-sm text-center hover:bg-emerald-50 transition">
+            Lihat Paket
+        </a>
+    </div>
+</section>
+-->
