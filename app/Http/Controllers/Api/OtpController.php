@@ -50,22 +50,26 @@ class OtpController extends Controller
         try {
             // Send OTP via Email
             Mail::to($email)->send(new OtpMail($otp));
-
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Kode verifikasi berhasil dikirim ke Email Anda.',
-                'data' => [
-                    'email' => $email,
-                    'debug_otp' => env('APP_DEBUG') ? $otp : null,
-                ]
-            ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('Failed to send OTP email: ' . $e->getMessage());
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Gagal mengirim kode verifikasi. Coba lagi beberapa saat.'
-            ], 500);
+            
+            // If not in debug mode, return error to client
+            if (!env('APP_DEBUG', false)) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Gagal mengirim kode verifikasi. Coba lagi beberapa saat.'
+                ], 500);
+            }
         }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Kode verifikasi berhasil dikirim ke Email Anda.' . (env('APP_DEBUG') ? " [Dev OTP: {$otp}]" : ''),
+            'data' => [
+                'email' => $email,
+                'debug_otp' => env('APP_DEBUG') ? $otp : null,
+            ]
+        ]);
     }
 
     /**

@@ -28,8 +28,7 @@ export function useDashboardStats() {
         setStats(res.data.data);
       }
     } catch (e) {
-      console.error('[useDashboardStats] Fetch failed:', e);
-      toast.error('Gagal mengambil statistik dashboard. Periksa koneksi database.');
+      console.warn('[useDashboardStats] Fetch failed:', e);
     } finally {
       setLoading(false);
     }

@@ -62,10 +62,12 @@ export default function LoginPage() {
       if (response.data.status === 'success') {
         const { token, user } = response.data.data;
         
-        // Prevent regular user (viewer) from logging in via this Pengurus form
+        // If worker (viewer) logs in with credentials, route them directly to dashboard-user
         if (user.role === 'viewer') {
-          toast.error('Akun Pekerja (Individu) tidak diizinkan masuk dari sini. Silakan gunakan opsi masuk Pekerja (Individu).');
-          setLoading(false);
+          Cookies.set('auth_token', token, { expires: 7, path: '/' });
+          localStorage.setItem('user', JSON.stringify(user));
+          toast.success(response.data.message);
+          window.location.href = '/dashboard-user';
           return;
         }
 
@@ -110,7 +112,9 @@ export default function LoginPage() {
         startCountdown();
         // If debug OTP exists in response, show a helpful alert for local dev testing
         if (res.data.data?.debug_otp) {
-          console.log("Local Dev OTP Code:", res.data.data.debug_otp);
+          const devCode = String(res.data.data.debug_otp);
+          setOtpCode(devCode);
+          toast.info(`Kode OTP: ${devCode}`, { duration: 10000 });
         }
       } else {
         toast.error(res.data.message || "Gagal mengirim OTP.");

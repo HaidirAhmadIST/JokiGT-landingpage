@@ -31,7 +31,6 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useUserDashboard } from '@/hooks/useUserDashboard';
-import { useDashboardStats } from '@/hooks/useDashboardStats';
 import { PROVINCES } from '@/lib/provinces';
 import { useWilayah } from '@/hooks/useWilayah';
 import type { StatusAdvokasi, RiwayatPekerja, DetailMedis } from '@/types';
@@ -98,8 +97,6 @@ export default function UserDashboardPage() {
     requests, pendingCount, isInboxOpen, setIsInboxOpen, selectedId, setSelectedId, activeTab, setActiveTab,
     logout, handleViewFile,
   } = useUserDashboard();
-
-  const { stats } = useDashboardStats();
 
   // Hook untuk fetch kabupaten & kecamatan dari BPS (cascading)
   // Mendukung edit mode: initialKabupaten agar saat modal terbuka kecamatan langsung ter-fetch
