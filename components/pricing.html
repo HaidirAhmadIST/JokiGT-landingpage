@@ -1,0 +1,232 @@
+<!--
+    COMPONENT: Pricing / Paket Layanan
+    File: components/pricing.html
+    Digunakan di: dekstop.html & mobile.html
+    ============================================================
+    Berisi 3 paket:
+    • Starter  — Level 1→30  | 10 WL / Rp 25.000
+    • Pro      — Level 1→60  | 25 WL / Rp 60.000  ← Paling Populer
+    • Legend   — Level 1→100+| 50 WL / Rp 120.000
+    ============================================================
+-->
+
+<!-- ================================
+     PRICING — DESKTOP VERSION
+     ================================ -->
+<section id="paket" class="py-24"
+         style="background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 50%, #f5f3ff 100%);">
+    <div class="max-w-7xl mx-auto px-8">
+
+        <!-- Section Header -->
+        <div class="text-center max-w-xl mx-auto mb-16 space-y-3">
+            <span class="text-xs uppercase tracking-widest text-slate-400 font-semibold">03 • Paket Layanan</span>
+            <h2 class="text-3xl font-bold tracking-tight">Pilih Paket Sesuai Targetmu</h2>
+            <p class="text-slate-600 text-sm">Harga transparan, tanpa biaya tersembunyi.</p>
+        </div>
+
+        <!-- Cards Grid -->
+        <div class="grid grid-cols-3 gap-8 items-stretch">
+
+            <!-- ── Paket Starter ── -->
+            <div class="card-starter bg-white p-8 rounded-2xl border border-slate-200 flex flex-col justify-between cursor-default group">
+                <div class="space-y-6">
+                    <div>
+                        <div class="w-11 h-11 rounded-xl flex items-center justify-center text-xl mb-3 group-hover:scale-110 transition-transform duration-300"
+                             style="background: linear-gradient(135deg, #93c5fd, #3b82f6);">🌱</div>
+                        <h3 class="text-lg font-bold text-slate-900 group-hover:text-blue-700 transition-colors duration-300">Paket Starter</h3>
+                        <p class="text-xs text-slate-500">Level 1 → 30</p>
+                    </div>
+                    <div>
+                        <div class="text-4xl font-black text-slate-900 group-hover:text-blue-700 transition-colors duration-300">10 WL</div>
+                        <div class="text-xs text-slate-500 mt-1">atau Rp 25.000</div>
+                    </div>
+                    <span class="inline-block px-3 py-1 rounded-full text-xs transition-all duration-300
+                                 border border-slate-200 text-slate-600
+                                 group-hover:border-blue-300 group-hover:text-blue-600 group-hover:bg-blue-50">
+                        Estimasi 6–12 jam
+                    </span>
+                    <ul class="space-y-3 text-sm text-slate-600">
+                        <li class="flex items-center gap-2"><span class="text-blue-500 font-bold">✓</span> Joki manual oleh player asli</li>
+                        <li class="flex items-center gap-2"><span class="text-blue-500 font-bold">✓</span> Update progres 2× sehari</li>
+                        <li class="flex items-center gap-2"><span class="text-blue-500 font-bold">✓</span> Garansi akun aman</li>
+                        <li class="flex items-center gap-2"><span class="text-blue-500 font-bold">✓</span> Support via WhatsApp</li>
+                    </ul>
+                </div>
+                <button onclick="openOrderModal('Starter')"
+                        class="mt-8 w-full py-3 rounded-xl font-semibold transition-all duration-300
+                               border border-blue-400 text-blue-700
+                               hover:bg-blue-600 hover:text-white hover:border-blue-600 hover:shadow-lg">
+                    Pilih Starter
+                </button>
+            </div>
+
+            <!-- ── Paket Pro (Popular) ── -->
+            <div class="card-pro relative p-8 rounded-2xl border-2 border-black shadow-lg flex flex-col justify-between cursor-default group"
+                 style="background: linear-gradient(160deg, #ffffff 0%, #f0fdf4 100%);">
+                <div class="absolute -top-3.5 left-1/2 -translate-x-1/2 text-white text-xs font-bold px-4 py-1 rounded-full uppercase tracking-wider
+                            transition-all duration-300 group-hover:scale-105"
+                     style="background: linear-gradient(90deg, #059669, #0d9488);">
+                    Paling Populer
+                </div>
+                <div class="space-y-6">
+                    <div>
+                        <div class="w-11 h-11 rounded-xl flex items-center justify-center text-xl mb-3 group-hover:scale-110 transition-transform duration-300"
+                             style="background: linear-gradient(135deg, #34d399, #059669);">⚡</div>
+                        <h3 class="text-lg font-bold text-slate-900 group-hover:text-emerald-700 transition-colors duration-300">Paket Pro</h3>
+                        <p class="text-xs text-slate-500">Level 1 → 60</p>
+                    </div>
+                    <div>
+                        <div class="text-4xl font-black text-slate-900 group-hover:text-emerald-700 transition-colors duration-300">25 WL</div>
+                        <div class="text-xs text-slate-500 mt-1">atau Rp 60.000</div>
+                    </div>
+                    <span class="inline-block px-3 py-1 rounded-full text-xs transition-all duration-300
+                                 border border-slate-200 text-slate-600
+                                 group-hover:border-emerald-300 group-hover:text-emerald-600 group-hover:bg-emerald-50">
+                        Estimasi 1–2 hari
+                    </span>
+                    <ul class="space-y-3 text-sm text-slate-600">
+                        <li class="flex items-center gap-2"><span class="text-emerald-500 font-bold">✓</span> Semua fitur Starter</li>
+                        <li class="flex items-center gap-2"><span class="text-emerald-500 font-bold">✓</span> Prioritas antrean</li>
+                        <li class="flex items-center gap-2"><span class="text-emerald-500 font-bold">✓</span> Update progres real-time</li>
+                        <li class="flex items-center gap-2"><span class="text-emerald-500 font-bold">✓</span> Garansi refund 100%</li>
+                        <li class="flex items-center gap-2"><span class="text-emerald-500 font-bold">✓</span> Bonus item farm</li>
+                    </ul>
+                </div>
+                <button onclick="openOrderModal('Pro')"
+                        class="mt-8 w-full bg-emerald-500 text-white py-3 rounded-xl font-semibold
+                               transition-all duration-300 hover:bg-emerald-600 hover:shadow-lg shadow-md">
+                    Pilih Pro
+                </button>
+            </div>
+
+            <!-- ── Paket Legend ── -->
+            <div class="card-legend bg-white p-8 rounded-2xl border border-slate-200 flex flex-col justify-between cursor-default group">
+                <div class="space-y-6">
+                    <div>
+                        <div class="w-11 h-11 rounded-xl flex items-center justify-center text-xl mb-3 group-hover:scale-110 transition-transform duration-300"
+                             style="background: linear-gradient(135deg, #c084fc, #9333ea);">👑</div>
+                        <h3 class="text-lg font-bold text-slate-900 group-hover:text-purple-700 transition-colors duration-300">Paket Legend</h3>
+                        <p class="text-xs text-slate-500">Level 1 → 100+</p>
+                    </div>
+                    <div>
+                        <div class="text-4xl font-black text-slate-900 group-hover:text-purple-700 transition-colors duration-300">50 WL</div>
+                        <div class="text-xs text-slate-500 mt-1">atau Rp 120.000</div>
+                    </div>
+                    <span class="inline-block px-3 py-1 rounded-full text-xs transition-all duration-300
+                                 border border-slate-200 text-slate-600
+                                 group-hover:border-purple-300 group-hover:text-purple-600 group-hover:bg-purple-50">
+                        Estimasi 2–4 hari
+                    </span>
+                    <ul class="space-y-3 text-sm text-slate-600">
+                        <li class="flex items-center gap-2"><span class="text-purple-500 font-bold">✓</span> Semua fitur Pro</li>
+                        <li class="flex items-center gap-2"><span class="text-purple-500 font-bold">✓</span> Joki dedicated 1 orang</li>
+                        <li class="flex items-center gap-2"><span class="text-purple-500 font-bold">✓</span> Laporan progres harian</li>
+                        <li class="flex items-center gap-2"><span class="text-purple-500 font-bold">✓</span> Bonus WL &amp; item langka</li>
+                        <li class="flex items-center gap-2"><span class="text-purple-500 font-bold">✓</span> Support prioritas 24/7</li>
+                    </ul>
+                </div>
+                <button onclick="openOrderModal('Legend')"
+                        class="mt-8 w-full py-3 rounded-xl font-semibold transition-all duration-300
+                               border border-purple-400 text-purple-700
+                               hover:bg-purple-600 hover:text-white hover:border-purple-600 hover:shadow-lg">
+                    Pilih Legend
+                </button>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+
+<!-- ================================
+     PRICING — MOBILE VERSION
+     ================================ -->
+<!--
+    Uncomment blok ini ketika dipakai di mobile.html.
+-->
+<!--
+<section id="paket" class="px-6 py-12 space-y-6 border-t border-slate-100"
+         style="background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 50%, #f5f3ff 100%);">
+    <div class="text-center space-y-2">
+        <span class="text-[10px] uppercase tracking-widest text-slate-400 font-semibold">03 • Paket Layanan</span>
+        <h2 class="text-2xl font-bold">Pilih Paket Sesuai Targetmu</h2>
+        <p class="text-xs text-slate-500">Harga transparan, tanpa biaya tersembunyi.</p>
+    </div>
+    <div class="space-y-4">
+
+        <div class="card-starter-m bg-white p-6 rounded-2xl border border-slate-200 space-y-4 cursor-default group">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg group-hover:scale-110 transition-transform duration-300"
+                     style="background: linear-gradient(135deg, #93c5fd, #3b82f6);">🌱</div>
+                <div>
+                    <h3 class="font-bold text-slate-900 group-hover:text-blue-700 transition-colors duration-300">Paket Starter</h3>
+                    <p class="text-xs text-slate-500">Level 1 → 30 • Estimasi 6–12 jam</p>
+                </div>
+            </div>
+            <div class="text-3xl font-black text-slate-900 group-hover:text-blue-700 transition-colors duration-300">10 WL <span class="text-sm font-normal text-slate-500">/ Rp 25.000</span></div>
+            <ul class="space-y-2 text-xs text-slate-600">
+                <li class="flex items-center gap-2"><span class="text-blue-500 font-bold">✓</span> Joki manual oleh player asli</li>
+                <li class="flex items-center gap-2"><span class="text-blue-500 font-bold">✓</span> Update progres 2× sehari</li>
+                <li class="flex items-center gap-2"><span class="text-blue-500 font-bold">✓</span> Garansi akun aman</li>
+                <li class="flex items-center gap-2"><span class="text-blue-500 font-bold">✓</span> Support via WhatsApp</li>
+            </ul>
+            <button onclick="openOrderModalM('Starter')"
+                    class="w-full py-3 rounded-xl font-semibold text-sm transition-all duration-300
+                           border border-blue-400 text-blue-700 hover:bg-blue-600 hover:text-white hover:border-blue-600">
+                Pilih Starter
+            </button>
+        </div>
+
+        <div class="card-pro-m relative p-6 rounded-2xl border-2 border-black shadow-md space-y-4 cursor-default group"
+             style="background: linear-gradient(160deg, #ffffff 0%, #f0fdf4 100%);">
+            <div class="absolute -top-3 left-1/2 -translate-x-1/2 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider"
+                 style="background: linear-gradient(90deg, #059669, #0d9488);">Paling Populer</div>
+            <div class="flex items-center gap-3 pt-2">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg group-hover:scale-110 transition-transform duration-300"
+                     style="background: linear-gradient(135deg, #34d399, #059669);">⚡</div>
+                <div>
+                    <h3 class="font-bold text-slate-900 group-hover:text-emerald-700 transition-colors duration-300">Paket Pro</h3>
+                    <p class="text-xs text-slate-500">Level 1 → 60 • Estimasi 1–2 hari</p>
+                </div>
+            </div>
+            <div class="text-3xl font-black text-slate-900 group-hover:text-emerald-700 transition-colors duration-300">25 WL <span class="text-sm font-normal text-slate-500">/ Rp 60.000</span></div>
+            <ul class="space-y-2 text-xs text-slate-600">
+                <li class="flex items-center gap-2"><span class="text-emerald-500 font-bold">✓</span> Semua fitur Starter</li>
+                <li class="flex items-center gap-2"><span class="text-emerald-500 font-bold">✓</span> Prioritas antrean</li>
+                <li class="flex items-center gap-2"><span class="text-emerald-500 font-bold">✓</span> Update progres real-time</li>
+                <li class="flex items-center gap-2"><span class="text-emerald-500 font-bold">✓</span> Garansi refund 100%</li>
+                <li class="flex items-center gap-2"><span class="text-emerald-500 font-bold">✓</span> Bonus item farm</li>
+            </ul>
+            <button onclick="openOrderModalM('Pro')"
+                    class="w-full bg-emerald-500 text-white py-3 rounded-xl font-semibold text-sm transition-all duration-300 hover:bg-emerald-600 shadow-md hover:shadow-lg">
+                Pilih Pro
+            </button>
+        </div>
+
+        <div class="card-legend-m bg-white p-6 rounded-2xl border border-slate-200 space-y-4 cursor-default group">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg group-hover:scale-110 transition-transform duration-300"
+                     style="background: linear-gradient(135deg, #c084fc, #9333ea);">👑</div>
+                <div>
+                    <h3 class="font-bold text-slate-900 group-hover:text-purple-700 transition-colors duration-300">Paket Legend</h3>
+                    <p class="text-xs text-slate-500">Level 1 → 100+ • Estimasi 2–4 hari</p>
+                </div>
+            </div>
+            <div class="text-3xl font-black text-slate-900 group-hover:text-purple-700 transition-colors duration-300">50 WL <span class="text-sm font-normal text-slate-500">/ Rp 120.000</span></div>
+            <ul class="space-y-2 text-xs text-slate-600">
+                <li class="flex items-center gap-2"><span class="text-purple-500 font-bold">✓</span> Semua fitur Pro</li>
+                <li class="flex items-center gap-2"><span class="text-purple-500 font-bold">✓</span> Joki dedicated 1 orang</li>
+                <li class="flex items-center gap-2"><span class="text-purple-500 font-bold">✓</span> Laporan progres harian</li>
+                <li class="flex items-center gap-2"><span class="text-purple-500 font-bold">✓</span> Bonus WL &amp; item langka</li>
+                <li class="flex items-center gap-2"><span class="text-purple-500 font-bold">✓</span> Support prioritas 24/7</li>
+            </ul>
+            <button onclick="openOrderModalM('Legend')"
+                    class="w-full py-3 rounded-xl font-semibold text-sm transition-all duration-300
+                           border border-purple-400 text-purple-700 hover:bg-purple-600 hover:text-white hover:border-purple-600">
+                Pilih Legend
+            </button>
+        </div>
+
+    </div>
+</section>
+-->

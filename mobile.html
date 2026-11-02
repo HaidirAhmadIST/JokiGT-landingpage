@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="JokiGT Mobile - Layanan joki Growtopia profesional, cepat, dan aman. Pesan mudah dari HP kamu.">
+    <title>JokiGT - Mobile Version</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+
+<body class="bg-white text-slate-800 font-sans antialiased max-w-md mx-auto border-x border-slate-100">
+
+    <!-- ======================================================
+         NAVBAR — MOBILE
+         Komponen referensi: components/navbar.html
+         ====================================================== -->
+    <header class="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-emerald-100 px-6 h-16 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+            <div class="w-8 h-8 bg-emerald-500 rounded-lg flex items-center text-white font-bold text-xs justify-center shadow-sm">GT</div>
+            <span class="font-bold text-base text-emerald-700">JokiGT</span>
+        </div>
+        <a href="#paket" class="bg-emerald-500 text-white px-4 py-2 rounded-lg text-xs font-semibold hover:bg-emerald-600 transition">Pesan</a>
+    </header>
+
+    <!-- ======================================================
+         HERO — MOBILE
+         Komponen referensi: components/hero.html
+         ====================================================== -->
+    <section class="px-6 py-10 space-y-6 text-center">
+        <span class="text-[10px] uppercase tracking-widest text-slate-400 font-semibold">01 • Hero</span>
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-slate-200 text-xs text-slate-600 mx-auto">
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Dipercaya 2.500+ pemain
+        </div>
+        <h1 class="text-3xl font-extrabold tracking-tight text-slate-900 leading-tight">
+            Level Up Growtopia Cepat, Aman, &amp; Anti-Ribet
+        </h1>
+        <p class="text-sm text-slate-600 leading-relaxed">
+            Serahkan grinding level ke joki profesional kami. Progres jelas, akun dijaga, dan kamu tinggal main.
+        </p>
+        <div class="rounded-xl overflow-hidden shadow-md border border-emerald-100 h-48">
+            <img src="assets/img/banner.jpg" alt="JokiGT Level Services Banner"
+                class="w-full h-full object-cover object-center" />
+        </div>
+        <div class="space-y-3 pt-2">
+            <button onclick="openOrderModalM()" id="m-hero-cta-btn"
+                class="block w-full bg-emerald-500 text-white py-3.5 rounded-xl font-semibold text-sm hover:bg-emerald-600 transition shadow-md">
+                Pesan Joki Sekarang
+            </button>
+            <a href="#paket"
+                class="block w-full border border-emerald-300 text-emerald-700 py-3.5 rounded-xl font-semibold text-sm text-center hover:bg-emerald-50 transition">
+                Lihat Paket
+            </a>
+        </div>
+    </section>
+
+    <!-- ======================================================
+         FEATURES — MOBILE
+         Komponen referensi: components/features.html
+         ====================================================== -->
+    <section class="px-6 py-12 space-y-6 border-t border-slate-100"
+        style="background: linear-gradient(135deg, #059669 0%, #0d9488 60%, #0891b2 100%);">
+        <div class="text-center space-y-2">
+            <span class="text-[10px] uppercase tracking-widest text-emerald-200 font-semibold">02 • Value Proposition</span>
+            <h2 class="text-2xl font-bold text-white">Kenapa Pilih Kami?</h2>
+        </div>
+        <div class="space-y-4">
+            <div class="bg-white/10 backdrop-blur-sm p-5 rounded-xl border border-white/20 space-y-2 transition-all duration-300 hover:bg-white hover:shadow-lg group">
+                <div class="text-lg group-hover:scale-110 inline-block transition-transform duration-300">🛡️</div>
+                <h3 class="font-bold text-white group-hover:text-emerald-700 transition-colors duration-300">100% Aman</h3>
+                <p class="text-xs text-emerald-100 group-hover:text-slate-600 transition-colors duration-300">Login manual, tanpa software ilegal. Data dienkripsi aman.</p>
+            </div>
+            <div class="bg-white/10 backdrop-blur-sm p-5 rounded-xl border border-white/20 space-y-2 transition-all duration-300 hover:bg-white hover:shadow-lg group">
+                <div class="text-lg group-hover:scale-110 inline-block transition-transform duration-300">⚡</div>
+                <h3 class="font-bold text-white group-hover:text-emerald-700 transition-colors duration-300">Proses Cepat</h3>
+                <p class="text-xs text-emerald-100 group-hover:text-slate-600 transition-colors duration-300">Pengerjaan mulai max 1 jam setelah pembayaran.</p>
+            </div>
+            <div class="bg-white/10 backdrop-blur-sm p-5 rounded-xl border border-white/20 space-y-2 transition-all duration-300 hover:bg-white hover:shadow-lg group">
+                <div class="text-lg group-hover:scale-110 inline-block transition-transform duration-300">💳</div>
+                <h3 class="font-bold text-white group-hover:text-emerald-700 transition-colors duration-300">Pembayaran Fleksibel</h3>
+                <p class="text-xs text-emerald-100 group-hover:text-slate-600 transition-colors duration-300">Bayar pakai WL maupun Rupiah (QRIS/E-wallet).</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ======================================================
+         PRICING — MOBILE
+         Komponen referensi: components/pricing.html
+         ====================================================== -->
+    <section id="paket" class="px-6 py-12 space-y-6 border-t border-slate-100"
+        style="background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 50%, #f5f3ff 100%);">
+        <div class="text-center space-y-2">
+            <span class="text-[10px] uppercase tracking-widest text-slate-400 font-semibold">03 • Paket Layanan</span>
+            <h2 class="text-2xl font-bold">Pilih Paket Sesuai Targetmu</h2>
+            <p class="text-xs text-slate-500">Harga transparan, tanpa biaya tersembunyi.</p>
+        </div>
+        <div class="space-y-4">
+
+            <!-- Paket Starter -->
+            <div class="card-starter-m bg-white p-6 rounded-2xl border border-slate-200 space-y-4 cursor-default group">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg group-hover:scale-110 transition-transform duration-300"
+                         style="background: linear-gradient(135deg, #93c5fd, #3b82f6);">🌱</div>
+                    <div>
+                        <h3 class="font-bold text-slate-900 group-hover:text-blue-700 transition-colors duration-300">Paket Starter</h3>
+                        <p class="text-xs text-slate-500">Level 1 → 30 • Estimasi 6–12 jam</p>
+                    </div>
+                </div>
+                <div class="text-3xl font-black text-slate-900 group-hover:text-blue-700 transition-colors duration-300">
+                    10 WL <span class="text-sm font-normal text-slate-500">/ Rp 25.000</span>
+                </div>
+                <ul class="space-y-2 text-xs text-slate-600">
+                    <li class="flex items-center gap-2"><span class="text-blue-500 font-bold">✓</span> Joki manual oleh player asli</li>
+                    <li class="flex items-center gap-2"><span class="text-blue-500 font-bold">✓</span> Update progres 2× sehari</li>
+                    <li class="flex items-center gap-2"><span class="text-blue-500 font-bold">✓</span> Garansi akun aman</li>
+                    <li class="flex items-center gap-2"><span class="text-blue-500 font-bold">✓</span> Support via WhatsApp</li>
+                </ul>
+                <button onclick="openOrderModalM('Starter')"
+                    class="w-full py-3 rounded-xl font-semibold text-sm border border-blue-400 text-blue-700 transition-all duration-300 hover:bg-blue-600 hover:text-white">
+                    Pilih Starter
+                </button>
+            </div>
+
+            <!-- Paket Pro (Populer) -->
+            <div class="card-pro-m relative p-6 rounded-2xl border-2 border-black shadow-md space-y-4 cursor-default group"
+                 style="background: linear-gradient(160deg, #ffffff 0%, #f0fdf4 100%);">
+                <div class="absolute -top-3 left-1/2 -translate-x-1/2 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider"
+                     style="background: linear-gradient(90deg, #059669, #0d9488);">Paling Populer</div>
+                <div class="flex items-center gap-3 pt-2">
+                    <div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg group-hover:scale-110 transition-transform duration-300"
+                         style="background: linear-gradient(135deg, #34d399, #059669);">⚡</div>
+                    <div>
+                        <h3 class="font-bold text-slate-900 group-hover:text-emerald-700 transition-colors duration-300">Paket Pro</h3>
+                        <p class="text-xs text-slate-500">Level 1 → 60 • Estimasi 1–2 hari</p>
+                    </div>
+                </div>
+                <div class="text-3xl font-black text-slate-900 group-hover:text-emerald-700 transition-colors duration-300">
+                    25 WL <span class="text-sm font-normal text-slate-500">/ Rp 60.000</span>
+                </div>
+                <ul class="space-y-2 text-xs text-slate-600">
+                    <li class="flex items-center gap-2"><span class="text-emerald-500 font-bold">✓</span> Semua fitur Starter</li>
+                    <li class="flex items-center gap-2"><span class="text-emerald-500 font-bold">✓</span> Prioritas antrean</li>
+                    <li class="flex items-center gap-2"><span class="text-emerald-500 font-bold">✓</span> Update progres real-time</li>
+                    <li class="flex items-center gap-2"><span class="text-emerald-500 font-bold">✓</span> Garansi refund 100%</li>
+                    <li class="flex items-center gap-2"><span class="text-emerald-500 font-bold">✓</span> Bonus item farm</li>
+                </ul>
+                <button onclick="openOrderModalM('Pro')"
+                    class="w-full bg-emerald-500 text-white py-3 rounded-xl font-semibold text-sm transition-all duration-300 hover:bg-emerald-600 shadow-md hover:shadow-lg">
+                    Pilih Pro
+                </button>
+            </div>
+
+            <!-- Paket Legend -->
+            <div class="card-legend-m bg-white p-6 rounded-2xl border border-slate-200 space-y-4 cursor-default group">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg group-hover:scale-110 transition-transform duration-300"
+                         style="background: linear-gradient(135deg, #c084fc, #9333ea);">👑</div>
+                    <div>
+                        <h3 class="font-bold text-slate-900 group-hover:text-purple-700 transition-colors duration-300">Paket Legend</h3>
+                        <p class="text-xs text-slate-500">Level 1 → 100+ • Estimasi 2–4 hari</p>
+                    </div>
+                </div>
+                <div class="text-3xl font-black text-slate-900 group-hover:text-purple-700 transition-colors duration-300">
+                    50 WL <span class="text-sm font-normal text-slate-500">/ Rp 120.000</span>
+                </div>
+                <ul class="space-y-2 text-xs text-slate-600">
+                    <li class="flex items-center gap-2"><span class="text-purple-500 font-bold">✓</span> Semua fitur Pro</li>
+                    <li class="flex items-center gap-2"><span class="text-purple-500 font-bold">✓</span> Joki dedicated 1 orang</li>
+                    <li class="flex items-center gap-2"><span class="text-purple-500 font-bold">✓</span> Laporan progres harian</li>
+                    <li class="flex items-center gap-2"><span class="text-purple-500 font-bold">✓</span> Bonus WL &amp; item langka</li>
+                    <li class="flex items-center gap-2"><span class="text-purple-500 font-bold">✓</span> Support prioritas 24/7</li>
+                </ul>
+                <button onclick="openOrderModalM('Legend')"
+                    class="w-full py-3 rounded-xl font-semibold text-sm border border-purple-400 text-purple-700 transition-all duration-300 hover:bg-purple-600 hover:text-white">
+                    Pilih Legend
+                </button>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- ======================================================
+         TESTIMONI — MOBILE
+         ====================================================== -->
+    <section id="testimoni" class="px-6 py-12 space-y-6 border-t border-slate-100"
+        style="background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0f4c3a 100%);">
+        <div class="text-center space-y-2">
+            <span class="text-[10px] uppercase tracking-widest text-emerald-300 font-semibold">04 • Testimoni</span>
+            <h2 class="text-2xl font-bold text-white">Kata Mereka</h2>
+            <p class="text-xs text-emerald-300">2.500+ pelanggan puas di seluruh Indonesia.</p>
+        </div>
+        <div class="space-y-4">
+            <div class="bg-white p-5 rounded-xl shadow-sm space-y-3">
+                <div class="text-yellow-400 text-sm">★★★★★</div>
+                <p class="text-xs text-slate-600 leading-relaxed">"Beneran cepet banget! Pesan malem, pagi udah level 30. Akunnya aman, nggak ada yang aneh. Auto rekomen!"</p>
+                <div class="flex items-center gap-2 pt-1 border-t border-slate-200">
+                    <div class="w-7 h-7 rounded-full bg-slate-300 flex items-center justify-center font-bold text-slate-600 text-xs">RZ</div>
+                    <div>
+                        <div class="text-xs font-semibold">RizkyZain_GT</div>
+                        <div class="text-[10px] text-slate-400">Paket Starter · 2 hari lalu</div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white p-5 rounded-xl shadow-sm space-y-3">
+                <div class="text-yellow-400 text-sm">★★★★★</div>
+                <p class="text-xs text-slate-600 leading-relaxed">"Paket Pro worth it banget. Update progres tiap beberapa jam, joki-nya ramah dan profesional. 10/10!"</p>
+                <div class="flex items-center gap-2 pt-1 border-t border-slate-200">
+                    <div class="w-7 h-7 rounded-full bg-emerald-100 flex items-center justify-center font-bold text-emerald-600 text-xs">AN</div>
+                    <div>
+                        <div class="text-xs font-semibold">Andini_Nurul</div>
+                        <div class="text-[10px] text-slate-400">Paket Pro · 5 hari lalu</div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white p-5 rounded-xl shadow-sm space-y-3">
+                <div class="text-yellow-400 text-sm">★★★★★</div>
+                <p class="text-xs text-slate-600 leading-relaxed">"Udah 3x order di sini, nggak pernah kecewa. Joki-nya jujur dan profesional. Highly recommended!"</p>
+                <div class="flex items-center gap-2 pt-1 border-t border-slate-200">
+                    <div class="w-7 h-7 rounded-full bg-amber-100 flex items-center justify-center font-bold text-amber-600 text-xs">BP</div>
+                    <div>
+                        <div class="text-xs font-semibold">BagasP_Official</div>
+                        <div class="text-[10px] text-slate-400">Paket Pro · Pelanggan Setia</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ======================================================
+         FAQ — MOBILE
+         ====================================================== -->
+    <section id="faq" class="px-6 py-12 space-y-6 border-t border-slate-100"
+        style="background: linear-gradient(180deg, #f8faff 0%, #eef2ff 50%, #f0fdf4 100%);">
+        <div class="text-center space-y-2">
+            <span class="text-[10px] uppercase tracking-widest text-slate-400 font-semibold">05 • FAQ</span>
+            <h2 class="text-2xl font-bold">Pertanyaan Umum</h2>
+        </div>
+        <div class="space-y-3" id="faq-list-mobile">
+            <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+                <button onclick="toggleFaqM(this)" class="w-full flex items-center justify-between px-4 py-4 text-left text-sm font-semibold text-slate-800">
+                    <span>Apakah akun Growtopia saya aman?</span>
+                    <span class="faq-icon-m text-slate-400 text-lg font-light">+</span>
+                </button>
+                <div class="faq-answer-m hidden px-4 pb-4 text-xs text-slate-600 leading-relaxed">
+                    Ya, 100% aman. Joki kami bekerja secara manual — tanpa bot atau software ilegal. Kamu bisa ganti password setelah joki selesai.
+                </div>
+            </div>
+            <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+                <button onclick="toggleFaqM(this)" class="w-full flex items-center justify-between px-4 py-4 text-left text-sm font-semibold text-slate-800">
+                    <span>Bagaimana jika akun saya ter-ban?</span>
+                    <span class="faq-icon-m text-slate-400 text-lg font-light">+</span>
+                </button>
+                <div class="faq-answer-m hidden px-4 pb-4 text-xs text-slate-600 leading-relaxed">
+                    Risiko ban sangat kecil. Jika terjadi akibat kelalaian kami, kami refund 100% sesuai nominal pembayaran.
+                </div>
+            </div>
+            <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+                <button onclick="toggleFaqM(this)" class="w-full flex items-center justify-between px-4 py-4 text-left text-sm font-semibold text-slate-800">
+                    <span>Apakah ada garansi uang kembali?</span>
+                    <span class="faq-icon-m text-slate-400 text-lg font-light">+</span>
+                </button>
+                <div class="faq-answer-m hidden px-4 pb-4 text-xs text-slate-600 leading-relaxed">
+                    Ada! Garansi refund 100% jika pengerjaan tidak sesuai target. Refund diproses dalam 1×24 jam.
+                </div>
+            </div>
+            <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+                <button onclick="toggleFaqM(this)" class="w-full flex items-center justify-between px-4 py-4 text-left text-sm font-semibold text-slate-800">
+                    <span>Data apa yang perlu saya berikan?</span>
+                    <span class="faq-icon-m text-slate-400 text-lg font-light">+</span>
+                </button>
+                <div class="faq-answer-m hidden px-4 pb-4 text-xs text-slate-600 leading-relaxed">
+                    Hanya <strong>username</strong> dan <strong>password</strong> Growtopia. Kami tidak meminta data pribadi lainnya. Password bisa kamu ganti setelah selesai.
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ======================================================
+         FOOTER — MOBILE
+         Komponen referensi: components/footer.html
+         ====================================================== -->
+    <footer class="text-white px-6 py-12 text-center space-y-4"
+        style="background: linear-gradient(135deg, #064e3b 0%, #065f46 40%, #047857 100%);">
+        <h2 class="text-xl font-bold">Berhenti Grinding. Mulai Menang Hari Ini.</h2>
+        <p class="text-xs text-emerald-300">Slot joki terbatas setiap hari.</p>
+        <button onclick="openOrderModalM()" id="m-footer-cta-btn"
+            class="w-full bg-emerald-400 text-emerald-900 py-3 rounded-xl font-semibold text-sm hover:bg-emerald-300 transition shadow-lg">
+            Pesan Joki Sekarang
+        </button>
+        <div class="text-[10px] text-emerald-400 pt-2">Garansi Aman · Refund 100% · Support 24/7</div>
+        <div class="text-[10px] text-emerald-600 border-t border-emerald-800 pt-4">
+            &copy; 2025 JokiGT. Layanan Joki Growtopia Profesional.
+        </div>
+    </footer>
+
+    <!-- Page Transition Overlay -->
+    <div id="page-transition"></div>
+
+    <!-- ======================================================
+         ORDER MODAL — MOBILE (Bottom Sheet)
+         ====================================================== -->
+    <div id="order-modal-m" role="dialog" aria-modal="true" aria-labelledby="m-modal-title">
+        <div id="order-modal-m-backdrop" onclick="closeOrderModalM()"></div>
+        <div id="order-modal-m-box">
+
+            <!-- Form Screen -->
+            <div id="m-form-screen">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;">
+                    <div style="width:36px;height:36px;background:linear-gradient(135deg,#059669,#10b981);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;">GT</div>
+                    <div>
+                        <h2 id="m-modal-title" style="font-size:17px;font-weight:800;color:#0f172a;margin:0;">Form Pemesanan</h2>
+                        <p style="font-size:11px;color:#64748b;margin:1px 0 0;">Isi data untuk mulai joki</p>
+                    </div>
+                </div>
+                <form id="m-order-form" novalidate>
+                    <div style="margin-bottom:14px;">
+                        <label class="m-form-label" for="m-paket">Paket yang Dipilih <span style="color:#ef4444">*</span></label>
+                        <select id="m-paket" name="paket" class="m-form-input m-form-select" required>
+                            <option value="">-- Pilih Paket --</option>
+                            <option value="Starter">🌱 Paket Starter — Level 1→30 | 10 WL / Rp 25.000</option>
+                            <option value="Pro">⚡ Paket Pro — Level 1→60 | 25 WL / Rp 60.000</option>
+                            <option value="Legend">👑 Paket Legend — Level 1→100+ | 50 WL / Rp 120.000</option>
+                        </select>
+                        <div class="m-field-error" id="m-paket-err">Silakan pilih paket terlebih dahulu.</div>
+                    </div>
+                    <div style="margin-bottom:14px;">
+                        <label class="m-form-label" for="m-nama">Nama / Username In-Game <span style="color:#ef4444">*</span></label>
+                        <input type="text" id="m-nama" name="nama" class="m-form-input" placeholder="Contoh: RizkyGT99" required />
+                        <div class="m-field-error" id="m-nama-err">Nama tidak boleh kosong.</div>
+                    </div>
+                    <div style="margin-bottom:14px;">
+                        <label class="m-form-label" for="m-wa">Nomor WhatsApp <span style="color:#ef4444">*</span></label>
+                        <input type="tel" id="m-wa" name="wa" class="m-form-input" placeholder="Contoh: 08123456789" required />
+                        <div class="m-field-error" id="m-wa-err">Nomor WhatsApp tidak valid.</div>
+                    </div>
+                    <div style="margin-bottom:14px;">
+                        <label class="m-form-label" for="m-bayar">Metode Pembayaran <span style="color:#ef4444">*</span></label>
+                        <select id="m-bayar" name="bayar" class="m-form-input m-form-select" required>
+                            <option value="">-- Pilih Metode --</option>
+                            <option value="WL">🌿 World Lock (WL)</option>
+                            <option value="QRIS">📱 QRIS</option>
+                            <option value="GoPay">💚 GoPay</option>
+                            <option value="OVO">💜 OVO</option>
+                            <option value="Dana">💙 DANA</option>
+                            <option value="Transfer">🏦 Transfer Bank</option>
+                        </select>
+                        <div class="m-field-error" id="m-bayar-err">Silakan pilih metode pembayaran.</div>
+                    </div>
+                    <div style="margin-bottom:18px;">
+                        <label class="m-form-label" for="m-catatan">Catatan <span style="color:#94a3b8;font-weight:400;">(Opsional)</span></label>
+                        <textarea id="m-catatan" name="catatan" class="m-form-input" rows="2" style="resize:none;"
+                            placeholder="Misal: level 15, minta update tiap 3 jam..."></textarea>
+                    </div>
+                    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:10px 12px;margin-bottom:16px;font-size:11px;color:#166534;line-height:1.6;">
+                        🛡️ <strong>Aman &amp; Terpercaya</strong> — Hanya butuh username &amp; password Growtopia. Bisa ganti password setelah selesai.
+                    </div>
+                    <button type="submit" class="m-btn-submit" id="m-submit-btn">🚀 Kirim Pesanan via WhatsApp</button>
+                </form>
+            </div>
+
+            <!-- Success Screen -->
+            <div id="m-success-screen">
+                <div style="font-size:56px;margin-bottom:12px;">🎉</div>
+                <h3 style="font-size:20px;font-weight:800;color:#059669;margin:0 0 8px;">Pesanan Diterima!</h3>
+                <p style="font-size:13px;color:#475569;line-height:1.7;margin-bottom:20px;">
+                    Tim kami akan segera menghubungi kamu melalui WhatsApp dalam <strong>kurang dari 1 jam</strong>.
+                </p>
+                <div style="background:#f0fdf4;border-radius:12px;padding:12px;margin-bottom:20px;font-size:12px;color:#166534;text-align:left;">
+                    ✅ Cek WhatsApp &amp; pastikan nomor aktif<br>
+                    ✅ Siapkan data login akun Growtopia<br>
+                    ✅ Proses dimulai maks. 1 jam setelah konfirmasi
+                </div>
+                <button onclick="closeOrderModalM()" id="m-close-success-btn" class="m-btn-submit">Tutup &amp; Kembali</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================================================
+         JAVASCRIPT
+         ====================================================== -->
+    <script>
+        /* ---------- Page Transition ---------- */
+        document.querySelectorAll('a[href]').forEach(link => {
+            const href = link.getAttribute('href');
+            if (!href.startsWith('#') && !href.startsWith('http') && !href.startsWith('mailto')) {
+                link.addEventListener('click', e => {
+                    e.preventDefault();
+                    document.getElementById('page-transition').classList.add('fade-in');
+                    setTimeout(() => { window.location.href = href; }, 450);
+                });
+            }
+        });
+        window.addEventListener('pageshow', () => {
+            document.getElementById('page-transition').classList.remove('fade-in');
+        });
+
+        /* ---------- FAQ Accordion ---------- */
+        function toggleFaqM(btn) {
+            const answer = btn.nextElementSibling;
+            const icon   = btn.querySelector('.faq-icon-m');
+            const isOpen = !answer.classList.contains('hidden');
+            document.querySelectorAll('.faq-answer-m').forEach(a => a.classList.add('hidden'));
+            document.querySelectorAll('.faq-icon-m').forEach(i => i.textContent = '+');
+            if (!isOpen) {
+                answer.classList.remove('hidden');
+                icon.textContent = '−';
+            }
+        }
+
+        /* ---------- Order Modal (Mobile) ---------- */
+        function openOrderModalM(paket) {
+            document.getElementById('m-form-screen').style.display    = 'block';
+            document.getElementById('m-success-screen').style.display = 'none';
+            if (paket) document.getElementById('m-paket').value = paket;
+            document.getElementById('order-modal-m').classList.add('open');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeOrderModalM() {
+            document.getElementById('order-modal-m').classList.remove('open');
+            document.body.style.overflow = '';
+            setTimeout(() => {
+                document.getElementById('m-order-form').reset();
+                clearErrorsM();
+                document.getElementById('m-form-screen').style.display    = 'block';
+                document.getElementById('m-success-screen').style.display = 'none';
+            }, 400);
+        }
+
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') closeOrderModalM(); });
+
+        function showErrorM(fieldId, errId, show) {
+            document.getElementById(fieldId).classList.toggle('error', show);
+            document.getElementById(errId).style.display = show ? 'block' : 'none';
+        }
+
+        function clearErrorsM() {
+            ['m-paket','m-nama','m-wa','m-bayar'].forEach(id => document.getElementById(id).classList.remove('error'));
+            ['m-paket-err','m-nama-err','m-wa-err','m-bayar-err'].forEach(id => document.getElementById(id).style.display = 'none');
+        }
+
+        document.getElementById('m-order-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const paket   = document.getElementById('m-paket').value;
+            const nama    = document.getElementById('m-nama').value.trim();
+            const wa      = document.getElementById('m-wa').value.trim();
+            const bayar   = document.getElementById('m-bayar').value;
+            const catatan = document.getElementById('m-catatan').value.trim();
+            const waValid = /^[0-9+][0-9]{7,14}$/.test(wa.replace(/\s/g, ''));
+            let valid = true;
+
+            showErrorM('m-paket', 'm-paket-err', !paket);   if (!paket)   valid = false;
+            showErrorM('m-nama',  'm-nama-err',  !nama);    if (!nama)    valid = false;
+            showErrorM('m-wa',    'm-wa-err',    !waValid); if (!waValid) valid = false;
+            showErrorM('m-bayar', 'm-bayar-err', !bayar);   if (!bayar)   valid = false;
+
+            if (!valid) return;
+
+            const msg = `Halo JokiGT! Saya ingin memesan joki Growtopia 🎮%0A%0A*Detail Pesanan:*%0A• Paket: ${paket}%0A• Nama/IGN: ${nama}%0A• Metode Bayar: ${bayar}${catatan ? '%0A• Catatan: ' + encodeURIComponent(catatan) : ''}%0A%0AMohon konfirmasi ketersediaan slot. Terima kasih!`;
+
+            document.getElementById('m-form-screen').style.display    = 'none';
+            document.getElementById('m-success-screen').style.display = 'block';
+            setTimeout(() => window.open(`https://wa.me/6281234567890?text=${msg}`, '_blank'), 600);
+        });
+    </script>
+
+</body>
+</html>

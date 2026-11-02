@@ -1,0 +1,75 @@
+<!--
+    COMPONENT: Footer / Final CTA
+    File: components/footer.html
+    Digunakan di: dekstop.html & mobile.html
+    ============================================================
+    Berisi:
+    • Judul ajakan (CTA akhir)
+    • Tombol "Pesan Joki Sekarang"
+    • Trust badges (Garansi, Refund, Support)
+    • Copyright / info tambahan
+    ============================================================
+-->
+
+<!-- ================================
+     FOOTER — DESKTOP VERSION
+     ================================ -->
+<footer class="text-white py-20 mt-12"
+        style="background: linear-gradient(135deg, #064e3b 0%, #065f46 40%, #047857 100%);">
+    <div class="max-w-4xl mx-auto px-8 text-center space-y-6">
+
+        <span class="text-xs uppercase tracking-widest text-emerald-400 font-semibold">06 • Final CTA</span>
+
+        <h2 class="text-4xl font-bold tracking-tight">
+            Berhenti Grinding. Mulai Menang di Growtopia Hari Ini.
+        </h2>
+
+        <p class="text-emerald-300 text-sm max-w-xl mx-auto">
+            Slot joki terbatas setiap hari. Amankan slotmu sekarang dan terima laporan progres langsung.
+        </p>
+
+        <!-- CTA Button -->
+        <div class="pt-4">
+            <button onclick="openOrderModal()" id="footer-cta-btn"
+                    class="bg-emerald-400 text-emerald-900 px-8 py-3.5 rounded-xl font-semibold hover:bg-emerald-300 transition shadow-lg">
+                Pesan Joki Sekarang
+            </button>
+        </div>
+
+        <!-- Trust Badges -->
+        <div class="flex justify-center gap-6 pt-6 text-xs text-emerald-400">
+            <span>Garansi akun aman</span> •
+            <span>Refund 100%</span> •
+            <span>Support 24/7</span>
+        </div>
+
+        <!-- Copyright -->
+        <div class="pt-4 text-xs text-emerald-600 border-t border-emerald-800">
+            &copy; 2025 JokiGT. Layanan Joki Growtopia Profesional &amp; Terpercaya.
+        </div>
+
+    </div>
+</footer>
+
+
+<!-- ================================
+     FOOTER — MOBILE VERSION
+     ================================ -->
+<!--
+    Uncomment blok ini ketika dipakai di mobile.html.
+-->
+<!--
+<footer class="text-white px-6 py-12 text-center space-y-4"
+        style="background: linear-gradient(135deg, #064e3b 0%, #065f46 40%, #047857 100%);">
+    <h2 class="text-xl font-bold">Berhenti Grinding. Mulai Menang Hari Ini.</h2>
+    <p class="text-xs text-emerald-300">Slot joki terbatas setiap hari.</p>
+    <button onclick="openOrderModalM()" id="m-footer-cta-btn"
+            class="w-full bg-emerald-400 text-emerald-900 py-3 rounded-xl font-semibold text-sm hover:bg-emerald-300 transition shadow-lg">
+        Pesan Joki Sekarang
+    </button>
+    <div class="text-[10px] text-emerald-400 pt-2">Garansi Aman · Refund 100% · Support 24/7</div>
+    <div class="text-[10px] text-emerald-600 border-t border-emerald-800 pt-4">
+        &copy; 2025 JokiGT. Layanan Joki Growtopia Profesional.
+    </div>
+</footer>
+-->

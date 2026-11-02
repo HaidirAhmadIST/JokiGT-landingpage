@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <title>JokiGT Landing Page</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- JokiGT Stylesheet -->
+    <link rel="stylesheet" href="assets/css/style.css">
+    <style>
+        /* Page Transition Overlay */
+        #page-transition {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            pointer-events: none;
+            opacity: 0;
+            background: linear-gradient(135deg, #059669 0%, #10b981 55%, #6ee7b7 80%, #ffffff 100%);
+            transition: opacity 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        #page-transition.fade-in {
+            opacity: 1;
+            pointer-events: all;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-100 flex items-center justify-center min-h-screen">
+    <div class="bg-white p-8 rounded-2xl shadow-sm text-center space-y-4 max-w-sm w-full">
+        <h1 class="text-xl font-bold">JokiGT Preview</h1>
+        <p class="text-xs text-slate-500">Pilih tampilan perangkat yang ingin diuji:</p>
+        <div class="space-y-2 pt-2">
+            <a href="dekstop.html" class="block bg-black text-white py-3 rounded-xl text-sm font-semibold">Buka Versi
+                Desktop</a>
+            <a href="mobile.html" class="block border border-slate-300 py-3 rounded-xl text-sm font-semibold">Buka Versi
+                Mobile</a>
+        </div>
+    </div>
+    <!-- Page Transition Overlay -->
+    <div id="page-transition"></div>
+
+    <script>
+        // Trigger fade-in overlay on all internal links
+        document.querySelectorAll('a[href]').forEach(link => {
+            const href = link.getAttribute('href');
+            if (!href.startsWith('#') && !href.startsWith('http') && !href.startsWith('mailto')) {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const overlay = document.getElementById('page-transition');
+                    overlay.classList.add('fade-in');
+                    setTimeout(() => { window.location.href = href; }, 450);
+                });
+            }
+        });
+
+        // Fade out overlay on page load
+        window.addEventListener('pageshow', function() {
+            const overlay = document.getElementById('page-transition');
+            overlay.classList.remove('fade-in');
+        });
+    </script>
+</body>
+
+</html>
